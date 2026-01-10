@@ -3,8 +3,8 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/vknabel/zirric/ast"
-	"github.com/vknabel/zirric/op"
+	"code.knabel.dev/zirric-lang/zirric/ast"
+	"code.knabel.dev/zirric-lang/zirric/op"
 )
 
 var _ CallableRuntimeValue = CompiledFunction{}

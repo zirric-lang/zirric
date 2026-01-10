@@ -39,7 +39,7 @@ data Dependencies {
   helpers // importable as helpers
 
   // References a package hosted in a Git repository.
-  @cave.Git("https://github.com/vknabel/zirric")
+  @cave.Git("https://code.knabel.dev/zirric-lang/zirric")
   @cave.Version(">0.1.0")
   future // importable as future
 }

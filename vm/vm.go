@@ -1,9 +1,9 @@
 package vm
 
 import (
-	"github.com/vknabel/zirric/compiler"
-	"github.com/vknabel/zirric/op"
-	"github.com/vknabel/zirric/runtime"
+	"code.knabel.dev/zirric-lang/zirric/compiler"
+	"code.knabel.dev/zirric-lang/zirric/op"
+	"code.knabel.dev/zirric-lang/zirric/runtime"
 )
 
 const (

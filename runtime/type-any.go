@@ -1,6 +1,6 @@
 package runtime
 
-import "github.com/vknabel/zirric/ast"
+import "code.knabel.dev/zirric-lang/zirric/ast"
 
 var _ RuntimeValue = &AnyType{}
 

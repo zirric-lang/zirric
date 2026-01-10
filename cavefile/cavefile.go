@@ -1,6 +1,6 @@
 package cavefile
 
-import "github.com/vknabel/zirric/version"
+import "code.knabel.dev/zirric-lang/zirric/version"
 
 type Cavefile struct {
 	Dependencies []Dependency

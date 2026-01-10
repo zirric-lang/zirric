@@ -3,7 +3,7 @@ package op_test
 import (
 	"testing"
 
-	. "github.com/vknabel/zirric/op"
+	. "code.knabel.dev/zirric-lang/zirric/op"
 )
 
 func TestMake(t *testing.T) {

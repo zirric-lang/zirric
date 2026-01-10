@@ -1,7 +1,7 @@
 package runtime
 
 import (
-	"github.com/vknabel/zirric/ast"
+	"code.knabel.dev/zirric-lang/zirric/ast"
 )
 
 // Declares some TypeId constants for the prelude data types.

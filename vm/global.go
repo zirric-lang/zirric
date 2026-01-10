@@ -6,7 +6,7 @@ import (
 
 	goruntime "runtime"
 
-	"github.com/vknabel/zirric/runtime"
+	"code.knabel.dev/zirric-lang/zirric/runtime"
 )
 
 type TaskId uint64

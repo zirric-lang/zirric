@@ -3,7 +3,7 @@ package version_test
 import (
 	"testing"
 
-	"github.com/vknabel/zirric/version"
+	"code.knabel.dev/zirric-lang/zirric/version"
 )
 
 func TestVerbalVersionParsingUntransformed(t *testing.T) {

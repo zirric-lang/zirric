@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/vknabel/zirric/ast"
+	"code.knabel.dev/zirric-lang/zirric/ast"
 )
 
 func TestExprIdentifier(t *testing.T) {

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/vknabel/zirric/cavefile"
-	"github.com/vknabel/zirric/registry"
-	"github.com/vknabel/zirric/version"
+	"code.knabel.dev/zirric-lang/zirric/cavefile"
+	"code.knabel.dev/zirric-lang/zirric/registry"
+	"code.knabel.dev/zirric-lang/zirric/version"
 )
 
 type mockRegistry struct {

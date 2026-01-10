@@ -3,7 +3,7 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/vknabel/zirric/ast"
+	"code.knabel.dev/zirric-lang/zirric/ast"
 )
 
 var _ CallableRuntimeValue = &DataType{}

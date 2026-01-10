@@ -1,4 +1,4 @@
-module github.com/vknabel/zirric
+module code.knabel.dev/zirric-lang/zirric
 
 go 1.24.0
 

@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/go-git/go-billy/v5/memfs"
-	"github.com/vknabel/zirric/registry"
-	"github.com/vknabel/zirric/registry/gitreg"
-	"github.com/vknabel/zirric/version"
+	"code.knabel.dev/zirric-lang/zirric/registry"
+	"code.knabel.dev/zirric-lang/zirric/registry/gitreg"
+	"code.knabel.dev/zirric-lang/zirric/version"
 )
 
 func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {

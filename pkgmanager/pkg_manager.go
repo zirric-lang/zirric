@@ -2,9 +2,9 @@ package pkgmanager
 
 import (
 	"github.com/go-git/go-billy/v5"
-	"github.com/vknabel/zirric/cavefile"
-	"github.com/vknabel/zirric/registry"
-	"github.com/vknabel/zirric/registry/gitreg"
+	"code.knabel.dev/zirric-lang/zirric/cavefile"
+	"code.knabel.dev/zirric-lang/zirric/registry"
+	"code.knabel.dev/zirric-lang/zirric/registry/gitreg"
 )
 
 type PackageManager struct {

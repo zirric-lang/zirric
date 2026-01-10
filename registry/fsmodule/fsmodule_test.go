@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/google/go-cmp/cmp"
-	"github.com/vknabel/zirric/registry"
-	"github.com/vknabel/zirric/registry/fsmodule"
+	"code.knabel.dev/zirric-lang/zirric/registry"
+	"code.knabel.dev/zirric-lang/zirric/registry/fsmodule"
 )
 
 type (
@@ -31,39 +31,39 @@ func TestDiscoderFSModules(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "basic test",
-			cwd:  "/github.com/vknabel/zirric-example",
-			base: "memory:///github.com/vknabel/zirric-example",
+			cwd:  "/code.knabel.dev/zirric-lang/zirric-example",
+			base: "memory:///code.knabel.dev/zirric-lang/zirric-example",
 			files: map[string]string{
-				"/github.com/vknabel/zirric-example/Cavefile":       "module cavefile",
-				"/github.com/vknabel/zirric-example/tools/fmt.zirr": "module tools",
-				"/github.com/vknabel/zirric-example/cmd/main.zirr":  "module cmd",
-				"/github.com/vknabel/zirric-example/app/root.zirr":  "module app",
+				"/code.knabel.dev/zirric-lang/zirric-example/Cavefile":       "module cavefile",
+				"/code.knabel.dev/zirric-lang/zirric-example/tools/fmt.zirr": "module tools",
+				"/code.knabel.dev/zirric-lang/zirric-example/cmd/main.zirr":  "module cmd",
+				"/code.knabel.dev/zirric-lang/zirric-example/app/root.zirr":  "module app",
 
-				"/github.com/vknabel/zirric-example/app/views/body.zirr": "module views",
+				"/code.knabel.dev/zirric-lang/zirric-example/app/views/body.zirr": "module views",
 			},
 			want: []testWant{
 				{
-					uri: "memory:///github.com/vknabel/zirric-example/app",
+					uri: "memory:///code.knabel.dev/zirric-lang/zirric-example/app",
 					sources: map[registry.LogicalURI]string{
-						"memory:///github.com/vknabel/zirric-example/app/root.zirr": "module app",
+						"memory:///code.knabel.dev/zirric-lang/zirric-example/app/root.zirr": "module app",
 					},
 				},
 				{
-					uri: "memory:///github.com/vknabel/zirric-example/app/views",
+					uri: "memory:///code.knabel.dev/zirric-lang/zirric-example/app/views",
 					sources: map[registry.LogicalURI]string{
-						"memory:///github.com/vknabel/zirric-example/app/views/body.zirr": "module views",
+						"memory:///code.knabel.dev/zirric-lang/zirric-example/app/views/body.zirr": "module views",
 					},
 				},
 				{
-					uri: "memory:///github.com/vknabel/zirric-example/cmd",
+					uri: "memory:///code.knabel.dev/zirric-lang/zirric-example/cmd",
 					sources: map[registry.LogicalURI]string{
-						"memory:///github.com/vknabel/zirric-example/cmd/main.zirr": "module cmd",
+						"memory:///code.knabel.dev/zirric-lang/zirric-example/cmd/main.zirr": "module cmd",
 					},
 				},
 				{
-					uri: "memory:///github.com/vknabel/zirric-example/tools",
+					uri: "memory:///code.knabel.dev/zirric-lang/zirric-example/tools",
 					sources: map[registry.LogicalURI]string{
-						"memory:///github.com/vknabel/zirric-example/tools/fmt.zirr": "module tools",
+						"memory:///code.knabel.dev/zirric-lang/zirric-example/tools/fmt.zirr": "module tools",
 					},
 				},
 			},

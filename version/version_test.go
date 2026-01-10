@@ -4,7 +4,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/vknabel/zirric/version"
+	"code.knabel.dev/zirric-lang/zirric/version"
 )
 
 func TestConditionParsing(t *testing.T) {

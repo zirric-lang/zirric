@@ -3,7 +3,7 @@ package ast
 import (
 	"bytes"
 
-	"github.com/vknabel/zirric/token"
+	"code.knabel.dev/zirric-lang/zirric/token"
 )
 
 var _ Expr = ExprArray{}

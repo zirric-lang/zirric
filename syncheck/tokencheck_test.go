@@ -3,7 +3,7 @@ package syncheck_test
 import (
 	"testing"
 
-	"github.com/vknabel/zirric/syncheck"
+	"code.knabel.dev/zirric-lang/zirric/syncheck"
 )
 
 func TestParsingAssertions(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/vknabel/zirric/op"
-	"github.com/vknabel/zirric/runtime"
+	"code.knabel.dev/zirric-lang/zirric/op"
+	"code.knabel.dev/zirric-lang/zirric/runtime"
 )
 
 func (vm *VM) Run() error {

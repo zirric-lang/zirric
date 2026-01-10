@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/vknabel/zirric/cavefile"
-	"github.com/vknabel/zirric/registry"
+	"code.knabel.dev/zirric-lang/zirric/cavefile"
+	"code.knabel.dev/zirric-lang/zirric/registry"
 )
 
 type InstallationTask struct {

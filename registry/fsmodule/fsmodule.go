@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	billyutil "github.com/go-git/go-billy/v5/util"
-	"github.com/vknabel/zirric/registry"
+	"code.knabel.dev/zirric-lang/zirric/registry"
 )
 
 type FSModule struct {

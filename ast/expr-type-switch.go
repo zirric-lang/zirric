@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/vknabel/zirric/token"
+import "code.knabel.dev/zirric-lang/zirric/token"
 
 var _ Expr = ExprTypeSwitch{}
 

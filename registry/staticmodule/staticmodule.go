@@ -1,6 +1,6 @@
 package staticmodule
 
-import "github.com/vknabel/zirric/registry"
+import "code.knabel.dev/zirric-lang/zirric/registry"
 
 type (
 	StaticModule struct {

@@ -5,7 +5,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/vknabel/zirric/version"
+	"code.knabel.dev/zirric-lang/zirric/version"
 )
 
 // Provider is the registry for all packages in all versions.

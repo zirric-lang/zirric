@@ -14,7 +14,7 @@ data Dependencies {
   @cave.Local("../some-local-package")
   helpers // importable as helpers
 
-  @cave.Git("https://github.com/vknabel/zirric")
+  @cave.Git("https://code.knabel.dev/zirric-lang/zirric")
   @cave.Version(">0.1.0")
   future // importable as future
 }

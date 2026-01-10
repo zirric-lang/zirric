@@ -3,7 +3,7 @@ package ast
 import (
 	"fmt"
 
-	"github.com/vknabel/zirric/token"
+	"code.knabel.dev/zirric-lang/zirric/token"
 )
 
 var _ Decl = DeclExternValue{}

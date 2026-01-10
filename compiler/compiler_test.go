@@ -5,13 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/vknabel/zirric/ast"
-	"github.com/vknabel/zirric/compiler"
-	"github.com/vknabel/zirric/lexer"
-	code "github.com/vknabel/zirric/op"
-	"github.com/vknabel/zirric/parser"
-	"github.com/vknabel/zirric/registry/staticmodule"
-	"github.com/vknabel/zirric/runtime"
+	"code.knabel.dev/zirric-lang/zirric/ast"
+	"code.knabel.dev/zirric-lang/zirric/compiler"
+	"code.knabel.dev/zirric-lang/zirric/lexer"
+	code "code.knabel.dev/zirric-lang/zirric/op"
+	"code.knabel.dev/zirric-lang/zirric/parser"
+	"code.knabel.dev/zirric-lang/zirric/registry/staticmodule"
+	"code.knabel.dev/zirric-lang/zirric/runtime"
 )
 
 type compilerTestCase struct {

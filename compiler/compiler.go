@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/vknabel/zirric/ast"
-	"github.com/vknabel/zirric/op"
-	"github.com/vknabel/zirric/runtime"
-	"github.com/vknabel/zirric/token"
+	"code.knabel.dev/zirric-lang/zirric/ast"
+	"code.knabel.dev/zirric-lang/zirric/op"
+	"code.knabel.dev/zirric-lang/zirric/runtime"
+	"code.knabel.dev/zirric-lang/zirric/token"
 )
 
 const (

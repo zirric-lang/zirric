@@ -3,7 +3,7 @@ package lexer
 import (
 	"strings"
 
-	"github.com/vknabel/zirric/token"
+	"code.knabel.dev/zirric-lang/zirric/token"
 )
 
 func (l *Lexer) parseLeadingDecorations() []token.DecorativeToken {

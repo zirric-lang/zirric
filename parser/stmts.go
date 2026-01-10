@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"github.com/vknabel/zirric/ast"
-	"github.com/vknabel/zirric/token"
+	"code.knabel.dev/zirric-lang/zirric/ast"
+	"code.knabel.dev/zirric-lang/zirric/token"
 )
 
 type (

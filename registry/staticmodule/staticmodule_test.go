@@ -3,7 +3,7 @@ package staticmodule
 import (
 	"testing"
 
-	"github.com/vknabel/zirric/registry"
+	"code.knabel.dev/zirric-lang/zirric/registry"
 )
 
 func TestStaticModuleSources(t *testing.T) {

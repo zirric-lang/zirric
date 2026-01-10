@@ -3,7 +3,7 @@ package parser_test
 import (
 	"testing"
 
-	"github.com/vknabel/zirric/ast"
+	"code.knabel.dev/zirric-lang/zirric/ast"
 )
 
 func TestNumberLiterals(t *testing.T) {

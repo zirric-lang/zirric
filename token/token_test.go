@@ -3,7 +3,7 @@ package token_test
 import (
 	"testing"
 
-	"github.com/vknabel/zirric/token"
+	"code.knabel.dev/zirric-lang/zirric/token"
 )
 
 func TestLookupIdent(t *testing.T) {

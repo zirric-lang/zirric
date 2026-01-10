@@ -1,6 +1,6 @@
 package runtime
 
-import "github.com/vknabel/zirric/ast"
+import "code.knabel.dev/zirric-lang/zirric/ast"
 
 type ExternPlugin interface {
 	Bind(module *ast.SymbolTable, decl *ast.Symbol) RuntimeValue

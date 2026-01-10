@@ -1,9 +1,9 @@
 package compiler
 
 import (
-	"github.com/vknabel/zirric/ast"
-	"github.com/vknabel/zirric/op"
-	"github.com/vknabel/zirric/runtime"
+	"code.knabel.dev/zirric-lang/zirric/ast"
+	"code.knabel.dev/zirric-lang/zirric/op"
+	"code.knabel.dev/zirric-lang/zirric/runtime"
 )
 
 type emittedInstruction struct {

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/go-git/go-billy/v5"
-	"github.com/vknabel/zirric/registry"
-	"github.com/vknabel/zirric/registry/fsmodule"
-	"github.com/vknabel/zirric/version"
+	"code.knabel.dev/zirric-lang/zirric/registry"
+	"code.knabel.dev/zirric-lang/zirric/registry/fsmodule"
+	"code.knabel.dev/zirric-lang/zirric/version"
 )
 
 type localGitPackage struct {

@@ -3,10 +3,10 @@ package parser_test
 import (
 	"testing"
 
-	"github.com/vknabel/zirric/ast"
-	"github.com/vknabel/zirric/lexer"
-	"github.com/vknabel/zirric/parser"
-	"github.com/vknabel/zirric/registry/staticmodule"
+	"code.knabel.dev/zirric-lang/zirric/ast"
+	"code.knabel.dev/zirric-lang/zirric/lexer"
+	"code.knabel.dev/zirric-lang/zirric/parser"
+	"code.knabel.dev/zirric-lang/zirric/registry/staticmodule"
 )
 
 func TestParseExternDeclarations(t *testing.T) {

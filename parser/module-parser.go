@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"github.com/vknabel/zirric/ast"
-	"github.com/vknabel/zirric/lexer"
-	"github.com/vknabel/zirric/registry"
+	"code.knabel.dev/zirric-lang/zirric/ast"
+	"code.knabel.dev/zirric-lang/zirric/lexer"
+	"code.knabel.dev/zirric-lang/zirric/registry"
 )
 
 type ModuleParser struct {

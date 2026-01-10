@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-git/go-billy/v5"
-	"github.com/vknabel/zirric/registry"
+	"code.knabel.dev/zirric-lang/zirric/registry"
 )
 
 type FSSource struct {

@@ -3,7 +3,7 @@ package ast
 import (
 	"strings"
 
-	"github.com/vknabel/zirric/token"
+	"code.knabel.dev/zirric-lang/zirric/token"
 )
 
 // Represents a static reference or a fully qualified Identifier.
