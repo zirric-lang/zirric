@@ -7,10 +7,15 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/go-git/go-billy/v5/memfs"
 	"code.knabel.dev/zirric-lang/zirric/registry"
 	"code.knabel.dev/zirric-lang/zirric/registry/gitreg"
 	"code.knabel.dev/zirric-lang/zirric/version"
+	"github.com/go-git/go-billy/v5/memfs"
+)
+
+const (
+	zirricGitRepo = "https://code.knabel.dev/zirric-lang/zirric"
+	zirricVersion = "0.0.1"
 )
 
 func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {
@@ -26,7 +31,7 @@ func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {
 	defer cancel()
 
 	reg := gitreg.New(memfs.New())
-	pkgs, err := reg.DiscoverPackageVersions(ctx, "https://github.com/vknabel/lithia")
+	pkgs, err := reg.DiscoverPackageVersions(ctx, zirricGitRepo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,22 +47,22 @@ func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {
 	})
 	pkg := pkgs[0]
 
-	if pkg.Source() != "https://github.com/vknabel/lithia" {
-		t.Errorf("expected package name to be github.com/vknabel/lithia, got %s", pkg.Source())
+	if pkg.Source() != zirricGitRepo {
+		t.Errorf("expected package name to be code.knabel.dev/zirric-lang/zirric, got %s", pkg.Source())
 	}
-	if pkg.Version().String() != "0.0.19" {
-		t.Errorf("expected package version to be v0.0.19, got %s", pkg.Version())
+	if pkg.Version().String() != zirricVersion {
+		t.Errorf("expected package version to be v%s, got %s", zirricVersion, pkg.Version())
 	}
 
 	localPkg, err := pkg.Resolve(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if localPkg.Source() != "https://github.com/vknabel/lithia" {
-		t.Errorf("expected package local path to be /github.com/vknabel/lithia, got %s", localPkg.Source())
+	if localPkg.Source() != zirricGitRepo {
+		t.Errorf("expected package local path to be /code.knabel.dev/zirric-lang/zirric, got %s", localPkg.Source())
 	}
-	if localPkg.Version().String() != "0.0.19" {
-		t.Errorf("expected package version to be v0.0.19, got %s", localPkg.Version())
+	if localPkg.Version().String() != zirricVersion {
+		t.Errorf("expected package version to be v%s, got %s", zirricVersion, localPkg.Version())
 	}
 }
 
@@ -75,7 +80,7 @@ func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {
 // 		t.Errorf("expected no packages, got %d", len(packages))
 // 	}
 
-// 	versions, err := reg.DiscoverPackageVersions(ctx, "https://github.com/vknabel/lithia")
+// 	versions, err := reg.DiscoverPackageVersions(ctx, zirricGitRepo)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
@@ -95,12 +100,12 @@ func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {
 // 		Comparison: version.ComparisonUpToNextMajor,
 // 		Version:    version.SemverVersion{Major: 0, Minor: 0, Patch: 1},
 // 	}
-// 	pkg, err := reg.ResolveLatest(ctx, "https://github.com/vknabel/lithia", predicate)
+// 	pkg, err := reg.ResolveLatest(ctx, zirricGitRepo, predicate)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
 
-// 	if pkg.Name != "https://github.com/vknabel/lithia" {
+// 	if pkg.Name != zirricGitRepo {
 // 		t.Errorf("expected package name to be github.com/vknabel/lithia, got %s", pkg.Name)
 // 	}
 
@@ -112,8 +117,8 @@ func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {
 // 		t.Errorf("expected at least one package, got %d, %v", len(packages), packages)
 // 	}
 // 	for i, pkg := range packages {
-// 		if pkg.Name != "https://github.com/vknabel/lithia" {
-// 			t.Errorf("expected package %d name to be https://github.com/vknabel/lithia, got %s", i, packages[i].Name)
+// 		if pkg.Name != zirricGitRepo {
+// 			t.Errorf("expected package %d name to be %s, got %s", i, zirricGitRepo, packages[i].Name)
 // 		}
 // 	}
 // }
