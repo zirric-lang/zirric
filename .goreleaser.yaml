@@ -1,0 +1,150 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+project_name: zirric
+
+force_token: gitea
+gitea_urls:
+  api: https://code.knabel.dev/api/v1
+  download: https://code.knabel.dev
+
+release:
+  gitea:
+    owner: zirric-lang
+    name: zirric
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - id: zirric
+    binary: zirric
+    main: ./cmd/zirric
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - formats: [tar.gz]
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^build:"
+
+# Build an Arch Linux .pkg.tar.zst (via nfpm).
+nfpms:
+  - id: linuxpkgs
+    ids: [zirric]
+    package_name: zirric
+    formats: [archlinux, apk, deb]
+    vendor: "zirric-lang"
+    homepage: "https://code.knabel.dev/zirric-lang/zirric"
+    maintainer: "Valentin Knabel"
+    description: "Early development, experimental programming language with an implicit but strong and dynamic type system."
+    license: MIT
+
+publishers:
+  - name: forgejo-arch
+    ids: [linuxpkgs]
+    cmd: >-
+      sh -euc '
+      case "{{ .ArtifactName }}" in
+        *.pkg.tar.zst)
+          curl -fsSL -X PUT "{{ or .Env.FORGEJO_BASE_URL "https://code.knabel.dev" }}/api/packages/{{ or .Env.FORGEJO_OWNER "zirric-lang" }}/arch/{{ or .Env.FORGEJO_ARCH_REPO "extras" }}" \
+            --user "{{ .Env.FORGEJO_USER }}:{{ .Env.FORGEJO_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@{{ abs .ArtifactPath }}"
+          ;;
+      esac
+      '
+
+  - name: forgejo-alpine
+    ids: [linuxpkgs]
+    cmd: >-
+      sh -euc '
+      case "{{ .ArtifactName }}" in
+        *.apk)
+          curl -fsSL -X PUT "{{ or .Env.FORGEJO_BASE_URL "https://code.knabel.dev" }}/api/packages/{{ or .Env.FORGEJO_OWNER "zirric-lang" }}/alpine/{{ or .Env.FORGEJO_ALPINE_BRANCH "v3.20" }}/{{ or .Env.FORGEJO_ALPINE_REPO "main" }}" \
+            --user "{{ .Env.FORGEJO_USER }}:{{ .Env.FORGEJO_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@{{ abs .ArtifactPath }}"
+          ;;
+      esac
+      '
+
+  - name: forgejo-debian
+    ids: [linuxpkgs]
+    cmd: >-
+      sh -euc '
+      case "{{ .ArtifactName }}" in
+        *.deb)
+          curl --fail-with-body -sS -X PUT "{{ or .Env.FORGEJO_BASE_URL "https://code.knabel.dev" }}/api/packages/{{ or .Env.FORGEJO_OWNER "zirric-lang" }}/debian/pool/{{ or .Env.FORGEJO_DEBIAN_DIST "bookworm" }}/{{ or .Env.FORGEJO_DEBIAN_COMPONENT "main" }}/upload" \
+            --user "{{ .Env.FORGEJO_USER }}:{{ .Env.FORGEJO_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --upload-file "{{ abs .ArtifactPath }}"
+          ;;
+      esac
+      '
+
+dockers_v2:
+  - images:
+      - "{{ .Env.CONTAINER_REGISTRY }}/{{ .Env.CONTAINER_OWNER }}/{{ .Env.CONTAINER_IMAGE }}"
+    tags:
+      - "{{ .Version }}"
+      - latest
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    dockerfile: Dockerfile
+    sbom: none
+
+homebrew_casks:
+  - name: zirric
+    description: "Early development, experimental programming language with an implicit but strong and dynamic type system."
+    homepage: "https://code.knabel.dev/zirric-lang/zirric"
+
+    repository:
+      owner: zirric-lang
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.FORGEJO_TOKEN }}"
+
+    commit_author:
+      name: code-butler
+      email: code-butler@knabel.dev
+
+    caveats: |
+      Run `zirric --help` to get started.

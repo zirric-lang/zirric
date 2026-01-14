@@ -1,0 +1,73 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    env:
+      FORGEJO_OWNER: zirric-lang
+      FORGEJO_USER: code-butler
+      FORGEJO_ARCH_REPO: extras
+      FORGEJO_ALPINE_BRANCH: v3.23
+      FORGEJO_ALPINE_REPO: main
+      FORGEJO_DEBIAN_DIST: trixie
+      FORGEJO_DEBIAN_COMPONENT: main
+      CONTAINER_REGISTRY: code.knabel.dev
+      CONTAINER_OWNER: zirric-lang
+      CONTAINER_IMAGE: zirric
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+          cache: true
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Forgejo container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.CONTAINER_REGISTRY }}
+          username: ${{ secrets.FORGEJO_USER }}
+          password: ${{ secrets.FORGEJO_TOKEN }}
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          # Workaround for Debian registry race: serialize tasks/artifacts.
+          args: release --clean --parallelism 1
+        env:
+          # Forgejo/Gitea release publishing
+          GITEA_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+          GITHUB_TOKEN: ""
+
+          # Package publishers (curl) + container naming
+          FORGEJO_BASE_URL: ${{ vars.FORGEJO_BASE_URL }}
+          FORGEJO_OWNER: ${{ vars.FORGEJO_OWNER }}
+          FORGEJO_ARCH_REPO: ${{ vars.FORGEJO_ARCH_REPO }}
+          FORGEJO_ALPINE_BRANCH: ${{ vars.FORGEJO_ALPINE_BRANCH }}
+          FORGEJO_ALPINE_REPO: ${{ vars.FORGEJO_ALPINE_REPO }}
+          FORGEJO_DEBIAN_DIST: ${{ vars.FORGEJO_DEBIAN_DIST }}
+          FORGEJO_DEBIAN_COMPONENT: ${{ vars.FORGEJO_DEBIAN_COMPONENT }}
+
+          FORGEJO_USER: ${{ secrets.FORGEJO_USER }}
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+
+          CONTAINER_REGISTRY: ${{ vars.CONTAINER_REGISTRY }}
+          CONTAINER_OWNER: ${{ vars.CONTAINER_OWNER }}
+          CONTAINER_IMAGE: ${{ vars.CONTAINER_IMAGE }}
