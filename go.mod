@@ -3,7 +3,7 @@ module code.knabel.dev/zirric-lang/zirric
 go 1.24.0
 
 require (
-	github.com/go-git/go-billy/v5 v5.6.2
+	github.com/go-git/go-billy/v5 v5.7.0
 	github.com/go-git/go-git/v5 v5.16.4
 	github.com/google/go-cmp v0.7.0
 	github.com/pkg/errors v0.9.1
