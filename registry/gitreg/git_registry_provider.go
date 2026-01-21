@@ -10,15 +10,15 @@ import (
 	"strings"
 	"unicode"
 
+	"code.knabel.dev/zirric-lang/zirric/registry"
+	"code.knabel.dev/zirric-lang/zirric/version"
+	"code.knabel.dev/zirric-lang/zirric/world"
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/storage/memory"
-	"code.knabel.dev/zirric-lang/zirric/registry"
-	"code.knabel.dev/zirric-lang/zirric/version"
-	"code.knabel.dev/zirric-lang/zirric/world"
 )
 
 // GitRegistry is a registry that clones repositories in specific versions.

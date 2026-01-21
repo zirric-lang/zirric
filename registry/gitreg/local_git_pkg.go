@@ -3,10 +3,10 @@ package gitreg
 import (
 	"context"
 
-	"github.com/go-git/go-billy/v5"
 	"code.knabel.dev/zirric-lang/zirric/registry"
 	"code.knabel.dev/zirric-lang/zirric/registry/fsmodule"
 	"code.knabel.dev/zirric-lang/zirric/version"
+	"github.com/go-git/go-billy/v5"
 )
 
 type localGitPackage struct {

@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/go-git/go-billy/v5/memfs"
-	"github.com/google/go-cmp/cmp"
 	"code.knabel.dev/zirric-lang/zirric/registry"
 	"code.knabel.dev/zirric-lang/zirric/registry/fsmodule"
+	"github.com/go-git/go-billy/v5/memfs"
+	"github.com/google/go-cmp/cmp"
 )
 
 type (

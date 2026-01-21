@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	zirricGitRepo = "https://code.knabel.dev/zirric-lang/zirric"
+	zirricGitRepo = "https://code.knabel.dev/zirric-lang/zirric-package-fixture"
 	zirricVersion = "0.0.1"
 )
 
@@ -48,7 +48,7 @@ func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {
 	pkg := pkgs[0]
 
 	if pkg.Source() != zirricGitRepo {
-		t.Errorf("expected package name to be code.knabel.dev/zirric-lang/zirric, got %s", pkg.Source())
+		t.Errorf("expected package name to be code.knabel.dev/zirric-lang/zirric-package-fixture, got %s", pkg.Source())
 	}
 	if pkg.Version().String() != zirricVersion {
 		t.Errorf("expected package version to be v%s, got %s", zirricVersion, pkg.Version())
@@ -59,10 +59,14 @@ func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {
 		t.Fatal(err)
 	}
 	if localPkg.Source() != zirricGitRepo {
-		t.Errorf("expected package local path to be /code.knabel.dev/zirric-lang/zirric, got %s", localPkg.Source())
+		t.Errorf("expected package local path to be /code.knabel.dev/zirric-lang/zirric-package-fixture, got %s", localPkg.Source())
 	}
 	if localPkg.Version().String() != zirricVersion {
 		t.Errorf("expected package version to be v%s, got %s", zirricVersion, localPkg.Version())
+	}
+
+	if pkg.Source() != localPkg.Source() {
+		t.Errorf("expected package source to match local package source, got %s and %s", pkg.Source(), localPkg.Source())
 	}
 }
 

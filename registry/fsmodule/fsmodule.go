@@ -9,9 +9,9 @@ import (
 	"slices"
 	"strings"
 
+	"code.knabel.dev/zirric-lang/zirric/registry"
 	"github.com/go-git/go-billy/v5"
 	billyutil "github.com/go-git/go-billy/v5/util"
-	"code.knabel.dev/zirric-lang/zirric/registry"
 )
 
 type FSModule struct {

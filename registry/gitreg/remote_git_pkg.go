@@ -3,9 +3,9 @@ package gitreg
 import (
 	"context"
 
-	"github.com/go-git/go-git/v5/plumbing"
 	"code.knabel.dev/zirric-lang/zirric/registry"
 	"code.knabel.dev/zirric-lang/zirric/version"
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
 type remoteGitPackage struct {
