@@ -1,8 +1,6 @@
-# Zirric
+# ![Zirric](./docs/assets/images/zirric.svg)
 
 Zirric is an experimental programming language with a reference implementation in Go. The project is in an early stage and offers the essential building blocks of a modern language:
-
-![Zirric Logo](./assets/images/logo@512x.png)
 
 - Lexer, parser, and AST
 - Bytecode compiler and virtual machine
