@@ -10,14 +10,14 @@ components:
 
 <div class="landing">
   <nav class="top-nav">
-    <a class="brand" href="./overview">
-      <img src="./assets/images/zirric.svg" alt="Zirric logo">
+    <a class="brand" href="/overview">
+      <img src="/assets/images/zirric.svg" alt="Zirric logo">
     </a>
     <div class="nav-links">
-      <a href="./guides/getting-started">Get Started</a>
-      <a href="./overview">Overview</a>
-      <a href="./proposals">Proposals</a>
-      <a href="./tooling">Tooling</a>
+      <a href="/guides/getting-started">Get Started</a>
+      <a href="/overview">Overview</a>
+      <a href="/proposals">Proposals</a>
+      <a href="/tooling">Tooling</a>
     </div>
   </nav>
 
@@ -30,9 +30,9 @@ components:
         modeling, and annotations that describe capabilities without interfaces.
       </p>
       <div class="hero-actions">
-        <a class="button primary" href="./guides/getting-started">Get Started</a>
-        <a class="button" href="./overview">Read the Overview</a>
-        <a class="button ghost" href="./syntax/expressions">Browse Syntax</a>
+        <a class="button primary" href="/guides/getting-started">Get Started</a>
+        <a class="button" href="/overview">Read the Overview</a>
+        <a class="button ghost" href="/syntax/expressions">Browse Syntax</a>
       </div>
       <p class="note">Experimental: features and syntax may change.</p>
     </div>
@@ -83,19 +83,19 @@ func summarize(@Bag bag) {
   <section class="quick-links">
     <h2>Explore the docs</h2>
     <div class="link-grid">
-      <a class="link-card" href="./guides/getting-started">
+      <a class="link-card" href="/guides/getting-started">
         <h3>Getting Started</h3>
         <p>A guided tour of the language.</p>
       </a>
-      <a class="link-card" href="./syntax/expressions">
+      <a class="link-card" href="/syntax/expressions">
         <h3>Syntax Reference</h3>
         <p>The precise language surface.</p>
       </a>
-      <a class="link-card" href="./tooling">
+      <a class="link-card" href="/tooling">
         <h3>Tooling</h3>
         <p>Syntax highlighting and compiler notes.</p>
       </a>
-      <a class="link-card" href="./guides/styleguide">
+      <a class="link-card" href="/guides/styleguide">
         <h3>Styleguide</h3>
         <p>Conventions for clear Zirric code.</p>
       </a>

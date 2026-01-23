@@ -187,6 +187,6 @@ Zirric favors explicit declarations and annotations instead.
 
 ## Learn more
 
-- Explore the [Syntax references](../syntax/expressions) for precise grammar.
-- Read the [Zirric Evolution Proposals](../proposals) for future design notes.
-- Follow the [Styleguide](./styleguide) to keep code consistent.
+- Explore the [Syntax references](/syntax/expressions) for precise grammar.
+- Read the [Zirric Evolution Proposals](/proposals) for future design notes.
+- Follow the [Styleguide](/guides/styleguide) to keep code consistent.

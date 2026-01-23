@@ -10,12 +10,12 @@ with the language implementation. This section collects the available pieces.
 
 ## Editor support
 
-- [Syntax Highlighting](./tooling/syntax-highlighting) with Tree-sitter for modern editors.
+- [Syntax Highlighting](/tooling/syntax-highlighting) with Tree-sitter for modern editors.
 
 ## Language implementation
 
-- [Package Manager](./tooling/package-manager) for Cavefile structure and registry layout.
-- [Compiler](./tooling/compiler) for bytecode and runtime architecture.
+- [Package Manager](/tooling/package-manager) for Cavefile structure and registry layout.
+- [Compiler](/tooling/compiler) for bytecode and runtime architecture.
 
 ## Documentation pipeline
 

@@ -15,20 +15,20 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 
 ## Proposals
 
-| Proposal                                                   | Title                           | Status      | Author                                                                             |
-| ---------------------------------------------------------- | ------------------------------- | ----------- | ---------------------------------------------------------------------------------- |
-| [ZE-001](proposals/ZE-001-base-language)                   | Base Language                   | In Progress | [@vknabel](https://github.com/vknabel)                                             |
-| [ZE-002](proposals/ZE-002-the-cavefile)                    | The Cavefile                    | In Progress | [@vknabel](https://github.com/vknabel), [@blushling](https://github.com/blushling) |
-| [ZE-003](proposals/ZE-003-named-data-construction)         | Named Data Construction         | Rejected    | [@vknabel](https://code.knabel.dev/vknabel)                                        |
-| [ZE-004](proposals/ZE-004-Variadic-Arguments)              | Variadic Arguments              | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
-| [ZE-005](proposals/ZE-005-Mixin-Type-Declarations)         | Mixin Type Declarations         | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
-| [ZE-006](proposals/ZE-006-Annotation-Based-Parsing-System) | Annotation-Based Parsing System | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| Proposal                                                    | Title                           | Status      | Author                                                                             |
+| ----------------------------------------------------------- | ------------------------------- | ----------- | ---------------------------------------------------------------------------------- |
+| [ZE-001](/proposals/ZE-001-base-language)                   | Base Language                   | In Progress | [@vknabel](https://github.com/vknabel)                                             |
+| [ZE-002](/proposals/ZE-002-the-cavefile)                    | The Cavefile                    | In Progress | [@vknabel](https://github.com/vknabel), [@blushling](https://github.com/blushling) |
+| [ZE-003](/proposals/ZE-003-named-data-construction)         | Named Data Construction         | Rejected    | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-004](/proposals/ZE-004-Variadic-Arguments)              | Variadic Arguments              | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)         | Mixin Type Declarations         | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-006](/proposals/ZE-006-Annotation-Based-Parsing-System) | Annotation-Based Parsing System | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
 
 ## Submitting Proposals
 
 To create a new proposal:
 
-1. Copy [ZE-000-template.md](proposals/ZE-000-template).
+1. Copy [ZE-000-template.md](/proposals/ZE-000-template).
 2. Rename the file to follow the scheme `ZE-000-name-of-the-proposal.md`.
 3. Link the proposal in this index file.
 4. Add an entry to the `docmd.config.js`.

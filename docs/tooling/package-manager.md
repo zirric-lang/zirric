@@ -14,7 +14,7 @@ The package manager is still evolving. The CLI and UX are not implemented yet
 and will be covered in future proposals.
 
 For the authoritative design, see the
-[ZE-002 Cavefile proposal](../proposals/ZE-002-the-cavefile#cavefile).
+[ZE-002 Cavefile proposal](/proposals/ZE-002-the-cavefile#cavefile).
 :::
 
 ## Cavefile at a glance

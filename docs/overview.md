@@ -45,34 +45,34 @@ func summarize(@Bag bag) {
 
 ## Start here
 
-- New to Zirric? Begin with the [Getting Started](./guides/getting-started) guide.
-- Need install instructions? Jump to the [Installation](./guides/installation) page.
-- Want conventions before writing code? Read the [Styleguide](./guides/styleguide).
+- New to Zirric? Begin with the [Getting Started](/guides/getting-started) guide.
+- Need install instructions? Jump to the [Installation](/guides/installation) page.
+- Want conventions before writing code? Read the [Styleguide](/guides/styleguide).
 
 ## Language references
 
 The core language surface is documented in the syntax references:
 
-- [Expressions](./syntax/expressions)
-- [Declarations](./syntax/declarations)
-- [Control flow](./syntax/control-flow)
-- [Annotations](./syntax/annotations)
-- [Typesystem](./syntax/typesystem)
+- [Expressions](/syntax/expressions)
+- [Declarations](/syntax/declarations)
+- [Control flow](/syntax/control-flow)
+- [Annotations](/syntax/annotations)
+- [Typesystem](/syntax/typesystem)
 
 When you want more depth or future-facing design notes, read the
-[Zirric Evolution Proposals](./proposals).
+[Zirric Evolution Proposals](/proposals).
 
 ## Runtime and packages
 
 Zirric ships with a standard library written in Zirric itself under `stdlib/` and
 a package system called Cavefile.
 
-- [Cavefile manifests](./cavefile)
-- [Compiler architecture](./tooling/compiler)
+- [Cavefile manifests](/cavefile)
+- [Compiler architecture](/tooling/compiler)
 
 ## Tooling
 
-Tooling documentation lives in the [Tooling](./tooling) section. Start with the
+Tooling documentation lives in the [Tooling](/tooling) section. Start with the
 Tree-sitter grammar if you want syntax highlighting in editors.
 
 ## Working on Zirric
