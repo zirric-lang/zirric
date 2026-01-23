@@ -1,8 +1,7 @@
 # Control flow
 
-Zirric offers both expression and statement forms for its `if` and `for` constructs.
-Expressions produce a value, while statements are used when only side effects are
-required.
+Zirric offers expression and statement forms for `if`, `switch`, and `for`.
+Expressions produce a value, while statements are used for side effects.
 
 ## `if`
 
@@ -29,6 +28,33 @@ if answer == 42 {
 `if` statements may hold multiple statements in their branches, including
 `return`, and the branches may even be empty.
 
+## `switch`
+
+`switch` chooses a branch based on a value and a set of cases. Expression forms
+must include a `_` fallback case.
+
+```zirric
+switch value {
+case @String:
+    print("string")
+case 1:
+    print("one")
+case _:
+    print("other")
+}
+
+let result = switch value {
+case @String:
+    0
+case @Has(Iterable):
+    1
+case _:
+    2
+}
+```
+
+Cases can match literal values, annotations (such as `@String`), or `_`.
+
 ## `for`
 
 The `for` expression iterates over a sequence and gathers the values produced by
@@ -51,8 +77,20 @@ for n <- [1, 2, 3] {
 }
 ```
 
-`for` statements may bind multiple variables, contain multiple statements
-including `return`, or be completely empty.
+`for` statements may be infinite, boolean, or collection-based. They can contain
+multiple statements including `return`, or be completely empty.
+
+```zirric
+for {
+    if shouldStop {
+        break
+    }
+}
+
+for ready {
+    doWork()
+}
+```
 
 An empty loop written as `for { }` runs indefinitely and is useful for
 processes that wait for external events. It only terminates when a `break`

@@ -1,0 +1,37 @@
+module prelude
+
+annotation Error {
+	@Returns(String)
+	toString(@Has(Error) err)
+}
+
+enum Result {
+    data Ok {
+		@Any value
+	}
+    data Err {
+		@Has(Error)
+		error
+	}
+}
+
+annotation OkType {
+	@Type(AnyType) type
+}
+
+
+annotation ErrType {
+	@Type(AnyType) type
+}
+
+
+@json.Inline()
+enum Optional {
+	@json.Type(json.Null)
+	data None
+
+	@json.Inline
+	data Some {
+	   value
+	}
+}

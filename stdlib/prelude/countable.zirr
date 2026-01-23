@@ -11,13 +11,13 @@ annotation Iterable {
 
 @Countable({ v -> v.length })
 @Iterable(_arrayIterate)
-extern Array {
+extern type Array {
   @Int length
 }
 
 @Countable({ v -> v.length })
 @Iterable(_dictIterate)
-extern Dict {
+extern type Dict {
   @Int length
   @Array keys
 }
@@ -31,7 +31,7 @@ data Range {
 
 @Countable({ v -> v.length })
 @Iterable(_stringIterate)
-extern String {
+extern type String {
   @Int
   length
 }

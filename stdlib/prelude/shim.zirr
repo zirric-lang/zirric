@@ -54,14 +54,17 @@ annotation Numeric {
   get()
 }
 
-enum Number {
-  // A floating point number.
-  @Numeric({ f -> f })
-  extern Float {}
+// A floating point number.
+@Numeric({ f -> f })
+extern type Float {}
 
-  // A whole integer number.
-  @Numeric({ i -> i })
-  extern Int {}
+// A whole integer number.
+@Numeric({ i -> i })
+extern type Int {}
+
+enum Number {
+  Float
+  Int
 }
 
 extern type String {

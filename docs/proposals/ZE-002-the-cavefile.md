@@ -1,8 +1,14 @@
+---
+title: ZE-002 - The Cavefile
+description: A proposal to document the Zirric package manager and the Cavefile manifest.
+---
+
 # The Cavefile
 
-- **Proposal:** BE-002
-- **Status:** In Progress
-- **Author:** [@vknabel](https://github.com/vknabel), [@blushling](https://github.com/blushling)
+::: callout warning <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-code-icon lucide-search-code"><path d="m13 13.5 2-2.5-2-2.5"/><path d="m21 21-4.3-4.3"/><path d="M9 8.5 7 11l2 2.5"/><circle cx="11" cy="11" r="8"/></svg> In Progress
+This proposal is currently being discussed and developed.
+Parts might be incomplete or missing in Zirric.
+:::
 
 ## Introduction
 
@@ -13,6 +19,7 @@ This proposal describes the current Zirric package manager and the `Cavefile` ma
 Zirric projects will rely on external modules for language extensions and tooling.
 Capturing the present-day and near future behaviour of the package manager clarifies how packages are discovered, how versions are selected, and how registries interact with the filesystem cache. Documenting the `Cavefile` structure likewise gives
 users a reference for authoring manifests that match the implementation.
+
 ## Proposed Solution
 
 Packages declare dependencies in a `Cavefile` module that Zirric parses at build or install time. The manifest itself will not be executed. The package manager solely works on the type system.

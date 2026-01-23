@@ -1,8 +1,11 @@
 # Typesystem
 
-Zirric is a dynamically, but strongly typed language. In the future it may add type inference, but for now all types can be assigned to any variable, field or function parameter.
+Zirric is dynamically, but strongly typed. In the future it may add type
+inference, but today values can flow through any variable, field, or parameter
+as long as explicit conversions and runtime checks are satisfied.
 
-In the end, we try to keept the type system simple and easy to understand. Zirric supports the following classes of types:
+The type system stays intentionally small. Zirric supports the following classes
+of types:
 
 - `data` types are the most common types. They are used to store data and can be easily created by calling the type name as a function.
 - `enum` types are used to express that their values can be one of a group of types. In other languages they are also called union types.
@@ -70,27 +73,20 @@ enum JuristicPerson {
 
 In this example every `Person` and every `Company` is a `JuristicPerson`.
 
-The only way to check wether a given value is of an enum type, ist to tuse the `type`-expression.
-It requires you to list all types of the enum type. It returns a function which takes a valid enum type.
+To discriminate union values, use `switch` with annotation cases:
 
-```
-import strings
-
+```zirric
 func nameOf(juristic) {
-    type juristic = JuristicPerson {
-        Person: { person -> person.name },
-        Company: { company ->
-                strings.concat [
-                company.name, " ", company.corporateForm
-            ]
-        }
+    switch juristic {
+    case @Person:
+        juristic.name
+    case @Company:
+        juristic.name + " " + juristic.corporateForm
+    case _:
+        "unknown"
     }
 }
-
-nameOf you
 ```
-
-> _**Attention:** If the given value is not valid, your program will crash. If you might have arbitrary values, you can add an `Any` case. As it matches all values, make sure it is always the last value._
 
 ## Annotation types
 
@@ -123,19 +119,36 @@ data Person {
 
 ### Accessing annotations
 
-Annotations can be accessed at runtime by using the `reflect`-module.
+Annotations can be accessed at runtime by using the `reflect` module.
 
 ```zirric
 import json
 import reflect
 
 let person = Person("John", 42)
-
-let nameAnnotation = reflect.typeOf(person).
-    field("name").
-    annotation(json.HasKey)
-
+let personType = reflect.typeOf(person)
+let fields = reflect.fieldsOf(personType)
+let nameAnnotation = reflect.annotation(fields[0], json.HasKey)
 ```
+
+## Protocol-like annotations
+
+The prelude defines annotations such as `@Countable` and `@Iterable` to describe
+capabilities of types. The compiler and tooling use these annotations to drive
+loop behavior and helper utilities.
+
+```zirric
+@Countable({ v -> v.length })
+@Iterable(_arrayIterate)
+extern type Array {
+    @Int length
+}
+```
+
+## Common prelude patterns
+
+The prelude includes small data structures such as `Result` and `Optional` that
+encode success/failure and nullable values without relying on implicit nulls.
 
 ## Extern types
 

@@ -1,8 +1,14 @@
+---
+title: ZE-001 - Base Language
+description: Defines the base language features of Zirric.
+---
+
 # Base Language
 
-- **Proposal:** BE-001
-- **Status:** In Progress
-- **Author:** [@vknabel](https://github.com/vknabel)
+::: callout warning <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-code-icon lucide-search-code"><path d="m13 13.5 2-2.5-2-2.5"/><path d="m21 21-4.3-4.3"/><path d="M9 8.5 7 11l2 2.5"/><circle cx="11" cy="11" r="8"/></svg> In Progress
+This proposal is currently being discussed and developed.
+Parts might be incomplete or missing in Zirric.
+:::
 
 ## Introduction
 
@@ -83,22 +89,23 @@ In general Zirric might introduce type checks at run- or compile time. In these 
 
 The following precedence groups and operators are supported:
 
-| Precedence   | Operators                        | Associativity |
-| ------------ |----------------------------------|---------------|
-| `LOWEST`     |                                  | None          |
-| `LOGICAL_OR` | `\|\|`                           | Left          |
-| `LOGICAL_AND`| `&&`                             | Left          |
-| `COMPARISON` | `==`, `!=`, `<`, `<=`, `>`, `>=` | None          |
-| `COALESCING` | `??` (reserved)                  | Right         |
-| `RANGE`      | `..<` (reserved)                 | None          |
-| `SUM`        | `+`, `-`                         | Left          |
-| `PRODUCT`    | `*`, `/`, `%`                    | Left          |
-| `BITWISE`    | `<<` (reserved), `>>` (reserved) | Left          |
-| `PREFIX`     | `-x`, `!x`                       | Right         |
-| `CALL`       | `fun(x)`                         | Left          |
-| `MEMBER`     | `.`, `?.` (reserved)             | Left          |
+| Precedence    | Operators                        | Associativity |
+| ------------- | -------------------------------- | ------------- |
+| `LOWEST`      |                                  | None          |
+| `LOGICAL_OR`  | `\|\|`                           | Left          |
+| `LOGICAL_AND` | `&&`                             | Left          |
+| `COMPARISON`  | `==`, `!=`, `<`, `<=`, `>`, `>=` | None          |
+| `COALESCING`  | `??` (reserved)                  | Right         |
+| `RANGE`       | `..<` (reserved)                 | None          |
+| `SUM`         | `+`, `-`                         | Left          |
+| `PRODUCT`     | `*`, `/`, `%`                    | Left          |
+| `BITWISE`     | `<<` (reserved), `>>` (reserved) | Left          |
+| `PREFIX`      | `-x`, `!x`                       | Right         |
+| `CALL`        | `fun(x)`                         | Left          |
+| `MEMBER`      | `.`, `?.` (reserved)             | Left          |
 
 > **Note:** Operators marked as "(reserved)" are not currently implemented in Zirric. They are reserved for possible future use and may be subject to change or removal in later versions. Their presence in this table does not guarantee future support, but indicates that their syntax is being considered for potential language features.
+
 ```zirric
 let value = object.field + 2 // member access
 fun(x + 1, y * 2) // function call
@@ -272,7 +279,6 @@ let person = Person("John", 42)
 let nameAnnotation = reflect.typeOf(person).
     field("name").
     annotation(json.HasKey)
-
 ```
 
 > [!attention] Undefined
@@ -422,7 +428,7 @@ case _:
 stmt_switch = "switch", expression, "{", { switch_case }, "}" ;
 switch_case = "case", ( expression | annotation | "_" ), ":", block ;
 ```
-  
+
 ### For expressions and statements
 
 For expressions and statements are used to iterate over collections, until a condition invalidates or infinitely. They are defined by the `for` keyword followed by a loop definition and a body. The loop definition can be one of the following:

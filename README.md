@@ -2,11 +2,15 @@
 
 Zirric is an experimental programming language with a reference implementation in Go. The project is in an early stage and offers the essential building blocks of a modern language:
 
+![Zirric Logo](./assets/images/logo@512x.png)
+
 - Lexer, parser, and AST
 - Bytecode compiler and virtual machine
 - Standard library with prelude types such as `Array`, `Bool`, `Int`, and `String`
 - Package management via `Cavefile` and registries
-- Documentation on syntax, types, and style in [`docs/`](docs)
+- Documentation on syntax, types, and style in [`docs/`](./docs)
+- Language evolution proposals in [`docs/proposals/`](./docs/proposals), with the base language in [`docs/proposals/ZE-001-base-language.md`](docs/proposals/ZE-001-base-language.md)
+- Core language surface in the Zirric sources under [`stdlib/`](./stdlib)
 
 ## Language overview
 
@@ -82,7 +86,10 @@ types and functions. They enable generic code to rely on declared capabilities
 without a formal interface system:
 
 ```zirric
-annotation Countable { length(value) }
+annotation Countable {
+    @Returns(Int)
+    length(@Has(Countable) value)
+}
 
 @Countable({ v -> v.length })
 data Bag {
@@ -94,9 +101,24 @@ data Bag {
 Here `Countable` supplies a `length` implementation, allowing tools to treat
 `Bag` like any other countable collection.
 
-## Prerequisites
+### Cavefile manifests
 
-- [Go](https://go.dev/) 1.23 or newer
+Cavefiles are Zirric sources that declare dependencies and tasks via annotations:
+
+```zirric
+import cave
+import cave.tasks
+
+@cave.Dependencies()
+data Dependencies {
+    @cave.Stdlib("prelude")
+    prelude
+}
+
+@tasks.Name("generate")
+@tasks.Exec("tasks/generate.zirr")
+data GenerateTask {}
+```
 
 ## Getting started
 

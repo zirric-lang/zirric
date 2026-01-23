@@ -1,0 +1,34 @@
+module reflect
+
+data Field {
+    @String name
+
+    @Type(AnyType) type
+
+    @Array
+    @ItemType(Annotation)
+    annotations
+}
+
+data Annotation {
+    @AnyAnnotation annotationType
+    @Array args
+}
+
+annotation Name {
+    @String name
+}
+
+@Returns(Type)
+func typeOf(@Any value) {}
+
+@Returns(Array(Field))
+func fieldsOf(@Type type) {}
+
+@Returns(Result)
+@OkType(AnyAnnotation)
+func annotation(@Field field, @AnnotationType annotationType) {}
+
+@Returns(Bool)
+func hasAnnotation(@Field field, @AnnotationType annotationType) {}
+
