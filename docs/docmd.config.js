@@ -90,7 +90,7 @@ module.exports = {
         // rejected: search-x
         { icon: 'search-code', title: 'ZE-01 Language', path: './proposals/ZE-001-base-language' },
         { icon: 'search-code', title: 'ZE-02 Cavefile', path: './proposals/ZE-002-the-cavefile' },
-        { icon: 'search-slash', title: 'ZE-03 Named Params', path: 'https://code.knabel.dev/zirric-lang/zirric/pulls/25', external: true },
+        { icon: 'search-x', title: 'ZE-03 Named Params', path: './proposals/ZE-003-named-data-construction' },
         { icon: 'search-slash', title: 'ZE-04 Variadic', path: './proposals/ZE-004-Variadic-Arguments' },
         { icon: 'search-slash', title: 'ZE-05 Mixins', path: './proposals/ZE-005-Mixin-Type-Declarations' },
         { icon: 'search-slash', title: 'ZE-06 Parsing', path: './proposals/ZE-006-Annotation-Based-Parsing-System' },

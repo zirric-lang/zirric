@@ -15,14 +15,14 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 
 ## Proposals
 
-| Proposal                                                      | Title                           | Status      | Author                                                                             |
-| ------------------------------------------------------------- | ------------------------------- | ----------- | ---------------------------------------------------------------------------------- |
-| [ZE-001](ZE-001-base-language.md)                             | Base Language                   | In Progress | [@vknabel](https://github.com/vknabel)                                             |
-| [ZE-002](ZE-002-the-cavefile.md)                              | The Cavefile                    | In Progress | [@vknabel](https://github.com/vknabel), [@blushling](https://github.com/blushling) |
-| [ZE-003](https://code.knabel.dev/zirric-lang/zirric/pulls/25) | Named Data Construction         | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
-| [ZE-004](ZE-004-Variadic-Arguments.md)                        | Variadic Arguments              | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
-| [ZE-005](ZE-005-Mixin-Type-Declarations.md)                   | Mixin Type Declarations         | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
-| [ZE-006](ZE-006-Annotation-Based-Parsing-System.md)           | Annotation-Based Parsing System | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| Proposal                                                   | Title                           | Status      | Author                                                                             |
+| ---------------------------------------------------------- | ------------------------------- | ----------- | ---------------------------------------------------------------------------------- |
+| [ZE-001](proposals/ZE-001-base-language)                   | Base Language                   | In Progress | [@vknabel](https://github.com/vknabel)                                             |
+| [ZE-002](proposals/ZE-002-the-cavefile)                    | The Cavefile                    | In Progress | [@vknabel](https://github.com/vknabel), [@blushling](https://github.com/blushling) |
+| [ZE-003](proposals/ZE-003-named-data-construction)         | Named Data Construction         | Rejected    | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-004](proposals/ZE-004-Variadic-Arguments)              | Variadic Arguments              | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-005](proposals/ZE-005-Mixin-Type-Declarations)         | Mixin Type Declarations         | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-006](proposals/ZE-006-Annotation-Based-Parsing-System) | Annotation-Based Parsing System | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
 
 ## Submitting Proposals
 
