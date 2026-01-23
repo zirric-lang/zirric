@@ -208,6 +208,18 @@ func TestAllTokens(t *testing.T) {
 			},
 		},
 		{
+			name:  "left arrow",
+			input: `<-`,
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.LEFT_ARROW, "<-"},
+				{token.EOF, ""},
+			},
+		},
+
+		{
 			name:  "gt",
 			input: `>`,
 			expected: []struct {

@@ -195,6 +195,147 @@ func TestBasicVariables(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestForStatements(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			label: "infinite loop break",
+			input: `
+			func example() {
+				for { break }
+				return 1
+			}
+			example()
+			`,
+			expected: 1,
+		},
+		{
+			label: "conditional loop false",
+			input: `
+			func example() {
+				for false { return 2 }
+				return 3
+			}
+			example()
+			`,
+			expected: 3,
+		},
+		{
+			label: "conditional loop break",
+			input: `
+			func example() {
+				for true { break }
+				return 4
+			}
+			example()
+			`,
+			expected: 4,
+		},
+		{
+			label: "nested continue break",
+			input: `
+			func example() {
+				for {
+					if false {
+						continue
+					} else {
+						break
+					}
+				}
+				return 5
+			}
+			example()
+			`,
+			expected: 5,
+		},
+		{
+			label: "return inside loop",
+			input: `
+			func example() {
+				for { return 6 }
+			}
+			example()
+			`,
+			expected: 6,
+		},
+		{
+			label: "statement after loop",
+			input: `
+			func example() {
+				for false { return 7 }
+				let x = 8
+				return x
+			}
+			example()
+			`,
+			expected: 8,
+		},
+		{
+			label: "array collection loop literal",
+			input: `
+			func example() {
+				for item <- [1, 2] { return item }
+				return 9
+			}
+			example()
+			`,
+			expected: 1,
+		},
+		{
+			label: "array collection loop empty",
+			input: `
+			func example() {
+				for item <- [] { return 1 }
+				return 2
+			}
+			example()
+			`,
+			expected: 2,
+		},
+		{
+			label: "array for expression",
+			input: `
+			let result = for item <- [1, 2, 3] { item }
+			result
+			`,
+			expected: []any{1, 2, 3},
+		},
+		{
+			label: "array for expression decls",
+			input: `
+			let result = for item <- [1, 2, 3] {
+				let doubled = item * 2
+				doubled
+			}
+			result
+			`,
+			expected: []any{2, 4, 6},
+		},
+		{
+			label: "array for expression continue",
+			input: `
+			let result = for item <- [1, 2, 3] {
+				if item == 2 {
+					continue
+				}
+				item
+			}
+			result
+			`,
+			expected: []any{1, 3},
+		},
+		{
+			label: "for expression empty",
+			input: `
+			let result = for false { 1 }
+			result
+			`,
+			expected: []any{},
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
 
@@ -205,6 +346,12 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 			comp := compiler.New()
 			err := comp.Compile(program)
 			if err != nil {
+				if tt.err != "" {
+					if err.Error() != tt.err {
+						t.Fatalf("expected error %q, got %q", tt.err, err)
+					}
+					return
+				}
 				t.Fatalf("compiler error: %s", err)
 			}
 

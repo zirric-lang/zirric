@@ -20,6 +20,10 @@ type CompilationScope struct {
 	previousInstruction emittedInstruction
 }
 
+func (s *CompilationScope) LocalsCount() int {
+	return len(s.locals)
+}
+
 type Bytecode struct {
 	Instructions op.Instructions
 	Constants    []runtime.RuntimeValue
@@ -50,6 +54,16 @@ func New() *Compiler {
 
 func (c *Compiler) currentInstructions() op.Instructions {
 	return c.scopes[c.scopeIdx].Instructions
+}
+
+func (c *Compiler) currentSymbols() *ast.SymbolTable {
+	if c.scopes[c.scopeIdx].symbols != nil {
+		return c.scopes[c.scopeIdx].symbols
+	}
+	if c.scopeIdx > 0 {
+		return c.scopes[c.scopeIdx-1].symbols
+	}
+	return nil
 }
 
 func (c *Compiler) Bytecode() *Bytecode {
@@ -87,6 +101,25 @@ func (c *Compiler) addConstant(v runtime.RuntimeValue) int {
 func (c *Compiler) addGlobal(scope *CompilationScope) int {
 	c.globals = append(c.globals, scope)
 	return len(c.globals) - 1
+}
+
+func (c *Compiler) allocateTempLocal() int {
+	idx := len(c.scopes[c.scopeIdx].locals)
+	c.scopes[c.scopeIdx].locals = append(c.scopes[c.scopeIdx].locals, nil)
+	return idx
+}
+
+func (c *Compiler) ensureLocalSymbol(sym *ast.Symbol) int {
+	if sym.LocalId != nil {
+		idx := *sym.LocalId
+		if idx < len(c.scopes[c.scopeIdx].locals) && c.scopes[c.scopeIdx].locals[idx] == sym {
+			return idx
+		}
+	}
+	idx := c.allocateTempLocal()
+	sym.LocalId = &idx
+	c.scopes[c.scopeIdx].locals[idx] = sym
+	return idx
 }
 
 func (c *Compiler) enterScope(syms *ast.SymbolTable) {

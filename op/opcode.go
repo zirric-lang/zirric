@@ -13,6 +13,8 @@ const (
 
 	GetIndex
 	GetField
+	Len
+	ArrayAppend
 
 	// does not consume, just assert top value's type
 	AssertType
@@ -59,8 +61,10 @@ var definitions = map[Opcode]*Definition{
 	Array: {"array", []int{}},
 	Dict:  {"dict", []int{}},
 
-	GetIndex: {"getindex", []int{}},
-	GetField: {"getfield", []int{2}}, // name id
+	GetIndex:    {"getindex", []int{}},
+	GetField:    {"getfield", []int{2}}, // name id
+	Len:         {"len", []int{}},
+	ArrayAppend: {"arrayappend", []int{}},
 
 	AssertType: {"asserttype", []int{2}}, // type id
 

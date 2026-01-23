@@ -58,3 +58,72 @@ func TestExprIdentifier(t *testing.T) {
 		})
 	}
 }
+
+func TestParseExprFor(t *testing.T) {
+	tests := []struct {
+		input           string
+		condition       bool
+		collectionIdent string
+		collectionExpr  string
+		decls           int
+		stmts           int
+		lastStmtType    string
+	}{
+		{"let result = for false { 1 }", true, "", "", 0, 1, "*ast.StmtExpr"},
+		{"let result = for false { let value = 1 value }", true, "", "", 1, 1, "*ast.StmtExpr"},
+		{"let result = for item <- items { item }", false, "item", "items", 0, 1, "*ast.StmtExpr"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			srcFile := prepareSourceFileParsing(t, tt.input)
+			symbol, ok := srcFile.Symbols.Symbols["result"]
+			if !ok || symbol.Decl == nil {
+				t.Fatal("expected result declaration")
+			}
+			decl, ok := symbol.Decl.(*ast.DeclVariable)
+			if !ok {
+				t.Fatalf("declaration is %T, want *ast.DeclVariable", symbol.Decl)
+			}
+			expr, ok := decl.Value.(ast.ExprFor)
+			if !ok {
+				t.Fatalf("expression is %T, want ast.ExprFor", decl.Value)
+			}
+			if tt.condition && expr.Condition == nil {
+				t.Fatal("expected condition expression")
+			}
+			if !tt.condition && expr.Condition != nil {
+				t.Fatalf("expected no condition, got %T", expr.Condition)
+			}
+			if tt.collectionIdent != "" {
+				if expr.CollectionIdent == nil {
+					t.Fatal("expected collection identifier")
+				}
+				if expr.CollectionIdent.Value != tt.collectionIdent {
+					t.Fatalf("expected collection identifier %q, got %q", tt.collectionIdent, expr.CollectionIdent.Value)
+				}
+				idExpr, ok := expr.CollectionExpr.(*ast.ExprIdentifier)
+				if !ok {
+					t.Fatalf("collection expression is %T, want *ast.ExprIdentifier", expr.CollectionExpr)
+				}
+				if idExpr.Name.Value != tt.collectionExpr {
+					t.Fatalf("expected collection expr %q, got %q", tt.collectionExpr, idExpr.Name.Value)
+				}
+			} else if expr.CollectionIdent != nil || expr.CollectionExpr != nil {
+				t.Fatalf("expected no collection, got %v", expr.CollectionIdent)
+			}
+			if len(expr.Body.Decls) != tt.decls {
+				t.Fatalf("expected decls len %d, got %d", tt.decls, len(expr.Body.Decls))
+			}
+			if len(expr.Body.Stmts) != tt.stmts {
+				t.Fatalf("expected stmts len %d, got %d", tt.stmts, len(expr.Body.Stmts))
+			}
+			if len(expr.Body.Stmts) > 0 {
+				last := expr.Body.Stmts[len(expr.Body.Stmts)-1]
+				if got := fmt.Sprintf("%T", last); got != tt.lastStmtType {
+					t.Fatalf("expected last stmt %s, got %s", tt.lastStmtType, got)
+				}
+			}
+		})
+	}
+}

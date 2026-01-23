@@ -44,6 +44,12 @@ func (p *Parser) parseStatementInContext(pos StatementPosition, annos ast.Annota
 		return p.parseAnnotatedStatementDeclaration(pos)
 	case token.IF:
 		return p.parseStatementIf(pos), nil
+	case token.FOR:
+		return p.parseStatementFor(pos), nil
+	case token.BREAK:
+		return p.parseStatementBreak(pos), nil
+	case token.CONTINUE:
+		return p.parseStatementContinue(pos), nil
 	case token.RETURN:
 		return p.parseStatementReturn(pos), nil
 	default:
@@ -55,7 +61,7 @@ func (p *Parser) parseStatementInContext(pos StatementPosition, annos ast.Annota
 		}
 
 		prefixes := []token.TokenType{
-			token.ENUM, token.DATA, token.MODULE, token.EXTERN, token.FUNCTION, token.IMPORT, token.AT, token.LET, token.IF, token.FOR,
+			token.ENUM, token.DATA, token.MODULE, token.EXTERN, token.FUNCTION, token.IMPORT, token.AT, token.LET, token.IF, token.FOR, token.BREAK, token.CONTINUE,
 		}
 		for t := range p.prefixParsers {
 			prefixes = append(prefixes, t)

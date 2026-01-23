@@ -254,6 +254,36 @@ func (p *Parser) parsePrattExprIfElse() ast.Expr {
 	return ifExpr
 }
 
+func (p *Parser) parsePrattExprFor() ast.Expr {
+	forTok, _ := p.expect(token.FOR)
+	bodySymbols := ast.MakeSymbolTable(p.curSymbolTable, ast.MakeIdentifier(forTok))
+
+	if p.curIs(token.LBRACE) {
+		p.expect(token.LBRACE)
+		block := p.parseExprForBlock(bodySymbols)
+		p.expect(token.RBRACE)
+		return ast.MakeExprFor(forTok, nil, nil, nil, block)
+	}
+
+	if p.curIs(token.IDENT) && p.peekIs(token.LEFT_ARROW) {
+		identTok, _ := p.expect(token.IDENT)
+		ident := ast.MakeIdentifier(identTok)
+		bodySymbols.Insert(ast.MakeDeclForBinding(identTok, ident))
+		p.expect(token.LEFT_ARROW)
+		collectionExpr := p.parseExpr()
+		p.expect(token.LBRACE)
+		block := p.parseExprForBlock(bodySymbols)
+		p.expect(token.RBRACE)
+		return ast.MakeExprFor(forTok, nil, &ident, collectionExpr, block)
+	}
+
+	cond := p.parseExpr()
+	p.expect(token.LBRACE)
+	block := p.parseExprForBlock(bodySymbols)
+	p.expect(token.RBRACE)
+	return ast.MakeExprFor(forTok, cond, nil, nil, block)
+}
+
 func (p *Parser) parsePrattExprFunc() ast.Expr {
 	return p.parseExprFunction()
 }

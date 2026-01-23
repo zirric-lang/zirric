@@ -61,10 +61,14 @@ func (l *Lexer) NextToken() token.Token {
 		tok = l.newToken(token.PERCENT, l.ch)
 
 	case '<': // LT, LTE
-		if l.peekChar() == '=' {
+		switch l.peekChar() {
+		case '=':
 			tok = token.Token{Type: token.LTE, Literal: "<="}
 			l.advance()
-		} else {
+		case '-':
+			tok = token.Token{Type: token.LEFT_ARROW, Literal: "<-"}
+			l.advance()
+		default:
 			tok = l.newToken(token.LT, l.ch)
 		}
 	case '>': // GT, GTE

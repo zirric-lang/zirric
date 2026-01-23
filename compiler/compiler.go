@@ -35,6 +35,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 		c.enterScope(node.Symbols)
 
 		for _, sym := range node.Symbols.Symbols {
+			if sym.Decl == nil {
+				return fmt.Errorf("undeclared symbol %q at %s:%d", sym.Name, sym.Usages[0].Node.TokenLiteral().Source.File, sym.Usages[0].Node.TokenLiteral().Source.Offset)
+			}
 			err := c.reserveSymbol(sym)
 			if err != nil {
 				return err
@@ -42,6 +45,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 
 		for _, sym := range node.Symbols.Symbols {
+			if sym.Decl == nil {
+				return fmt.Errorf("undeclared symbol %q at %s:%d", sym.Name, sym.Usages[0].Node.TokenLiteral().Source.File, sym.Usages[0].Node.TokenLiteral().Source.Offset)
+			}
 			err := c.compileSymbol(sym)
 			if err != nil {
 				return err
@@ -78,9 +84,17 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return nil
 	case ast.StmtIf:
 		return c.compileStmtIf(node)
+	case ast.StmtFor:
+		return c.compileStmtFor(node)
+	case ast.StmtBreak:
+		return c.compileStmtBreak()
+	case ast.StmtContinue:
+		return c.compileStmtContinue()
 
 	case ast.ExprIf:
 		return c.compileExprIf(node)
+	case ast.ExprFor:
+		return c.compileExprFor(node)
 	case *ast.ExprOperatorUnary:
 		return c.compileExprOperatorUnary(node)
 	case *ast.ExprOperatorBinary:
@@ -146,7 +160,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 		c.emit(op.Dict)
 		return nil
 	case *ast.ExprIdentifier:
-		symbol := c.scopes[c.scopeIdx].symbols.LookupIdentifier(node.Name)
+		symbols := c.currentSymbols()
+		if symbols == nil {
+			return fmt.Errorf("undefined identifier %q", node.Name)
+		}
+		symbol := symbols.LookupIdentifier(node.Name)
 		if symbol == nil {
 			return fmt.Errorf("undefined identifier %q", node.Name)
 		}
@@ -159,7 +177,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(op.Const, *sym.ConstantId)
 			return nil
 
-		case *ast.DeclVariable:
+		case *ast.DeclVariable, *ast.DeclForBinding:
 			sym := symbol.Original()
 
 			if sym.LocalId != nil {
@@ -274,6 +292,12 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 		sym.LocalId = &id
 		return nil
 
+	case *ast.DeclForBinding:
+		id := len(c.scopes[c.scopeIdx].locals)
+		c.scopes[c.scopeIdx].locals = append(c.scopes[c.scopeIdx].locals, sym)
+		sym.LocalId = &id
+		return nil
+
 	case *ast.DeclData, *ast.DeclEnum, *ast.DeclExternFunc, *ast.DeclAnnotation:
 		id := len(c.constants)
 		c.constants = append(c.constants, nil)
@@ -364,6 +388,439 @@ func (c *Compiler) compileStmtIf(node ast.StmtIf) error {
 		c.changeOperand(pos, endPos)
 	}
 	return nil
+}
+
+func (c *Compiler) compileStmtFor(node ast.StmtFor) error {
+	if node.CollectionExpr != nil || node.CollectionIdent != nil {
+		return c.compileStmtForCollection(node)
+	}
+
+	loopStart := len(c.currentInstructions())
+	jumpOut := -1
+
+	if node.Condition != nil {
+		err := c.Compile(node.Condition)
+		if err != nil {
+			return err
+		}
+		jumpOut = c.emit(op.JumpFalse, placeholderJumpAddress)
+	}
+
+	breakJumps := make([]int, 0)
+	continueJumps := make([]int, 0)
+	err := c.compileLoopBlock(node.Body, &continueJumps, &breakJumps)
+	if err != nil {
+		return err
+	}
+
+	for _, pos := range continueJumps {
+		c.changeOperand(pos, loopStart)
+	}
+	c.emit(op.Jump, loopStart)
+	endPos := len(c.currentInstructions())
+
+	if jumpOut != -1 {
+		c.changeOperand(jumpOut, endPos)
+	}
+	for _, pos := range breakJumps {
+		c.changeOperand(pos, endPos)
+	}
+	return nil
+}
+
+func (c *Compiler) compileStmtForCollection(node ast.StmtFor) error {
+	if node.CollectionIdent == nil || node.CollectionExpr == nil {
+		return fmt.Errorf("collection for loops require binding and collection")
+	}
+	symbols := c.currentSymbols()
+	if symbols == nil {
+		return fmt.Errorf("collection binding %q missing symbols", node.CollectionIdent.Value)
+	}
+	sym := symbols.LookupIdentifier(*node.CollectionIdent)
+	if sym == nil {
+		return fmt.Errorf("collection binding %q missing symbol", node.CollectionIdent.Value)
+	}
+	bindingLocal := c.ensureLocalSymbol(sym)
+
+	collectionLocal := c.allocateTempLocal()
+	indexLocal := c.allocateTempLocal()
+	zeroConst := c.addConstant(c.plugins.Prelude().Int(0))
+	oneConst := c.addConstant(c.plugins.Prelude().Int(1))
+
+	err := c.Compile(node.CollectionExpr)
+	if err != nil {
+		return err
+	}
+	c.emit(op.SetLocal, collectionLocal)
+	c.emit(op.Const, zeroConst)
+	c.emit(op.SetLocal, indexLocal)
+
+	loopStart := len(c.currentInstructions())
+	c.emit(op.GetLocal, indexLocal)
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.Len)
+	c.emit(op.LessThan)
+	jumpOut := c.emit(op.JumpFalse, placeholderJumpAddress)
+
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.GetLocal, indexLocal)
+	c.emit(op.GetIndex)
+	c.emit(op.SetLocal, bindingLocal)
+
+	breakJumps := make([]int, 0)
+	continueJumps := make([]int, 0)
+	err = c.compileLoopBlock(node.Body, &continueJumps, &breakJumps)
+	if err != nil {
+		return err
+	}
+
+	continueTarget := len(c.currentInstructions())
+	for _, pos := range continueJumps {
+		c.changeOperand(pos, continueTarget)
+	}
+	c.emit(op.GetLocal, indexLocal)
+	c.emit(op.Const, oneConst)
+	c.emit(op.Add)
+	c.emit(op.SetLocal, indexLocal)
+	c.emit(op.Jump, loopStart)
+
+	endPos := len(c.currentInstructions())
+	c.changeOperand(jumpOut, endPos)
+	for _, pos := range breakJumps {
+		c.changeOperand(pos, endPos)
+	}
+	return nil
+}
+
+func (c *Compiler) compileLoopBlock(block ast.Block, continueJumps *[]int, breakJumps *[]int) error {
+	for _, stmt := range block {
+		switch stmt := stmt.(type) {
+		case ast.StmtBreak:
+			pos := c.emit(op.Jump, placeholderJumpAddress)
+			*breakJumps = append(*breakJumps, pos)
+		case ast.StmtContinue:
+			pos := c.emit(op.Jump, placeholderJumpAddress)
+			*continueJumps = append(*continueJumps, pos)
+		case ast.StmtIf:
+			err := c.compileStmtIfInLoop(stmt, continueJumps, breakJumps)
+			if err != nil {
+				return err
+			}
+		default:
+			err := c.Compile(stmt)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *Compiler) compileStmtIfInLoop(node ast.StmtIf, continueJumps *[]int, breakJumps *[]int) error {
+	var (
+		jumpNext int
+		jumpEnds = make([]int, 0, 1+len(node.ElseIf))
+		endPos   int
+	)
+	err := c.Compile(node.Condition)
+	if err != nil {
+		return err
+	}
+	jumpNext = c.emit(op.JumpFalse, placeholderJumpAddress)
+
+	err = c.compileLoopBlock(node.IfBlock, continueJumps, breakJumps)
+	if err != nil {
+		return err
+	}
+
+	jumpEnds = append(jumpEnds, c.emit(op.Jump, placeholderJumpAddress))
+
+	for _, elseIf := range node.ElseIf {
+		c.changeOperand(jumpNext, len(c.currentInstructions()))
+
+		err = c.Compile(elseIf.Condition)
+		if err != nil {
+			return err
+		}
+		jumpNext = c.emit(op.JumpFalse, placeholderJumpAddress)
+
+		err = c.compileLoopBlock(elseIf.Block, continueJumps, breakJumps)
+		if err != nil {
+			return err
+		}
+		jumpEnds = append(jumpEnds, c.emit(op.Jump, placeholderJumpAddress))
+	}
+
+	if node.ElseBlock != nil {
+		c.changeOperand(jumpNext, len(c.currentInstructions()))
+
+		err = c.compileLoopBlock(node.ElseBlock, continueJumps, breakJumps)
+		if err != nil {
+			return err
+		}
+	} else {
+		lastIndex := len(jumpEnds) - 1
+
+		if c.isLastInstruction(op.Pop) {
+			c.removeLastInstruction()
+		}
+
+		jumpEnds[lastIndex] = jumpNext
+	}
+
+	endPos = len(c.currentInstructions())
+	for _, pos := range jumpEnds {
+		c.changeOperand(pos, endPos)
+	}
+	return nil
+}
+
+func (c *Compiler) compileExprFor(node ast.ExprFor) error {
+	prevSymbols := c.scopes[c.scopeIdx].symbols
+	if node.Body.Symbols != nil {
+		c.scopes[c.scopeIdx].symbols = node.Body.Symbols
+	}
+	defer func() {
+		c.scopes[c.scopeIdx].symbols = prevSymbols
+	}()
+
+	arrayLocal := c.allocateTempLocal()
+	zeroConst := c.addConstant(c.plugins.Prelude().Int(0))
+
+	c.emit(op.Const, zeroConst)
+	c.emit(op.Array)
+	c.emit(op.SetLocal, arrayLocal)
+
+	if node.CollectionExpr != nil || node.CollectionIdent != nil {
+		return c.compileExprForCollection(node, arrayLocal)
+	}
+
+	loopStart := len(c.currentInstructions())
+	jumpOut := -1
+
+	if node.Condition != nil {
+		err := c.Compile(node.Condition)
+		if err != nil {
+			return err
+		}
+		jumpOut = c.emit(op.JumpFalse, placeholderJumpAddress)
+	}
+
+	breakJumps := make([]int, 0)
+	continueJumps := make([]int, 0)
+	err := c.compileExprForBlock(node.Body, arrayLocal, &continueJumps, &breakJumps)
+	if err != nil {
+		return err
+	}
+
+	for _, pos := range continueJumps {
+		c.changeOperand(pos, loopStart)
+	}
+	c.emit(op.Jump, loopStart)
+	endPos := len(c.currentInstructions())
+
+	if jumpOut != -1 {
+		c.changeOperand(jumpOut, endPos)
+	}
+	for _, pos := range breakJumps {
+		c.changeOperand(pos, endPos)
+	}
+	c.emit(op.GetLocal, arrayLocal)
+	return nil
+}
+
+func (c *Compiler) compileExprForCollection(node ast.ExprFor, arrayLocal int) error {
+	if node.CollectionIdent == nil || node.CollectionExpr == nil {
+		return fmt.Errorf("collection for expressions require binding and collection")
+	}
+	symbols := c.currentSymbols()
+	if symbols == nil {
+		return fmt.Errorf("collection binding %q missing symbols", node.CollectionIdent.Value)
+	}
+	sym := symbols.LookupIdentifier(*node.CollectionIdent)
+	if sym == nil {
+		return fmt.Errorf("collection binding %q missing symbol", node.CollectionIdent.Value)
+	}
+	bindingLocal := c.ensureLocalSymbol(sym)
+
+	collectionLocal := c.allocateTempLocal()
+	indexLocal := c.allocateTempLocal()
+	zeroConst := c.addConstant(c.plugins.Prelude().Int(0))
+	oneConst := c.addConstant(c.plugins.Prelude().Int(1))
+
+	err := c.Compile(node.CollectionExpr)
+	if err != nil {
+		return err
+	}
+	c.emit(op.SetLocal, collectionLocal)
+	c.emit(op.Const, zeroConst)
+	c.emit(op.SetLocal, indexLocal)
+
+	loopStart := len(c.currentInstructions())
+	c.emit(op.GetLocal, indexLocal)
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.Len)
+	c.emit(op.LessThan)
+	jumpOut := c.emit(op.JumpFalse, placeholderJumpAddress)
+
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.GetLocal, indexLocal)
+	c.emit(op.GetIndex)
+	c.emit(op.SetLocal, bindingLocal)
+
+	breakJumps := make([]int, 0)
+	continueJumps := make([]int, 0)
+	err = c.compileExprForBlock(node.Body, arrayLocal, &continueJumps, &breakJumps)
+	if err != nil {
+		return err
+	}
+
+	continueTarget := len(c.currentInstructions())
+	for _, pos := range continueJumps {
+		c.changeOperand(pos, continueTarget)
+	}
+	c.emit(op.GetLocal, indexLocal)
+	c.emit(op.Const, oneConst)
+	c.emit(op.Add)
+	c.emit(op.SetLocal, indexLocal)
+	c.emit(op.Jump, loopStart)
+
+	endPos := len(c.currentInstructions())
+	c.changeOperand(jumpOut, endPos)
+	for _, pos := range breakJumps {
+		c.changeOperand(pos, endPos)
+	}
+	c.emit(op.GetLocal, arrayLocal)
+	return nil
+}
+
+func (c *Compiler) compileExprForBlock(body ast.ExprForBody, arrayLocal int, continueJumps *[]int, breakJumps *[]int) error {
+	symbols := c.currentSymbols()
+	if symbols == nil {
+		return fmt.Errorf("expr-for body missing symbols")
+	}
+	for _, decl := range body.Decls {
+		sym := symbols.LookupIdentifier(decl.Name)
+		if sym == nil {
+			return fmt.Errorf("expr-for declaration %q missing symbol", decl.Name.Value)
+		}
+		local := c.ensureLocalSymbol(sym)
+		err := c.Compile(decl.Value)
+		if err != nil {
+			return err
+		}
+		c.emit(op.SetLocal, local)
+	}
+	for _, stmt := range body.Stmts {
+		err := c.compileExprForStatement(stmt, arrayLocal, continueJumps, breakJumps)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Compiler) compileExprForStatement(stmt ast.Statement, arrayLocal int, continueJumps *[]int, breakJumps *[]int) error {
+	switch stmt := stmt.(type) {
+	case *ast.StmtExpr:
+		c.emit(op.GetLocal, arrayLocal)
+		err := c.Compile(stmt.Expr)
+		if err != nil {
+			return err
+		}
+		c.emit(op.ArrayAppend)
+		c.emit(op.SetLocal, arrayLocal)
+		return nil
+	case ast.StmtBreak:
+		pos := c.emit(op.Jump, placeholderJumpAddress)
+		*breakJumps = append(*breakJumps, pos)
+		return nil
+	case ast.StmtContinue:
+		pos := c.emit(op.Jump, placeholderJumpAddress)
+		*continueJumps = append(*continueJumps, pos)
+		return nil
+	case ast.StmtIf:
+		return c.compileExprForIfInLoop(stmt, arrayLocal, continueJumps, breakJumps)
+	default:
+		return fmt.Errorf("expr-for allows only expression, if, break, or continue statements")
+	}
+}
+
+func (c *Compiler) compileExprForStatementBlock(block ast.Block, arrayLocal int, continueJumps *[]int, breakJumps *[]int) error {
+	for _, stmt := range block {
+		err := c.compileExprForStatement(stmt, arrayLocal, continueJumps, breakJumps)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Compiler) compileExprForIfInLoop(node ast.StmtIf, arrayLocal int, continueJumps *[]int, breakJumps *[]int) error {
+	var (
+		jumpNext int
+		jumpEnds = make([]int, 0, 1+len(node.ElseIf))
+		endPos   int
+	)
+	err := c.Compile(node.Condition)
+	if err != nil {
+		return err
+	}
+	jumpNext = c.emit(op.JumpFalse, placeholderJumpAddress)
+
+	err = c.compileExprForStatementBlock(node.IfBlock, arrayLocal, continueJumps, breakJumps)
+	if err != nil {
+		return err
+	}
+
+	jumpEnds = append(jumpEnds, c.emit(op.Jump, placeholderJumpAddress))
+
+	for _, elseIf := range node.ElseIf {
+		c.changeOperand(jumpNext, len(c.currentInstructions()))
+
+		err = c.Compile(elseIf.Condition)
+		if err != nil {
+			return err
+		}
+		jumpNext = c.emit(op.JumpFalse, placeholderJumpAddress)
+
+		err = c.compileExprForStatementBlock(elseIf.Block, arrayLocal, continueJumps, breakJumps)
+		if err != nil {
+			return err
+		}
+		jumpEnds = append(jumpEnds, c.emit(op.Jump, placeholderJumpAddress))
+	}
+
+	if node.ElseBlock != nil {
+		c.changeOperand(jumpNext, len(c.currentInstructions()))
+
+		err = c.compileExprForStatementBlock(node.ElseBlock, arrayLocal, continueJumps, breakJumps)
+		if err != nil {
+			return err
+		}
+	} else {
+		lastIndex := len(jumpEnds) - 1
+
+		if c.isLastInstruction(op.Pop) {
+			c.removeLastInstruction()
+		}
+
+		jumpEnds[lastIndex] = jumpNext
+	}
+
+	endPos = len(c.currentInstructions())
+	for _, pos := range jumpEnds {
+		c.changeOperand(pos, endPos)
+	}
+	return nil
+}
+
+func (c *Compiler) compileStmtBreak() error {
+	return fmt.Errorf("break used outside of loop")
+}
+
+func (c *Compiler) compileStmtContinue() error {
+	return fmt.Errorf("continue used outside of loop")
 }
 
 func (c *Compiler) compileExprIf(node ast.ExprIf) error {
@@ -582,6 +1039,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		c.constants[*sym.ConstantId] = runtime.MakeCompiledFunction(
 			scope.Instructions,
 			len(decl.Impl.Parameters),
+			len(scope.locals),
 			sym,
 		)
 
@@ -618,6 +1076,9 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		default:
 			return fmt.Errorf("unknown variable scope %v", sym.Scope)
 		}
+
+	case *ast.DeclForBinding:
+		return nil
 
 	default:
 		return fmt.Errorf("unknown declaration %T", decl)

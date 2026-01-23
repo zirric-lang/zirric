@@ -142,6 +142,227 @@ func example() {
 	}
 }
 
+func TestParseForStatements(t *testing.T) {
+	contents := `
+func sample() {
+	for { break }
+	for true { continue }
+	for item <- items { break }
+}
+`
+
+	sourceFile := prepareSourceFileParsing(t, contents)
+	symbol, ok := sourceFile.Symbols.Symbols["sample"]
+	if !ok || symbol.Decl == nil {
+		t.Fatal("expected function declaration")
+	}
+	decl, ok := symbol.Decl.(*ast.DeclFunc)
+	if !ok {
+		t.Fatalf("declaration is %T, want *ast.DeclFunc", symbol.Decl)
+	}
+	if decl.Impl == nil {
+		t.Fatal("expected function implementation")
+	}
+	if len(decl.Impl.Impl) != 3 {
+		t.Fatalf("expected three statements, got %d", len(decl.Impl.Impl))
+	}
+
+	first, ok := decl.Impl.Impl[0].(ast.StmtFor)
+	if !ok {
+		t.Fatalf("statement is %T, want ast.StmtFor", decl.Impl.Impl[0])
+	}
+	if first.Condition != nil {
+		t.Fatalf("expected no condition, got %T", first.Condition)
+	}
+	if first.CollectionIdent != nil {
+		t.Fatalf("expected no collection identifier, got %T", first.CollectionIdent)
+	}
+	if first.CollectionExpr != nil {
+		t.Fatalf("expected no collection expr, got %T", first.CollectionExpr)
+	}
+	if len(first.Body) != 1 {
+		t.Fatalf("expected one body statement, got %d", len(first.Body))
+	}
+	if _, ok := first.Body[0].(ast.StmtBreak); !ok {
+		t.Fatalf("body statement is %T, want ast.StmtBreak", first.Body[0])
+	}
+
+	second, ok := decl.Impl.Impl[1].(ast.StmtFor)
+	if !ok {
+		t.Fatalf("statement is %T, want ast.StmtFor", decl.Impl.Impl[1])
+	}
+	if second.Condition == nil {
+		t.Fatal("expected condition expression")
+	}
+	if second.CollectionIdent != nil {
+		t.Fatalf("expected no collection identifier, got %T", second.CollectionIdent)
+	}
+	if second.CollectionExpr != nil {
+		t.Fatalf("expected no collection expr, got %T", second.CollectionExpr)
+	}
+	if len(second.Body) != 1 {
+		t.Fatalf("expected one body statement, got %d", len(second.Body))
+	}
+	if _, ok := second.Body[0].(ast.StmtContinue); !ok {
+		t.Fatalf("body statement is %T, want ast.StmtContinue", second.Body[0])
+	}
+
+	third, ok := decl.Impl.Impl[2].(ast.StmtFor)
+	if !ok {
+		t.Fatalf("statement is %T, want ast.StmtFor", decl.Impl.Impl[2])
+	}
+	if third.Condition != nil {
+		t.Fatalf("expected no condition, got %T", third.Condition)
+	}
+	if third.CollectionIdent == nil {
+		t.Fatal("expected collection identifier")
+	}
+	if third.CollectionIdent.Value != "item" {
+		t.Fatalf("expected collection identifier item, got %q", third.CollectionIdent.Value)
+	}
+	if third.CollectionExpr == nil {
+		t.Fatal("expected collection expression")
+	}
+	if _, ok := third.CollectionExpr.(*ast.ExprIdentifier); !ok {
+		t.Fatalf("collection expression is %T, want *ast.ExprIdentifier", third.CollectionExpr)
+	}
+	if len(third.Body) != 1 {
+		t.Fatalf("expected one body statement, got %d", len(third.Body))
+	}
+	if _, ok := third.Body[0].(ast.StmtBreak); !ok {
+		t.Fatalf("body statement is %T, want ast.StmtBreak", third.Body[0])
+	}
+}
+
+func TestParseForStatementsEmptyBody(t *testing.T) {
+	contents := `
+func sample() {
+	for {
+	}
+}
+`
+
+	sourceFile := prepareSourceFileParsing(t, contents)
+	symbol, ok := sourceFile.Symbols.Symbols["sample"]
+	if !ok || symbol.Decl == nil {
+		t.Fatal("expected function declaration")
+	}
+	decl, ok := symbol.Decl.(*ast.DeclFunc)
+	if !ok {
+		t.Fatalf("declaration is %T, want *ast.DeclFunc", symbol.Decl)
+	}
+	if decl.Impl == nil {
+		t.Fatal("expected function implementation")
+	}
+	if len(decl.Impl.Impl) != 1 {
+		t.Fatalf("expected one statement, got %d", len(decl.Impl.Impl))
+	}
+	stmt, ok := decl.Impl.Impl[0].(ast.StmtFor)
+	if !ok {
+		t.Fatalf("statement is %T, want ast.StmtFor", decl.Impl.Impl[0])
+	}
+	if len(stmt.Body) != 0 {
+		t.Fatalf("expected empty body, got %d statements", len(stmt.Body))
+	}
+}
+
+func TestParseForStatementsMultipleBody(t *testing.T) {
+	contents := `
+func sample() {
+	for {
+		let x = 1
+		let y = 2
+		return x
+	}
+}
+`
+
+	sourceFile := prepareSourceFileParsing(t, contents)
+	symbol, ok := sourceFile.Symbols.Symbols["sample"]
+	if !ok || symbol.Decl == nil {
+		t.Fatal("expected function declaration")
+	}
+	decl, ok := symbol.Decl.(*ast.DeclFunc)
+	if !ok {
+		t.Fatalf("declaration is %T, want *ast.DeclFunc", symbol.Decl)
+	}
+	if decl.Impl == nil {
+		t.Fatal("expected function implementation")
+	}
+	if len(decl.Impl.Impl) != 1 {
+		t.Fatalf("expected one statement, got %d", len(decl.Impl.Impl))
+	}
+	stmt, ok := decl.Impl.Impl[0].(ast.StmtFor)
+	if !ok {
+		t.Fatalf("statement is %T, want ast.StmtFor", decl.Impl.Impl[0])
+	}
+	if len(stmt.Body) != 3 {
+		t.Fatalf("expected three body statements, got %d", len(stmt.Body))
+	}
+	if _, ok := stmt.Body[0].(*ast.DeclVariable); !ok {
+		t.Fatalf("statement is %T, want *ast.DeclVariable", stmt.Body[0])
+	}
+	if _, ok := stmt.Body[1].(*ast.DeclVariable); !ok {
+		t.Fatalf("statement is %T, want *ast.DeclVariable", stmt.Body[1])
+	}
+	if _, ok := stmt.Body[2].(*ast.StmtReturn); !ok {
+		t.Fatalf("statement is %T, want *ast.StmtReturn", stmt.Body[2])
+	}
+}
+
+func TestParseForStatementsNestedIfBreakContinue(t *testing.T) {
+	contents := `
+func sample() {
+	for {
+		if True {
+			continue
+		} else {
+			break
+		}
+	}
+}
+`
+
+	sourceFile := prepareSourceFileParsing(t, contents)
+	symbol, ok := sourceFile.Symbols.Symbols["sample"]
+	if !ok || symbol.Decl == nil {
+		t.Fatal("expected function declaration")
+	}
+	decl, ok := symbol.Decl.(*ast.DeclFunc)
+	if !ok {
+		t.Fatalf("declaration is %T, want *ast.DeclFunc", symbol.Decl)
+	}
+	if decl.Impl == nil {
+		t.Fatal("expected function implementation")
+	}
+	if len(decl.Impl.Impl) != 1 {
+		t.Fatalf("expected one statement, got %d", len(decl.Impl.Impl))
+	}
+	stmt, ok := decl.Impl.Impl[0].(ast.StmtFor)
+	if !ok {
+		t.Fatalf("statement is %T, want ast.StmtFor", decl.Impl.Impl[0])
+	}
+	if len(stmt.Body) != 1 {
+		t.Fatalf("expected one body statement, got %d", len(stmt.Body))
+	}
+	ifStmt, ok := stmt.Body[0].(ast.StmtIf)
+	if !ok {
+		t.Fatalf("statement is %T, want ast.StmtIf", stmt.Body[0])
+	}
+	if len(ifStmt.IfBlock) != 1 {
+		t.Fatalf("expected one if body statement, got %d", len(ifStmt.IfBlock))
+	}
+	if _, ok := ifStmt.IfBlock[0].(ast.StmtContinue); !ok {
+		t.Fatalf("if statement is %T, want ast.StmtContinue", ifStmt.IfBlock[0])
+	}
+	if len(ifStmt.ElseBlock) != 1 {
+		t.Fatalf("expected one else body statement, got %d", len(ifStmt.ElseBlock))
+	}
+	if _, ok := ifStmt.ElseBlock[0].(ast.StmtBreak); !ok {
+		t.Fatalf("else statement is %T, want ast.StmtBreak", ifStmt.ElseBlock[0])
+	}
+}
+
 func prepareSourceFileParsing(t *testing.T, input string) *ast.SourceFile {
 	t.Helper()
 

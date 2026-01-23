@@ -19,7 +19,7 @@ func MakeAnnotationInstance(tok token.Token, ref StaticReference) *DeclAnnotatio
 	return &DeclAnnotationInstance{tok, ref, nil}
 }
 
-func (n DeclAnnotationInstance) AddArgument(arg Expr) {
+func (n *DeclAnnotationInstance) AddArgument(arg Expr) {
 	n.Arguments = append(n.Arguments, arg)
 }
 

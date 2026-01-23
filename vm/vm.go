@@ -21,20 +21,19 @@ type Frame struct {
 }
 
 func newClosureFrame(closure *runtime.Closure, basep int) *Frame {
-	// TODO: actually this might be wrong
-	numLocals := len(closure.Fn.Symbol.ChildTable.Symbols) - len(closure.Fn.Symbol.ChildTable.FreeSymbols)
 	return &Frame{
 		ins:    closure.Fn.Instructions,
 		ip:     0,
 		basep:  basep,
-		locals: make([]runtime.RuntimeValue, closure.Fn.Params+numLocals),
+		locals: make([]runtime.RuntimeValue, closure.Fn.Locals),
 	}
 }
-func newGeneralFrame(ins op.Instructions, basep int) *Frame {
+func newGeneralFrame(ins op.Instructions, basep int, locals int) *Frame {
 	return &Frame{
-		ins:   ins,
-		ip:    0,
-		basep: basep,
+		ins:    ins,
+		ip:     0,
+		basep:  basep,
+		locals: make([]runtime.RuntimeValue, locals),
 	}
 }
 
@@ -53,7 +52,7 @@ type VM struct {
 
 func New(bytecode *compiler.Bytecode) *VM {
 	frames := make([]*Frame, maxFrames)
-	frames[0] = newGeneralFrame(bytecode.Instructions, 0)
+	frames[0] = newGeneralFrame(bytecode.Instructions, 0, 0)
 
 	vm := &VM{
 		stack:     make([]runtime.RuntimeValue, stackSize),
@@ -66,8 +65,9 @@ func New(bytecode *compiler.Bytecode) *VM {
 
 	for i := range bytecode.Globals {
 		ins := bytecode.Globals[i].Instructions
+		locals := bytecode.Globals[i].LocalsCount()
 		vm.globals[i] = MakeGlobal(func(ti TaskId) (runtime.RuntimeValue, error) {
-			return vm.initGlobal(ti, ins)
+			return vm.initGlobal(ti, ins, locals)
 		})
 	}
 

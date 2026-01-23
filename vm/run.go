@@ -196,6 +196,37 @@ func (vm *VM) runTask(taskId TaskId) error {
 				return fmt.Errorf("index operator not supported on %T", target)
 			}
 
+		case op.Len:
+			val := vm.pop()
+			switch val := val.(type) {
+			case runtime.Array:
+				if err := vm.push(runtime.Int(len(val))); err != nil {
+					return err
+				}
+			case runtime.Dict:
+				if err := vm.push(runtime.Int(len(val))); err != nil {
+					return err
+				}
+			case runtime.String:
+				if err := vm.push(runtime.Int(len(val))); err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("len not supported on %T", val)
+			}
+
+		case op.ArrayAppend:
+			value := vm.pop()
+			arrayVal := vm.pop()
+			array, ok := arrayVal.(runtime.Array)
+			if !ok {
+				return fmt.Errorf("array append requires Array (%T)", arrayVal)
+			}
+			array = append(array, value)
+			if err := vm.push(array); err != nil {
+				return err
+			}
+
 		case op.SetLocal:
 			idx := op.ReadUint16(ins[ip:])
 			fr.ip += 2
@@ -443,8 +474,8 @@ func (vm *VM) isEqual() runtime.Bool {
 	panic(fmt.Sprintf("unknown type for equality check %T of %q", lhs, lhs.Inspect()))
 }
 
-func (vm *VM) initGlobal(owner TaskId, ins op.Instructions) (runtime.RuntimeValue, error) {
-	frame := newGeneralFrame(ins, vm.sp)
+func (vm *VM) initGlobal(owner TaskId, ins op.Instructions, locals int) (runtime.RuntimeValue, error) {
+	frame := newGeneralFrame(ins, vm.sp, locals)
 	frame.ip = 0
 	vm.pushFrame(frame)
 	vm.sp = frame.basep

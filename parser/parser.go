@@ -47,6 +47,7 @@ func NewSourceParser(lex *lexer.Lexer, parent *ast.SymbolTable, path string) *Pa
 	p.registerPrefix(token.LBRACKET, p.parseExprListOrDict)
 	p.registerPrefix(token.STRING, p.parsePrattExprString)
 	p.registerPrefix(token.CHAR, p.parsePrattExprChar)
+	p.registerPrefix(token.FOR, p.parsePrattExprFor)
 
 	p.infixParsers = make(map[token.TokenType]infixParser)
 	p.registerInfix(token.OR, p.parsePrattExprInfix)
@@ -378,6 +379,11 @@ func (p *Parser) parseAnnotationDecl(_ StatementPosition, annos ast.AnnotationCh
 	declAnno := ast.MakeDeclAnnotation(declToken, ident)
 	declAnno.Annotations = annos
 
+	sym := p.curSymbolTable.Insert(declAnno)
+	sym.ChildTable = ast.MakeSymbolTable(p.curSymbolTable, declAnno)
+	p.curSymbolTable = sym.ChildTable
+	defer func() { p.popSymbolTable() }()
+
 	if !p.curIs(token.LBRACE) {
 		return declAnno
 	}
@@ -587,6 +593,12 @@ func (p *Parser) parsePropertyDeclarationList() []ast.DeclField {
 		if field != nil {
 			p.curSymbolTable.Insert(field)
 			fields = append(fields, *field)
+		} else {
+			p.errors = append(p.errors, ParseError{Token: p.curToken,
+				Summary: "invalid data declaration field",
+				Details: fmt.Sprintf("unexpected token %q in data declaration fields", p.curToken.Literal),
+			})
+			return fields
 		}
 	}
 }
@@ -643,7 +655,7 @@ func (p *Parser) parseDeclParameterList() []ast.DeclParameter {
 }
 
 func (p *Parser) parseStatementReturn(pos StatementPosition) *ast.StmtReturn {
-	if pos != IN_FUNC {
+	if pos != IN_FUNC && pos != IN_FOR {
 		p.errStatementMisplaced(pos)
 	}
 	retTok, _ := p.expect(token.RETURN)
@@ -659,6 +671,50 @@ func (p *Parser) parseStatementReturn(pos StatementPosition) *ast.StmtReturn {
 
 	expr := p.parseExpr()
 	return ast.MakeStmtReturn(retTok, expr)
+}
+
+func (p *Parser) parseStatementBreak(pos StatementPosition) ast.StmtBreak {
+	if pos != IN_FOR {
+		p.errStatementMisplaced(pos)
+	}
+	breakTok, _ := p.expect(token.BREAK)
+	return ast.MakeStmtBreak(breakTok)
+}
+
+func (p *Parser) parseStatementContinue(pos StatementPosition) ast.StmtContinue {
+	if pos != IN_FOR {
+		p.errStatementMisplaced(pos)
+	}
+	continueTok, _ := p.expect(token.CONTINUE)
+	return ast.MakeStmtContinue(continueTok)
+}
+
+func (p *Parser) parseStatementFor(_ StatementPosition) ast.StmtFor {
+	forTok, _ := p.expect(token.FOR)
+	if p.curIs(token.LBRACE) {
+		p.expect(token.LBRACE)
+		block := p.parseStmtBlock(IN_FOR)
+		p.expect(token.RBRACE)
+		return ast.MakeStmtFor(forTok, nil, nil, nil, block)
+	}
+
+	if p.curIs(token.IDENT) && p.peekIs(token.LEFT_ARROW) {
+		identTok, _ := p.expect(token.IDENT)
+		ident := ast.MakeIdentifier(identTok)
+		p.curSymbolTable.Insert(ast.MakeDeclForBinding(identTok, ident))
+		p.expect(token.LEFT_ARROW)
+		collectionExpr := p.parseExpr()
+		p.expect(token.LBRACE)
+		block := p.parseStmtBlock(IN_FOR)
+		p.expect(token.RBRACE)
+		return ast.MakeStmtFor(forTok, nil, &ident, collectionExpr, block)
+	}
+
+	cond := p.parseExpr()
+	p.expect(token.LBRACE)
+	block := p.parseStmtBlock(IN_FOR)
+	p.expect(token.RBRACE)
+	return ast.MakeStmtFor(forTok, cond, nil, nil, block)
 }
 
 func (p *Parser) parseStatementIf(pos StatementPosition) ast.StmtIf {
@@ -714,17 +770,72 @@ func (p *Parser) parseExpr() ast.Expr {
 	return expr
 }
 
-func (p *Parser) parseStmtBlock(_ StatementPosition) ast.Block {
+func (p *Parser) parseStmtBlock(pos StatementPosition) ast.Block {
 	block := make([]ast.Statement, 0)
 
+	blockPos := IN_FUNC
+	if pos == IN_FOR {
+		blockPos = IN_FOR
+	}
+
 	for !p.curIs(token.RBRACE, token.RBRACKET, token.RPAREN) {
-		stmt, decls := p.parseAnnotatedStatementDeclaration(IN_FUNC)
+		stmt, decls := p.parseAnnotatedStatementDeclaration(blockPos)
 		if len(decls) > 0 {
-			p.errStatementMisplaced(IN_FUNC)
+			p.errStatementMisplaced(blockPos)
 		}
 		block = append(block, stmt)
 	}
 	return block
+}
+
+func (p *Parser) parseExprForBlock(symbols *ast.SymbolTable) ast.ExprForBody {
+	decls := make([]*ast.DeclVariable, 0)
+	stmts := make([]ast.Statement, 0)
+	seenStmt := false
+
+	prevSymbols := p.curSymbolTable
+	p.curSymbolTable = symbols
+
+	for !p.curIs(token.RBRACE, token.RBRACKET, token.RPAREN) {
+		annos := p.parseAnnotationChain()
+		if p.curIs(token.LET) {
+			if seenStmt {
+				p.detectError(ParseError{
+					Token:   p.curToken,
+					Summary: "expected declarations before statements in expr-for block",
+					Details: "expr-for requires variable declarations before statements",
+				})
+			}
+			decl := p.parseVariableDecl(IN_FOR, annos)
+			if !seenStmt {
+				decls = append(decls, decl)
+			}
+			continue
+		}
+		if annos != nil {
+			p.errCannotBeAnnotated()
+		}
+		switch p.curToken.Type {
+		case token.IF:
+			stmts = append(stmts, p.parseStatementIf(IN_FOR))
+			seenStmt = true
+			continue
+		case token.BREAK:
+			stmts = append(stmts, p.parseStatementBreak(IN_FOR))
+			seenStmt = true
+			continue
+		case token.CONTINUE:
+			stmts = append(stmts, p.parseStatementContinue(IN_FOR))
+			seenStmt = true
+			continue
+		}
+		stmtTok := p.curToken
+		expr := p.parseExpr()
+		stmts = append(stmts, ast.MakeStmtExpr(stmtTok, expr))
+		seenStmt = true
+	}
+	p.curSymbolTable = prevSymbols
+	return ast.ExprForBody{Decls: decls, Stmts: stmts, Symbols: symbols}
 }
 
 func (p *Parser) parseExprFunction() *ast.ExprFunc {
