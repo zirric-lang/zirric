@@ -14,7 +14,7 @@ const (
 
 	IN_INITIAL
 	IN_GLOBAL
-	IN_ENUM
+	IN_UNION
 	IN_DATA
 	IN_EXTERN
 	IN_FUNC
@@ -28,8 +28,8 @@ func (p *Parser) parseStatementInContext(pos StatementPosition, annos ast.Annota
 		return p.parseModuleDecl(pos, annos), nil
 	case token.EXTERN:
 		return p.parseExternDecl(pos, annos), nil
-	case token.ENUM:
-		return p.parseEnumDecl(pos, annos)
+	case token.UNION:
+		return p.parseUnionDecl(pos, annos)
 	case token.DATA:
 		return p.parseDataDecl(pos, annos), nil
 	case token.ANNOTATION:
@@ -61,7 +61,7 @@ func (p *Parser) parseStatementInContext(pos StatementPosition, annos ast.Annota
 		}
 
 		prefixes := []token.TokenType{
-			token.ENUM, token.DATA, token.MODULE, token.EXTERN, token.FUNCTION, token.IMPORT, token.AT, token.LET, token.IF, token.FOR, token.BREAK, token.CONTINUE,
+			token.UNION, token.DATA, token.MODULE, token.EXTERN, token.FUNCTION, token.IMPORT, token.AT, token.LET, token.IF, token.FOR, token.BREAK, token.CONTINUE,
 		}
 		for t := range p.prefixParsers {
 			prefixes = append(prefixes, t)

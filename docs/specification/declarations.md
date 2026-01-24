@@ -41,12 +41,12 @@ Instances are created by calling the type name as a function.
 let alice = Person("Alice", 30)
 ```
 
-## `enum`
+## `union`
 
-`enum` defines tagged unions. Types listed inside are available at top level.
+`union` defines tagged unions. Types listed inside are available at top level.
 
 ```zirric
-enum Result {
+union Result {
     data Ok { value }
     data Err { error }
 }

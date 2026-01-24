@@ -20,7 +20,7 @@ components:
     </div>
   </nav>
 
-  <header class="hero">
+<header class="hero">
     <div class="hero-content">
       <p class="eyebrow">Zirric Language</p>
       <h1>Explicit structure. Expression-first code.</h1>
@@ -43,27 +43,28 @@ components:
 
 @Countable({ v -> v.length })
 data Bag {
-    items
-    length
+items
+length
 }
 
 @Returns(Result)
 func summarize(@Bag bag) {
-    let length = Countable(bag).length(bag)
-    return if length > 0 {
-        Ok(length)
-    } else {
-        Err("empty")
-    }
+let length = Countable(bag).length(bag)
+return if length > 0 {
+Ok(length)
+} else {
+Err("empty")
+}
 }
 </code></pre>
-    </div>
-  </header>
+</div>
 
-  <section class="cards">
+</header>
+
+<section class="cards">
     <article class="card">
       <h3>Declarations first</h3>
-      <p>Small set of primitives: <code>let</code>, <code>func</code>, <code>data</code>, <code>enum</code>, <code>annotation</code>, <code>module</code>.</p>
+      <p>Small set of primitives: <code>let</code>, <code>func</code>, <code>data</code>, <code>union</code>, <code>annotation</code>, <code>module</code>.</p>
     </article>
     <article class="card">
       <h3>Expression-oriented</h3>
@@ -79,14 +80,14 @@ func summarize(@Bag bag) {
     </article>
   </section>
 
-  <section class="quick-links">
+<section class="quick-links">
     <h2>Explore the docs</h2>
     <div class="link-grid">
       <a class="link-card" href="/guides/getting-started">
         <h3>Getting Started</h3>
         <p>A guided tour of the language.</p>
       </a>
-      <a class="link-card" href="/syntax/expressions">
+      <a class="link-card" href="/specification/expressions">
         <h3>Syntax Reference</h3>
         <p>The precise language surface.</p>
       </a>

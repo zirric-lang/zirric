@@ -17,7 +17,7 @@ yet. Use the proposals for authoritative intent.
 
 ## What Zirric emphasizes
 
-- Data and enum types for structured modeling
+- Data and union types for structured modeling
 - First-class functions with concise syntax
 - Modules as the unit of organization and import
 - Annotations as the primary capability mechanism
@@ -47,7 +47,7 @@ data Person {
     age
 }
 
-enum Result {
+union Result {
     data Ok { value }
     data Err { message }
 }
@@ -90,9 +90,9 @@ func applyTwice(f, value) {
 }
 ```
 
-## Data and enums
+## Data and unions
 
-Zirric models records with `data` and tagged unions with `enum`. Enum cases can
+Zirric models records with `data` and tagged unions with `union`. Union members can
 be nested `data` declarations for structured variants.
 
 ```zirric
@@ -101,7 +101,7 @@ data Person {
     age
 }
 
-enum Result {
+union Result {
     data Ok { value }
     data Err { message }
 }
@@ -187,6 +187,6 @@ Zirric favors explicit declarations and annotations instead.
 
 ## Learn more
 
-- Explore the [Syntax references](/syntax/expressions) for precise grammar.
+- Explore the [Syntax references](/specification/expressions) for precise grammar.
 - Read the [Zirric Evolution Proposals](/proposals) for future design notes.
 - Follow the [Styleguide](/guides/styleguide) to keep code consistent.

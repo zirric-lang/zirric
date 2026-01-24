@@ -61,7 +61,7 @@ const (
 	// KEYWORDS
 	MODULE     TokenType = "MODULE"
 	IMPORT     TokenType = "IMPORT"
-	ENUM       TokenType = "ENUM"
+	UNION      TokenType = "UNION"
 	DATA       TokenType = "DATA"
 	ANNOTATION TokenType = "ANNOTATION"
 	EXTERN     TokenType = "EXTERN"
@@ -85,7 +85,7 @@ const (
 var keywords = map[string]TokenType{
 	"module":     MODULE,
 	"import":     IMPORT,
-	"enum":       ENUM,
+	"union":      UNION,
 	"data":       DATA,
 	"annotation": ANNOTATION,
 	"extern":     EXTERN,

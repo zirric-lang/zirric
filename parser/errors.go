@@ -80,8 +80,8 @@ func (p *Parser) errStatementMisplaced(pos StatementPosition) {
 		} else {
 			details = "not allowed as global statement"
 		}
-	case IN_ENUM:
-		details = "not allowed inside enum"
+	case IN_UNION:
+		details = "not allowed inside union"
 	case IN_DATA:
 		details = "not allowed as part of data"
 	case IN_EXTERN:

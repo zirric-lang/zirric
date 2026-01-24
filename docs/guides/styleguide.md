@@ -123,42 +123,42 @@ annotation Key
 annotation Optional
 ```
 
-## Enums
+## Unions
 
-Enum names use `PascalCase`. Choose singular nouns unless the enum itself is a
-collection. For witness enums, describe the capability, optionally with a
+Union names use `PascalCase`. Choose singular nouns unless the union itself is a
+collection. For witness unions, describe the capability, optionally with a
 `Witness` suffix.
 
 ```zirric
 // good
-enum Stateful
-enum JuristicPerson
-enum FunctorWitness
+union Stateful
+union JuristicPerson
+union FunctorWitness
 
 // bad
-enum StateOrStore
-enum JuristicPersons
-enum Functor
+union StateOrStore
+union JuristicPersons
+union Functor
 ```
 
-If the cases inside the enum are more relevant than the enum name itself, define
+If the members inside the union are more relevant than the union name itself, define
 them at top level instead of nesting.
 
 ```zirric
 // good
-enum Optional {
+union Optional {
     data Some { value }
     data None
 }
 
-enum Maybe {
+union Maybe {
     Optional
     Any
 }
 
 // bad
-enum Maybe {
-    enum Optional {
+union Maybe {
+    union Optional {
         data Some { value }
         data None
     }

@@ -62,7 +62,7 @@ extern type Float {}
 @Numeric({ i -> i })
 extern type Int {}
 
-enum Number {
+union Number {
   Float
   Int
 }

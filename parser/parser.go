@@ -215,61 +215,61 @@ func (p *Parser) parseAnnotatedStatementDeclaration(pos StatementPosition) (ast.
 	return p.parseStatementInContext(pos, annos)
 }
 
-// parseEnumDecl parsed enum declarations in various forms:
+// parseUnionDecl parsed union declarations in various forms:
 //
-//		enum <identifier> // empty enum
-//		enum <identifier> { } // empty enum
-//		enum <identifier> {
+//		union <identifier> // empty union
+//		union <identifier> { } // empty union
+//		union <identifier> {
 //		  <identifier> // referencing: no annotations allowed!
 //		  <fully-qualified-identifier> // global reference
 //		  <optional:annotations> <data_decl>
-//		  <optional:annotations> <enum_decl>
+//		  <optional:annotations> <union_decl>
 //	 	}
-func (p *Parser) parseEnumDecl(pos StatementPosition, annos ast.AnnotationChain) (*ast.DeclEnum, []ast.StatementDeclaration) {
-	enumToken, _ := p.expect(token.ENUM)
+func (p *Parser) parseUnionDecl(pos StatementPosition, annos ast.AnnotationChain) (*ast.DeclUnion, []ast.StatementDeclaration) {
+	unionToken, _ := p.expect(token.UNION)
 	identToken, _ := p.expect(token.IDENT)
 	ident := ast.MakeIdentifier(identToken)
-	enum := ast.MakeDeclEnum(enumToken, ident)
-	enum.Annotations = annos
+	union := ast.MakeDeclUnion(unionToken, ident)
+	union.Annotations = annos
 
 	if !p.curIs(token.LBRACE) {
-		return enum, nil
+		return union, nil
 	}
 
 	p.expect(token.LBRACE)
 
 	var childDecls []ast.StatementDeclaration
 	for !p.curIs(token.RBRACE) {
-		enumCase, children := p.parseEnumDeclCase(pos)
+		unionMember, children := p.parseUnionDeclMember(pos)
 		childDecls = append(childDecls, children...)
-		enum.AddCase(enumCase)
+		union.AddMember(unionMember)
 	}
 	p.expect(token.RBRACE)
 
-	return enum, childDecls
+	return union, childDecls
 }
 
-// parseEnumDeclCase parses enum cases in these forms:
+// parseUnionDeclMember parses union members in these forms:
 //
 //	<identifier> // referencing: no annotations allowed!
 //	<fully-qualified-identifier> // global reference
 //	<optional:annotations> <data_decl>
-//	<optional:annotations> <enum_decl>
-func (p *Parser) parseEnumDeclCase(pos StatementPosition) (*ast.DeclEnumCase, []ast.StatementDeclaration) {
+//	<optional:annotations> <union_decl>
+func (p *Parser) parseUnionDeclMember(pos StatementPosition) (*ast.DeclUnionMember, []ast.StatementDeclaration) {
 	if p.curToken.Type == token.IDENT {
 		ref := p.parseStaticIdentifierReference()
-		return ast.MakeDeclEnumCase(ref.TokenLiteral(), ref), nil
+		return ast.MakeDeclUnionMember(ref.TokenLiteral(), ref), nil
 	}
 	annotations := p.parseAnnotationChain()
 	switch p.curToken.Type {
 	case token.DATA:
 		dataDecl := p.parseDataDecl(pos, annotations)
-		return ast.MakeDeclEnumCase(dataDecl.Token, ast.StaticReference{dataDecl.DeclName()}), []ast.StatementDeclaration{dataDecl}
-	case token.ENUM:
-		enumDecl, childDecls := p.parseEnumDecl(pos, annotations)
-		return ast.MakeDeclEnumCase(enumDecl.Token, ast.StaticReference{enumDecl.DeclName()}), append(childDecls, enumDecl)
+		return ast.MakeDeclUnionMember(dataDecl.Token, ast.StaticReference{dataDecl.DeclName()}), []ast.StatementDeclaration{dataDecl}
+	case token.UNION:
+		unionDecl, childDecls := p.parseUnionDecl(pos, annotations)
+		return ast.MakeDeclUnionMember(unionDecl.Token, ast.StaticReference{unionDecl.DeclName()}), append(childDecls, unionDecl)
 	default:
-		p.errUnexpectedToken(token.DATA, token.ENUM)
+		p.errUnexpectedToken(token.DATA, token.UNION)
 		return nil, nil
 	}
 }

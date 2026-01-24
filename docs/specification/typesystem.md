@@ -8,7 +8,7 @@ The type system stays intentionally small. Zirric supports the following classes
 of types:
 
 - `data` types are the most common types. They are used to store data and can be easily created by calling the type name as a function.
-- `enum` types are used to express that their values can be one of a group of types. In other languages they are also called union types.
+- `union` types are used to express that their values can be one of a group of types. In other languages they are also called union types.
 - `annotation` types are used to annotate declarations with metadata. They can only be constructed at compile time.
 - `extern` types are built-in types that are implemented in the runtime like `Func`, `String` or `Int`.
 
@@ -56,13 +56,13 @@ data Person {
 }
 ```
 
-## Enum types
+## Union types
 
-Enum types are used to express that their values can be one of a group of types. In other languages they are also called union types. They are defined by the `enum` keyword followed by the type name and a list of types.
-As convenience, you can even declare types within the enum declaration. These will still be available outside of the enum.
+Union types are used to express that their values can be one of a group of types. In other languages they are also called union types. They are defined by the `union` keyword followed by the type name and a list of types.
+As convenience, you can even declare types within the union declaration. These will still be available outside of the union.
 
 ```zirric
-enum JuristicPerson {
+union JuristicPerson {
     Person
     data Company {
         name
@@ -163,6 +163,6 @@ extern String {
 ```
 
 Each extern type behaves slightly different in terms of how it is created and accessed.
-Many types like `String`, `Int`, `Float` and `Dict` will be created by literals, types like `Func` and `Module` by declarations. `Any` on the other hand is more like an `enum` containing all types.
+Many types like `String`, `Int`, `Float` and `Dict` will be created by literals, types like `Func` and `Module` by declarations. `Any` on the other hand is more like an `union` containing all types.
 
 > _**Note:**_ The `extern` keyword is also used to declare functions provided by the compiler like `extern print(str)`.

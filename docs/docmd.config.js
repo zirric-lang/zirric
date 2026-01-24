@@ -101,11 +101,11 @@ module.exports = {
       icon: 'pencil-ruler',
       collapsible: true,
       children: [
-        { title: 'Expressions', path: '/syntax/expressions' },
-        { title: 'Declarations', path: '/syntax/declarations' },
-        { title: 'Control Flow', path: '/syntax/control-flow' },
-        { title: 'Annotations', path: '/syntax/annotations' },
-        { title: 'Typesystem', path: '/syntax/typesystem' },
+        { title: 'Expressions', path: '/specification/expressions' },
+        { title: 'Declarations', path: '/specification/declarations' },
+        { title: 'Control Flow', path: '/specification/control-flow' },
+        { title: 'Annotations', path: '/specification/annotations' },
+        { title: 'Typesystem', path: '/specification/typesystem' },
       ]
     },
     { title: 'Repository', path: 'https://code.knabel.dev/zirric-lang/zirric', icon: 'git-graph', external: true },

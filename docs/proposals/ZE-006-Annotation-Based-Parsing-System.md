@@ -82,7 +82,7 @@ Central module for encoding/decoding logic.
 ```zirric
 module coding
 
-enum Result
+union Result
     Ok(@Any value)
     Error(@Error error)
 
@@ -186,10 +186,10 @@ annotation Encode
 
 ### 2. Format-Specific Annotations
 
-- **`json.Inline`**: Explicitly inlines (flattens) the fields of a `data` type or `enum` case during JSON encoding/decoding.
+- **`json.Inline`**: Explicitly inlines (flattens) the fields of a `data` type or `union` member during JSON encoding/decoding.
 - **`json.RawType`**: Overrides the raw type for JSON encoding/decoding.
 - **`json.Decode` and `json.Encode`**: Specifies custom decoding/encoding functions for a field.
-- **`json.Type`**: Specifies the JSON type to use for encoding/decoding a specific enum case.
+- **`json.Type`**: Specifies the JSON type to use for encoding/decoding a specific union member.
 
 ### 3. Encoding/Decoding Functions
 
@@ -214,7 +214,7 @@ annotation Encode
 
 ### 3. Optional Fields
 
-- **`@prelude.Optional`**: When used with an enum, the `None` case should be parsed due to the `@json.Type(json.Null)` annotation.
+- **`@prelude.Optional`**: When used with an union, the `None` member should be parsed due to the `@json.Type(json.Null)` annotation.
 
 ## Examples
 
@@ -248,7 +248,7 @@ import coding.json
 import reflect
 
 @json.Inline()
-enum Optional
+union Optional
     @json.Type(json.Null)
     data None
 
@@ -332,7 +332,7 @@ func main
     // Error: Conflicting field names "field" in inlined types Child1 and Child2
 ```
 
-### 5. Optional Enum Example
+### 5. Optional Union Example
 
 ```zirric
 module example
@@ -342,7 +342,7 @@ import coding.json
 import reflect
 
 @json.Inline()
-enum Optional
+union Optional
     @json.Type(json.Null)
     data None
 
@@ -364,7 +364,7 @@ func main
 
 1. **Inlining must be explicit**: Yes, `@json.Inline` must be explicitly applied to enable inlining.
 2. **Parsing errors on conflicts**: Yes, the parser will raise an error if multiple inlined fields have the same name.
-3. **Optional Fields**: `@prelude.Optional` fields with the `None` case should be parsed as `null` due to the `@json.Type(json.Null)` annotation.
+3. **Optional Fields**: `@prelude.Optional` fields with the `None` member should be parsed as `null` due to the `@json.Type(json.Null)` annotation.
 
 ## Acknowledgements
 

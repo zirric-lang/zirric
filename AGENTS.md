@@ -28,9 +28,9 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 
 ### Core mental model (intuition)
 
-- **Declarations**: Zirric is declaration-driven (`let`, `func`, `data`, `enum`, `extern`, `annotation`, `module`, `import`), with annotations as the primary metadata mechanism.
+- **Declarations**: Zirric is declaration-driven (`let`, `func`, `data`, `union`, `extern`, `annotation`, `module`, `import`), with annotations as the primary metadata mechanism.
 - **Dynamic but strict**: Values are dynamic, yet conversions are explicit; annotations like `@Type`, `@Has`, and `@Returns` communicate intent to tooling and runtime checks.
-- **Data and enums**: `data` defines record-like types with named fields; `enum` defines tagged unions (often with nested `data` cases).
+- **Data and unions**: `data` defines record-like types with named fields; `union` are a declared nominal supertype consisting of a fixed set of existing types; values are implicitly usable as a union if their concrete type is a member (often with nested `data` members).
 - **Annotations are first-class**: Many behaviors (type hints, defaults, docs, protocols) are expressed via annotations in `stdlib/prelude/annotations.zirr`.
 - **Collection protocols**: `@Countable`/`@Iterable` in `stdlib/prelude/countable.zirr` describe the “protocols” used by loops and helpers.
 - **Cavefile is just Zirric**: Dependency and task manifests are Zirric `data` declarations annotated with `@cave.Dependencies` and `@tasks.*` (see `stdlib/cave/manifest.zirr` and `stdlib/cave/tasks/manifest.zirr`).

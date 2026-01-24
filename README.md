@@ -68,10 +68,10 @@ An empty `for { }` forms an infinite loop, useful for servers or event
 processors. It runs forever and only terminates when a `break` statement is
 encountered.
 
-### Enums
+### Unions
 
 ```zirric
-enum Result {
+union Result {
     data Ok { value }
     data Err { message }
 }

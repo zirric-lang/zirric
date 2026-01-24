@@ -19,13 +19,13 @@ import tests {
 }
 import tests.tests_t
 
-test "any in enums matches all types", { fail ->
-	enum AnyEnum {
+test "any in unions matches all types", { fail ->
+	union AnyUnion {
 		Int
 		Any
 	}
 
-	let isCorrect = with "should be any", type AnyEnum {
+	let isCorrect = with "should be any", type AnyUnion {
 		Int: { _ -> False },
 		Any: { _ -> True }
 	}
@@ -54,13 +54,13 @@ test "any in enums matches all types", { fail ->
 		{token.DOT, "."},
 		{token.IDENT, "tests_t"},
 		{token.IDENT, "test"},
-		{token.STRING, "any in enums matches all types"},
+		{token.STRING, "any in unions matches all types"},
 		{token.COMMA, ","},
 		{token.LBRACE, "{"},
 		{token.IDENT, "fail"},
 		{token.RIGHT_ARROW, "->"},
-		{token.ENUM, "enum"},
-		{token.IDENT, "AnyEnum"},
+		{token.UNION, "union"},
+		{token.IDENT, "AnyUnion"},
 		{token.LBRACE, "{"},
 		{token.IDENT, "Int"},
 		{token.IDENT, "Any"},
@@ -72,7 +72,7 @@ test "any in enums matches all types", { fail ->
 		{token.STRING, "should be any"},
 		{token.COMMA, ","},
 		{token.TYPE, "type"},
-		{token.IDENT, "AnyEnum"},
+		{token.IDENT, "AnyUnion"},
 		{token.LBRACE, "{"},
 		{token.IDENT, "Int"},
 		{token.COLON, ":"},
@@ -803,13 +803,13 @@ func TestAllTokens(t *testing.T) {
 			},
 		},
 		{
-			name:  "keyword enum",
-			input: `enum`,
+			name:  "keyword union",
+			input: `union`,
 			expected: []struct {
 				expectedType    token.TokenType
 				expectedLiteral string
 			}{
-				{token.ENUM, "enum"},
+				{token.UNION, "union"},
 				{token.EOF, ""},
 			},
 		},

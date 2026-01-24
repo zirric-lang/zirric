@@ -168,17 +168,17 @@ Fields:
 
 - `@Type(AnyType) type` — The type of the annotation.
 
-## Enum
+## Union
 
 ### Number
 
 ```zirric
-enum Number
+union Number
 ```
 
 No documentation.
 
-Cases:
+Members:
 
 - `Float`
 - `Int`
@@ -187,12 +187,12 @@ Cases:
 
 ```zirric
 @json.Inline()
-enum Optional
+union Optional
 ```
 
 No documentation.
 
-Cases:
+Members:
 
 - `@json.Type(json.Null) None`
 - `@json.Inline Some { value }`
@@ -200,12 +200,12 @@ Cases:
 ### Result
 
 ```zirric
-enum Result
+union Result
 ```
 
 No documentation.
 
-Cases:
+Members:
 
 - `Ok { @Any value }`
 - `Err { @Has(Error) error }`

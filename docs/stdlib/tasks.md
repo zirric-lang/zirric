@@ -5,7 +5,7 @@ description: Task annotations for Cavefile-based automation.
 
 # Tasks
 
-The `tasks` module defines annotations and enums for describing runnable tasks
+The `tasks` module defines annotations and unions for describing runnable tasks
 in Cavefiles.
 
 ## Annotations
@@ -110,18 +110,18 @@ Fields:
 
 - `@Char short`
 
-## Enum
+## Union
 
 ### Task
 
 ```zirric
-enum Task
+union Task
 ```
 
 Marks a data declaration as a task. Exactly one of `@Exec`, `@Call`, or `@Import`
 is required.
 
-Cases:
+Members:
 
 - `Exec`
 - `Call`

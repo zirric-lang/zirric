@@ -169,7 +169,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("undefined identifier %q", node.Name)
 		}
 		switch symbol.Decl.(type) {
-		case *ast.DeclFunc, *ast.DeclData, *ast.DeclEnum, *ast.DeclExternFunc, *ast.DeclAnnotation:
+		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclAnnotation:
 			sym := symbol.Original()
 			if sym.ConstantId == nil {
 				return fmt.Errorf("identifier %q has no constant id", node.Name)
@@ -298,7 +298,7 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 		sym.LocalId = &id
 		return nil
 
-	case *ast.DeclData, *ast.DeclEnum, *ast.DeclExternFunc, *ast.DeclAnnotation:
+	case *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclAnnotation:
 		id := len(c.constants)
 		c.constants = append(c.constants, nil)
 		sym.ConstantId = &id

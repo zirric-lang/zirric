@@ -157,10 +157,10 @@ Introduces the `cave` and `cave.tasks` modules to the standard library.
 
 - `cave`:
   - `Dependencies` annotation
-  - an enum for `Source` with values `Stdlib`, `Local`, and `Git`
+  - a union for `Source` with values `Stdlib`, `Local`, and `Git`
   - `Stdlib`, `Local`, `Git`, and `Version` annotations
 - `cave.tasks`:
-  - an enum for `Task` with values `Exec`, `Call`, and `Import`
+  - a union for `Task` with values `Exec`, `Call`, and `Import`
   - `Exec`, `Call`, and `Import` annotations for task declarations
   - `Name`, `Alias`, `Help`, `Short`, `Flag`, and `Arg` annotations for tasks and their fields
 

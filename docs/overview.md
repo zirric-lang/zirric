@@ -53,11 +53,11 @@ func summarize(@Bag bag) {
 
 The core language surface is documented in the syntax references:
 
-- [Expressions](/syntax/expressions)
-- [Declarations](/syntax/declarations)
-- [Control flow](/syntax/control-flow)
-- [Annotations](/syntax/annotations)
-- [Typesystem](/syntax/typesystem)
+- [Expressions](/specification/expressions)
+- [Declarations](/specification/declarations)
+- [Control flow](/specification/control-flow)
+- [Annotations](/specification/annotations)
+- [Typesystem](/specification/typesystem)
 
 When you want more depth or future-facing design notes, read the
 [Zirric Evolution Proposals](/proposals).

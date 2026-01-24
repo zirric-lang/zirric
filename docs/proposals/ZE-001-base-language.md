@@ -31,7 +31,8 @@ Zirric is created to address the flaws identified by the [Lithia programming lan
 
 Things that proved to be good in Lithia and are kept in Zirric:
 
-- the combination of `enum` and `data` types work great together
+- the combination of `union` and `data` types work great together
+- `union` was called `enum` in Lithia which was slightly misleading
 - the concept of `extern` types
 - the concept of `module`, `import`
 - the path based module system
@@ -62,7 +63,7 @@ Different kinds of declarations are supported:
 
 - `let` variables
 - `func` functions
-- `enum` that group other types
+- `union` that group other types
 - `data` that define custom data types
 - `extern` that define bindings to external libraries
 - `annotation` that add metadata to other declarations
@@ -195,14 +196,14 @@ data Example {
 decl_field = [annotation_chain], identifier, [ "(", [ parameter_list ], ")" ] ;
 ```
 
-### Enum types
+### Union types
 
-Enum types are used to express that their values can be one of a group of types. In other languages they are also called union types. They are defined by the `enum` keyword followed by the type name and a list of types.
+Union types are used to express that their values can be one of a group of types. In other languages they are also called union types. They are defined by the `union` keyword followed by the type name and a list of types.
 
-As convenience, you can even declare types within the enum declaration. These will still be available outside of the enum.
+As convenience, you can even declare types within the union declaration. These will still be available outside of the union.
 
 ```zirric
-enum JuristicPerson {
+union JuristicPerson {
     Person
     data Company { // this data will be globally available
         name
@@ -214,13 +215,13 @@ enum JuristicPerson {
 In this example every `Person` and every `Company` is a `JuristicPerson`.
 
 ```ebnf
-decl_enum = "enum", type_identifier, "{", { enum_case }, "}" ;
-enum_case = ( static_reference | decl_data ) ;
+decl_union = "union", type_identifier, "{", { union_member }, "}" ;
+union_member = ( static_reference | decl_data ) ;
 ```
 
 ### Annotation types
 
-Annotations are metadata that can be attached to declarations like `let`, `func`, `data`, `enum`, `extern` and `module`.
+Annotations are metadata that can be attached to declarations like `let`, `func`, `data`, `union`, `extern` and `module`.
 Instantiations of annotation types can only be created at compile time.
 As syntactic sugar non-annotation types can be used as annotations. In this case an annotation of type `Type` will be created with the type as argument. Annotations that are actual annotation types, parenthesis are required.
 
@@ -233,7 +234,7 @@ annotation SomeAnnotation {
 ```
 
 ```ebnf
-decl = [annotation_chain], ( decl_let | decl_func | decl_enum | decl_data | decl_annotation | decl_extern_type | decl_extern_func | decl_module ) ;
+decl = [annotation_chain], ( decl_let | decl_func | decl_union | decl_data | decl_annotation | decl_extern_type | decl_extern_func | decl_module ) ;
 annotation_chain = annotation, { annotation } ;
 annotation = "@", static_reference, [ "(", [ argument_list ], ")" ] ;
 
@@ -298,7 +299,7 @@ extern type String {
 ```
 
 Each extern type behaves slightly different in terms of how it is created and accessed.
-Many types like `String`, `Int`, `Float` and `Dict` will be created by literals, types like `Func` and `Module` by declarations. `Any` on the other hand is more like an `enum` containing all types.
+Many types like `String`, `Int`, `Float` and `Dict` will be created by literals, types like `Func` and `Module` by declarations. `Any` on the other hand is more like an `union` containing all types.
 
 ```ebnf
 decl_extern_type = "extern", "type", type_identifier, [ "{", { decl_field }, "}" ] ;

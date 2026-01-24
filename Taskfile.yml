@@ -16,7 +16,6 @@ tasks:
 
   test:
     desc: Run all Go tests
-    watch: true
     sources:
       - "**/*.go"
       - "**/*.zirr"

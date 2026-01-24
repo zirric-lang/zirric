@@ -50,7 +50,7 @@ AT = "@";
 
 MODULE = "module";
 IMPORT = "import";
-ENUM = "enum";
+UNION = "union";
 DATA = "data";
 EXTERN = "extern";
 FUNCTION = "func";
@@ -70,7 +70,7 @@ Module = MODULE, Identifier;
 module_name = Identifier;
 
 _topLevelDeclaration = Import |
-	Enum |
+	Union |
 	Data |
 	Extern |
 	Function |
@@ -79,7 +79,7 @@ _topLevelDeclaration = Import |
 
 _scopeLevelDeclaration = Function |
 	Let |
-	Enum |
+	Union |
 	Data;
 
 Import = IMPORT,

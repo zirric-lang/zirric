@@ -66,17 +66,17 @@ Fields:
 
 - `@String predicate`
 
-## Enum
+## Union
 
 ### Source
 
 ```zirric
-enum Source
+union Source
 ```
 
 The type of dependency: standard library, Git, or local.
 
-Cases:
+Members:
 
 - `Stdlib`
 - `Git`

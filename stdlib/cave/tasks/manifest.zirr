@@ -3,7 +3,7 @@ module tasks
 // Marks a data declaration as a task.
 // The task can be executed from the command line.
 // Exactly one of these two annotations are required: @RunFile, @Run or @Import.
-enum Task {
+union Task {
   Exec
   Call
   Import

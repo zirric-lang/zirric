@@ -35,7 +35,7 @@ data Some {
 }
 
 @json.Inline()
-enum Optional {
+union Optional {
 	None
 	Some
 }
