@@ -15,9 +15,8 @@ components:
     </a>
     <div class="nav-links">
       <a href="/guides/getting-started">Get Started</a>
-      <a href="/overview">Overview</a>
+      <a href="/overview">Docs</a>
       <a href="/proposals">Proposals</a>
-      <a href="/tooling">Tooling</a>
     </div>
   </nav>
 
@@ -31,8 +30,8 @@ components:
       </p>
       <div class="hero-actions">
         <a class="button primary" href="/guides/getting-started">Get Started</a>
-        <a class="button" href="/overview">Read the Overview</a>
-        <a class="button ghost" href="/syntax/expressions">Browse Syntax</a>
+        <a class="button" href="/overview">Read the Docs</a>
+        <a class="button ghost" href="/proposals">Browse Proposals</a>
       </div>
       <p class="note">Experimental: features and syntax may change.</p>
     </div>

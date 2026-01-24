@@ -88,10 +88,6 @@ func (v SemverVersion) Matches(cond Predicate) bool {
 		return false
 	}
 
-	ref, ok := cond.Version.(SemverVersion)
-	if !ok {
-		return false
-	}
 	switch cond.Comparison {
 	case ComparisonExact:
 		return v.String() == ref.String()

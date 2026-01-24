@@ -1,0 +1,22 @@
+version: '3'
+
+tasks:
+  docs-netlify:
+    desc: Run docs-netlify workflow via act
+    cmds:
+      - act -W .github/workflows/docs-netlify.yml
+
+  go:
+    desc: Run Go workflow via act
+    cmds:
+      - act -W .github/workflows/go.yml
+
+  goreleaser-check:
+    desc: Run GoReleaser check workflow via act
+    cmds:
+      - act -W .github/workflows/goreleaser-check.yaml
+
+  goreleaser:
+    desc: Run GoReleaser workflow via act
+    cmds:
+      - act -W .github/workflows/goreleaser.yaml

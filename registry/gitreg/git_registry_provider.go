@@ -75,9 +75,8 @@ func (r *GitRegistry) Discover(ctx context.Context) ([]registry.ResolvedPackage,
 			errs = append(errs, err)
 			continue
 		}
-		for _, local := range locals {
-			packages = append(packages, local)
-		}
+
+		packages = append(packages, locals...)
 	}
 	if len(errs) > 0 {
 		return nil, errors.Join(errs...)
@@ -92,9 +91,8 @@ func (r *GitRegistry) DiscoverPackageVersions(ctx context.Context, repoUrl strin
 		return nil, err
 	}
 	vs := make([]registry.Package, len(gitvs))
-	for i, gitv := range gitvs {
-		vs[i] = gitv
-	}
+	copy(vs, gitvs)
+
 	sort.Slice(vs, func(i, j int) bool {
 		return !version.Less(vs[i].Version(), vs[j].Version())
 	})

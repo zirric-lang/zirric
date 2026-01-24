@@ -46,6 +46,24 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 
 **ALWAYS run these commands from the repository root.**
 
+#### Format (Required)
+
+```bash
+task fmt
+```
+
+- **Purpose**: Run Go + dprint formatting fixes
+- **Always run**: After making changes, before final validation
+
+#### Check (Required)
+
+```bash
+task check
+```
+
+- **Purpose**: Run formatting checks, lint, vet, build, and tests
+- **Expected**: Clean exit with no output besides command logs
+
 #### Build (Required before testing)
 
 ```bash
@@ -80,22 +98,19 @@ go test -race ./...
 #### Format Check (Always required)
 
 ```bash
-gofmt -l .
+task check
 ```
 
-- **Known Issues**: Files with formatting problems will be listed
-- **Fix with**: `gofmt -w <filename>` for each file
-- **Critical**: Must fix before committing - GitHub Actions will fail otherwise
+- **Includes**: `gofmt -l .` and `dprint check --config dprint.json`
+- **Critical**: Must pass before committing - GitHub Actions will fail otherwise
 
-#### Format Fix (When gofmt -l shows files)
+#### Format Fix (When formatting fails)
 
 ```bash
-gofmt -w .
+task fmt
 ```
 
-- **Purpose**: Fix all indentation issues (spaces vs tabs) across the codebase
-- **Always run**: After making changes, before committing
-- **Note**: Some files historically had formatting issues, this fixes all of them
+- **Purpose**: Fix Go and other formatter-supported files
 
 #### Vet (Recommended)
 
@@ -127,13 +142,13 @@ go clean -cache && go build -v ./... && go test ./...
 #### Full Validation Sequence
 
 ```bash
-gofmt -l . && go vet ./... && go build -v ./... && go test ./...
+task check
 ```
 
 #### Fix Formatting + Test
 
 ```bash
-gofmt -w . && go test ./...
+task fmt && go test ./...
 ```
 
 ### Continuous Integration
@@ -220,11 +235,9 @@ GitHub Actions workflow (`.github/workflows/go.yml`):
 
 ### Validation Checklist for Changes
 
-1. **Format**: `gofmt -l .` should return no files
-2. **Build**: `go build -v ./...` must succeed
-3. **Test**: `go test ./...` must pass all tests
-4. **Vet**: `go vet ./...` should report no issues
-5. **Race**: `go test -race ./...` for concurrency-related changes
+1. **Format**: `task fmt`
+2. **Check**: `task check`
+3. **Race**: `go test -race ./...` for concurrency-related changes
 
 ### Common Gotchas & Workarounds
 

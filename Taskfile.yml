@@ -1,0 +1,48 @@
+version: "3"
+
+includes:
+  docs:
+    taskfile: ./docs/Taskfile.yml
+    dir: ./docs
+  ci:
+    taskfile: ./.github/Taskfile.yml
+    dir: ./
+
+tasks:
+  build:
+    desc: Build all Go packages
+    cmds:
+      - go build -v ./...
+
+  test:
+    desc: Run all Go tests
+    watch: true
+    sources:
+      - "**/*.go"
+      - "**/*.zirr"
+      - go.mod
+      - go.sum
+    cmds:
+      - go test ./...
+
+  fmt:
+    desc: Format
+    cmds:
+      - gofmt -w .
+      - dprint fmt --config dprint.json
+
+  check:
+    desc: Full validation (format, vet, build, test)
+    cmds:
+      - gofmt -l .
+      - dprint check --config dprint.json
+      - golangci-lint run
+      - go vet ./...
+      - goreleaser check
+      - go build -v ./...
+      - go test ./...
+
+  goreleaser:snapshot:
+    desc: Build GoReleaser snapshot artifacts
+    cmds:
+      - goreleaser build --snapshot --clean

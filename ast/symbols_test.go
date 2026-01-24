@@ -25,17 +25,17 @@ func TestSymbolTableInsertCreatesSymbol(t *testing.T) {
 	}
 
 	sym := table.Insert(decl)
-	if sym == nil {
+	if sym == nil { // nolint:staticcheck
 		t.Fatalf("expected symbol, got nil")
 	}
 
-	if sym.Name != "answer" {
+	if sym.Name != "answer" { // nolint:staticcheck
 		t.Fatalf("expected symbol name to be %q, got %q", "answer", sym.Name)
 	}
-	if sym.Index != 0 {
+	if sym.Index != 0 { // nolint:staticcheck
 		t.Fatalf("expected first symbol to have index 0, got %d", sym.Index)
 	}
-	gotDecl, ok := sym.Decl.(*ast.DeclVariable)
+	gotDecl, ok := sym.Decl.(*ast.DeclVariable) // nolint:staticcheck
 	if !ok || gotDecl != decl {
 		t.Fatalf("expected symbol to reference original declaration")
 	}
@@ -88,13 +88,14 @@ func TestLookupCreatesPlaceholderForUndefinedSymbol(t *testing.T) {
 
 	ident := makeIdentifier("unknown")
 	sym := table.Lookup("unknown", ident)
-	if sym == nil {
+	if sym == nil { // nolint:staticcheck
 		t.Fatalf("expected placeholder symbol, got nil")
 	}
-	if sym.Decl != nil {
+	if sym.Decl != nil { // nolint:staticcheck
+
 		t.Fatalf("expected placeholder symbol to have no declaration")
 	}
-	if len(sym.Usages) != 1 {
+	if len(sym.Usages) != 1 { // nolint:staticcheck
 		t.Fatalf("expected placeholder to record a usage, got %d", len(sym.Usages))
 	}
 	recorded, ok := sym.Usages[0].Node.(ast.Identifier)
@@ -117,14 +118,14 @@ func TestChildSymbolTableCreatesFreeSymbol(t *testing.T) {
 
 	original := parent.Insert(decl)
 	resolved := child.Lookup("capture", makeIdentifier("capture"))
-	if resolved == nil {
+	if resolved == nil { // nolint:staticcheck
 		t.Fatalf("expected resolved symbol, got nil")
 	}
 
 	if resolved == original {
 		t.Fatalf("expected child lookup to create a free symbol")
 	}
-	if resolved.Scope != ast.FreeScope {
+	if resolved.Scope != ast.FreeScope { // nolint:staticcheck
 		t.Fatalf("expected free symbol scope, got %q", resolved.Scope)
 	}
 	if resolved.Parent != original {

@@ -69,13 +69,6 @@ var associativities = map[Precedence]Associativity{
 	BITWISE:     A_NONE,
 }
 
-func (p *Parser) peekPrecedence() Precedence {
-	if prec, ok := precedences[p.peekToken.Type]; ok {
-		return prec
-	}
-	return LOWEST
-}
-
 func (p *Parser) curPrecendence() Precedence {
 	if prec, ok := precedences[p.curToken.Type]; ok {
 		return prec

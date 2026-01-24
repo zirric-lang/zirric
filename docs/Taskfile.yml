@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build docs site
+    cmds:
+      - npx @mgks/docmd build
+
+  dev:
+    desc: Run docs dev server
+    cmds:
+      - npx @mgks/docmd dev

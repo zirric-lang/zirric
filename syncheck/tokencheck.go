@@ -27,8 +27,8 @@ func ParseAssertions(str string) []Assertion {
 	var assertions []Assertion
 	scanner := bufio.NewScanner(strings.NewReader(str))
 	var (
-		beginOfNextLine int = 0
-		offsetUnderTest int = 0
+		beginOfNextLine = 0
+		offsetUnderTest = 0
 		lineUnderTest   int
 	)
 	for i := 1; scanner.Scan(); i++ {

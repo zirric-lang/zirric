@@ -165,15 +165,6 @@ func (p *Parser) curIs(tokTypes ...token.TokenType) bool {
 	return false
 }
 
-func (p *Parser) inlinePeekIs(tokTypes ...token.TokenType) bool {
-	for _, deco := range p.peekToken.Leading {
-		if deco.Type != token.DECO_INLINE {
-			return false
-		}
-	}
-	return p.peekIs(tokTypes...)
-}
-
 func (p *Parser) expect(tokTypes ...token.TokenType) (token.Token, bool) {
 	if !p.curIs(tokTypes...) {
 		p.errUnexpectedToken(tokTypes...)

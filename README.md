@@ -1,18 +1,20 @@
-# ![Zirric](./docs/assets/images/zirric.svg)
+# [![Zirric](./docs/assets/images/zirric.svg)](https://zirric.knabel.dev)
 
 Zirric is an experimental programming language with a reference implementation in Go. The project is in an early stage and offers the essential building blocks of a modern language:
 
+- Documentation site: https://zirric.knabel.dev
 - Lexer, parser, and AST
 - Bytecode compiler and virtual machine
 - Standard library with prelude types such as `Array`, `Bool`, `Int`, and `String`
 - Package management via `Cavefile` and registries
 - Documentation on syntax, types, and style in [`docs/`](./docs)
-- Language evolution proposals in [`docs/proposals/`](./docs/proposals), with the base language in [`docs/proposals/ZE-001-base-language.md`](docs/proposals/ZE-001-base-language.md)
+- Language evolution proposals in [`docs/proposals/`](https://zirric.knabel.dev/proposals), with the base language in [`docs/proposals/ZE-001-base-language.md`](https://zirric.knabel.dev/proposals/ZE-001-base-language)
 - Core language surface in the Zirric sources under [`stdlib/`](./stdlib)
 
 ## Language overview
 
-A quick glimpse at core features:
+A quick glimpse at core features.
+More details are available in the [language documentation](https://zirric.knabel.dev).
 
 ### Variables, functions, and data types
 
@@ -117,16 +119,6 @@ data Dependencies {
 @tasks.Exec("tasks/generate.zirr")
 data GenerateTask {}
 ```
-
-## Getting started
-
-Clone the repository and run the test suite to see the implementation in action:
-
-```bash
-go test ./...
-```
-
-For more examples and guides, explore the [`docs/`](docs) and [`stdlib/`](stdlib) directories.
 
 ## License
 
