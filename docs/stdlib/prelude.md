@@ -1,25 +1,52 @@
 ---
 title: Prelude
-description: Core types, annotations, and helpers available in every Zirric program.
+description: Core types, annotations, and primitives available in every Zirric program.
 ---
 
 # Prelude
 
-The `prelude` module defines Zirric's core types and foundational annotations.
+The `prelude` module defines Zirric's core types, builtins, and foundational annotations.
 
 ## Annotations
 
-### Countable
+### Type
 
 ```zirric
-annotation Countable
+annotation Type
 ```
 
-No documentation.
+Annotates a declaration to be of a given type. Instead of annotating declarations
+with `@Type(SomeType)`, the shorthand of `@SomeType` can be used.
 
-Members:
+Fields:
 
-- `@Returns(Int) length(@Has(Countable) value)`
+- `@Type(AnyType) type` — The type of the annotation.
+
+### Has
+
+```zirric
+annotation Has
+```
+
+Has requests passed values to have the given annotation type present. For example,
+`@Has(Numeric)` requests that the passed value has the `@Numeric` annotation. Do
+not annotate types with `@Has`, as it does not make sense there.
+
+Fields:
+
+- `@Type(AnnotationType) annotationType` — The required annotation type.
+
+### Returns
+
+```zirric
+annotation Returns
+```
+
+Annotates a function declaration to return a value of the given type.
+
+Fields:
+
+- `@Type(AnyType) type`
 
 ### Default
 
@@ -27,23 +54,12 @@ Members:
 annotation Default
 ```
 
-Transparently indicates the assumed default value of a parameter or field.
+Transparently indicates the assumed default value of a parameter or field. Can be
+used by tooling and libraries.
 
 Fields:
 
 - `@Type(AnyType) value` — The default value for a parameter.
-
-### Deprecated
-
-```zirric
-annotation Deprecated
-```
-
-Annotates a declaration as deprecated with a reason.
-
-Fields:
-
-- `@String @Default("without alternative") reason`
 
 ### Doc
 
@@ -55,57 +71,21 @@ Provides access to the documentation string of a declaration.
 
 Fields:
 
-- `@String description` — The documentation string without leading comment
-  markers and whitespace.
+- `@String description` — The documentation string without leading comment markers
+  and whitespace.
 
-### ErrType
+### Deprecated
 
 ```zirric
-annotation ErrType
+annotation Deprecated
 ```
 
-No documentation.
+Annotates a declaration as deprecated with a reason. IDEs and other tools can use
+this information to warn users about deprecated declarations.
 
 Fields:
 
-- `@Type(AnyType) type`
-
-### Error
-
-```zirric
-annotation Error
-```
-
-No documentation.
-
-Members:
-
-- `@Returns(String) toString(@Has(Error) err)`
-
-### Has
-
-```zirric
-annotation Has
-```
-
-Requests passed values to have the given annotation type present. Do not
-annotate types with `@Has`.
-
-Fields:
-
-- `@Type(AnnotationType) annotationType` — The required annotation type.
-
-### Iterable
-
-```zirric
-annotation Iterable
-```
-
-No documentation.
-
-Members:
-
-- `iterate(@Has(Iterable) value, @Func yield)`
+- `@String @Default("without alternative") reason`
 
 ### Numeric
 
@@ -131,102 +111,7 @@ Members:
 
 - `@Returns(Number) toNumber(@Has(Numeric) value)`
 
-### OkType
-
-```zirric
-annotation OkType
-```
-
-No documentation.
-
-Fields:
-
-- `@Type(AnyType) type`
-
-### Returns
-
-```zirric
-annotation Returns
-```
-
-Annotates a function declaration to return a value of the given type.
-
-Fields:
-
-- `@Type(AnyType) type`
-
-### Type
-
-```zirric
-annotation Type
-```
-
-Annotates a declaration to be of a given type. Instead of annotating
-`@Type(SomeType)`, the shorthand `@SomeType` can be used.
-
-Fields:
-
-- `@Type(AnyType) type` — The type of the annotation.
-
-## Union
-
-### Number
-
-```zirric
-union Number
-```
-
-No documentation.
-
-Members:
-
-- `Float`
-- `Int`
-
-### Optional
-
-```zirric
-@json.Inline()
-union Optional
-```
-
-No documentation.
-
-Members:
-
-- `@json.Type(json.Null) None`
-- `@json.Inline Some { value }`
-
-### Result
-
-```zirric
-union Result
-```
-
-No documentation.
-
-Members:
-
-- `Ok { @Any value }`
-- `Err { @Has(Error) error }`
-
-## Extern Types
-
-### Annotation
-
-```zirric
-extern type Annotation
-```
-
-All annotations are of type `Annotation`.
-
-### AnnotationType
-
-```zirric
-extern type AnnotationType
-```
-
-All annotation types are of type `AnnotationType`.
+## Types
 
 ### Any
 
@@ -244,6 +129,38 @@ extern type AnyType
 
 All types are of type `AnyType`.
 
+### Annotation
+
+```zirric
+extern type Annotation
+```
+
+All annotations are of type `Annotation`.
+
+### AnnotationType
+
+```zirric
+extern type AnnotationType
+```
+
+All annotation types are of type `AnnotationType`.
+
+### Module
+
+```zirric
+extern type Module
+```
+
+All modules are of type `Module`.
+
+### ModuleType
+
+```zirric
+extern type ModuleType
+```
+
+All module types are of type `ModuleType`.
+
 ### Array
 
 ```zirric
@@ -252,7 +169,7 @@ extern type Array
 
 A finite list of values.
 
-Fields:
+Members:
 
 - `@Type(Int) length` — The length of the array.
 
@@ -285,9 +202,21 @@ extern type Dict
 
 An associative array of keys and their values.
 
-Fields:
+Members:
 
 - `@Type(Int) length` — The length of the dictionary.
+
+### Func
+
+```zirric
+extern type Func
+```
+
+A callable function.
+
+Members:
+
+- `@Type(Int) arity` — The amount of function parameters to be passed.
 
 ### Float
 
@@ -298,18 +227,6 @@ extern type Float
 
 A floating point number.
 
-### Func
-
-```zirric
-extern type Func
-```
-
-A callable function.
-
-Fields:
-
-- `@Type(Int) arity` — The amount of function parameters to be passed.
-
 ### Int
 
 ```zirric
@@ -319,30 +236,6 @@ extern type Int
 
 A whole integer number.
 
-### Module
-
-```zirric
-extern type Module
-```
-
-All modules are of type `Module`.
-
-### ModuleType
-
-```zirric
-extern type ModuleType
-```
-
-All module types are of type `ModuleType`.
-
-### Null
-
-```zirric
-extern type Null
-```
-
-The type of the `null` value.
-
 ### String
 
 ```zirric
@@ -351,37 +244,43 @@ extern type String
 
 No documentation.
 
-Fields:
+Members:
 
 - `@Type(Int) length`
 
-## Data
-
-### Range
+### Void
 
 ```zirric
-data Range
+extern type Void
+```
+
+The type of the `void` value.
+
+## Union
+
+### Number
+
+```zirric
+union Number
 ```
 
 No documentation.
 
-Fields:
+Members:
 
-- `@Int start`
-- `@Int end`
+- `Float`
+- `Int`
 
-## Extern Constants
+## Values
 
-### null
+### true
 
 ```zirric
-@Type(Null)
-extern let null
+@Bool
+let true = 0 == 0
 ```
 
-Represents the absence of a value.
-
-## Variables
+No documentation.
 
 ### false
 
@@ -392,11 +291,11 @@ let false = 0 != 0
 
 No documentation.
 
-### true
+### void
 
 ```zirric
-@Bool
-let true = 0 == 0
+@Type(Void)
+extern let void
 ```
 
-No documentation.
+Represents the absence of a value.

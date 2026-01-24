@@ -51,7 +51,7 @@ func TestBasicOperations(t *testing.T) {
 		{input: `["hello": "world", 1: 2]`, expected: map[any]any{"hello": "world", 1: 2}},
 		{input: `["1": 3, 1: 2]`, expected: map[any]any{"1": 3, 1: 2}},
 		{input: `["hello": "world"]["hello"]`, expected: "world"},
-		{input: `["hello": "world"]["missing"]`, expected: runtime.Null{}},
+		{input: `["hello": "world"]["missing"]`, expected: runtime.Void{}},
 	}
 
 	runVmTests(t, tests)
@@ -431,8 +431,8 @@ func testExpectedValue(t *testing.T, expected interface{}, actual runtime.Runtim
 
 func testValue(expected interface{}, actual runtime.RuntimeValue) error {
 	switch expected := expected.(type) {
-	case runtime.Null:
-		return testNull(actual)
+	case runtime.Void:
+		return testVoid(actual)
 	case int:
 		return testInt(int64(expected), actual)
 	case bool:
@@ -452,10 +452,10 @@ func testValue(expected interface{}, actual runtime.RuntimeValue) error {
 	}
 }
 
-func testNull(actual runtime.RuntimeValue) error {
-	_, ok := actual.(runtime.Null)
+func testVoid(actual runtime.RuntimeValue) error {
+	_, ok := actual.(runtime.Void)
 	if !ok {
-		return fmt.Errorf("object is not Null. got=%T (%+v)", actual, actual)
+		return fmt.Errorf("object is not Void. got=%T (%+v)", actual, actual)
 	}
 	return nil
 }

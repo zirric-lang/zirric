@@ -106,8 +106,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(op.ConstFalse)
 		}
 		return nil
-	case *ast.ExprNull:
-		c.emit(op.ConstNull)
+	case *ast.ExprVoid:
+		c.emit(op.ConstVoid)
 		return nil
 	case *ast.ExprInt:
 		val := c.plugins.Prelude().Int(node.Literal)
@@ -240,7 +240,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 	case *ast.StmtReturn:
 		if node.Expr == nil {
-			c.emit(op.ConstNull)
+			c.emit(op.ConstVoid)
 			c.emit(op.Return)
 			return nil
 		}

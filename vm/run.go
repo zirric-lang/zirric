@@ -46,8 +46,8 @@ func (vm *VM) runTask(taskId TaskId) error {
 			if err != nil {
 				return err
 			}
-		case op.ConstNull:
-			err := vm.push(runtime.Null{})
+		case op.ConstVoid:
+			err := vm.push(runtime.Void{})
 			if err != nil {
 				return err
 			}
@@ -184,7 +184,7 @@ func (vm *VM) runTask(taskId TaskId) error {
 			case runtime.Dict:
 				val, ok := target[index]
 				if !ok {
-					if err := vm.push(runtime.Null{}); err != nil {
+					if err := vm.push(runtime.Void{}); err != nil {
 						return err
 					}
 					break
@@ -467,8 +467,8 @@ func (vm *VM) isEqual() runtime.Bool {
 			return false
 		}
 		return lhs == rhs
-	case runtime.Null:
-		_, ok := rhs.(runtime.Null)
+	case runtime.Void:
+		_, ok := rhs.(runtime.Void)
 		return runtime.Bool(ok)
 	}
 	panic(fmt.Sprintf("unknown type for equality check %T of %q", lhs, lhs.Inspect()))

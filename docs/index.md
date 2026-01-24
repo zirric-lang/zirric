@@ -43,20 +43,21 @@ components:
 
 @Countable({ v -> v.length })
 data Bag {
-items
-length
+  items
+  length
 }
 
 @Returns(Result)
 func summarize(@Bag bag) {
-let length = Countable(bag).length(bag)
-return if length > 0 {
-Ok(length)
-} else {
-Err("empty")
-}
+  let length = Countable(bag).length(bag)
+  return if length > 0 {
+    Ok(length)
+  } else {
+    Err("empty")
+  }
 }
 </code></pre>
+
 </div>
 
 </header>

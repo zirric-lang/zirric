@@ -307,12 +307,12 @@ decl_extern_type = "extern", "type", type_identifier, [ "{", { decl_field }, "}"
 
 ### Extern values
 
-Extern values are values that are implemented in the runtime like `null`. They are defined by the `extern let` keywords followed by the value name.
+Extern values are values that are implemented in the runtime like `void`. They are defined by the `extern let` keywords followed by the value name.
 
 Extern declarations must always be global and cannot be nested.
 
 ```zirric
-extern let null
+extern let void
 ```
 
 ### Extern functions
@@ -531,8 +531,8 @@ import_list = identifier, { ",", identifier } ;
 
 This introduces lots of new concepts that will be used by the standard library.
 
-- shims for common extern types like `Int`, `String`, `Char`, `Float`, `Bool`, `Array`, `Dict`, `Func`, `Any`, `AnyType`, `Null` and `Module`
-- extern constants like `null`
+- shims for common extern types like `Int`, `String`, `Char`, `Float`, `Bool`, `Array`, `Dict`, `Func`, `Any`, `AnyType`, `Void` and `Module`
+- extern constants like `void`
 - annotations for common use cases like `Type`, `Numeric`, `Has`, `Returns` and `Deprecated`, `Countable`, `Iterable`
 - data types like `Range`
 
@@ -542,7 +542,7 @@ This also requires the existence of a `reflect` module to be able to access anno
 
 - `Any` that can hold any value
 - `AnyType` that can hold any type
-- `Null` that represents the absence of a value
+- `Void` that represents the absence of a value
 - `Func` that represents functions
 - `Module` that represents modules
 - `ModuleType` that represents module types

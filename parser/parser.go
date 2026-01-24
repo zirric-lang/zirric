@@ -33,7 +33,7 @@ func NewSourceParser(lex *lexer.Lexer, parent *ast.SymbolTable, path string) *Pa
 	p.registerPrefix(token.IDENT, p.parsePrattExprIdentifier)
 	p.registerPrefix(token.TRUE, p.parsePrattExprTrue)
 	p.registerPrefix(token.FALSE, p.parsePrattExprFalse)
-	p.registerPrefix(token.NULL, p.parsePrattExprNull)
+	p.registerPrefix(token.VOID, p.parsePrattExprVoid)
 	p.registerPrefix(token.INT, p.parsePrattExprInt)
 	p.registerPrefix(token.FLOAT, p.parsePrattExprFloat)
 	p.registerPrefix(token.BANG, p.parsePrattExprPrefix)

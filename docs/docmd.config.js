@@ -73,9 +73,18 @@ module.exports = {
       collapsible: true,
       children: [
         { title: 'Prelude', path: '/stdlib/prelude', icon: 'sparkles' },
-        { title: 'Reflect', path: '/stdlib/reflect', icon: 'scan' },
-        { title: 'Cave', path: '/stdlib/cave', icon: 'package' },
-        { title: 'Tasks', path: '/stdlib/tasks', icon: 'check-square' },
+        {
+          title: 'Future',
+          path: '/stdlib/future',
+          icon: 'flask-conical',
+          collapsible: true,
+          children: [
+            { title: 'Prelude', path: '/stdlib/future/prelude', icon: 'sparkles' },
+            { title: 'Reflect', path: '/stdlib/future/reflect', icon: 'scan' },
+            { title: 'Cave', path: '/stdlib/future/cave', icon: 'package' },
+            { title: 'Tasks', path: '/stdlib/future/tasks', icon: 'check-square' },
+          ]
+        },
       ]
     },
     {
@@ -94,6 +103,12 @@ module.exports = {
         { icon: 'search-slash', title: 'ZE-04 Variadic', path: '/proposals/ZE-004-Variadic-Arguments' },
         { icon: 'search-slash', title: 'ZE-05 Mixins', path: '/proposals/ZE-005-Mixin-Type-Declarations' },
         { icon: 'search-slash', title: 'ZE-06 Parsing', path: '/proposals/ZE-006-Annotation-Based-Parsing-System' },
+        { icon: 'search-slash', title: 'ZE-07 Binding', path: '/proposals/ZE-007-annotation-binding' },
+        { icon: 'search-slash', title: 'ZE-08 Errors', path: '/proposals/ZE-008-error-handling' },
+        { icon: 'search-slash', title: 'ZE-09 Option', path: '/proposals/ZE-009-option-values' },
+        { icon: 'search-slash', title: 'ZE-10 Iterable', path: '/proposals/ZE-010-iterable' },
+        { icon: 'search-code', title: 'ZE-11 Zirric CLI', path: '/proposals/ZE-011-zirric-cli' },
+        { icon: 'search-slash', title: 'ZE-12 Type and Returns Sugar', path: '/proposals/ZE-012-type-and-returns-sugar' },
       ]
     },
     {

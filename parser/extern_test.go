@@ -46,7 +46,7 @@ func TestParseExternDeclarations(t *testing.T) {
 			expectedType: "*ast.DeclExternValue",
 			expectedName: "myvalue",
 		},
-		// Note: Cannot use reserved keywords like 'null' as identifiers
+		// Note: Cannot use reserved keywords like 'void' as identifiers
 		// The lexer tokenizes them as keywords, not IDENT tokens
 	}
 

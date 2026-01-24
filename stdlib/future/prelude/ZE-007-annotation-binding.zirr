@@ -1,0 +1,26 @@
+module xprelude
+
+import future {
+	Proposal
+}
+
+// ZE-007: Annotation Binding
+// https://zirric.knabel.dev/proposals/ZE-007-annotation-binding
+let ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-annotation-binding"
+
+// A bound function of an annotation receives the targeted value as first argument.
+//
+//   annotation Error {
+//     @Bound()
+//     @Returns(String)
+//     debug(err)
+//   }
+//   
+//   @Error({ err -> err.message })
+//   data MessageError {
+//     @String message
+//   }
+//
+//   MessageError("msg")[@Error].debug() // err-receiver passed automatically
+@Proposal(ZE_007)
+annotation Bound {}

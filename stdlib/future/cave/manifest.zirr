@@ -1,8 +1,18 @@
 module cave
 
+import future {
+  Proposal
+}
+
+// ZE-002: Error Handling
+// https://zirric.knabel.dev/proposals/ze-002-the-cavefile/
+let ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
+
 // Marks the current data structure as a dependencies manifest.
+@Proposal(ZE_002)
 annotation Dependencies {}
 
+@Proposal(ZE_002)
 annotation Version {
   // The version predicate for the Git dependency.
   // Examples:
@@ -18,6 +28,7 @@ annotation Version {
 }
 
 // The type of dependency: standard library, Git, or local.
+@Proposal(ZE_002)
 union Source {
   Stdlib
   Git
@@ -25,6 +36,7 @@ union Source {
 }
 
 // Marks the current data structure as a standard library dependency.
+@Proposal(ZE_002)
 annotation Stdlib {
   // The name of the standard library dependency.
   @String name
@@ -32,12 +44,14 @@ annotation Stdlib {
 
 // Marks a field as a Git dependency with a URL and predicate.
 // The field name represents the import name of the dependency in this package.
+@Proposal(ZE_002)
 annotation Git {
   // The URL of the Git repository.
   @String url
 }
 
 // Marks a field as a local dependency with a path.
+@Proposal(ZE_002)
 annotation Local {
   // The local path to the dependency.
   @String path

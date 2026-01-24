@@ -1,5 +1,5 @@
-import cave
-import cave.tasks
+import future.cave
+import future.tasks
 
 @cave.Dependencies()
 data Dependencies {

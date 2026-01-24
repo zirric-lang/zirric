@@ -79,7 +79,7 @@ const (
 	BLANK      TokenType = "BLANK"
 	TRUE       TokenType = "TRUE"
 	FALSE      TokenType = "FALSE"
-	NULL       TokenType = "NULL"
+	VOID       TokenType = "VOID"
 )
 
 var keywords = map[string]TokenType{
@@ -102,7 +102,7 @@ var keywords = map[string]TokenType{
 	"for":        FOR,
 	"true":       TRUE,
 	"false":      FALSE,
-	"null":       NULL,
+	"void":       VOID,
 	"_":          BLANK,
 }
 

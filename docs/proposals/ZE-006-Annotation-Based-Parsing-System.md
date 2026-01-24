@@ -12,7 +12,7 @@ Features described here may not be implemented as described and cannot be used r
 
 ## Introduction
 
-This proposal introduces an **annotation-based parsing system** for Zirric, enabling flexible and format-agnostic encoding/decoding of data types. The system leverages Zirric’s annotation capabilities to define how data should be serialized and deserialized, supporting multiple formats (e.g., JSON, YAML, Protobuf) through modular extensions.
+This proposal introduces an **annotation-based parsing system** for Zirric, enabling flexible and format-agnostic encoding/decoding of data types. The system leverages Zirric's annotation capabilities to define how data should be serialized and deserialized, supporting multiple formats (e.g., JSON, YAML, Protobuf) through modular extensions.
 
 ## Motivation
 
@@ -21,7 +21,6 @@ Zirric currently lacks a unified mechanism for encoding/decoding data types to/f
 - Provide a **format-agnostic** core system for encoding/decoding.
 - Support **format-specific** extensions (e.g., JSON, YAML, Protobuf).
 - Use **annotations** to define serialization rules, enabling fine-grained control over encoding/decoding behavior.
-- Allow **mixins** for reusable annotation groups, reducing boilerplate.
 
 ## Proposed Solution
 
@@ -38,41 +37,9 @@ extern type Binary {
     @Int length
 }
 
-data None
-
-annotation Optional
-annotation Default {
-    @Any value
-}
-
-annotation ItemType
+annotation ItemType {
     @AnyType type
-```
-
-#### `reflect` Module
-
-Core reflection capabilities.
-
-```zirric
-module reflect
-
-data Type
-data Field
-    @String name
-    @Type type
-    @Array(Annotation) annotations
-
-data Annotation
-    @Type annotationType
-    @Array(Any) args
-
-annotation Name
-    @String name
-
-@Returns(Type) func typeOf(@Any value)
-@Returns(Array(Field)) func fieldsOf(@Type type)
-@Returns(Annotation?) func annotation(@Field field, @Type annotationType)
-@Returns(Bool) func hasAnnotation(@Field field, @Type annotationType)
+}
 ```
 
 #### `coding` Module
@@ -82,28 +49,33 @@ Central module for encoding/decoding logic.
 ```zirric
 module coding
 
-union Result
-    Ok(@Any value)
-    Error(@Error error)
+annotation Inline {}
 
-data Error
-    @String message
+annotation Default {
+    @Any value
+}
 
-mixin Codable
-    @Encodable(encode)
-    @Decodable(decode)
+annotation RawType {
+    @AnyType type
+}
 
-annotation Encodable
-    @Func(@Any) @Returns(Result) encode
+annotation Encodable {
+    @Returns(Result) encode(value)
+}
 
-annotation Decodable
-    @Func(@Type @Any) @Returns(Result) decode
+annotation Decodable {
+    @Returns(Result) decode(value)
+}
 
-annotation Key
+annotation Key {
     @String name
+}
 
-@Returns(Result) func encode(@Any value)
-@Returns(Result) func decode(@Type type, @Any data)
+@Returns(Result)
+func encode(value, encoder)
+
+@Returns(Result)
+func decode(@AnyType type, decoder)
 ```
 
 #### `coding.json` Module
@@ -113,24 +85,7 @@ JSON-specific annotations and functions.
 ```zirric
 module coding.json
 
-annotation Inline
-annotation RawType
-    @AnyType type
-
-annotation Key
-    @String name
-
-annotation Decode
-    @Func(@Any) @Returns(Any) decode
-
-annotation Encode
-    @Func(@Any) @Returns(Any) encode
-
-annotation Type
-    @AnyType type
-
-@Returns(Result) func encode(@Any value)
-@Returns(Result) func decode(@Type type, @Any data)
+// same as coding, but these will only be respected by the JSON encoder/decoder
 ```
 
 #### `coding.yaml` Module
@@ -140,47 +95,13 @@ YAML-specific annotations and functions.
 ```zirric
 module coding.yaml
 
-annotation RawType
-    @AnyType type
-
-annotation Key
-    @String name
-
-annotation Decode
-    @Func(@Any) @Returns(Any) decode
-
-annotation Encode
-    @Func(@Any) @Returns(Any) encode
-
-@Returns(Result) func encode(@Any value)
-@Returns(Result) func decode(@Type type, @Any data)
-```
-
-#### `coding.proto` Module
-
-Protobuf-specific annotations and functions.
-
-```zirric
-module coding.proto
-
-annotation RawType
-    @AnyType type
-
-annotation Decode
-    @Func(@Any) @Returns(Any) decode
-
-annotation Encode
-    @Func(@Any) @Returns(Any) encode
-
-@Returns(Result) func encode(@Any value)
-@Returns(Result) func decode(@Type type, @Binary data)
+// same as coding, but these will only be respected by the YAML encoder/decoder
 ```
 
 ## Detailed Design
 
-### 1. Core Annotations and Mixins
+### 1. Core Annotations
 
-- **`coding.Codable`**: A mixin combining `coding.Encodable` and `coding.Decodable`.
 - **`coding.Encodable` and `coding.Decodable`**: Annotations to mark types/fields as encodable/decodable, specifying the encoding/decoding functions.
 - **`coding.Key`**: Specifies the key to use for encoding/decoding a field.
 
@@ -198,8 +119,8 @@ annotation Encode
 
 ## Changes to the Standard Library
 
-- **New Modules**: `coding`, `coding.json`, `coding.yaml`, `coding.proto`.
-- **New Types**: `coding.Result`, `coding.Error`, `prelude.Binary`, `prelude.None`.
+- **New Modules**: `coding`, `coding.json`, `coding.yaml`
+- **New Types**: `coding.Error`, `prelude.Binary`
 - **New Annotations**: `coding.Encodable`, `coding.Decodable`, `coding.Key`, `json.Inline`, etc.
 
 ## Behavior and Rules
@@ -214,159 +135,13 @@ annotation Encode
 
 ### 3. Optional Fields
 
-- **`@prelude.Optional`**: When used with an union, the `None` member should be parsed due to the `@json.Type(json.Null)` annotation.
-
-## Examples
-
-### 1. Basic Usage with `Codable` Mixin
-
-```zirric
-module example
-
-import coding
-import coding.json
-import reflect
-
-mixin coding.Codable
-
-data Person
-    @String name
-    @Int age
-
-func main
-    let person = Person("Alice" 30)
-    let jsonResult = coding.json.encode(person)
-```
-
-### 2. Custom Encoding/Decoding with `@json.Inline`
-
-```zirric
-module example
-
-import coding
-import coding.json
-import reflect
-
-@json.Inline()
-union Optional
-    @json.Type(json.Null)
-    data None
-
-    @json.Inline
-    data Some
-        @Any value
-
-data Person
-    @String name
-    @Optional nickname
-
-func main
-    let personWithNickname = Person("Alice" Optional.Some("Bob"))
-    let personWithoutNickname = Person("Alice" Optional.None)
-
-    let jsonWithNickname = coding.json.encode(personWithNickname)
-    // Output: {"name": "Alice", "value": "Bob"}
-
-    let jsonWithoutNickname = coding.json.encode(personWithoutNickname)
-    // Output: {"name": "Alice", "nickname": null}
-```
-
-### 3. Custom Date Encoding/Decoding
-
-```zirric
-module example
-
-import coding
-import coding.json
-import reflect
-
-@Returns(Date)
-func dateFromISODateString(@String raw) {
-    // Implementation
-}
-
-@Returns(String)
-func dateToISODateString(@Date value) {
-    // Implementation
-}
-
-data PersonWithDate
-    @String name
-    @Date
-    @json.RawType(String)
-    @json.Decode(dateFromISODateString)
-    @json.Encode(dateToISODateString)
-    birthday
-
-func main
-    let person = PersonWithDate("Alice" dateFromISODateString("2023-01-01"))
-    let jsonResult = coding.json.encode(person)
-    // Output: {"name": "Alice", "birthday": "2023-01-01"}
-```
-
-### 4. Conflict Example
-
-```zirric
-module example
-
-import coding
-import coding.json
-import reflect
-
-data Child1
-    @String field
-
-data Child2
-    @String field
-
-data Parent
-    @json.Inline
-    @Child1 child1
-
-    @json.Inline
-    @Child2 child2
-
-func main
-    let parent = Parent(Child1("value1") Child2("value2"))
-    let jsonResult = coding.json.encode(parent)
-    // Error: Conflicting field names "field" in inlined types Child1 and Child2
-```
-
-### 5. Optional Union Example
-
-```zirric
-module example
-
-import coding
-import coding.json
-import reflect
-
-@json.Inline()
-union Optional
-    @json.Type(json.Null)
-    data None
-
-    @json.Inline
-    data Some
-        @Any value
-
-data Person
-    @String name
-    @Optional nickname
-
-func main
-    let personWithoutNickname = Person("Alice" Optional.None)
-    let jsonWithoutNickname = coding.json.encode(personWithoutNickname)
-    // Output: {"name": "Alice", "nickname": null}
-```
-
-## Open Questions (Resolved)
-
-1. **Inlining must be explicit**: Yes, `@json.Inline` must be explicitly applied to enable inlining.
-2. **Parsing errors on conflicts**: Yes, the parser will raise an error if multiple inlined fields have the same name.
-3. **Optional Fields**: `@prelude.Optional` fields with the `None` member should be parsed as `null` due to the `@json.Type(json.Null)` annotation.
+- **`@prelude.Option`**: When used with an union, the `None` member should be parsed due to the `@json.Type(json.Null)` annotation.
 
 ## Acknowledgements
 
-- **Inspiration**: Swift’s `Codable` protocol, Go’s format-specific parsing.
+- **Inspiration**: Swift's `Codable` protocol, Go's format-specific parsing.
 - **Contributors**: Valentin Knabel.
+
+## Open Questions
+
+- How should the Decoder and Encoder types be defined?

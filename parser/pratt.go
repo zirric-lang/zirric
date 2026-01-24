@@ -127,9 +127,9 @@ func (p *Parser) parsePrattExprFalse() ast.Expr {
 	return ast.MakeExprBool(false, tok)
 }
 
-func (p *Parser) parsePrattExprNull() ast.Expr {
-	tok, _ := p.expect(token.NULL)
-	return ast.MakeExprNull(tok)
+func (p *Parser) parsePrattExprVoid() ast.Expr {
+	tok, _ := p.expect(token.VOID)
+	return ast.MakeExprVoid(tok)
 }
 
 func (p *Parser) parsePrattExprInt() ast.Expr {

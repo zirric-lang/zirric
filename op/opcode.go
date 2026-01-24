@@ -3,7 +3,7 @@ package op
 const (
 	_ Opcode = iota
 	Const
-	ConstNull
+	ConstVoid
 	ConstTrue
 	ConstFalse
 	Pop
@@ -53,7 +53,7 @@ const (
 
 var definitions = map[Opcode]*Definition{
 	Const:      {"const", []int{2}}, // const id
-	ConstNull:  {"constnull", []int{}},
+	ConstVoid:  {"constvoid", []int{}},
 	ConstTrue:  {"consttrue", []int{}},
 	ConstFalse: {"constfalse", []int{}},
 	Pop:        {"pop", []int{}},

@@ -602,7 +602,7 @@ func TestDeclFunction(t *testing.T) {
 					name:   "example",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.ConstNull),
+						code.Make(code.ConstVoid),
 						code.Make(code.Return),
 					},
 				},
@@ -617,7 +617,7 @@ func TestDeclFunction(t *testing.T) {
 					name:   "example",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.ConstNull),
+						code.Make(code.ConstVoid),
 						code.Make(code.Return),
 					},
 				},

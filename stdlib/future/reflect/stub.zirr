@@ -1,4 +1,4 @@
-module reflect
+module xreflect
 
 data Field {
     @String name
@@ -31,4 +31,3 @@ func annotation(@Field field, @AnnotationType annotationType) {}
 
 @Returns(Bool)
 func hasAnnotation(@Field field, @AnnotationType annotationType) {}
-

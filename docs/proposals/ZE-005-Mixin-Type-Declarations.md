@@ -14,8 +14,6 @@ Features described here may not be implemented as described and cannot be used r
 
 This proposal introduces **`mixin` type declarations** to Zirric, enabling the definition of reusable groups of annotations. Mixins allow developers to apply a set of annotations to a declaration in a concise and explicit manner, promoting code reuse and reducing boilerplate.
 
----
-
 ## Motivation
 
 ### Problem
@@ -33,8 +31,6 @@ Zirric currently lacks a mechanism to group and reuse annotations across multipl
 - **Reduced Boilerplate**: Avoid repeating the same annotations across multiple declarations.
 - **Explicit and Intentional**: Mixins are applied explicitly, making the code easier to understand and maintain.
 - **Consistency**: Encourages reuse of annotation patterns, leading to more consistent codebases.
-
----
 
 ## Proposed Solution
 
@@ -66,8 +62,6 @@ data Config {
 - **Annotation Injection**: When a mixin is applied to a declaration (e.g., `@[Serializable]`), all annotations inside the mixin are injected into the declaration.
 - **Overridability**: Annotations in the final declaration override those from mixins, except for explicit `@Type` annotations.
 - **Conflict Resolution**: If two mixins inject conflicting annotations (e.g., `@ToString(A)` and `@ToString(B)`), the user must explicitly resolve the conflict in the final declaration.
-
----
 
 ## Detailed Design
 
@@ -107,48 +101,6 @@ data Config {
 - **Empty Mixins**: Mixins with no annotations are allowed but have no effect.
 - **Circular Dependencies**: The compiler should detect and reject circular dependencies between mixins.
 - **Conflicts**: If two mixins inject conflicting annotations, the user must explicitly resolve the conflict in the final declaration.
-
----
-
-## Changes to the Standard Library
-
-No changes to the standard library are required for this feature. However, future libraries may provide commonly used mixins (e.g., `Comparable`, `Serializable`).
-
----
-
-## Alternatives Considered
-
-1. **`@Inherit(anyType)`**:
-   - **Pros**: Simple and requires no new syntax.
-   - **Cons**: Risk of unintentionally copying unrelated annotations; less explicit.
-   - **Why Not Chosen**: Mixins provide a more explicit and safer mechanism for annotation reuse.
-
-2. **Annotation Composition**:
-   - **Pros**: No new syntax required.
-   - **Cons**: Less readable and more verbose (e.g., `@HasAll([@ToString, @FromString])`).
-   - **Why Not Chosen**: Mixins offer a cleaner and more intuitive syntax.
-
-3. **Trait-Like Interfaces**:
-   - **Pros**: Familiar to developers from other languages.
-   - **Cons**: Introduces complexity and deviates from Zirric’s annotation-centric design.
-   - **Why Not Chosen**: Mixins align better with Zirric’s existing annotation system.
-
----
-
-## Acknowledgements
-
-- **Prior Art**: Inspired by mixins in languages like Scala and Dart, and trait-like behavior in Rust.
-- **Contributors**: [@vknabel](https://github.com/vknabel) for designing the proposal.
-
----
-
-## Open Questions
-
-1. Should mixins support nested mixins (e.g., a mixin that includes other mixins)?
-2. How should the compiler handle conflicts between mixins and explicit annotations?
-3. Should there be a way to conditionally apply mixins (e.g., based on platform or build flags)?
-
----
 
 ## Examples
 
@@ -198,3 +150,29 @@ data Example {
     field
 }
 ```
+
+## Changes to the Standard Library
+
+No changes to the standard library are required for this feature. However, future libraries may provide commonly used mixins (e.g., `Comparable`, `Serializable`).
+
+## Alternatives Considered
+
+1. **`@Inherit(anyType)`**:
+   - **Pros**: Simple and requires no new syntax.
+   - **Cons**: Risk of unintentionally copying unrelated annotations; less explicit.
+   - **Why Not Chosen**: Mixins provide a more explicit and safer mechanism for annotation reuse.
+
+2. **Annotation Composition**:
+   - **Pros**: No new syntax required.
+   - **Cons**: Less readable and more verbose (e.g., `@HasAll([@ToString, @FromString])`).
+   - **Why Not Chosen**: Mixins offer a cleaner and more intuitive syntax.
+
+3. **Trait-Like Interfaces**:
+   - **Pros**: Familiar to developers from other languages.
+   - **Cons**: Introduces complexity and deviates from Zirric's annotation-centric design.
+   - **Why Not Chosen**: Mixins align better with Zirric's existing annotation system.
+
+## Acknowledgements
+
+- **Prior Art**: Inspired by mixins in languages like Scala and Dart, and trait-like behavior in Rust.
+- **Contributors**: [@vknabel](https://github.com/vknabel) for designing the proposal.

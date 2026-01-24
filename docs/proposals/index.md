@@ -23,6 +23,12 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 | [ZE-004](/proposals/ZE-004-Variadic-Arguments)              | Variadic Arguments              | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
 | [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)         | Mixin Type Declarations         | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
 | [ZE-006](/proposals/ZE-006-Annotation-Based-Parsing-System) | Annotation-Based Parsing System | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-007](/proposals/ZE-007-annotation-binding)              | Annotation Binding              | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-008](/proposals/ZE-008-error-handling)                  | Error Handling                  | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-009](/proposals/ZE-009-option-values)                   | Option Values                   | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-010](/proposals/ZE-010-iterable)                        | Iterable                        | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-011](/proposals/ZE-011-zirric-cli)                      | Zirric CLI                      | In Progress | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-012](/proposals/ZE-012-type-and-returns-sugar)          | Type and Returns Sugar          | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
 
 ## Submitting Proposals
 
