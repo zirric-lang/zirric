@@ -119,6 +119,10 @@ func summarize(@Bag bag) {
   --hero-grad-b: rgba(255, 200, 160, 0.12);
   --code-text: #f7efef;
 }
+.landing,
+.landing * {
+  box-sizing: border-box;
+}
 [data-theme="light"] .landing {
   --text: #2a1c1c;
   --muted: rgba(42, 28, 28, 0.7);
@@ -136,6 +140,8 @@ func summarize(@Bag bag) {
   justify-content: space-between;
   gap: 2rem;
   padding: 0 0 1.25rem;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 .top-nav .brand {
   display: inline-flex;
@@ -152,6 +158,7 @@ func summarize(@Bag bag) {
   display: flex;
   gap: 1.5rem;
   flex-wrap: wrap;
+  min-width: 0;
 }
 .nav-links a {
   text-transform: uppercase;
@@ -172,6 +179,10 @@ func summarize(@Bag bag) {
   border-radius: 1.5rem;
   background: linear-gradient(135deg, var(--hero-grad-a), var(--hero-grad-b));
   border: 1px solid var(--border);
+}
+.hero-content,
+.hero-code {
+  min-width: 0;
 }
 .eyebrow {
   text-transform: uppercase;
@@ -229,6 +240,9 @@ func summarize(@Bag bag) {
   padding: 1.25rem;
   font-size: 0.9rem;
   color: var(--code-text);
+  max-width: 100%;
+  width: 100%;
+  overflow-x: auto;
 }
 .cards {
   margin-top: 2.5rem;
@@ -282,6 +296,27 @@ func summarize(@Bag bag) {
   .nav-links {
     align-self: center;
     justify-content: center;
+  }
+}
+@media (max-width: 640px) {
+  .landing {
+    padding: 1rem 1.25rem 2.5rem;
+  }
+  .hero {
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    padding: 2rem 1.25rem;
+    border: 0;
+    border-radius: 0;
+  }
+  .nav-links {
+    width: 100%;
+    gap: 0.6rem 1rem;
+    justify-content: center;
+  }
+  .nav-links a {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
   }
 }
 </style>
