@@ -169,7 +169,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("undefined identifier %q", node.Name)
 		}
 		switch symbol.Decl.(type) {
-		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclAnnotation:
+		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAnnotation:
 			sym := symbol.Original()
 			if sym.ConstantId == nil {
 				return fmt.Errorf("identifier %q has no constant id", node.Name)
@@ -298,7 +298,7 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 		sym.LocalId = &id
 		return nil
 
-	case *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclAnnotation:
+	case *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAnnotation:
 		id := len(c.constants)
 		c.constants = append(c.constants, nil)
 		sym.ConstantId = &id
@@ -1014,11 +1014,71 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return err
 		}
 
+		annotations, err := c.compileDataAnnotations(decl, c.currentSymbols())
+		if err != nil {
+			return err
+		}
+		if len(annotations) > 0 {
+			dt.Annotations = annotations
+		}
+
 		c.constants[*sym.ConstantId] = dt
 
 		return nil
 
+	case *ast.DeclAnnotation:
+		at, err := runtime.MakeAnnotationType(sym)
+		if err != nil {
+			return err
+		}
+
+		annotations, err := c.compileAnnotationChain(decl.Annotations, c.currentSymbols())
+		if err != nil {
+			return err
+		}
+		at.Annotations = annotations
+
+		c.constants[*sym.ConstantId] = at
+
+		return nil
+
+	case *ast.DeclExternType:
+		annotations, err := c.compileAnnotationChain(decl.Annotations, c.currentSymbols())
+		if err != nil {
+			return err
+		}
+		st := runtime.SimpleType{Decl: sym, Annotations: annotations}
+		c.constants[*sym.ConstantId] = st
+		return nil
+
+	case *ast.DeclExternFunc:
+		annotations, err := c.compileAnnotationChain(decl.Annotations, c.currentSymbols())
+		if err != nil {
+			return err
+		}
+		paramAnnotations, err := c.compileParamAnnotations(decl.Parameters, c.currentSymbols())
+		if err != nil {
+			return err
+		}
+		extern, err := runtime.MakeExternFunc(sym, nil)
+		if err != nil {
+			return err
+		}
+		extern.Annotations = annotations
+		extern.ParamAnnotations = paramAnnotations
+		c.constants[*sym.ConstantId] = extern
+		return nil
+
 	case *ast.DeclFunc:
+		functionAnnotations, err := c.compileAnnotationChain(decl.Annotations, c.currentSymbols())
+		if err != nil {
+			return err
+		}
+		paramAnnotations, err := c.compileParamAnnotations(decl.Impl.Parameters, decl.Impl.Symbols)
+		if err != nil {
+			return err
+		}
+
 		c.enterScope(decl.Impl.Symbols)
 
 		for _, child := range decl.Impl.Symbols.Symbols {
@@ -1030,18 +1090,21 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 				return err
 			}
 		}
-		err := c.compileBlock(decl.Impl.Impl)
+		err = c.compileBlock(decl.Impl.Impl)
 		if err != nil {
 			return err
 		}
 		scope := c.leaveScope()
 
-		c.constants[*sym.ConstantId] = runtime.MakeCompiledFunction(
+		compiled := runtime.MakeCompiledFunction(
 			scope.Instructions,
 			len(decl.Impl.Parameters),
 			len(scope.locals),
 			sym,
 		)
+		compiled.Annotations = functionAnnotations
+		compiled.ParamAnnotations = paramAnnotations
+		c.constants[*sym.ConstantId] = compiled
 
 		return nil
 
@@ -1083,4 +1146,67 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 	default:
 		return fmt.Errorf("unknown declaration %T", decl)
 	}
+}
+
+func (c *Compiler) compileDataAnnotations(decl *ast.DeclData, symbols *ast.SymbolTable) (map[runtime.TypeId]int, error) {
+	return c.compileAnnotationChain(decl.Annotations, symbols)
+}
+
+func (c *Compiler) compileAnnotationGlobal(anno *ast.DeclAnnotationInstance, symbols *ast.SymbolTable) (runtime.TypeId, int, error) {
+	sym := symbols.LookupRef(anno.Reference)
+	if sym == nil || sym.Decl == nil {
+		return 0, 0, fmt.Errorf("annotation %q is not declared", anno.Reference.String())
+	}
+	sym = sym.Original()
+	if _, ok := sym.Decl.(*ast.DeclAnnotation); !ok {
+		return 0, 0, fmt.Errorf("annotation %q is not an annotation type", anno.Reference.String())
+	}
+	if sym.ConstantId == nil {
+		return 0, 0, fmt.Errorf("annotation %q has no constant id", anno.Reference.String())
+	}
+
+	c.enterScope(symbols)
+	for _, arg := range anno.Arguments {
+		if err := c.Compile(arg); err != nil {
+			c.leaveScope()
+			return 0, 0, err
+		}
+	}
+	c.emit(op.Const, *sym.ConstantId)
+	c.emit(op.MakeAnnotation, len(anno.Arguments))
+	scope := c.leaveScope()
+
+	globalId := c.addGlobal(scope)
+	return runtime.TypeId(*sym.ConstantId), globalId, nil
+}
+
+func (c *Compiler) compileAnnotationChain(annotations ast.AnnotationChain, symbols *ast.SymbolTable) (map[runtime.TypeId]int, error) {
+	if len(annotations) == 0 {
+		return nil, nil
+	}
+
+	compiled := make(map[runtime.TypeId]int, len(annotations))
+	for _, anno := range annotations {
+		typeId, globalId, err := c.compileAnnotationGlobal(anno, symbols)
+		if err != nil {
+			return nil, err
+		}
+		compiled[typeId] = globalId
+	}
+	return compiled, nil
+}
+
+func (c *Compiler) compileParamAnnotations(params []ast.DeclParameter, symbols *ast.SymbolTable) ([]map[runtime.TypeId]int, error) {
+	if len(params) == 0 {
+		return nil, nil
+	}
+	compiled := make([]map[runtime.TypeId]int, len(params))
+	for i, param := range params {
+		annotations, err := c.compileAnnotationChain(param.Annotations, symbols)
+		if err != nil {
+			return nil, err
+		}
+		compiled[i] = annotations
+	}
+	return compiled, nil
 }

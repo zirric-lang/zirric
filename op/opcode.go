@@ -39,6 +39,7 @@ const (
 	LessThan
 	LessThanOrEqual
 
+	MakeAnnotation
 	Call
 	Return
 	GetGlobal
@@ -86,6 +87,8 @@ var definitions = map[Opcode]*Definition{
 	GreaterThanOrEqual: {"gte", []int{}},
 	LessThan:           {"lt", []int{}},
 	LessThanOrEqual:    {"lte", []int{}},
+
+	MakeAnnotation: {"makeannotation", []int{2}}, // arg count
 
 	Call:      {"call", []int{2}}, // arg count
 	Return:    {"return", []int{}},

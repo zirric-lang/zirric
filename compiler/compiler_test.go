@@ -809,6 +809,278 @@ func TestDeclData(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestDataTypeAnnotations(t *testing.T) {
+	input := `
+		annotation Example { value }
+		@Example(1)
+		data Foo {}
+	`
+
+	program := prepareSourceFileParsing(t, input)
+
+	compiler := compiler.New()
+	err := compiler.Compile(program)
+	if err != nil {
+		t.Fatalf("compiler error: %s", err)
+	}
+
+	bytecode := compiler.Bytecode()
+
+	var dataType *runtime.DataType
+	var annoType *runtime.AnnotationType
+	for _, constant := range bytecode.Constants {
+		switch constant := constant.(type) {
+		case *runtime.DataType:
+			if constant.Symbol.Name == "Foo" {
+				dataType = constant
+			}
+		case *runtime.AnnotationType:
+			if constant.Symbol.Name == "Example" {
+				annoType = constant
+			}
+		}
+	}
+
+	if dataType == nil {
+		t.Fatal("missing data type constant for Foo")
+	}
+	if annoType == nil {
+		t.Fatal("missing annotation type constant for Example")
+	}
+
+	if len(dataType.Annotations) != 1 {
+		t.Fatalf("unexpected annotation count: %d", len(dataType.Annotations))
+	}
+
+	typeId := runtime.TypeId(*annoType.Symbol.ConstantId)
+	globalId, ok := dataType.Annotations[typeId]
+	if !ok {
+		t.Fatalf("missing annotation for type id %d", typeId)
+	}
+	if globalId >= len(bytecode.Globals) {
+		t.Fatalf("annotation global id out of range: %d", globalId)
+	}
+
+	scope := bytecode.Globals[globalId]
+	found := false
+	for i := 0; i < len(scope.Instructions); {
+		def, err := code.LookupDefinition(scope.Instructions[i])
+		if err != nil {
+			t.Fatalf("unknown opcode: %s", err)
+		}
+		operands, read := code.ReadOperands(def, scope.Instructions[i+1:])
+		if code.Opcode(scope.Instructions[i]) == code.MakeAnnotation {
+			found = true
+			if len(operands) != 1 || operands[0] != 1 {
+				t.Fatalf("unexpected annotation operand: %v", operands)
+			}
+		}
+		i += 1 + read
+	}
+	if !found {
+		t.Fatal("annotation global missing MakeAnnotation instruction")
+	}
+}
+
+func TestDeclAnnotation(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			label: "empty annotation declaration",
+			input: `annotation Example`,
+			expectedConstants: []any{
+				compiledAnnotationType{
+					name:   "Example",
+					fields: []compiledField{},
+				},
+			},
+		},
+		{
+			label: "annotation declaration",
+			input: `annotation Example { field }`,
+			expectedConstants: []any{
+				compiledAnnotationType{
+					name:   "Example",
+					fields: []compiledField{{name: "field"}},
+				},
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
+func TestFunctionAnnotations(t *testing.T) {
+	input := `
+		annotation Job { jobName }
+		@Job("Singer")
+		func greet(@Job("Vocalist") name) {}
+	`
+
+	program := prepareSourceFileParsing(t, input)
+
+	compiler := compiler.New()
+	err := compiler.Compile(program)
+	if err != nil {
+		t.Fatalf("compiler error: %s", err)
+	}
+
+	bytecode := compiler.Bytecode()
+
+	var funcConst *runtime.CompiledFunction
+	var annoType *runtime.AnnotationType
+	for _, constant := range bytecode.Constants {
+		switch constant := constant.(type) {
+		case *runtime.CompiledFunction:
+			if constant.Symbol.Name == "greet" {
+				funcConst = constant
+			}
+		case *runtime.AnnotationType:
+			if constant.Symbol.Name == "Job" {
+				annoType = constant
+			}
+		}
+	}
+
+	if funcConst == nil {
+		t.Fatal("missing compiled function constant for greet")
+	}
+	if annoType == nil {
+		t.Fatal("missing annotation type constant for Job")
+	}
+
+	typeId := runtime.TypeId(*annoType.Symbol.ConstantId)
+	if funcConst.Annotations == nil {
+		t.Fatal("missing function annotations map")
+	}
+	if _, ok := funcConst.Annotations[typeId]; !ok {
+		t.Fatalf("missing function annotation for type id %d", typeId)
+	}
+
+	if len(funcConst.ParamAnnotations) != 1 {
+		t.Fatalf("unexpected param annotation length: %d", len(funcConst.ParamAnnotations))
+	}
+	if funcConst.ParamAnnotations[0] == nil {
+		t.Fatal("missing param annotations map")
+	}
+	if _, ok := funcConst.ParamAnnotations[0][typeId]; !ok {
+		t.Fatalf("missing param annotation for type id %d", typeId)
+	}
+}
+
+func TestExternAnnotations(t *testing.T) {
+	input := `
+		annotation Job { jobName }
+		@Job("Singer")
+		extern func greet(@Job("Vocalist") name)
+		@Job("Actor")
+		extern type Person {}
+	`
+
+	program := prepareSourceFileParsing(t, input)
+
+	compiler := compiler.New()
+	err := compiler.Compile(program)
+	if err != nil {
+		t.Fatalf("compiler error: %s", err)
+	}
+
+	bytecode := compiler.Bytecode()
+
+	var externFunc runtime.ExternFunc
+	var externType runtime.SimpleType
+	var annoType *runtime.AnnotationType
+	for _, constant := range bytecode.Constants {
+		switch constant := constant.(type) {
+		case runtime.ExternFunc:
+			if constant.Inspect() == "extern greet(#1)" {
+				externFunc = constant
+			}
+		case runtime.SimpleType:
+			if constant.Decl.Name == "Person" {
+				externType = constant
+			}
+		case *runtime.AnnotationType:
+			if constant.Symbol.Name == "Job" {
+				annoType = constant
+			}
+		}
+	}
+
+	if annoType == nil {
+		t.Fatal("missing annotation type constant for Job")
+	}
+	typeId := runtime.TypeId(*annoType.Symbol.ConstantId)
+
+	if externFunc.Annotations == nil {
+		t.Fatal("missing extern func annotations map")
+	}
+	if _, ok := externFunc.Annotations[typeId]; !ok {
+		t.Fatalf("missing extern func annotation for type id %d", typeId)
+	}
+	if len(externFunc.ParamAnnotations) != 1 {
+		t.Fatalf("unexpected extern func param annotation length: %d", len(externFunc.ParamAnnotations))
+	}
+	if externFunc.ParamAnnotations[0] == nil {
+		t.Fatal("missing extern func param annotations map")
+	}
+	if _, ok := externFunc.ParamAnnotations[0][typeId]; !ok {
+		t.Fatalf("missing extern func param annotation for type id %d", typeId)
+	}
+
+	if externType.Annotations == nil {
+		t.Fatal("missing extern type annotations map")
+	}
+	if _, ok := externType.Annotations[typeId]; !ok {
+		t.Fatalf("missing extern type annotation for type id %d", typeId)
+	}
+}
+
+func TestAnnotationTypeAnnotations(t *testing.T) {
+	input := `
+		annotation Meta { label }
+		@Meta("Primary")
+		annotation Job { jobName }
+	`
+
+	program := prepareSourceFileParsing(t, input)
+
+	compiler := compiler.New()
+	err := compiler.Compile(program)
+	if err != nil {
+		t.Fatalf("compiler error: %s", err)
+	}
+
+	bytecode := compiler.Bytecode()
+
+	var annoType *runtime.AnnotationType
+	var metaType *runtime.AnnotationType
+	for _, constant := range bytecode.Constants {
+		if at, ok := constant.(*runtime.AnnotationType); ok {
+			if at.Symbol.Name == "Job" {
+				annoType = at
+			}
+			if at.Symbol.Name == "Meta" {
+				metaType = at
+			}
+		}
+	}
+
+	if annoType == nil {
+		t.Fatal("missing annotation type constant for Job")
+	}
+	if metaType == nil {
+		t.Fatal("missing annotation type constant for Meta")
+	}
+
+	typeId := runtime.TypeId(*metaType.Symbol.ConstantId)
+	if annoType.Annotations == nil {
+		t.Fatal("missing annotation type annotations map")
+	}
+	if _, ok := annoType.Annotations[typeId]; !ok {
+		t.Fatalf("missing annotation type annotation for type id %d", typeId)
+	}
+}
+
 func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 	t.Helper()
 
@@ -982,6 +1254,32 @@ func testConstants(
 					return fmt.Errorf("wrong field name at %d.%d.\nwant=%q\ngot=%q", i, j, field.name, got.FieldSymbols[j].Name)
 				}
 			}
+		case compiledAnnotationType:
+			got, ok := actual[i].(*runtime.AnnotationType)
+			if !ok {
+				return fmt.Errorf("constant %d is not an annotation type: %T", i, actual[i])
+			}
+
+			if got.Symbol.Name != want.name {
+				return fmt.Errorf("wrong annotation type name at %d.\nwant=%q\ngot=%q", i, want.name, got.Symbol.Name)
+			}
+
+			if len(got.FieldSymbols) != len(want.fields) {
+				return fmt.Errorf("wrong amount of fields at %d.\nwant=%d\ngot=%d", i, len(want.fields), len(got.FieldSymbols))
+			}
+
+			for j, field := range want.fields {
+				if got.FieldSymbols[j].Name != field.name {
+					return fmt.Errorf("wrong field name at %d.%d.\nwant=%q\ngot=%q", i, j, field.name, got.FieldSymbols[j].Name)
+				}
+			}
+
+			if got.Symbol.ConstantId == nil {
+				return fmt.Errorf("annotation type %q has no constant id", got.Symbol.Name)
+			}
+			if got.TypeConstantId() != runtime.TypeId(*got.Symbol.ConstantId) {
+				return fmt.Errorf("annotation type %q has mismatched type id", got.Symbol.Name)
+			}
 
 		default:
 			got := actual[i]
@@ -1017,6 +1315,10 @@ type compiledFunction struct {
 	ins    []code.Instructions
 }
 type compiledDataType struct {
+	name   string
+	fields []compiledField
+}
+type compiledAnnotationType struct {
 	name   string
 	fields []compiledField
 }

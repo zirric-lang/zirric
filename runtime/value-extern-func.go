@@ -11,9 +11,11 @@ var _ CallableRuntimeValue = ExternFunc{}
 type ExternFuncImpl func(args []RuntimeValue) RuntimeValue
 
 type ExternFunc struct {
-	symbol *ast.Symbol
-	arity  int
-	Impl   ExternFuncImpl
+	symbol           *ast.Symbol
+	arity            int
+	Impl             ExternFuncImpl
+	Annotations      map[TypeId]int
+	ParamAnnotations []map[TypeId]int
 }
 
 func MakeExternFunc(symbol *ast.Symbol, impl ExternFuncImpl) (ExternFunc, error) {
@@ -21,7 +23,11 @@ func MakeExternFunc(symbol *ast.Symbol, impl ExternFuncImpl) (ExternFunc, error)
 	if !ok {
 		return ExternFunc{}, fmt.Errorf("declaration is not a DeclExternFunc, got %T", symbol.Decl)
 	}
-	return ExternFunc{symbol, len(decl.Parameters), impl}, nil
+	return ExternFunc{
+		symbol: symbol,
+		arity:  len(decl.Parameters),
+		Impl:   impl,
+	}, nil
 }
 
 // Arity implements CallableRuntimeValue.

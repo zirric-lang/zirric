@@ -131,6 +131,135 @@ func TestData(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestDataAnnotations(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			label: "annotation type call",
+			input: `
+			annotation Job {
+				jobName
+			}
+			@Job("Singer")
+			data Person {
+				name
+			}
+			Job(Person("Valentin")).jobName
+			`,
+			expected: "Singer",
+		},
+		{
+			label: "missing annotation returns void",
+			input: `
+			annotation Job {
+				jobName
+			}
+			data Person {
+				name
+			}
+			Job(Person("Valentin"))
+			`,
+			expected: runtime.Void{},
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestFunctionAnnotations(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			label: "function annotation lookup",
+			input: `
+			annotation Job {
+				jobName
+			}
+			@Job("Singer")
+			func greet() {}
+			Job(greet).jobName
+			`,
+			expected: "Singer",
+		},
+		{
+			label: "missing function annotation returns void",
+			input: `
+			annotation Job {
+				jobName
+			}
+			func greet() {}
+			Job(greet)
+			`,
+			expected: runtime.Void{},
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestExternAnnotations(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			label: "extern func annotation lookup",
+			input: `
+			annotation Job { jobName }
+			@Job("Singer")
+			extern func greet(name)
+			Job(greet).jobName
+			`,
+			expected: "Singer",
+		},
+		{
+			label: "extern type annotation lookup",
+			input: `
+			annotation Job { jobName }
+			@Job("Actor")
+			extern type Person {}
+			Job(Person).jobName
+			`,
+			expected: "Actor",
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestAnnotationTypeAnnotations(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			label: "annotation type annotation lookup",
+			input: `
+			annotation Meta { label }
+			@Meta("Primary")
+			annotation Job { jobName }
+			Meta(Job).label
+			`,
+			expected: "Primary",
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestAnnotationValueAnnotations(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			label: "annotation value annotation lookup",
+			input: `
+			annotation Meta { label }
+			@Meta("Primary")
+			annotation Job { jobName }
+			@Job("Singer")
+			data Person {
+				name
+			}
+			Meta(Job(Person("Luke"))).label
+			`,
+			expected: "Primary",
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
 func BenchmarkFib10(t *testing.B) {
 	runBench(t, `
 	func fib(n) {
@@ -447,6 +576,8 @@ func testValue(expected interface{}, actual runtime.RuntimeValue) error {
 		return testDict(map[any]any(expected), actual)
 	case data:
 		return testData(expected, actual)
+	case annotation:
+		return testAnnotation(expected, actual)
 	default:
 		return fmt.Errorf("unhandled type %T", expected)
 	}
@@ -568,6 +699,35 @@ func testData(expected data, actual runtime.RuntimeValue) error {
 
 	if result.TypeConstantId() != expected.typeId {
 		return fmt.Errorf("data type does not match. got=%q, want=%q", result.TypeConstantId(), expected.typeId)
+	}
+
+	if len(expected.values) != len(result.Values) {
+		return fmt.Errorf("length does not match. got=%d, want=%d", len(result.Values), len(expected.values))
+	}
+
+	for i, el := range result.Values {
+		err := testValue(expected.values[i], el)
+		if err != nil {
+			return fmt.Errorf("at index %d: %w", i, err)
+		}
+	}
+
+	return nil
+}
+
+type annotation struct {
+	typeId runtime.TypeId
+	values []any
+}
+
+func testAnnotation(expected annotation, actual runtime.RuntimeValue) error {
+	result, ok := actual.(*runtime.AnnotationValue)
+	if !ok {
+		return fmt.Errorf("object is not Annotation. got=%T (%+v)", actual, actual)
+	}
+
+	if result.TypeConstantId() != expected.typeId {
+		return fmt.Errorf("annotation type does not match. got=%q, want=%q", result.TypeConstantId(), expected.typeId)
 	}
 
 	if len(expected.values) != len(result.Values) {

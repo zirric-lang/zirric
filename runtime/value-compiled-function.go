@@ -10,10 +10,12 @@ import (
 var _ CallableRuntimeValue = CompiledFunction{}
 
 type CompiledFunction struct {
-	Instructions op.Instructions
-	Params       int
-	Locals       int
-	Symbol       *ast.Symbol
+	Instructions     op.Instructions
+	Params           int
+	Locals           int
+	Symbol           *ast.Symbol
+	Annotations      map[TypeId]int
+	ParamAnnotations []map[TypeId]int
 }
 
 func MakeCompiledFunction(
