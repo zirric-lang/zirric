@@ -79,8 +79,8 @@ Modules group declarations. Imports bring other modules into scope.
 ```zirric
 module http
 
-import prelude
-import cave.tasks
+import code.knabel.dev.zirric_lang.zirric.prelude
+import code.knabel.dev.zirric_lang.zirric.future.tasks
 ```
 
 ## Annotations on declarations

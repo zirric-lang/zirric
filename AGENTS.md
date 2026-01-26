@@ -12,6 +12,7 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 ### Core Components
 
 - **Lexer & Parser**: Tokenize and parse Zirric source code into AST
+- **Analyzer**: Resolve symbols, validate static references, and assign IDs
 - **Compiler**: Compile AST to bytecode for virtual machine
 - **Virtual Machine**: Execute bytecode with stack-based architecture
 - **Runtime**: Built-in types (Array, Bool, Int, String) and standard library
@@ -22,8 +23,8 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 ### Where to look first (authoritative Zirric source)
 
 - **Language proposals**: `proposals/ZE-001-base-language.md` (core syntax/semantics) and `proposals/ZE-002-the-cavefile.md` (package manifest + tasks). For future-facing features, see `proposals/ZE-004-Variadic-Arguments.md`, `proposals/ZE-005-Mixin-Type-Declarations.md`, and `proposals/ZE-006-Annotation-Based-Parsing-System.md`.
-- **Standard library Zirric sources**: `stdlib/prelude/shim.zirr` (core types and values), `stdlib/prelude/annotations.zirr` (annotation system), `stdlib/prelude/countable.zirr` (protocol-like annotations), `stdlib/prelude/result.zirr` (Result/Optional patterns), `stdlib/reflect/stub.zirr` (reflection surface).
-- **Cavefile schema and tasks**: `stdlib/cave/manifest.zirr` and `stdlib/cave/tasks/manifest.zirr` define the annotation-driven dependency/task model used by the package manager.
+- **Standard library Zirric sources**: `prelude/shim.zirr` (core types and values), `prelude/annotations.zirr` (annotation system), `prelude/countable.zirr` (protocol-like annotations), `prelude/result.zirr` (Result/Optional patterns), `future/reflect/stub.zirr` (reflection surface).
+- **Cavefile schema and tasks**: `future/cave/manifest.zirr` and `future/tasks/manifest.zirr` define the annotation-driven dependency/task model used by the package manager.
 - **Example manifest**: `examples/project/Cavefile` shows real-world dependency + task declarations.
 
 ### Core mental model (intuition)
@@ -31,9 +32,9 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 - **Declarations**: Zirric is declaration-driven (`let`, `func`, `data`, `union`, `extern`, `annotation`, `module`, `import`), with annotations as the primary metadata mechanism.
 - **Dynamic but strict**: Values are dynamic, yet conversions are explicit; annotations like `@Type`, `@Has`, and `@Returns` communicate intent to tooling and runtime checks.
 - **Data and unions**: `data` defines record-like types with named fields; `union` are a declared nominal supertype consisting of a fixed set of existing types; values are implicitly usable as a union if their concrete type is a member (often with nested `data` members).
-- **Annotations are first-class**: Many behaviors (type hints, defaults, docs, protocols) are expressed via annotations in `stdlib/prelude/annotations.zirr`.
-- **Collection protocols**: `@Countable`/`@Iterable` in `stdlib/prelude/countable.zirr` describe the “protocols” used by loops and helpers.
-- **Cavefile is just Zirric**: Dependency and task manifests are Zirric `data` declarations annotated with `@cave.Dependencies` and `@tasks.*` (see `stdlib/cave/manifest.zirr` and `stdlib/cave/tasks/manifest.zirr`).
+- **Annotations are first-class**: Many behaviors (type hints, defaults, docs, protocols) are expressed via annotations in `prelude/annotations.zirr`.
+- **Collection protocols**: `@Countable`/`@Iterable` in `prelude/countable.zirr` describe the “protocols” used by loops and helpers.
+- **Cavefile is just Zirric**: Dependency and task manifests are Zirric `data` declarations annotated with `@cave.Dependencies` and `@tasks.*` (see `future/cave/manifest.zirr` and `future/tasks/manifest.zirr`).
 
 ## Build & Validation Instructions
 
@@ -177,39 +178,43 @@ GitHub Actions workflow (`.github/workflows/go.yml`):
 │   └── syntax/                 # Language syntax docs
 ├── proposals/                  # Language evolution proposals (ZE-*)
 ├── examples/project/           # Example Zirric project
-├── stdlib/                     # Standard library sources
-│   ├── prelude/                # Core types/annotations (.zirr)
-│   ├── reflect/                # Reflection surface (.zirr)
-│   └── cave/                   # Cavefile manifest + task annotations (.zirr)
+├── prelude/                     # Core standard library sources
+├── future/                      # Future standard library modules
+│   ├── prelude/                 # Proposed prelude extensions (.zirr)
+│   ├── reflect/                 # Reflection surface (.zirr)
+│   ├── cave/                    # Cavefile manifest schema (.zirr)
+│   └── tasks/                   # Cavefile task annotations (.zirr)
 ├── cmd/                        # CLI entrypoints
-├── ast/                        # Abstract Syntax Tree definitions
-├── lexer/                      # Tokenization
-├── parser/                     # Parse tokens to AST
-├── compiler/                   # Compile AST to bytecode
-├── op/                         # Bytecode operation definitions
-├── vm/                         # Virtual machine execution
-├── runtime/                    # Built-in types and runtime system
-├── cavefile/                   # Package management structures
-├── registry/                   # Module/package registries
-├── syncheck/                   # Syntax validation
-├── token/                      # Token definitions
-├── version/                    # Semantic versioning
-├── world/                      # OS interaction abstractions
-└── pkgmanager/                 # Package management logic
+├── pkg/                        # Core Go packages
+│   ├── ast/                    # Abstract Syntax Tree definitions
+│   ├── analyzer/               # Analyzer passes (symbol resolution, IDs)
+│   ├── lexer/                  # Tokenization
+│   ├── parser/                 # Parse tokens to AST
+│   ├── compiler/               # Compile AST to bytecode
+│   ├── op/                     # Bytecode operation definitions
+│   ├── vm/                     # Virtual machine execution
+│   ├── runtime/                # Built-in types and runtime system
+│   ├── cavefile/               # Package management structures
+│   ├── registry/               # Module/package registries
+│   ├── syncheck/               # Syntax validation
+│   ├── token/                  # Token definitions
+│   ├── version/                # Semantic versioning
+│   ├── world/                  # OS interaction abstractions
+│   └── pkgmanager/             # Package management logic
 ```
 
 ### Key Files for Code Changes
 
-- **`ast/`**: Add new AST nodes when extending language syntax
-- **`lexer/lexer.go`**: Modify for new token types
-- **`parser/parser.go`**: Update for new language constructs
-- **`compiler/compiler.go`**: Add compilation logic for new features
-- **`vm/vm.go`**: Extend VM for new bytecode operations
-- **`runtime/prelude-*.go`**: Built-in type implementations
-- **`stdlib/prelude/*.zirr`**: Core types and annotations
-- **`stdlib/cave/manifest.zirr`**: Cavefile dependency schema
-- **`stdlib/cave/tasks/manifest.zirr`**: Cavefile task schema
-- **`op/defs.go`**: Define new bytecode operations
+- **`pkg/ast/`**: Add new AST nodes when extending language syntax
+- **`pkg/lexer/lexer.go`**: Modify for new token types
+- **`pkg/parser/parser.go`**: Update for new language constructs
+- **`pkg/compiler/compiler.go`**: Add compilation logic for new features
+- **`pkg/vm/vm.go`**: Extend VM for new bytecode operations
+- **`pkg/runtime/prelude-*.go`**: Built-in type implementations
+- **`prelude/*.zirr`**: Core types and annotations
+- **`future/cave/manifest.zirr`**: Cavefile dependency schema
+- **`future/tasks/manifest.zirr`**: Cavefile task schema
+- **`pkg/op/defs.go`**: Define new bytecode operations
 
 ### Testing Patterns
 

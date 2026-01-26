@@ -4,12 +4,13 @@ Zirric is an experimental programming language with a reference implementation i
 
 - Documentation site: https://zirric.knabel.dev
 - Lexer, parser, and AST
+- Analyzer for symbol resolution and ID assignment
 - Bytecode compiler and virtual machine
 - Standard library with prelude types such as `Array`, `Bool`, `Int`, and `String`
 - Package management via `Cavefile` and registries
 - Documentation on syntax, types, and style in [`docs/`](./docs)
 - Language evolution proposals in [`docs/proposals/`](https://zirric.knabel.dev/proposals), with the base language in [`docs/proposals/ZE-001-base-language.md`](https://zirric.knabel.dev/proposals/ZE-001-base-language)
-- Core language surface in the Zirric sources under [`stdlib/`](./stdlib)
+- Core language surface in the Zirric sources under [`prelude/`](./prelude) and [`future/`](./future)
 
 ## Language overview
 

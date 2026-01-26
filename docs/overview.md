@@ -64,8 +64,8 @@ When you want more depth or future-facing design notes, read the
 
 ## Runtime and packages
 
-Zirric ships with a standard library written in Zirric itself under `stdlib/` and
-a package system called Cavefile.
+Zirric ships with a standard library written in Zirric itself under `prelude/`
+and `future/`, plus a package system called Cavefile.
 
 - [Cavefile manifests](/cavefile)
 - [Compiler architecture](/tooling/compiler)

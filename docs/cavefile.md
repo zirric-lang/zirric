@@ -1,14 +1,17 @@
 # Cavefile manifests
 
 Zirric packages declare dependencies and tasks in a `Cavefile`. A Cavefile is
-regular Zirric source code that uses annotations from the `cave` and
-`cave.tasks` standard library modules. For implementation details, see
-`proposals/ZE-002-the-cavefile.md` and `stdlib/cave/manifest.zirr`.
+regular Zirric source code that uses annotations from the
+`code.knabel.dev.zirric_lang.zirric.future.cave` and
+`code.knabel.dev.zirric_lang.zirric.future.tasks` standard library modules.
+For
+implementation details, see `proposals/ZE-002-the-cavefile.md` and
+`future/cave/manifest.zirr`.
 
 ## Dependencies
 
 ```zirric
-import cave
+import code.knabel.dev.zirric_lang.zirric.future.cave
 
 @cave.Dependencies()
 data Dependencies {
@@ -30,7 +33,7 @@ dependency resolution.
 ## Tasks
 
 ```zirric
-import cave.tasks
+import code.knabel.dev.zirric_lang.zirric.future.tasks
 
 @tasks.Name("generate")
 @tasks.Help("Generates something")

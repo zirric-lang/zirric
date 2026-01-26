@@ -23,7 +23,7 @@ A Cavefile is a Zirric module that declares dependencies through annotations.
 The package manager reads it for types and metadata, not for runtime behavior.
 
 ```zirric
-import cave
+import code.knabel.dev.zirric_lang.zirric.future.cave
 
 @cave.Dependencies()
 data Dependencies {

@@ -11,12 +11,12 @@ func Execute() error {
 	delimiter := slices.Index(os.Args, "--")
 
 	if delimiter != -1 {
+		rootCmd.SetArgs(os.Args[1:delimiter])
 		loadCavefileIfNeeded(os.Args[1:delimiter])
 	} else {
 		loadCavefileIfNeeded(os.Args[1:])
 	}
 
-	rootCmd.SetArgs(os.Args[1:delimiter])
 	return rootCmd.Execute()
 }
 

@@ -3,7 +3,7 @@ package cmds
 import (
 	"github.com/spf13/cobra"
 
-	"code.knabel.dev/zirric-lang/zirric/langsrv"
+	"code.knabel.dev/zirric-lang/zirric/pkg/langsrv"
 )
 
 func init() {

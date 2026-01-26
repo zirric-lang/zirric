@@ -77,7 +77,7 @@ annotation SomeType {
 
 ## Changes to the Standard Library
 
-- Add `@AnyOption`, `Option`, and `@SomeType` in `stdlib/future/prelude`.
+- Add `@AnyOption`, `Option`, and `@SomeType` in `future/prelude`.
 
 ## Alternatives Considered
 

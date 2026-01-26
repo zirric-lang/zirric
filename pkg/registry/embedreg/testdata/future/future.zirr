@@ -1,0 +1,3 @@
+module future
+
+let hello = "future"

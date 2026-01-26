@@ -1,0 +1,145 @@
+module xprelude
+
+import code.knabel.dev.zirric_lang.zirric.future {
+	Proposal
+}
+
+// ZE-010: Iterable
+// https://zirric.knabel.dev/proposals/ZE-010-iterable
+let ZE_010 = "https://zirric.knabel.dev/proposals/ZE-010-iterable"
+
+// Denotes that a type is countable and has a length.
+@Proposal(ZE_010)
+annotation Countable {
+  @Returns(Int)
+  length(@Has(Countable) value)
+}
+
+// Marks a type as iterable.
+// This allows using `for ... <- ...` on the type.
+@Proposal(ZE_010)
+annotation Iterable {
+  iterate(@Has(Iterable) value, @Func yield)
+}
+
+// @Proposal(ZE_010)
+// @Countable({ v -> v.length })
+// @Iterable(_arrayIterate)
+// extern type Array {
+//   @Int length
+// }
+
+// @Proposal(ZE_010)
+// @Countable({ v -> v.length })
+// @Iterable(_dictIterate)
+// extern type Dict {
+//   @Int length
+//   @Array keys
+// }
+
+// Represents an open range of integers from start (inclusive) to end (exclusive).
+// Can be created using the syntax `start..<end`.
+@Proposal(ZE_010)
+@Countable(_rangeCount)
+@Iterable(_rangeIterate)
+data Range {
+  @Int start
+  @Int end
+}
+
+// Represents a closed range of integers from start (inclusive) to end (inclusive).
+// Can be created using the syntax `start...end`.
+@Proposal(ZE_010)
+@Countable(_rangeCount)
+@Iterable(_rangeIterate)
+data ClosedRange {
+  @Int start
+  @Int end
+}
+
+// @Proposal(ZE_010)
+// @Countable({ v -> v.length })
+// @Iterable(_stringIterate)
+// extern type String {
+//   @Int
+//   length
+// }
+
+func _arrayIterate(v, yield) {
+  let i = 0
+  let l = v.length
+  for {
+    if !yield(v[i]) {
+      break
+    }
+    i = i+1
+    if i == l {
+      return
+    }
+  }
+}
+
+func _dictIterate(v, yield) {
+  for k <- v.keys {
+    if !yield(v[k]) {
+      break
+    }
+  }
+}
+
+func _stringIterate(v, yield) {
+  let i = 0
+  let l = v.length
+  for {
+    if !yield(v[i]) {
+      break
+    }
+    i = i+1
+    if i == l {
+      return
+    }
+  }
+}
+
+func _rangeCount(v) {
+  if v.start >= v.end {
+    return 0
+  }
+  return v.end - v.start
+}
+
+func _rangeIterate(v, yield) {
+  let i = v.start
+  let l = v.end
+  for {
+    if !yield(i) {
+      break
+    }
+    i = i+1
+    if i == l {
+      return
+    }
+  }
+}
+
+func _closedRangeCount(v) {
+  if v.start >= v.end {
+    return 0
+  }
+  return v.end - v.start + 1
+}
+
+func _closedRangeIterate(v, yield) {
+  let i = v.start
+  let l = v.end
+  for {
+    if !yield(i) {
+      break
+    }
+    i = i+1
+    if i == l {
+      return
+    }
+  }
+  yield(l)
+}

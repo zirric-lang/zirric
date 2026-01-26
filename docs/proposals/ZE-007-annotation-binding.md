@@ -58,7 +58,7 @@ MessageError("msg")[@Error].debug() // `err` is passed automatically
 
 ## Changes to the Standard Library
 
-- Add a `@Bound` annotation in `stdlib/prelude` to mark bound functions.
+- Add a `@Bound` annotation in `prelude` to mark bound functions.
 - Bindings are opt-in and do not change existing annotations.
 
 ## Alternatives Considered

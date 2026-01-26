@@ -123,7 +123,7 @@ Annotations can be accessed at runtime by using the `reflect` module.
 
 ```zirric
 import json
-import reflect
+import code.knabel.dev.zirric_lang.zirric.future.reflect
 
 let person = Person("John", 42)
 let personType = reflect.typeOf(person)

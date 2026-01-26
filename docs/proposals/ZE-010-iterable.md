@@ -81,7 +81,7 @@ For arrays a more efficient implementation may be used that does not require fun
 ## Changes to the Standard Library
 
 - Add `@Countable`, `@Iterable`, `Range`, and `ClosedRange` in
-  `stdlib/prelude`.
+  `prelude`.
 - `prelude.Dict`, `prelude.String` and `prelude.Array` should all be annotated with `@Countable` and `@Iterable`.
 
 ## Alternatives Considered

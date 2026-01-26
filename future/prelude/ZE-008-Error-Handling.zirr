@@ -1,0 +1,69 @@
+module xprelude
+
+import code.knabel.dev.zirric_lang.zirric.future {
+	Proposal
+}
+
+// ZE-008: Error Handling
+// https://zirric.knabel.dev/proposals/ZE-008-error-handling
+let ZE_008 = "https://zirric.knabel.dev/proposals/ZE-008-error-handling"
+
+// Marks a type as an error type.
+@Proposal(ZE_008)
+annotation Error {
+	// Returns a debug string representation of the error.
+	@Bound()
+	@Returns(String)
+	debug(err)
+}
+
+// Marks a type as a result type.
+// It is expected that types annotated with `@ResultType` are unions.
+// Marking a type with `@AnyResult` enables additional syntactic sugar for working with result types:
+//
+// - `result!.value` resolves to a `Result` with either `Ok(value)` or `Err(error)`.
+// - `result !! "default value"` resolves to the value of `Ok` or the provided default value if `Err`.
+//
+annotation AnyResult {}
+
+// A result type that can be either Ok or Err.
+// Used for functions that can fail.
+// The following syntactic sugar exists for working with Result types:
+//
+// - `result!.value`
+// - `result !! "default value"`
+// - `@String!` which is equivalent to `@Type(Result) @OkType(String)`
+//
+@Proposal(ZE_008)
+@AnyResult()
+union Result {
+	// The successful result.
+	@Proposal(ZE_008)
+    data Ok {
+    	// The value of the successful result.
+		value
+	}
+
+	// The error result.
+	@Proposal(ZE_008)
+	@Error({ err -> err.error.debug(err.error) })
+    data Err {
+    	// The error of the result. Must a type annotated with `@Error`.
+		@Has(Error)
+		error
+	}
+}
+
+// Provides a type hint for the `Ok` type of a `Result`.
+@Proposal(ZE_008)
+annotation OkType {
+	// The type of `Ok.value`.
+	@Type(AnyType) type
+}
+
+// Provides a type hint for the `Err` type of a `Result`.
+@Proposal(ZE_008)
+annotation ErrType {
+	// The type of `Err.error`.
+	@Type(AnyType) type
+}

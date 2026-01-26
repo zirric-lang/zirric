@@ -33,7 +33,7 @@ As of now the package manager does not traverse transitive dependencies, leaving
 The data structure with the `@cave.Dependencies()` annotation will be used to declare dependencies in a `Cavefile`.
 
 ```zirric
-import cave
+import code.knabel.dev.zirric_lang.zirric.future.cave
 
 @cave.Dependencies()
 data Dependencies {

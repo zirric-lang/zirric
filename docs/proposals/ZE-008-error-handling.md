@@ -99,7 +99,7 @@ annotation ErrType {
 ## Changes to the Standard Library
 
 - Add `@Error`, `@AnyResult`, `Result`, `Ok`, `Err`, `@OkType`, and `@ErrType` in
-  `stdlib/prelude`.
+  `prelude`.
 - `panic(@String str)` to immediately terminate execution with an error message.
 
 ## Alternatives Considered

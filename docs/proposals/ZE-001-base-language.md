@@ -39,7 +39,7 @@ Things that proved to be good in Lithia and are kept in Zirric:
 - the prelude modules
 - the convention of small modules
 - the general declaration syntax
-- the concept of the `Potfile`
+- the concept of the `Potfile` (now `Cavefile`) for dependency management
 - a single binary that includes all tooling including the lsp
 - the tooling experience in regards to the maturity
 
@@ -485,7 +485,7 @@ expr_for_block = { decl }, ( "break" | "continue" | expression ) ;
 
 ### Modules
 
-Modules are defined by the folder structure on the file system. Each folder is a module. The root module is defined by the folder containing the `Potfile`.
+Modules are defined by the folder structure on the file system. Each folder is a module. The root module is defined by the folder containing the `Cavefile`.
 Each module has a corresponding value of type `Module` that can be accessed by the `module` declaration. That way it can also be annotated with metadata.
 
 Declarations that precede with `_` are treated as private and cannot be accessed from other modules. The same applies to nested declarations, imports and module-self references.

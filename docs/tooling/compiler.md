@@ -12,8 +12,9 @@ the Go implementation is the source of truth.
 ## Pipeline overview
 
 1. **Parsing**: source is tokenized and parsed into an AST.
-2. **Compilation**: the compiler emits bytecode instructions and a constant pool.
-3. **Execution**: the VM evaluates bytecode with a stack-based model.
+2. **Analysis**: an analyzer resolves symbols, validates static references, and assigns IDs.
+3. **Compilation**: the compiler emits bytecode instructions and a constant pool.
+4. **Execution**: the VM evaluates bytecode with a stack-based model.
 
 ## Bytecode model
 

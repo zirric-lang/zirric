@@ -1,0 +1,3 @@
+module prelude
+
+let hello = "future prelude"
