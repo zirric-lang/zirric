@@ -5,9 +5,10 @@ description: "Introduce a standard option type and optional chaining syntax."
 
 # Option Values
 
-::: callout draft <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-slash-icon lucide-search-slash"><path d="m13.5 8.5-5 5"/><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Draft
-This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design.
-Features described here may not be implemented as described and cannot be used right now.
+::: callout warning <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-dot-icon lucide-circle-dot"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg> In Progress
+This proposal has been accepted in principle.
+It is currently under active development.
+Parts might be incomplete or missing in Zirric.
 :::
 
 ## Introduction

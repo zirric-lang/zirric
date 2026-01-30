@@ -61,7 +61,7 @@ module.exports = {
       icon: 'wrench',
       collapsible: true,
       children: [
-        { title: 'Editor Support', path: '/tooling/editor-support', icon: 'trees' },
+        { title: 'Editor Support', path: '/tooling/editor-support', icon: 'dna' },
         { title: 'Package Manager', path: '/tooling/package-manager', icon: 'box' },
         { title: 'Compiler', path: '/tooling/compiler', icon: 'cpu' },
       ]
@@ -90,25 +90,25 @@ module.exports = {
     {
       title: 'Proposals',
       path: '/proposals',
-      icon: 'search',
+      icon: 'circle',
       collapsible: true,
       children: [
-        // draft: search-slash
-        // in-progress: search-code
-        // implemented: search-check
-        // rejected: search-x
-        { icon: 'search-code', title: 'ZE-01 Language', path: '/proposals/ZE-001-base-language' },
-        { icon: 'search-code', title: 'ZE-02 Cavefile', path: '/proposals/ZE-002-the-cavefile' },
-        { icon: 'search-x', title: 'ZE-03 Named Params', path: '/proposals/ZE-003-named-data-construction' },
-        { icon: 'search-slash', title: 'ZE-04 Variadic', path: '/proposals/ZE-004-Variadic-Arguments' },
-        { icon: 'search-slash', title: 'ZE-05 Mixins', path: '/proposals/ZE-005-Mixin-Type-Declarations' },
-        { icon: 'search-slash', title: 'ZE-06 Parsing', path: '/proposals/ZE-006-Annotation-Based-Parsing-System' },
-        { icon: 'search-slash', title: 'ZE-07 Binding', path: '/proposals/ZE-007-annotation-binding' },
-        { icon: 'search-slash', title: 'ZE-08 Errors', path: '/proposals/ZE-008-error-handling' },
-        { icon: 'search-slash', title: 'ZE-09 Option', path: '/proposals/ZE-009-option-values' },
-        { icon: 'search-slash', title: 'ZE-10 Iterable', path: '/proposals/ZE-010-iterable' },
-        { icon: 'search-code', title: 'ZE-11 Zirric CLI', path: '/proposals/ZE-011-zirric-cli' },
-        { icon: 'search-slash', title: 'ZE-12 Type and Returns Sugar', path: '/proposals/ZE-012-type-and-returns-sugar' },
+        // draft: circle
+        // in-progress: circle-dot
+        // implemented: circle-check
+        // rejected: circle-x
+        { icon: 'circle-dot', title: 'ZE-01 Language', path: '/proposals/ZE-001-base-language' },
+        { icon: 'circle-dot', title: 'ZE-02 Cavefile', path: '/proposals/ZE-002-the-cavefile' },
+        { icon: 'circle-x', title: 'ZE-03 Named Params', path: '/proposals/ZE-003-named-data-construction' },
+        { icon: 'circle', title: 'ZE-04 Variadic', path: '/proposals/ZE-004-Variadic-Arguments' },
+        { icon: 'circle', title: 'ZE-05 Mixins', path: '/proposals/ZE-005-Mixin-Type-Declarations' },
+        { icon: 'circle', title: 'ZE-06 Parsing', path: '/proposals/ZE-006-Annotation-Based-Parsing-System' },
+        { icon: 'circle', title: 'ZE-07 Binding', path: '/proposals/ZE-007-annotation-binding' },
+        { icon: 'circle-dot', title: 'ZE-08 Errors', path: '/proposals/ZE-008-error-handling' },
+        { icon: 'circle-dot', title: 'ZE-09 Option', path: '/proposals/ZE-009-option-values' },
+        { icon: 'circle-dot', title: 'ZE-10 Iterable', path: '/proposals/ZE-010-iterable' },
+        { icon: 'circle-dot', title: 'ZE-11 Zirric CLI', path: '/proposals/ZE-011-zirric-cli' },
+        { icon: 'circle-dot', title: 'ZE-12 Type and Returns Sugar', path: '/proposals/ZE-012-type-and-returns-sugar' },
       ]
     },
     {
