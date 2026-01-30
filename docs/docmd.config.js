@@ -61,7 +61,7 @@ module.exports = {
       icon: 'wrench',
       collapsible: true,
       children: [
-        { title: 'Syntax Highlighting', path: '/tooling/syntax-highlighting', icon: 'trees' },
+        { title: 'Editor Support', path: '/tooling/editor-support', icon: 'trees' },
         { title: 'Package Manager', path: '/tooling/package-manager', icon: 'box' },
         { title: 'Compiler', path: '/tooling/compiler', icon: 'cpu' },
       ]

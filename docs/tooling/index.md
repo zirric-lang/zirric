@@ -10,7 +10,7 @@ with the language implementation. This section collects the available pieces.
 
 ## Editor support
 
-- [Syntax Highlighting](/tooling/syntax-highlighting) with Tree-sitter for modern editors.
+- [Editor Support](/tooling/editor-support) with Tree-sitter and LSP for modern editors.
 
 ## Language implementation
 
