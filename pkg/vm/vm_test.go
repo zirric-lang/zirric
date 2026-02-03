@@ -288,6 +288,26 @@ func TestAnnotationValueAnnotations(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestFastBenchmark(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+	func fib(n) {
+		return if n < 2 {
+			n
+		} else {
+			fib(n-1) + fib(n-2)
+		}
+	}
+
+	fib(10)
+	`,
+			expected: 55,
+		},
+	}
+	runVmTests(t, tests)
+}
+
 func BenchmarkFib10(t *testing.B) {
 	runBench(t, `
 	func fib(n) {

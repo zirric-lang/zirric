@@ -592,6 +592,9 @@ func (vm *VM) numericBinaryOperationInt(operator op.Opcode, lhs, rhs runtime.Int
 	case op.Mul:
 		return vm.push(lhs * rhs)
 	case op.Div:
+		if rhs == 0 {
+			return fmt.Errorf("division by zero")
+		}
 		return vm.push(lhs / rhs)
 	case op.Mod:
 		return vm.push(lhs % rhs)

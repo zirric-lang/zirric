@@ -63,7 +63,7 @@ func New(bytecode *compiler.Bytecode) *VM {
 		framesIdx: 1,
 	}
 
-	for i := range bytecode.Globals {
+	for i := range bytecode.Globals { // TODO: what is going on here?
 		ins := bytecode.Globals[i].Instructions
 		locals := bytecode.Globals[i].LocalsCount()
 		vm.globals[i] = MakeGlobal(func(ti TaskId) (runtime.RuntimeValue, error) {

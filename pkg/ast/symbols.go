@@ -215,19 +215,22 @@ func (st *SymbolTable) resolve(name string) (*Symbol, bool) {
 func (st *SymbolTable) defineFree(sym *Symbol) *Symbol {
 	idx := len(st.FreeSymbols)
 	st.FreeSymbols = append(st.FreeSymbols, sym)
+
 	free := &Symbol{
 		Name:       sym.Name,
 		Scope:      FreeScope,
 		Index:      idx,
 		Decl:       sym.Decl,
 		Usages:     nil,
-		ChildTable: sym.ChildTable,
+		ChildTable: nil,
 		Errs:       sym.Errs,
 		ConstantId: sym.ConstantId,
 		TypeSymbol: sym.TypeSymbol,
 		Parent:     sym,
 	}
+
 	st.Symbols[sym.Name] = free
+
 	return free
 }
 

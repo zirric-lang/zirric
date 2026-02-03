@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
+	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +18,7 @@ var runCmd = &cobra.Command{
 	Short: "Run a Zirric program",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := newOrchestra()
+		orch, err := newOrchestra(osfs.New("."))
 		if err != nil {
 			return err
 		}

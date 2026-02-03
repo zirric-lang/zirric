@@ -10,17 +10,27 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/orchestra"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
+	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/osfs"
+	billyutil "github.com/go-git/go-billy/v5/util"
 )
 
-func newOrchestra() (*orchestra.Orchestra, error) {
-	const registryRoot = ".zirric"
+func newOrchestra(projectFS billy.Filesystem) (*orchestra.Orchestra, error) {
+	zirricPath, _ := os.LookupEnv("ZIRRIC_PATH")
+	if zirricPath == "" {
+		zirricPath = "~/.zirric"
+	}
+
+	registryRoot := filepath.Join(zirricPath, "registry")
+	if override, ok := os.LookupEnv("ZIRRIC_REGISTRY"); ok {
+		registryRoot = override
+	}
 	if err := os.MkdirAll(registryRoot, 0o755); err != nil {
 		return nil, err
 	}
 
 	return orchestra.New(orchestra.Config{
-		ProjectFS:      osfs.New("."),
+		ProjectFS:      projectFS,
 		ProjectBaseURI: registry.CanonicalizeModuleSource("project"),
 		RegistryFS:     osfs.New(registryRoot),
 	})
@@ -37,14 +47,15 @@ func runPath(ctx context.Context, orch *orchestra.Orchestra, path string, cave c
 	return orch.RunFile(ctx, filepath.ToSlash(path), cave)
 }
 
-func writeProjectFile(path string, contents []byte) error {
+func writeProjectFile(projectFS billy.Filesystem, path string, contents []byte) error {
 	if path == "" {
 		return errors.New("path is required")
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+
+	if err := projectFS.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(path, contents, 0o644); err != nil {
+	if err := billyutil.WriteFile(projectFS, path, contents, 0o644); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
 	return nil
