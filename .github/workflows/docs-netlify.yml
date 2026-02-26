@@ -15,9 +15,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Install
+        working-directory: docs
+        run: npm install
+
       - name: Build docs
         working-directory: docs
-        run: npx @mgks/docmd build
+        run: npm run build
 
       - name: Deploy preview to Netlify
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

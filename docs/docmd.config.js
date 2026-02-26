@@ -10,14 +10,6 @@ module.exports = {
     href: '/',
   },
   favicon: '/assets/favicon.ico',
-  customHead: [
-    '<link rel="icon" type="image/svg+xml" href="/assets/images/favicon/favicon.svg">',
-    '<link rel="icon" type="image/png" sizes="96x96" href="/assets/images/favicon/favicon-96x96.png">',
-    '<link rel="apple-touch-icon" href="/assets/images/favicon/apple-touch-icon.png">',
-    '<link rel="manifest" href="/assets/images/favicon/site.webmanifest">',
-    '<link rel="icon" type="image/png" sizes="192x192" href="/assets/images/favicon/web-app-manifest-192x192.png">',
-    '<link rel="icon" type="image/png" sizes="512x512" href="/assets/images/favicon/web-app-manifest-512x512.png">'
-  ],
 
   // --- Source & Output ---
   srcDir: './',
@@ -138,7 +130,18 @@ module.exports = {
     sitemap: {
       defaultChangefreq: 'monthly', // e.g. 'daily', 'weekly', 'monthly'
       defaultPriority: 0.8          // Priority between 0.0 and 1.0
-    }
+    },
+    "custom-header": {
+      header: [
+        '<script defer src="https://uma.knabel.dev/umami" data-website-id="cb95e6bc-e06f-4398-9dad-bf39ccdb99b9" data-domains="zirric.knabel.dev"></script>',
+        '<link rel="icon" type="image/svg+xml" href="/assets/images/favicon/favicon.svg">',
+        '<link rel="icon" type="image/png" sizes="96x96" href="/assets/images/favicon/favicon-96x96.png">',
+        '<link rel="apple-touch-icon" href="/assets/images/favicon/apple-touch-icon.png">',
+        '<link rel="manifest" href="/assets/images/favicon/site.webmanifest">',
+        '<link rel="icon" type="image/png" sizes="192x192" href="/assets/images/favicon/web-app-manifest-192x192.png">',
+        '<link rel="icon" type="image/png" sizes="512x512" href="/assets/images/favicon/web-app-manifest-512x512.png">'
+      ]
+    },
   },
 
   // --- Footer ---

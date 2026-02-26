@@ -1,12 +1,18 @@
-version: '3'
+version: "3"
 
 tasks:
+  install:
+    cmds:
+      - npm install
+
   build:
     desc: Build docs site
+    deps: [install]
     cmds:
-      - npx @mgks/docmd build
+      - npm run build
 
   dev:
     desc: Run docs dev server
+    deps: [install]
     cmds:
-      - npx @mgks/docmd dev
+      - npm run build
