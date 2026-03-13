@@ -12,10 +12,10 @@ The official Tree-sitter grammar lives in the separate repository:
 
 The LSP server is built into the Zirric itself.
 
-For the insallation of Zirric, please refer to the [installation instructions](/guides/installation).
+For the installation of Zirric, please refer to the [installation instructions](/guides/installation).
 
 ::: callout
-Note that the Language Server still lacks basic features and is under active development.
+The Language Server supports file synchronization and diagnostic publishing. It is still under active development.
 :::
 
 ## Helix setup
