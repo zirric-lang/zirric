@@ -13,7 +13,7 @@ type Dependency struct {
 	Package
 
 	// The version predicate of the dependency
-	Predicate version.Predicate
+	Predicates []version.Predicate
 }
 
 type Package struct {

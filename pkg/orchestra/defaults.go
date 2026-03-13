@@ -21,16 +21,18 @@ var StandardLibraryDependency = cavefile.Dependency{
 		Name:   defaultStandardLibraryName,
 		Source: defaultStandardLibrarySource,
 	},
-	Predicate: version.Predicate{
-		Comparison: version.ComparisonExact,
-		Version:    version.Parse(defaultStandardLibraryVersion),
+	Predicates: []version.Predicate{
+		version.Predicate{
+			Comparison: version.ComparisonExact,
+			Version:    version.Parse(defaultStandardLibraryVersion),
+		},
 	},
 }
 
 func DefaultStdlibProvider() (*embedreg.EmbedRegistry, error) {
 	return embedreg.New(
 		StandardLibraryDependency.Package,
-		StandardLibraryDependency.Predicate.Version,
+		version.Parse("latest"),
 		embedreg.FSConfig{Name: "prelude", FS: preludefs.FS},
 		embedreg.FSConfig{Name: "future", FS: futurefs.FS},
 	)

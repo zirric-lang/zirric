@@ -6,6 +6,7 @@ import (
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
+	"code.knabel.dev/zirric-lang/zirric/pkg/version"
 )
 
 type InstallationTask struct {
@@ -19,6 +20,15 @@ type InstallationTask struct {
 func (t *InstallationTask) Run(ctx context.Context) ([]registry.ResolvedPackage, error) {
 	if t.queue == nil {
 		t.queue = t.cave.Dependencies
+		if t.cave.Name != "" || t.cave.Source != "" {
+			t.queue = append(t.queue, cavefile.Dependency{
+				Package: cavefile.Package{
+					Name:   t.cave.Name,
+					Source: t.cave.Source,
+				},
+				Predicates: nil,
+			})
+		}
 	}
 	availables := make(map[string][]registry.ResolvedPackage, 0)
 
@@ -57,7 +67,7 @@ func (t *InstallationTask) tryResolveAvailable(dep cavefile.Dependency, availabl
 	for _, key := range dependencyKeys(dep) {
 		if available, ok := availables[key]; ok {
 			for _, pkg := range available {
-				if pkg.Version().Matches(dep.Predicate) {
+				if version.MatchesAll(pkg.Version(), dep.Predicates...) {
 					return pkg, true
 				}
 			}
@@ -69,7 +79,7 @@ func (t *InstallationTask) tryResolveAvailable(dep cavefile.Dependency, availabl
 func (t *InstallationTask) tryResolveRemote(ctx context.Context, dep cavefile.Dependency) (registry.ResolvedPackage, error) {
 	for _, key := range dependencyKeys(dep) {
 		for _, reg := range t.pkgmanager.registries {
-			pkgs, err := reg.DiscoverPackageVersions(ctx, key, dep.Predicate)
+			pkgs, err := reg.DiscoverPackageVersions(ctx, key, dep.Predicates...)
 			if err != nil {
 				return nil, err
 			}

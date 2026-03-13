@@ -85,7 +85,9 @@ func (p *stubPackage) Resolve(ctx context.Context) (registry.ResolvedPackage, er
 
 func TestInstallationTaskRun(t *testing.T) {
 	versionOne := version.Parse("1.0.0")
-	predicateExactOne := version.Predicate{Comparison: version.ComparisonExact, Version: versionOne}
+	predicateExactOne := []version.Predicate{
+		version.Predicate{Comparison: version.ComparisonExact, Version: versionOne},
+	}
 
 	resolvedFromDiscover := &stubResolvedPackage{source: "local/pkg", version: versionOne}
 	resolvedFromRemote := &stubResolvedPackage{source: "remote/pkg", version: versionOne}
@@ -106,8 +108,8 @@ func TestInstallationTaskRun(t *testing.T) {
 		{
 			name: "initializes queue from cavefile dependencies and uses local discovery",
 			cave: cavefile.Cavefile{Dependencies: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "local/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "local/pkg"},
+				Predicates: predicateExactOne,
 			}}},
 			provider: &stubProvider{
 				discoverFn: func(context.Context) ([]registry.ResolvedPackage, error) {
@@ -116,19 +118,19 @@ func TestInstallationTaskRun(t *testing.T) {
 			},
 			wantCompleted: []registry.ResolvedPackage{resolvedFromDiscover},
 			wantQueue: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "local/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "local/pkg"},
+				Predicates: predicateExactOne,
 			}},
 		},
 		{
 			name: "falls back to DiscoverPackageVersions when local match unavailable",
 			cave: cavefile.Cavefile{Dependencies: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "remote/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "remote/pkg"},
+				Predicates: predicateExactOne,
 			}}},
 			initialQueue: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "remote/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "remote/pkg"},
+				Predicates: predicateExactOne,
 			}},
 			provider: &stubProvider{
 				discoverFn: func(context.Context) ([]registry.ResolvedPackage, error) {
@@ -140,7 +142,7 @@ func TestInstallationTaskRun(t *testing.T) {
 					if name != "remote/pkg" {
 						t.Fatalf("unexpected name: %s", name)
 					}
-					if len(preds) != 1 || !reflect.DeepEqual(preds[0], predicateExactOne) {
+					if !reflect.DeepEqual(preds, predicateExactOne) {
 						t.Fatalf("unexpected predicates: %#v", preds)
 					}
 					pkg := &stubPackage{
@@ -153,15 +155,15 @@ func TestInstallationTaskRun(t *testing.T) {
 			},
 			wantCompleted: []registry.ResolvedPackage{resolvedFromRemote},
 			wantQueue: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "remote/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "remote/pkg"},
+				Predicates: predicateExactOne,
 			}},
 		},
 		{
 			name: "propagates discover error",
 			cave: cavefile.Cavefile{Dependencies: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "local/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "local/pkg"},
+				Predicates: predicateExactOne,
 			}}},
 			provider: &stubProvider{
 				discoverFn: func(context.Context) ([]registry.ResolvedPackage, error) {
@@ -169,16 +171,16 @@ func TestInstallationTaskRun(t *testing.T) {
 				},
 			},
 			wantQueue: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "local/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "local/pkg"},
+				Predicates: predicateExactOne,
 			}},
 			wantErr: errDiscover,
 		},
 		{
 			name: "propagates discover package versions error",
 			cave: cavefile.Cavefile{Dependencies: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "remote/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "remote/pkg"},
+				Predicates: predicateExactOne,
 			}}},
 			provider: &stubProvider{
 				discoverFn: func(context.Context) ([]registry.ResolvedPackage, error) {
@@ -189,16 +191,16 @@ func TestInstallationTaskRun(t *testing.T) {
 				},
 			},
 			wantQueue: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "remote/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "remote/pkg"},
+				Predicates: predicateExactOne,
 			}},
 			wantErr: errDiscoverVersions,
 		},
 		{
 			name: "propagates package resolve error",
 			cave: cavefile.Cavefile{Dependencies: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "remote/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "remote/pkg"},
+				Predicates: predicateExactOne,
 			}}},
 			provider: &stubProvider{
 				discoverFn: func(context.Context) ([]registry.ResolvedPackage, error) {
@@ -214,16 +216,16 @@ func TestInstallationTaskRun(t *testing.T) {
 				},
 			},
 			wantQueue: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "remote/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "remote/pkg"},
+				Predicates: predicateExactOne,
 			}},
 			wantErr: errResolve,
 		},
 		{
 			name: "returns error when no registry can satisfy dependency",
 			cave: cavefile.Cavefile{Dependencies: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "missing/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "missing/pkg"},
+				Predicates: predicateExactOne,
 			}}},
 			provider: &stubProvider{
 				discoverFn: func(context.Context) ([]registry.ResolvedPackage, error) {
@@ -234,8 +236,8 @@ func TestInstallationTaskRun(t *testing.T) {
 				},
 			},
 			wantQueue: []cavefile.Dependency{{
-				Package:   cavefile.Package{Name: "pkg", Source: "missing/pkg"},
-				Predicate: predicateExactOne,
+				Package:    cavefile.Package{Name: "pkg", Source: "missing/pkg"},
+				Predicates: predicateExactOne,
 			}},
 			wantErr: errors.New("no registry can provide package missing/pkg"),
 		},

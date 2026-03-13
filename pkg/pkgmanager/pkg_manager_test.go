@@ -35,7 +35,15 @@ func (p mockResolvedPackage) ResolveModules() ([]registry.ResolvedModule, error)
 
 func TestPkgManagerInstallationTaskRun(t *testing.T) {
 	ver := version.SemverVersion{Major: 1, Minor: 0, Patch: 0}
-	dep := cavefile.Dependency{Package: cavefile.Package{Source: "example/pkg"}, Predicate: version.Predicate{Comparison: version.ComparisonExact, Version: ver}}
+	dep := cavefile.Dependency{
+		Package: cavefile.Package{Source: "example/pkg"},
+		Predicates: []version.Predicate{
+			version.Predicate{
+				Comparison: version.ComparisonExact,
+				Version:    ver,
+			},
+		},
+	}
 	pot := cavefile.Cavefile{Dependencies: []cavefile.Dependency{dep}}
 	pkg := mockResolvedPackage{source: dep.Source, ver: ver}
 	pm := &PackageManager{registries: []registry.Provider{mockRegistry{pkgs: []registry.ResolvedPackage{pkg}}}}

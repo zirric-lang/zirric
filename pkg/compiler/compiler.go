@@ -25,7 +25,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err := c.ensureAnalyzed(node, true); err != nil {
 			return err
 		}
-		return c.compileContextModule(node, c.reserveGlobalModule(node.Name))
+
+		moduleId := c.reserveGlobalModule(node.Name)
+		return c.compileContextModule(node, moduleId)
 	case *ast.SourceFile:
 		if err := c.ensureAnalyzed(node.Decls.Module(), false); err != nil {
 			return err

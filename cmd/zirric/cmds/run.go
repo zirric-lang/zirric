@@ -2,8 +2,9 @@ package cmds
 
 import (
 	"context"
+	"path/filepath"
+	"strings"
 
-	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/spf13/cobra"
 )
@@ -18,13 +19,17 @@ var runCmd = &cobra.Command{
 	Short: "Run a Zirric program",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		orch, err := newOrchestra(osfs.New("."))
+		absPath, err := filepath.Abs(args[0])
+		if err != nil {
+			return err
+		}
+		name := strings.TrimSuffix(filepath.Base(absPath), filepath.Ext(absPath))
+		orch, err := newOrchestra(osfs.New("."), name)
 		if err != nil {
 			return err
 		}
 
 		ctx := context.Background()
-		cave := cavefile.Cavefile{}
-		return runPath(ctx, orch, args[0], cave)
+		return runPath(ctx, orch, args[0])
 	},
 }

@@ -10,6 +10,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/pkgmanager"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/resolver"
+	"code.knabel.dev/zirric-lang/zirric/pkg/version"
 )
 
 type ModuleResolver struct {
@@ -21,34 +22,57 @@ type ModuleResolver struct {
 	ready     bool
 }
 
-func NewModuleResolver(pm *pkgmanager.PackageManager, cave cavefile.Cavefile) *ModuleResolver {
+func NewModuleResolver(pm *pkgmanager.PackageManager, cave cavefile.Cavefile) (*ModuleResolver, error) {
+	if cave.Name == "" && cave.Source == "" {
+		return nil, fmt.Errorf("cavefile must have a name or source to resolve modules")
+	}
+	if cave.Name == "" {
+		cave.Name = string(registry.CanonicalizeModuleSource(cave.Source))
+	}
+
 	return &ModuleResolver{
 		pm:      pm,
 		cave:    cave,
 		modules: map[registry.LogicalURI]*ast.ContextModule{},
-	}
+	}, nil
 }
 
 var _ resolver.ModuleResolver = (*ModuleResolver)(nil)
+
+func (r *ModuleResolver) RegisterModule(uri registry.LogicalURI, module *ast.ContextModule) {
+	r.modules[uri] = module
+}
 
 func (r *ModuleResolver) MainModule() *ast.ContextModule {
 	return r.modules[registry.LogicalURI(r.cave.Name)]
 }
 
-func (r *ModuleResolver) EnsureDependencies(ctx context.Context, cave cavefile.Cavefile) ([]registry.ResolvedPackage, error) {
+func (r *ModuleResolver) ensureDependencies(ctx context.Context) ([]registry.ResolvedPackage, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	missing := r.filterMissingDependencies(cave.Dependencies)
-	if len(missing) == 0 {
-		return r.installed, nil
-	}
-	task := r.pm.Install(cavefile.Cavefile{Dependencies: missing})
-	pkgs, err := task.Run(ctx)
+
+	// Always install the project package itself so its modules are discoverable
+	// in r.installed, regardless of whether any declared dependencies are missing.
+	caveOnly := cavefile.Cavefile{Package: r.cave.Package}
+	projectTask := r.pm.Install(caveOnly)
+	projectPkgs, err := projectTask.Run(ctx)
 	if err != nil {
 		return nil, err
 	}
-	r.installed = append(r.installed, pkgs...)
+	r.installed = append(r.installed, projectPkgs...)
+
+	// Install any declared dependencies that are not yet satisfied.
+	missing := r.filterMissingDependencies(r.cave.Dependencies)
+	if len(missing) == 0 {
+		return r.installed, nil
+	}
+	depTask := r.pm.Install(cavefile.Cavefile{Dependencies: missing})
+	depPkgs, err := depTask.Run(ctx)
+	if err != nil {
+		return nil, err
+	}
+	r.installed = append(r.installed, depPkgs...)
 	return r.installed, nil
 }
 
@@ -124,7 +148,7 @@ func (r *ModuleResolver) ensureInstalled(ctx context.Context) error {
 	if r.ready {
 		return nil
 	}
-	_, err := r.EnsureDependencies(ctx, r.cave)
+	_, err := r.ensureDependencies(ctx)
 	if err != nil {
 		return err
 	}
@@ -154,7 +178,7 @@ func (r *ModuleResolver) hasDependency(dep cavefile.Dependency) bool {
 		if pkg.Source() != dep.Source {
 			continue
 		}
-		if pkg.Version().Matches(dep.Predicate) {
+		if version.MatchesAll(pkg.Version(), dep.Predicates...) {
 			return true
 		}
 	}

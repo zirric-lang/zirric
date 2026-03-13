@@ -7,15 +7,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/orchestra"
-	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/osfs"
 	billyutil "github.com/go-git/go-billy/v5/util"
 )
 
-func newOrchestra(projectFS billy.Filesystem) (*orchestra.Orchestra, error) {
+func newOrchestra(projectFS billy.Filesystem, packageName string) (*orchestra.Orchestra, error) {
 	zirricPath, _ := os.LookupEnv("ZIRRIC_PATH")
 	if zirricPath == "" {
 		zirricPath = "~/.zirric"
@@ -30,21 +28,21 @@ func newOrchestra(projectFS billy.Filesystem) (*orchestra.Orchestra, error) {
 	}
 
 	return orchestra.New(orchestra.Config{
-		ProjectFS:      projectFS,
-		ProjectBaseURI: registry.CanonicalizeModuleSource("project"),
-		RegistryFS:     osfs.New(registryRoot),
+		ProjectFS:   projectFS,
+		RegistryFS:  osfs.New(registryRoot),
+		PackageName: packageName,
 	})
 }
 
-func runPath(ctx context.Context, orch *orchestra.Orchestra, path string, cave cavefile.Cavefile) error {
+func runPath(ctx context.Context, orch *orchestra.Orchestra, path string) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		return err
 	}
 	if info.IsDir() {
-		return orch.RunModulePath(ctx, filepath.ToSlash(path), cave)
+		return orch.RunModulePath(ctx, filepath.ToSlash(path))
 	}
-	return orch.RunFile(ctx, filepath.ToSlash(path), cave)
+	return orch.RunFile(ctx, filepath.ToSlash(path))
 }
 
 func writeProjectFile(projectFS billy.Filesystem, path string, contents []byte) error {

@@ -43,3 +43,12 @@ func Compare(v1, v2 Version) int {
 	}
 	return 0
 }
+
+func MatchesAll(v Version, predicates ...Predicate) bool {
+	for _, p := range predicates {
+		if !v.Matches(p) {
+			return false
+		}
+	}
+	return true
+}
