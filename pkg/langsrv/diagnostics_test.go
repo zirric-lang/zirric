@@ -24,7 +24,7 @@ func TestRefreshDiagnosticsUsesOverlay(t *testing.T) {
 	rec := &diagnosticRecorder{}
 	ctx := &glsp.Context{Notify: rec.Notify}
 
-	if err := ls.refreshDiagnostics(ctx); err != nil {
+	if err := ls.refreshDiagnosticsSync(ctx); err != nil {
 		t.Fatalf("refresh diagnostics: %v", err)
 	}
 
@@ -33,6 +33,39 @@ func TestRefreshDiagnosticsUsesOverlay(t *testing.T) {
 	if len(diagnostics) == 0 {
 		t.Fatalf("expected diagnostics for %s", uri)
 	}
+}
+
+func TestRefreshDiagnosticsReportsAnalyzerErrors(t *testing.T) {
+	base := memfs.New()
+	src := "union Optional { Missing }"
+	writeFile(t, base, "main.zirr", src)
+
+	ls := zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+	ls.openDocs["main.zirr"] = ls.fileURI("main.zirr")
+
+	rec := &diagnosticRecorder{}
+	ctx := &glsp.Context{Notify: rec.Notify}
+
+	if err := ls.refreshDiagnosticsSync(ctx); err != nil {
+		t.Fatalf("refresh diagnostics: %v", err)
+	}
+
+	uri := ls.fileURI("main.zirr")
+	diagnostics := rec.DiagnosticsFor(uri)
+	if len(diagnostics) == 0 {
+		t.Fatalf("expected analyzer diagnostics for %s", uri)
+	}
+	for _, d := range diagnostics {
+		if d.Source != nil && *d.Source == analyzerDiagnosticSource {
+			return
+		}
+	}
+	t.Fatalf("expected at least one diagnostic with source %q, got %v", analyzerDiagnosticSource, diagnostics)
 }
 
 type diagnosticRecorder struct {

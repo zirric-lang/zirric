@@ -34,9 +34,10 @@ func newDocumentStore() *documentStore {
 }
 
 func (s *documentStore) Open(path string, version int32, text string) {
-	path = cleanPath(path)
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	path = cleanPath(path)
 	s.docs[path] = &document{
 		path:    path,
 		version: version,
@@ -47,54 +48,64 @@ func (s *documentStore) Open(path string, version int32, text string) {
 }
 
 func (s *documentStore) ApplyChanges(path string, version int32, changes []protocol.TextDocumentContentChangeEvent) error {
-	path = cleanPath(path)
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	path = cleanPath(path)
 	doc, ok := s.docs[path]
 	if !ok {
 		return fmt.Errorf("document not open: %s", path)
 	}
+
 	text, err := applyContentChanges(doc.text, changes)
 	if err != nil {
 		return err
 	}
+
 	doc.text = text
 	doc.version = version
 	doc.dirty = true
 	doc.modTime = time.Now()
+
 	return nil
 }
 
 func (s *documentStore) Save(path string, text *string) {
-	path = cleanPath(path)
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	path = cleanPath(path)
 	doc, ok := s.docs[path]
 	if !ok {
 		return
 	}
+
 	if text != nil {
 		doc.text = *text
 	}
+
 	doc.dirty = false
 	doc.modTime = time.Now()
 }
 
 func (s *documentStore) Close(path string) {
-	path = cleanPath(path)
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	path = cleanPath(path)
 	delete(s.docs, path)
 }
 
 func (s *documentStore) Snapshot(path string) (documentSnapshot, bool) {
-	path = cleanPath(path)
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
+	path = cleanPath(path)
 	doc, ok := s.docs[path]
 	if !ok {
 		return documentSnapshot{}, false
 	}
+
 	return documentSnapshot{
 		Text:    doc.text,
 		Version: doc.version,
@@ -106,10 +117,12 @@ func (s *documentStore) Snapshot(path string) (documentSnapshot, bool) {
 func (s *documentStore) Paths() []string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	paths := make([]string, 0, len(s.docs))
 	for path := range s.docs {
 		paths = append(paths, path)
 	}
+
 	return paths
 }
 
@@ -117,6 +130,7 @@ func cleanPath(path string) string {
 	if path == "" {
 		return path
 	}
+
 	return filepath.Clean(path)
 }
 
@@ -126,12 +140,15 @@ func applyContentChanges(text string, changes []protocol.TextDocumentContentChan
 			text = change.Text
 			continue
 		}
+
 		start, end := change.Range.IndexesIn(text)
 		if isRangeIndexInvalid(*change.Range, start, end, text) {
 			return "", fmt.Errorf("invalid text change range")
 		}
+
 		text = text[:start] + change.Text + text[end:]
 	}
+
 	return text, nil
 }
 
@@ -139,11 +156,14 @@ func isRangeIndexInvalid(r protocol.Range, start int, end int, text string) bool
 	if start > end || start < 0 || end < 0 || start > len(text) || end > len(text) {
 		return true
 	}
+
 	if start == 0 && (r.Start.Line > 0 || r.Start.Character > 0) {
 		return true
 	}
+
 	if end == 0 && (r.End.Line > 0 || r.End.Character > 0) {
 		return true
 	}
+
 	return false
 }

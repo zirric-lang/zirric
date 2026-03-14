@@ -14,10 +14,6 @@ The LSP server is built into the Zirric itself.
 
 For the installation of Zirric, please refer to the [installation instructions](/guides/installation).
 
-::: callout
-The Language Server supports file synchronization and diagnostic publishing. It is still under active development.
-:::
-
 ## Helix setup
 
 Add a Zirric entry to `~/.config/helix/languages.toml`:

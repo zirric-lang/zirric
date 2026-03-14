@@ -364,6 +364,34 @@ func sample() {
 	}
 }
 
+// TestParseAnnotationNoPanic ensures the parser does not panic on malformed
+// annotations (regression test for invariant panic in parseStaticIdentifierReference).
+func TestParseAnnotationNoPanic(t *testing.T) {
+	inputs := []string{
+		"@@Numeric",
+		"@(Numeric",
+		"@",
+		"@ ",
+	}
+	for _, input := range inputs {
+		t.Run(fmt.Sprintf("input=%q", input), func(t *testing.T) {
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("parser panicked on %q: %v", input, r)
+				}
+			}()
+			module := ast.MakeContextModule(registry.LogicalURI("test"))
+			l, err := lexer.New(staticmodule.NewSourceString("testing:///test.zirr", input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := parser.NewSourceParser(l, module.Decls, "test.zirr")
+			p.ParseSourceFile()
+			// We expect parse errors but no panic.
+		})
+	}
+}
+
 func prepareSourceFileParsing(t *testing.T, input string) *ast.SourceFile {
 	t.Helper()
 

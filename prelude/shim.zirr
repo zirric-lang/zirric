@@ -48,12 +48,6 @@ extern type Func {
   @Type(Int) arity
 }
 
-// A numeric value, either floating point or integer.
-annotation Numeric {
-  @Returns(Number)
-  get()
-}
-
 // A floating point number.
 @Numeric({ f -> f })
 extern type Float {}

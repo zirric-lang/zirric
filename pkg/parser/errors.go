@@ -34,21 +34,6 @@ func (p *Parser) errUnexpectedToken(want ...token.TokenType) {
 	})
 }
 
-func (p *Parser) errUnexpectedPeekToken(want ...token.TokenType) {
-	var wanted bytes.Buffer
-	for i, t := range want {
-		wanted.WriteString(strings.ToLower(string(t)))
-		if i < len(want)-1 {
-			wanted.WriteString(", ")
-		}
-	}
-	p.detectError(ParseError{
-		Token:   p.peekToken,
-		Summary: fmt.Sprintf("unexpected %s %q", p.peekToken.Type, p.peekToken.Literal),
-		Details: fmt.Sprintf("want one of [%s]", wanted.String()),
-	})
-}
-
 func (p *Parser) errUnderlyingErrorf(err error, format string, a ...any) {
 	p.detectError(ParseError{
 		Token:   p.curToken,

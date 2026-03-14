@@ -140,15 +140,6 @@ func (p *Parser) skip(tokTypes ...token.TokenType) {
 	p.nextToken()
 }
 
-func (p *Parser) expectPeekToken(tokTypes ...token.TokenType) (token.Token, bool) {
-	if !p.peekIs(tokTypes...) {
-		p.errUnexpectedPeekToken(tokTypes...)
-		return p.errorToken(), false
-	}
-	p.nextToken()
-	return p.curToken, true
-}
-
 func (p *Parser) errorToken() token.Token {
 	return token.Token{
 		Type:    token.ILLEGAL,
@@ -248,9 +239,6 @@ func (p *Parser) parseStaticIdentifierReference() ast.StaticReference {
 		p.expect(token.DOT)
 	}
 	if len(ref) == 0 {
-		if _, ok := p.expectPeekToken(token.IDENT); ok {
-			panic(fmt.Sprintf("invariant error: empty static reference, token:%+v", p.curToken))
-		}
 		return ast.StaticReference{ast.MakeIdentifier(p.errorToken())}
 	}
 	return ref
@@ -731,9 +719,19 @@ func (p *Parser) parseStmtBlock(pos StatementPosition) ast.Block {
 	}
 
 	for !p.curIs(token.RBRACE, token.RBRACKET, token.RPAREN) {
+		if p.curIs(token.EOF) {
+			break
+		}
 		stmt, decls := p.parseAnnotatedStatementDeclaration(blockPos)
 		if len(decls) > 0 {
 			p.errStatementMisplaced(blockPos)
+		}
+		if stmt == nil {
+			// No progress was made; advance past the unrecognized token to prevent an infinite loop.
+			if !p.curIs(token.RBRACE, token.RBRACKET, token.RPAREN, token.EOF) {
+				p.nextToken()
+			}
+			continue
 		}
 		block = append(block, stmt)
 	}
@@ -749,6 +747,9 @@ func (p *Parser) parseExprForBlock(symbols *ast.DeclTable) ast.ExprForBody {
 	p.curSymbolTable = symbols
 
 	for !p.curIs(token.RBRACE, token.RBRACKET, token.RPAREN) {
+		if p.curIs(token.EOF) {
+			break
+		}
 		annos := p.parseAnnotationChain()
 		if p.curIs(token.LET) {
 			if seenStmt {
@@ -783,6 +784,13 @@ func (p *Parser) parseExprForBlock(symbols *ast.DeclTable) ast.ExprForBody {
 		}
 		stmtTok := p.curToken
 		expr := p.parseExpr()
+		if expr == nil {
+			// No progress was made; advance past the unrecognized token to prevent an infinite loop.
+			if !p.curIs(token.RBRACE, token.RBRACKET, token.RPAREN, token.EOF) {
+				p.nextToken()
+			}
+			continue
+		}
 		stmts = append(stmts, ast.MakeStmtExpr(stmtTok, expr))
 		seenStmt = true
 	}

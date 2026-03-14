@@ -64,7 +64,6 @@ data ClosedRange {
 //   @Int
 //   length
 // }
-
 func _arrayIterate(v, yield) {
   let i = 0
   let l = v.length

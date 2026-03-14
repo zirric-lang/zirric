@@ -28,6 +28,7 @@ func (fs *overlayFS) Open(filename string) (billy.File, error) {
 	if snapshot, ok := fs.docs.Snapshot(filename); ok {
 		return newMemFile(filename, snapshot.Text), nil
 	}
+
 	return fs.base.Open(filename)
 }
 
@@ -35,6 +36,7 @@ func (fs *overlayFS) OpenFile(filename string, flag int, perm os.FileMode) (bill
 	if flag&(os.O_WRONLY|os.O_RDWR|os.O_TRUNC|os.O_CREATE|os.O_APPEND) != 0 {
 		return fs.base.OpenFile(filename, flag, perm)
 	}
+
 	return fs.Open(filename)
 }
 
@@ -43,6 +45,7 @@ func (fs *overlayFS) Stat(filename string) (os.FileInfo, error) {
 	if snapshot, ok := fs.docs.Snapshot(filename); ok {
 		return memFileInfo{name: filepath.Base(filename), size: int64(len(snapshot.Text)), modTime: snapshot.ModTime}, nil
 	}
+
 	return fs.base.Stat(filename)
 }
 
@@ -64,10 +67,12 @@ func (fs *overlayFS) TempFile(dir, prefix string) (billy.File, error) {
 
 func (fs *overlayFS) ReadDir(path string) ([]os.FileInfo, error) {
 	path = cleanPath(path)
+
 	entries, err := fs.base.ReadDir(path)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
+
 	entryMap := make(map[string]os.FileInfo, len(entries))
 	for _, entry := range entries {
 		entryMap[entry.Name()] = entry
@@ -77,10 +82,12 @@ func (fs *overlayFS) ReadDir(path string) ([]os.FileInfo, error) {
 		if filepath.Dir(docPath) != path {
 			continue
 		}
+
 		base := filepath.Base(docPath)
 		if _, exists := entryMap[base]; exists {
 			continue
 		}
+
 		if snapshot, ok := fs.docs.Snapshot(docPath); ok {
 			entryMap[base] = memFileInfo{
 				name:    base,
@@ -98,6 +105,7 @@ func (fs *overlayFS) ReadDir(path string) ([]os.FileInfo, error) {
 	for _, entry := range entryMap {
 		merged = append(merged, entry)
 	}
+
 	// ReadDir must return entries sorted by filename.
 	sort.Slice(merged, func(i, j int) bool {
 		return merged[i].Name() < merged[j].Name()
@@ -126,10 +134,12 @@ func (fs *overlayFS) Chroot(path string) (billy.Filesystem, error) {
 	if !ok {
 		return nil, billy.ErrNotSupported
 	}
+
 	base, err := chroot.Chroot(path)
 	if err != nil {
 		return nil, err
 	}
+
 	return &overlayFS{base: base, docs: fs.docs}, nil
 }
 
@@ -138,6 +148,7 @@ func (fs *overlayFS) Root() string {
 	if !ok {
 		return ""
 	}
+
 	return chroot.Root()
 }
 
