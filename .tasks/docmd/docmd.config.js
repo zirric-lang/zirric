@@ -8,8 +8,8 @@ module.exports = {
     href: "/"
   },
   favicon: "/assets/favicon.ico",
-  src: "./",
-  out: "../site",
+  src: "../../docs",
+  out: "./site",
   layout: {
     spa: true,
     header: {
@@ -44,8 +44,8 @@ module.exports = {
   pageNavigation: true,
   customJs: [],
   editLink: {
-    enabled: false,
-    baseUrl: "https://code.knabel.dev/zirric-lang/zirric/edit/main/docs",
+    enabled: true,
+    baseUrl: "https://code.knabel.dev/zirric-lang/zirric/_edit/main/docs",
     text: "Edit this page"
   },
   plugins: {

@@ -15,4 +15,4 @@ tasks:
     desc: Run docs dev server
     deps: [install]
     cmds:
-      - npm run build
+      - npm run dev
