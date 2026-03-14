@@ -688,7 +688,7 @@ func (vm *VM) initGlobal(owner TaskId, ins op.Instructions, locals int) (runtime
 		return nil, err
 	}
 
-	val := vm.stack[vm.sp-1]
+	val := vm.pop()
 	vm.popFrame()
 
 	return val, nil

@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"fmt"
+
 	"code.knabel.dev/zirric-lang/zirric/pkg/compiler"
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
 	"code.knabel.dev/zirric-lang/zirric/pkg/runtime"
@@ -76,6 +78,43 @@ func New(bytecode *compiler.Bytecode) *VM {
 
 func (vm *VM) LastPoppedStackElem() runtime.RuntimeValue {
 	return vm.stack[vm.sp]
+}
+
+// ExtendGlobals appends new global slots to a running VM.
+func (vm *VM) ExtendGlobals(newGlobals []*compiler.CompilationScope) {
+	for _, scope := range newGlobals {
+		if scope == nil {
+			vm.globals = append(vm.globals, MakeGlobal(func(TaskId) (runtime.RuntimeValue, error) {
+				return nil, nil
+			}))
+			continue
+		}
+		ins := scope.Instructions
+		locals := scope.LocalsCount()
+		vm.globals = append(vm.globals, MakeGlobal(func(ti TaskId) (runtime.RuntimeValue, error) {
+			return vm.initGlobal(ti, ins, locals)
+		}))
+	}
+}
+
+// ExtendConstants appends new constants to a running VM.
+func (vm *VM) ExtendConstants(newConstants []runtime.RuntimeValue) {
+	vm.constants = append(vm.constants, newConstants...)
+}
+
+// CallFunction calls a zero-argument CompiledFunction in the VM and returns its result.
+func (vm *VM) CallFunction(fn runtime.RuntimeValue) (runtime.RuntimeValue, error) {
+	compiledFn, ok := fn.(*runtime.CompiledFunction)
+	if !ok {
+		return nil, fmt.Errorf("CallFunction: expected *runtime.CompiledFunction, got %T", fn)
+	}
+	closure := runtime.MakeClosure(compiledFn, nil)
+	frame := newClosureFrame(closure, vm.sp)
+	vm.pushFrame(frame)
+	if err := vm.Run(); err != nil {
+		return nil, err
+	}
+	return vm.pop(), nil
 }
 
 func (vm *VM) currentFrame() *Frame {

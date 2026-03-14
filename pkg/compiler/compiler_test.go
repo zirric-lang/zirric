@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"code.knabel.dev/zirric-lang/zirric/pkg/analyzer"
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/compiler"
 	"code.knabel.dev/zirric-lang/zirric/pkg/lexer"
@@ -844,21 +845,31 @@ func TestModuleDecl(t *testing.T) {
 			input: "module foo\nfoo",
 			expectedGlobals: [][]code.Instructions{
 				{
-					code.Make(code.GetGlobal, 0),
-					code.Make(code.Pop),
 					code.Make(code.Const, 0),
-					code.Make(code.Module, 1),
+					code.Make(code.Call, 0),
+					code.Make(code.Pop),
+					code.Make(code.Const, 1),
+					code.Make(code.Module, 2),
 				},
 			},
 			expectedConstants: []any{
+				synthCompiledFunction{
+					ins: []code.Instructions{
+						code.Make(code.GetGlobal, 0),
+						code.Make(code.Pop),
+						code.Make(code.ConstVoid),
+						code.Make(code.Return),
+					},
+				},
 				0,
 				"module.test",
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.GetGlobal, 0),
-				code.Make(code.Pop),
 				code.Make(code.Const, 0),
-				code.Make(code.Module, 1),
+				code.Make(code.Call, 0),
+				code.Make(code.Pop),
+				code.Make(code.Const, 1),
+				code.Make(code.Module, 2),
 			},
 		},
 	}
@@ -1028,8 +1039,23 @@ func TestModuleDeclLookup(t *testing.T) {
 	}
 
 	bytecode := comp.Bytecode()
-	if !hasOpcodeSequence(bytecode.Instructions, []code.Opcode{code.GetGlobal, code.GetField, code.Pop}) {
-		t.Fatalf("expected module lookup to compile to GetGlobal + GetField + Pop")
+
+	// Statements are now wrapped in __init__; find it among constants.
+	var initFn *runtime.CompiledFunction
+	for _, c := range bytecode.Constants {
+		if fn, ok := c.(*runtime.CompiledFunction); ok && fn.Symbol != nil {
+			if _, isModule := fn.Symbol.Decl.(*ast.DeclModule); isModule {
+				initFn = fn
+				break
+			}
+		}
+	}
+	if initFn == nil {
+		t.Fatalf("expected __init__ function in constants")
+		return
+	}
+	if !hasOpcodeSequence(initFn.Instructions, []code.Opcode{code.GetGlobal, code.GetField, code.Pop}) {
+		t.Fatalf("expected module lookup to compile to GetGlobal + GetField + Pop inside __init__")
 	}
 }
 
@@ -1065,9 +1091,11 @@ func TestDataTypeAnnotations(t *testing.T) {
 
 	if dataType == nil {
 		t.Fatal("missing data type constant for Foo")
+		return
 	}
 	if annoType == nil {
 		t.Fatal("missing annotation type constant for Example")
+		return
 	}
 
 	if len(dataType.Annotations) != 1 {
@@ -1163,9 +1191,11 @@ func TestFunctionAnnotations(t *testing.T) {
 
 	if funcConst == nil {
 		t.Fatal("missing compiled function constant for greet")
+		return
 	}
 	if annoType == nil {
 		t.Fatal("missing annotation type constant for Job")
+		return
 	}
 
 	typeId := runtime.TypeId(*annoType.Symbol.ConstantId)
@@ -1226,9 +1256,9 @@ func TestExternAnnotations(t *testing.T) {
 
 	if annoType == nil {
 		t.Fatal("missing annotation type constant for Job")
+		return
 	}
 	typeId := runtime.TypeId(*annoType.Symbol.ConstantId)
-
 	if externFunc.Annotations == nil {
 		t.Fatal("missing extern func annotations map")
 	}
@@ -1283,9 +1313,11 @@ func TestAnnotationTypeAnnotations(t *testing.T) {
 
 	if annoType == nil {
 		t.Fatal("missing annotation type constant for Job")
+		return
 	}
 	if metaType == nil {
 		t.Fatal("missing annotation type constant for Meta")
+		return
 	}
 
 	typeId := runtime.TypeId(*metaType.Symbol.ConstantId)
@@ -1342,6 +1374,164 @@ func prepareSourceFileParsing(t *testing.T, input string) (*ast.ContextModule, *
 	module.AddSourceFile(srcFile)
 	checkParserErrors(t, p, input)
 	return module, srcFile
+}
+
+func TestInitFunctionWrapping(t *testing.T) {
+	t.Run("module with no statements produces no __init__", func(t *testing.T) {
+		module := prepareContextModuleParsing(t, "module.test", "module foo\nfunc bar() {}")
+		resolver := newTestModuleResolver(module, nil)
+		comp := compiler.New(resolver)
+		if err := comp.Compile(module); err != nil {
+			t.Fatalf("compile: %s", err)
+		}
+		for _, c := range comp.Bytecode().Constants {
+			if fn, ok := c.(*runtime.CompiledFunction); ok && fn.Symbol == nil {
+				t.Fatalf("expected no synthetic __init__ function, but found one")
+			}
+		}
+	})
+
+	t.Run("module with statements wraps them in __init__", func(t *testing.T) {
+		module := prepareContextModuleParsing(t, "module.test", "module foo\n1 + 2")
+		resolver := newTestModuleResolver(module, nil)
+		comp := compiler.New(resolver)
+		if err := comp.Compile(module); err != nil {
+			t.Fatalf("compile: %s", err)
+		}
+		bytecode := comp.Bytecode()
+
+		var initFn *runtime.CompiledFunction
+		for _, c := range bytecode.Constants {
+			if fn, ok := c.(*runtime.CompiledFunction); ok && fn.Symbol != nil {
+				if _, isModule := fn.Symbol.Decl.(*ast.DeclModule); isModule {
+					initFn = fn
+					break
+				}
+			}
+		}
+		if initFn == nil {
+			t.Fatalf("expected __init__ function in constants, got none")
+			return
+		}
+		if !hasOpcodeSequence(initFn.Instructions, []code.Opcode{code.Const, code.Const, code.Add}) {
+			t.Fatalf("expected __init__ to contain addition instructions")
+		}
+		if !hasOpcodeSequence(bytecode.Instructions, []code.Opcode{code.Const, code.Call, code.Pop}) {
+			t.Fatalf("expected frame 0 to call __init__")
+		}
+	})
+
+	t.Run("__init__ accesses module-level globals", func(t *testing.T) {
+		module := prepareContextModuleParsing(t, "module.test", "module foo\nlet x = 5\nx")
+		resolver := newTestModuleResolver(module, nil)
+		comp := compiler.New(resolver)
+		if err := comp.Compile(module); err != nil {
+			t.Fatalf("compile: %s", err)
+		}
+		bytecode := comp.Bytecode()
+
+		var initFn *runtime.CompiledFunction
+		for _, c := range bytecode.Constants {
+			if fn, ok := c.(*runtime.CompiledFunction); ok && fn.Symbol != nil {
+				if _, isModule := fn.Symbol.Decl.(*ast.DeclModule); isModule {
+					initFn = fn
+					break
+				}
+			}
+		}
+		if initFn == nil {
+			t.Fatalf("expected __init__ function in constants, got none")
+			return
+		}
+		if !hasOpcodeSequence(initFn.Instructions, []code.Opcode{code.GetGlobal, code.Pop}) {
+			t.Fatalf("expected __init__ to reference global variable x")
+		}
+	})
+}
+
+func TestCompileSourceFileIncremental(t *testing.T) {
+	t.Run("declaration only adds constant without init", func(t *testing.T) {
+		module, src1 := prepareSourceFileParsing(t, "func foo() {}")
+		resolver := newTestModuleResolver(module, nil)
+		analysis := analyzer.New(resolver)
+		if errs, _ := analysis.Analyze(module, false); len(errs) > 0 {
+			t.Fatalf("analyze: %s", errs[0].Error())
+		}
+		comp := compiler.NewWithAnalyzer(resolver, analysis)
+		if err := comp.Compile(src1); err != nil {
+			t.Fatalf("initial compile: %s", err)
+		}
+
+		l, err := lexer.New(staticmodule.NewSourceString("testing:///test/line2.zirr", "func bar() {}"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		src2 := parser.NewSourceParser(l, module.Decls, "line2.zirr").ParseSourceFile()
+		module.AddSourceFile(src2)
+		if errs := analysis.AnalyzeSourceFile(module, src2); len(errs) > 0 {
+			t.Fatalf("analyze src2: %s", errs[0].Error())
+		}
+
+		prevConstantsLen := len(comp.Bytecode().Constants)
+		initId, err := comp.CompileSourceFileIncremental(src2)
+		if err != nil {
+			t.Fatalf("incremental compile: %s", err)
+		}
+		if initId != -1 {
+			t.Fatalf("expected no __init__ for declaration-only file, got id %d", initId)
+		}
+		if len(comp.Bytecode().Constants) <= prevConstantsLen {
+			t.Fatalf("expected new constant for bar function")
+		}
+	})
+
+	t.Run("statement produces __init__ constant", func(t *testing.T) {
+		module, src1 := prepareSourceFileParsing(t, "func foo() {}")
+		resolver := newTestModuleResolver(module, nil)
+		analysis := analyzer.New(resolver)
+		if errs, _ := analysis.Analyze(module, false); len(errs) > 0 {
+			t.Fatalf("analyze: %s", errs[0].Error())
+		}
+		comp := compiler.NewWithAnalyzer(resolver, analysis)
+		if err := comp.Compile(src1); err != nil {
+			t.Fatalf("initial compile: %s", err)
+		}
+
+		l, err := lexer.New(staticmodule.NewSourceString("testing:///test/line2.zirr", "1 + 2"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		src2 := parser.NewSourceParser(l, module.Decls, "line2.zirr").ParseSourceFile()
+		module.AddSourceFile(src2)
+		if errs := analysis.AnalyzeSourceFile(module, src2); len(errs) > 0 {
+			t.Fatalf("analyze src2: %s", errs[0].Error())
+		}
+
+		prevConstantsLen := len(comp.Bytecode().Constants)
+		initId, err := comp.CompileSourceFileIncremental(src2)
+		if err != nil {
+			t.Fatalf("incremental compile: %s", err)
+		}
+		if initId < 0 {
+			t.Fatalf("expected __init__ constant id >= 0, got %d", initId)
+		}
+		if initId < prevConstantsLen {
+			t.Fatalf("expected __init__ at a new constant slot >= %d, got %d", prevConstantsLen, initId)
+		}
+		initFn, ok := comp.Bytecode().Constants[initId].(*runtime.CompiledFunction)
+		if !ok {
+			t.Fatalf("constant %d is not a CompiledFunction", initId)
+		}
+		// Modules with a `module X` declaration get a DeclModule symbol; without one (as in this test), Symbol is nil.
+		if initFn.Symbol != nil {
+			if _, isModule := initFn.Symbol.Decl.(*ast.DeclModule); !isModule {
+				t.Fatalf("expected __init__ Symbol to be a DeclModule or nil, got %T", initFn.Symbol.Decl)
+			}
+		}
+		if !hasOpcodeSequence(initFn.Instructions, []code.Opcode{code.Const, code.Const, code.Add}) {
+			t.Fatalf("expected __init__ instructions to contain the addition")
+		}
+	})
 }
 
 func prepareContextModuleParsing(t *testing.T, uri string, input string) *ast.ContextModule {
@@ -1621,12 +1811,31 @@ func testConstants(
 				return fmt.Errorf("annotation type %q has mismatched type id", got.Symbol.Name)
 			}
 
+		case synthCompiledFunction:
+			got, ok := actual[i].(*runtime.CompiledFunction)
+			if !ok {
+				return fmt.Errorf("constant %d is not a compiled function: %T", i, actual[i])
+			}
+			// __init__ functions carry the module's DeclModule symbol (or nil for anonymous modules).
+			if got.Symbol != nil {
+				if _, isModule := got.Symbol.Decl.(*ast.DeclModule); !isModule {
+					return fmt.Errorf("expected synthetic __init__ function (DeclModule symbol or nil) at constant %d, got Symbol=%q (%T)", i, got.Symbol.Name, got.Symbol.Decl)
+				}
+			}
+			if err := testInstructions(t, want.ins, got.Instructions); err != nil {
+				return fmt.Errorf("wrong __init__ instructions at constant %d: %s", i, err)
+			}
+
 		default:
 			got := actual[i]
 			return fmt.Errorf("unhandled wanted type %T of value at %d.\nwant=%q\ngot=%q", i, want, want, got)
 		}
 	}
 	return nil
+}
+
+type synthCompiledFunction struct {
+	ins []code.Instructions
 }
 
 func testGlobals(t *testing.T,

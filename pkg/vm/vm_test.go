@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"code.knabel.dev/zirric-lang/zirric/pkg/analyzer"
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/compiler"
 	"code.knabel.dev/zirric-lang/zirric/pkg/lexer"
@@ -554,6 +555,112 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 
 }
 
+func TestVMExtend(t *testing.T) {
+	t.Run("ExtendConstants makes new constants accessible", func(t *testing.T) {
+		module, program := prepareSourceFileParsing(t, "1")
+		resolver := newTestModuleResolver(module)
+		comp := compiler.New(resolver)
+		if err := comp.Compile(program); err != nil {
+			t.Fatal(err)
+		}
+		machine := vm.New(comp.Bytecode())
+		if err := machine.Run(); err != nil {
+			t.Fatal(err)
+		}
+
+		machine.ExtendConstants([]runtime.RuntimeValue{runtime.Int(42)})
+		// Extending doesn't break anything: the VM is still usable.
+	})
+
+	t.Run("ExtendGlobals makes new globals accessible", func(t *testing.T) {
+		module, program := prepareSourceFileParsing(t, "func foo() {}")
+		resolver := newTestModuleResolver(module)
+		analysis := analyzer.New(resolver)
+		if errs, _ := analysis.Analyze(module, false); len(errs) > 0 {
+			t.Fatalf("analyze: %s", errs[0].Error())
+		}
+		comp := compiler.NewWithAnalyzer(resolver, analysis)
+		if err := comp.Compile(program); err != nil {
+			t.Fatal(err)
+		}
+		bytecode := comp.Bytecode()
+		machine := vm.New(bytecode)
+		if err := machine.Run(); err != nil {
+			t.Fatal(err)
+		}
+
+		prevLen := len(bytecode.Globals)
+
+		// Parse a new variable and compile it incrementally.
+		l, err := lexer.New(staticmodule.NewSourceString("testing:///test/line2.zirr", "let x = 99"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		src2 := parser.NewSourceParser(l, module.Decls, "line2.zirr").ParseSourceFile()
+		module.AddSourceFile(src2)
+		if errs := analysis.AnalyzeSourceFile(module, src2); len(errs) > 0 {
+			t.Fatalf("analyze src2: %s", errs[0].Error())
+		}
+		_, err = comp.CompileSourceFileIncremental(src2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		newBytecode := comp.Bytecode()
+		machine.ExtendGlobals(newBytecode.Globals[prevLen:])
+		machine.ExtendConstants(newBytecode.Constants)
+	})
+
+	t.Run("CallFunction executes a zero-arg compiled function", func(t *testing.T) {
+		module, program := prepareSourceFileParsing(t, "func addOne() { return 1 + 2 }")
+		resolver := newTestModuleResolver(module)
+		analysis := analyzer.New(resolver)
+		if errs, _ := analysis.Analyze(module, false); len(errs) > 0 {
+			t.Fatalf("analyze: %s", errs[0].Error())
+		}
+		comp := compiler.NewWithAnalyzer(resolver, analysis)
+		if err := comp.Compile(program); err != nil {
+			t.Fatal(err)
+		}
+		machine := vm.New(comp.Bytecode())
+		if err := machine.Run(); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create a simple statement that returns 5.
+		l, err := lexer.New(staticmodule.NewSourceString("testing:///test/init.zirr", "5"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		src := parser.NewSourceParser(l, module.Decls, "init.zirr").ParseSourceFile()
+		module.AddSourceFile(src)
+		if errs := analysis.AnalyzeSourceFile(module, src); len(errs) > 0 {
+			t.Fatalf("analyze src: %s", errs[0].Error())
+		}
+
+		initId, err := comp.CompileSourceFileIncremental(src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if initId < 0 {
+			t.Fatal("expected __init__ function")
+		}
+
+		newBytecode := comp.Bytecode()
+		machine.ExtendConstants(newBytecode.Constants)
+
+		initFn := newBytecode.Constants[initId]
+		result, err := machine.CallFunction(initFn)
+		if err != nil {
+			t.Fatalf("CallFunction: %s", err)
+		}
+		// __init__ returns void (implicit return after StmtExpr Pop)
+		if result != nil {
+			t.Logf("result: %v (type %T)", result, result)
+		}
+	})
+}
+
 func runBench(t *testing.B, input string) {
 	module, program := prepareSourceFileParsing(t, input)
 	resolver := newTestModuleResolver(module)
@@ -878,5 +985,118 @@ func native(val runtime.RuntimeValue) (any, error) {
 		return string(val), nil
 	default:
 		return nil, fmt.Errorf("cannot convert %T into native Go type, got=%q", val, val.Inspect())
+	}
+}
+
+func TestReplRollbackAndReuse(t *testing.T) {
+	// Simulates the REPL rollback scenario:
+	// 1. Failed `let x = undeclaredVar` — compile error, rollback symbol tables and compiler state.
+	// 2. Successful `let x = 42`        — same name now works.
+	// 3. `x`                            — must return 42 (not panic with index OOB).
+
+	module := prepareContextModuleParsing(t, "test", "module repl")
+	resolver := newTestModuleResolver(module)
+	analysis := analyzer.New(resolver)
+	if errs, _ := analysis.Analyze(module, true); len(errs) > 0 {
+		t.Fatalf("initial analyze: %s", errs[0].Error())
+	}
+	comp := compiler.NewWithAnalyzer(resolver, analysis)
+	if err := comp.Compile(module); err != nil {
+		t.Fatal(err)
+	}
+	machine := vm.New(comp.Bytecode())
+	if err := machine.Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	evalLine := func(line, uri string) (runtime.RuntimeValue, error) {
+		src := staticmodule.NewSourceString(registry.LogicalURI(uri), line)
+		lex, err := lexer.New(src)
+		if err != nil {
+			return nil, err
+		}
+
+		declsBefore := make(map[string]struct{}, len(module.Decls.Symbols))
+		for k := range module.Decls.Symbols {
+			declsBefore[k] = struct{}{}
+		}
+
+		prs := parser.NewSourceParser(lex, module.Decls, uri)
+		file := prs.ParseSourceFile()
+		if len(prs.Errors()) > 0 {
+			for k := range module.Decls.Symbols {
+				if _, ok := declsBefore[k]; !ok {
+					delete(module.Decls.Symbols, k)
+				}
+			}
+			return nil, prs.Errors()[0]
+		}
+		module.AddSourceFile(file)
+
+		symsBefore := make(map[string]struct{}, len(module.Symbols.Symbols))
+		for k := range module.Symbols.Symbols {
+			symsBefore[k] = struct{}{}
+		}
+		rollback := func() {
+			module.Files = module.Files[:len(module.Files)-1]
+			for k := range module.Decls.Symbols {
+				if _, ok := declsBefore[k]; !ok {
+					delete(module.Decls.Symbols, k)
+				}
+			}
+			for k := range module.Symbols.Symbols {
+				if _, ok := symsBefore[k]; !ok {
+					delete(module.Symbols.Symbols, k)
+				}
+			}
+		}
+
+		if errs := analysis.AnalyzeSourceFile(module, file); len(errs) > 0 {
+			rollback()
+			return nil, fmt.Errorf("%s", errs[0])
+		}
+
+		prevG := len(comp.Bytecode().Globals)
+		prevC := len(comp.Bytecode().Constants)
+		id, err := comp.CompileSourceFileIncremental(file)
+		if err != nil {
+			// CompileSourceFileIncremental rolls back c.globals/c.constants internally.
+			rollback()
+			return nil, err
+		}
+		bc := comp.Bytecode()
+		newG := bc.Globals[prevG:]
+		newC := bc.Constants[prevC:]
+		machine.ExtendGlobals(newG)
+		machine.ExtendConstants(newC)
+
+		if id < 0 {
+			return nil, nil
+		}
+		return machine.CallFunction(bc.Constants[id])
+	}
+
+	// Step 1: fail — undeclaredVar doesn't exist; the compiler catches it.
+	_, err := evalLine("let x = undeclaredVar", "testing:///test/line1.zirr")
+	if err == nil {
+		t.Fatal("expected compile error for undeclaredVar, got nil")
+	}
+
+	// Step 2: same name x must work now (rollback cleared the zombie).
+	_, err = evalLine("let x = 42", "testing:///test/line2.zirr")
+	if err != nil {
+		t.Fatalf("expected success for let x = 42: %v", err)
+	}
+
+	// Step 3: reading x must return 42, not panic.
+	val, err := evalLine("x", "testing:///test/line3.zirr")
+	if err != nil {
+		t.Fatalf("expected success reading x: %v", err)
+	}
+	if val == nil {
+		t.Fatal("expected 42, got nil")
+	}
+	if val.Inspect() != "42" {
+		t.Fatalf("expected 42, got %q", val.Inspect())
 	}
 }

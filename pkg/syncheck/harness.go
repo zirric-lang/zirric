@@ -35,11 +35,11 @@ func (h *Harness) Test(doc string) error {
 		return nil
 	}
 	var out strings.Builder
-	out.WriteString(fmt.Sprintf("failed assertions %d:\n", len(failures)))
+	fmt.Fprintf(&out, "failed assertions %d:\n", len(failures))
 
 	for i, a := range failures {
 		out.WriteString("\n")
-		out.WriteString(fmt.Sprintf("%d. error:\n", i+1))
+		fmt.Fprintf(&out, "%d. error:\n", i+1)
 		out.WriteString(lines[a.Line-1] + "\n")
 		out.WriteString(lines[a.SourceLine-1] + "\n")
 	}

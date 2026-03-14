@@ -74,7 +74,7 @@ func (e ExprFor) Expression() string {
 	}
 	out.WriteString(" { ")
 	out.WriteString("/* ")
-	out.WriteString(fmt.Sprintf("%d decls, %d stmts", len(e.Body.Decls), len(e.Body.Stmts)))
+	fmt.Fprintf(&out, "%d decls, %d stmts", len(e.Body.Decls), len(e.Body.Stmts))
 	out.WriteString(" */ ")
 	out.WriteString("}")
 	return out.String()

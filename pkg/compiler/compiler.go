@@ -1165,6 +1165,16 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 
 		return nil
 
+	case *ast.DeclUnion:
+		annotations, err := c.compileAnnotationChain(decl.Annotations, c.currentSymbols())
+		if err != nil {
+			return err
+		}
+		ut := runtime.MakeUnionType(sym)
+		_ = annotations // unions may carry annotations in future
+		c.constants[*sym.ConstantId] = ut
+		return nil
+
 	case *ast.DeclAnnotation:
 		at, err := runtime.MakeAnnotationType(sym)
 		if err != nil {
@@ -1236,6 +1246,10 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		err = c.compileBlock(decl.Impl.Impl)
 		if err != nil {
 			return err
+		}
+		if !c.isLastInstruction(op.Return) {
+			c.emit(op.ConstVoid)
+			c.emit(op.Return)
 		}
 		scope := c.leaveScope()
 
@@ -1356,7 +1370,18 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 	}
 
 	for _, src := range module.Files {
-		if err := c.Compile(src); err != nil {
+		if err := c.compileSourceFileDecls(src); err != nil {
+			c.leaveScope()
+			return err
+		}
+	}
+
+	var allStatements []ast.Statement
+	for _, src := range module.Files {
+		allStatements = append(allStatements, src.Statements...)
+	}
+	if len(allStatements) > 0 {
+		if err := c.compileInitFunction(allStatements, module.Symbols, ModuleSymbol(module)); err != nil {
 			c.leaveScope()
 			return err
 		}
@@ -1373,6 +1398,172 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 		c.scopes[c.scopeIdx].Instructions = append(c.scopes[c.scopeIdx].Instructions, scope.Instructions...)
 	}
 	return nil
+}
+
+// compileSourceFileDecls compiles only the declarations of a source file (not statements).
+// The resulting instructions are merged into the parent scope.
+func (c *Compiler) compileSourceFileDecls(node *ast.SourceFile) error {
+	if err := c.ensureAnalyzed(node.Decls.Module(), false); err != nil {
+		return err
+	}
+
+	c.enterScope(node.Symbols)
+
+	for _, sym := range node.Symbols.Symbols {
+		if sym.Decl == nil {
+			return fmt.Errorf("undeclared symbol %q at %s:%d", sym.Name, sym.Usages[0].Node.TokenLiteral().Source.File, sym.Usages[0].Node.TokenLiteral().Source.Offset)
+		}
+	}
+
+	fileSymbols := c.sourceFileSymbols(node)
+	for _, sym := range fileSymbols {
+		if sym.Decl == nil {
+			return fmt.Errorf("undeclared symbol %q at %s:%d", sym.Name, sym.Usages[0].Node.TokenLiteral().Source.File, sym.Usages[0].Node.TokenLiteral().Source.Offset)
+		}
+		if err := c.reserveSymbol(sym); err != nil {
+			c.leaveScope()
+			return err
+		}
+	}
+
+	for _, sym := range fileSymbols {
+		if err := c.compileSymbol(sym); err != nil {
+			c.leaveScope()
+			return err
+		}
+	}
+
+	scope := c.leaveScope()
+	c.scopes[c.scopeIdx].Instructions = append(c.scopes[c.scopeIdx].Instructions, scope.Instructions...)
+	return nil
+}
+
+// ModuleSymbol returns the symbol for the module's own declaration (the `module X` statement),
+// searching through the module's source files. Returns nil if no module declaration is found.
+func ModuleSymbol(module *ast.ContextModule) *ast.Symbol {
+	for _, file := range module.Files {
+		if file.Symbols == nil {
+			continue
+		}
+		for _, sym := range file.Symbols.Symbols {
+			if sym == nil || sym.Decl == nil {
+				continue
+			}
+			if _, ok := sym.Decl.(*ast.DeclModule); ok {
+				return sym
+			}
+		}
+	}
+	return nil
+}
+
+// compileInitFunction compiles the given statements into a synthetic __init__ CompiledFunction
+// and emits Const <id>; Call 0; Pop in the current scope.
+// sym should be the module's own symbol (from ModuleSymbol) so the function is identifiable.
+func (c *Compiler) compileInitFunction(statements []ast.Statement, symbols *ast.SymbolTable, sym *ast.Symbol) error {
+	c.enterScope(symbols)
+	for _, stmt := range statements {
+		if err := c.Compile(stmt); err != nil {
+			c.leaveScope()
+			return err
+		}
+	}
+	if !c.isLastInstruction(op.Return) {
+		c.emit(op.ConstVoid)
+		c.emit(op.Return)
+	}
+	scope := c.leaveScope()
+
+	initFn := runtime.MakeCompiledFunction(scope.Instructions, 0, scope.LocalsCount(), sym)
+	initConstantId := c.addConstant(initFn)
+	c.emit(op.Const, initConstantId)
+	c.emit(op.Call, 0)
+	c.emit(op.Pop)
+	return nil
+}
+
+// CompileSourceFileIncremental compiles a single source file incrementally for the REPL.
+// It adds new declarations to the compiler's globals/constants and wraps any statements
+// into a synthetic __init__ function stored as a constant.
+// Returns the constant ID of the __init__ function, or -1 if there are no statements.
+// The caller is responsible for ensuring the source file is analyzed before calling this.
+func (c *Compiler) CompileSourceFileIncremental(node *ast.SourceFile) (int, error) {
+	if node.Symbols == nil {
+		return -1, fmt.Errorf("source file has no symbol table: ensure it is analyzed before compiling")
+	}
+
+	// Snapshot slice lengths so we can roll back on any compile error.
+	prevGlobalsLen := len(c.globals)
+	prevConstantsLen := len(c.constants)
+	fail := func(err error) (int, error) {
+		c.globals = c.globals[:prevGlobalsLen]
+		c.constants = c.constants[:prevConstantsLen]
+		return -1, err
+	}
+
+	c.enterScope(node.Symbols)
+
+	for _, sym := range node.Symbols.Symbols {
+		if sym.Decl == nil {
+			c.leaveScope()
+			return fail(fmt.Errorf("undeclared symbol %q", sym.Name))
+		}
+	}
+
+	fileSymbols := c.sourceFileSymbols(node)
+	for _, sym := range fileSymbols {
+		if sym.Decl == nil {
+			c.leaveScope()
+			return fail(fmt.Errorf("undeclared symbol %q", sym.Name))
+		}
+		if err := c.reserveSymbol(sym); err != nil {
+			c.leaveScope()
+			return fail(err)
+		}
+	}
+	for _, sym := range fileSymbols {
+		if err := c.compileSymbol(sym); err != nil {
+			c.leaveScope()
+			return fail(err)
+		}
+	}
+
+	// Discard outer scope instructions (declarations don't emit to parent scope)
+	c.leaveScope()
+
+	if len(node.Statements) == 0 {
+		return -1, nil
+	}
+
+	c.enterScope(node.Symbols)
+	stmts := node.Statements
+	for i, stmt := range stmts {
+		isLast := i == len(stmts)-1
+		if isLast {
+			if exprStmt, ok := stmt.(*ast.StmtExpr); ok {
+				// Return the last expression's value so the REPL can display it.
+				if err := c.Compile(exprStmt.Expr); err != nil {
+					c.leaveScope()
+					return fail(err)
+				}
+				c.emit(op.Return)
+				break
+			}
+		}
+		if err := c.Compile(stmt); err != nil {
+			c.leaveScope()
+			return fail(err)
+		}
+	}
+	if !c.isLastInstruction(op.Return) {
+		c.emit(op.ConstVoid)
+		c.emit(op.Return)
+	}
+	initScope := c.leaveScope()
+
+	initFn := runtime.MakeCompiledFunction(initScope.Instructions, 0, initScope.LocalsCount(), ModuleSymbol(node.Decls.Module()))
+	initConstantId := c.addConstant(initFn)
+	return initConstantId, nil
 }
 
 func (c *Compiler) compileModuleValue(module *ast.ContextModule) error {

@@ -115,8 +115,10 @@ func (c *Compiler) addInstruction(ins []byte) int {
 }
 
 func (c *Compiler) addConstant(v runtime.RuntimeValue) int {
-	c.constants = append(c.constants, v)
-	return len(c.constants) - 1
+	id := c.analyzer.AllocateConstantId()
+	c.ensureConstantSlot(id)
+	c.constants[id] = v
+	return id
 }
 
 func (c *Compiler) ensureConstantSlot(id int) {

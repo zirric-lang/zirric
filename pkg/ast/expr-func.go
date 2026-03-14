@@ -64,7 +64,7 @@ func (e ExprFunc) Expression() string {
 		}
 	}
 	out.WriteString("->")
-	out.WriteString(fmt.Sprintf("/* %d stmts */", len(e.Impl)))
+	fmt.Fprintf(&out, "/* %d stmts */", len(e.Impl))
 	out.WriteString("}")
 
 	return out.String()
