@@ -10,7 +10,7 @@ in Cavefiles, moved under `future/tasks` as part of the ZE-002 proposal work.
 
 ## Values
 
-### ZE_002
+### let ZE_002
 
 ```zirric
 let ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
@@ -20,7 +20,7 @@ ZE-002: The Cavefile.
 
 ## Annotations
 
-### Exec
+### annotation Exec
 
 ```zirric
 @Proposal(ZE_002)
@@ -33,7 +33,7 @@ Fields:
 
 - `@String file` — The file that contains the implementation of the task.
 
-### Call
+### annotation Call
 
 ```zirric
 @Proposal(ZE_002)
@@ -46,7 +46,7 @@ Fields:
 
 - `@Function function` — The function to run for the task.
 
-### Import
+### annotation Import
 
 ```zirric
 @Proposal(ZE_002)
@@ -60,7 +60,7 @@ Fields:
 
 - `@Module module` — The module to use for the task.
 
-### Name
+### annotation Name
 
 ```zirric
 @Proposal(ZE_002)
@@ -73,7 +73,7 @@ Fields:
 
 - `@String name` — The new name.
 
-### Alias
+### annotation Alias
 
 ```zirric
 @Proposal(ZE_002)
@@ -86,7 +86,7 @@ Fields:
 
 - `@Array alias` — Alternative names.
 
-### Short
+### annotation Short
 
 ```zirric
 @Proposal(ZE_002)
@@ -99,7 +99,7 @@ Fields:
 
 - `@Char short` — The short name of the flag.
 
-### Help
+### annotation Help
 
 ```zirric
 @Proposal(ZE_002)
@@ -112,7 +112,7 @@ Fields:
 
 - `@String help` — A short help text.
 
-### Flag
+### annotation Flag
 
 ```zirric
 @Proposal(ZE_002)
@@ -121,7 +121,7 @@ annotation Flag
 
 Marks this field as a commandline flag.
 
-### Arg
+### annotation Arg
 
 ```zirric
 @Proposal(ZE_002)
@@ -132,7 +132,7 @@ Marks this field as a positional commandline argument.
 
 ## Union
 
-### Task
+### union Task
 
 ```zirric
 @Proposal(ZE_002)

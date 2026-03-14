@@ -1,6 +1,6 @@
 module.exports = {
-  siteTitle: "Zirric Language Documentation",
-  siteUrl: "https://zirric.knabel.dev",
+  title: "Zirric Language Documentation",
+  url: "https://zirric.knabel.dev",
   logo: {
     light: "/assets/images/zirric.svg",
     dark: "/assets/images/zirric.svg",
@@ -8,8 +8,8 @@ module.exports = {
     href: "/"
   },
   favicon: "/assets/favicon.ico",
-  srcDir: "./",
-  outputDir: "../site",
+  src: "./",
+  out: "../site",
   layout: {
     spa: true,
     header: {
@@ -34,7 +34,7 @@ module.exports = {
   },
   theme: {
     name: "ruby",
-    defaultMode: "dark",
+    appearance: "system",
     codeHighlight: true,
     customCss: []
   },
@@ -59,6 +59,7 @@ module.exports = {
       defaultChangefreq: "monthly",
       defaultPriority: 0.8
     },
+    llms: {},
     "custom-header": {
       header: [
         "<script defer src=\"https://uma.knabel.dev/umami\" data-website-id=\"cb95e6bc-e06f-4398-9dad-bf39ccdb99b9\" data-domains=\"zirric.knabel.dev\"></script>",
@@ -70,6 +71,11 @@ module.exports = {
         "<link rel=\"icon\" type=\"image/png\" sizes=\"512x512\" href=\"/assets/images/favicon/web-app-manifest-512x512.png\">"
       ]
     }
+  },
+  redirects: [],
+  notFound: {
+    title: 'Page Not Found', 
+    content: 'Oops! This page has moved.'
   },
   navigation: [
     {

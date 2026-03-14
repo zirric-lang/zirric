@@ -10,7 +10,7 @@ annotations, and types.
 
 ## Annotations
 
-### Name
+### annotation Name
 
 ```zirric
 annotation Name
@@ -24,7 +24,7 @@ Fields:
 
 ## Data
 
-### Field
+### data Field
 
 ```zirric
 data Field
@@ -38,7 +38,7 @@ Fields:
 - `@Type(AnyType) type`
 - `@Array @ItemType(Annotation) annotations`
 
-### Annotation
+### data Annotation
 
 ```zirric
 data Annotation
@@ -53,7 +53,7 @@ Fields:
 
 ## Functions
 
-### typeOf
+### func typeOf
 
 ```zirric
 @Returns(Type)
@@ -62,7 +62,7 @@ func typeOf(@Any value)
 
 No documentation.
 
-### fieldsOf
+### func fieldsOf
 
 ```zirric
 @Returns(Array(Field))
@@ -71,7 +71,7 @@ func fieldsOf(@Type type)
 
 No documentation.
 
-### annotation
+### func annotation
 
 ```zirric
 @Returns(Result)
@@ -81,7 +81,7 @@ func annotation(@Field field, @AnnotationType annotationType)
 
 No documentation.
 
-### hasAnnotation
+### func hasAnnotation
 
 ```zirric
 @Returns(Bool)

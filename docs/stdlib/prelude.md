@@ -9,7 +9,7 @@ The `prelude` module defines Zirric's core types, builtins, and foundational ann
 
 ## Annotations
 
-### Type
+### annotation Type
 
 ```zirric
 annotation Type
@@ -22,7 +22,7 @@ Fields:
 
 - `@Type(AnyType) type` — The type of the annotation.
 
-### Has
+### annotation Has
 
 ```zirric
 annotation Has
@@ -36,7 +36,7 @@ Fields:
 
 - `@Type(AnnotationType) annotationType` — The required annotation type.
 
-### Returns
+### annotation Returns
 
 ```zirric
 annotation Returns
@@ -48,7 +48,7 @@ Fields:
 
 - `@Type(AnyType) type`
 
-### Default
+### annotation Default
 
 ```zirric
 annotation Default
@@ -61,7 +61,7 @@ Fields:
 
 - `@Type(AnyType) value` — The default value for a parameter.
 
-### Doc
+### annotation Doc
 
 ```zirric
 annotation Doc
@@ -74,7 +74,7 @@ Fields:
 - `@String description` — The documentation string without leading comment markers
   and whitespace.
 
-### Deprecated
+### annotation Deprecated
 
 ```zirric
 annotation Deprecated
@@ -87,19 +87,7 @@ Fields:
 
 - `@String @Default("without alternative") reason`
 
-### Numeric
-
-```zirric
-annotation Numeric
-```
-
-A numeric value, either floating point or integer.
-
-Members:
-
-- `@Returns(Number) get()`
-
-### Numeric (conversion)
+### annotation Numeric
 
 ```zirric
 annotation Numeric
@@ -113,7 +101,7 @@ Members:
 
 ## Types
 
-### Any
+### extern type Any
 
 ```zirric
 extern type Any
@@ -121,7 +109,7 @@ extern type Any
 
 Anything is a value of type `Any`.
 
-### AnyType
+### extern type AnyType
 
 ```zirric
 extern type AnyType
@@ -129,7 +117,7 @@ extern type AnyType
 
 All types are of type `AnyType`.
 
-### Annotation
+### extern type Annotation
 
 ```zirric
 extern type Annotation
@@ -137,7 +125,7 @@ extern type Annotation
 
 All annotations are of type `Annotation`.
 
-### AnnotationType
+### extern type AnnotationType
 
 ```zirric
 extern type AnnotationType
@@ -145,7 +133,7 @@ extern type AnnotationType
 
 All annotation types are of type `AnnotationType`.
 
-### Module
+### extern type Module
 
 ```zirric
 extern type Module
@@ -153,7 +141,7 @@ extern type Module
 
 All modules are of type `Module`.
 
-### ModuleType
+### extern type ModuleType
 
 ```zirric
 extern type ModuleType
@@ -161,7 +149,7 @@ extern type ModuleType
 
 All module types are of type `ModuleType`.
 
-### Array
+### extern type Array
 
 ```zirric
 extern type Array
@@ -173,7 +161,7 @@ Members:
 
 - `@Type(Int) length` — The length of the array.
 
-### Bool
+### extern type Bool
 
 ```zirric
 extern type Bool
@@ -186,7 +174,7 @@ Members:
 
 - `toggle()` — Negates a boolean value.
 
-### Char
+### extern type Char
 
 ```zirric
 extern type Char
@@ -194,7 +182,7 @@ extern type Char
 
 A single character from a string.
 
-### Dict
+### extern type Dict
 
 ```zirric
 extern type Dict
@@ -206,7 +194,7 @@ Members:
 
 - `@Type(Int) length` — The length of the dictionary.
 
-### Func
+### extern type Func
 
 ```zirric
 extern type Func
@@ -218,7 +206,7 @@ Members:
 
 - `@Type(Int) arity` — The amount of function parameters to be passed.
 
-### Float
+### extern type Float
 
 ```zirric
 @Numeric({ f -> f })
@@ -227,7 +215,7 @@ extern type Float
 
 A floating point number.
 
-### Int
+### extern type Int
 
 ```zirric
 @Numeric({ i -> i })
@@ -236,7 +224,7 @@ extern type Int
 
 A whole integer number.
 
-### String
+### extern type String
 
 ```zirric
 extern type String
@@ -248,7 +236,7 @@ Members:
 
 - `@Type(Int) length`
 
-### Void
+### extern type Void
 
 ```zirric
 extern type Void
@@ -258,7 +246,7 @@ The type of the `void` value.
 
 ## Union
 
-### Number
+### union Number
 
 ```zirric
 union Number
@@ -273,7 +261,7 @@ Members:
 
 ## Values
 
-### true
+### let true
 
 ```zirric
 @Bool
@@ -282,7 +270,7 @@ let true = 0 == 0
 
 No documentation.
 
-### false
+### let false
 
 ```zirric
 @Bool
@@ -291,7 +279,7 @@ let false = 0 != 0
 
 No documentation.
 
-### void
+### let void
 
 ```zirric
 @Type(Void)

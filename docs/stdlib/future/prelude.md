@@ -10,7 +10,7 @@ iterable helpers, option/result types, and annotation binding.
 
 ## Values
 
-### ZE_007
+### let ZE_007
 
 ```zirric
 let ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-annotation-binding"
@@ -18,7 +18,7 @@ let ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-annotation-binding"
 
 ZE-007: Annotation Binding.
 
-### ZE_008
+### let ZE_008
 
 ```zirric
 let ZE_008 = "https://zirric.knabel.dev/proposals/ZE-008-error-handling"
@@ -26,7 +26,7 @@ let ZE_008 = "https://zirric.knabel.dev/proposals/ZE-008-error-handling"
 
 ZE-008: Error Handling.
 
-### ZE_009
+### let ZE_009
 
 ```zirric
 let ZE_009 = "https://zirric.knabel.dev/proposals/ZE-009-option-values"
@@ -34,7 +34,7 @@ let ZE_009 = "https://zirric.knabel.dev/proposals/ZE-009-option-values"
 
 ZE-009: Option Values.
 
-### ZE_010
+### let ZE_010
 
 ```zirric
 let ZE_010 = "https://zirric.knabel.dev/proposals/ZE-010-iterable"
@@ -44,7 +44,7 @@ ZE-010: Iterable.
 
 ## Annotations
 
-### Bound
+### annotation Bound
 
 ```zirric
 @Proposal(ZE_007)
@@ -70,7 +70,7 @@ data MessageError {
 MessageError("msg")[@Error].debug()
 ```
 
-### Countable
+### annotation Countable
 
 ```zirric
 @Proposal(ZE_010)
@@ -83,7 +83,7 @@ Members:
 
 - `@Returns(Int) length(@Has(Countable) value)`
 
-### Iterable
+### annotation Iterable
 
 ```zirric
 @Proposal(ZE_010)
@@ -96,7 +96,7 @@ Members:
 
 - `iterate(@Has(Iterable) value, @Func yield)`
 
-### Error
+### annotation Error
 
 ```zirric
 @Proposal(ZE_008)
@@ -110,7 +110,7 @@ Members:
 - `@Bound() @Returns(String) debug(err)` — Returns a debug string representation
   of the error.
 
-### AnyResult
+### annotation AnyResult
 
 ```zirric
 annotation AnyResult
@@ -124,7 +124,7 @@ syntactic sugar for working with result types:
 - `result !! "default value"` resolves to the value of `Ok` or the provided
   default value if `Err`.
 
-### OkType
+### annotation OkType
 
 ```zirric
 @Proposal(ZE_008)
@@ -137,7 +137,7 @@ Fields:
 
 - `@Type(AnyType) type` — The type of `Ok.value`.
 
-### ErrType
+### annotation ErrType
 
 ```zirric
 @Proposal(ZE_008)
@@ -150,7 +150,7 @@ Fields:
 
 - `@Type(AnyType) type` — The type of `Err.error`.
 
-### AnyOption
+### annotation AnyOption
 
 ```zirric
 annotation AnyOption
@@ -164,7 +164,7 @@ syntactic sugar for working with option types:
 - `option ?? "default value"` resolves to the value of `Some` or the provided
   default value if `None`.
 
-### SomeType
+### annotation SomeType
 
 ```zirric
 @Proposal(ZE_009)
@@ -179,7 +179,7 @@ Fields:
 
 ## Data
 
-### Range
+### data Range
 
 ```zirric
 @Proposal(ZE_010)
@@ -196,7 +196,7 @@ Fields:
 - `@Int start`
 - `@Int end`
 
-### ClosedRange
+### data ClosedRange
 
 ```zirric
 @Proposal(ZE_010)
@@ -213,7 +213,7 @@ Fields:
 - `@Int start`
 - `@Int end`
 
-### Ok
+### data Ok
 
 ```zirric
 @Proposal(ZE_008)
@@ -226,7 +226,7 @@ Fields:
 
 - `value` — The value of the successful result.
 
-### Err
+### data Err
 
 ```zirric
 @Proposal(ZE_008)
@@ -241,7 +241,7 @@ Fields:
 - `@Has(Error) error` — The error of the result. Must a type annotated with
   `@Error`.
 
-### Some
+### data Some
 
 ```zirric
 @Proposal(ZE_009)
@@ -254,7 +254,7 @@ Fields:
 
 - `value` — The value that is present.
 
-### None
+### data None
 
 ```zirric
 @Proposal(ZE_009)
@@ -265,7 +265,7 @@ The absent value.
 
 ## Union
 
-### Result
+### union Result
 
 ```zirric
 @Proposal(ZE_008)
@@ -285,7 +285,7 @@ Members:
 - `Ok`
 - `Err`
 
-### Option
+### union Option
 
 ```zirric
 @Proposal(ZE_009)
@@ -307,7 +307,7 @@ Members:
 
 ## Functions
 
-### _arrayIterate
+### func _arrayIterate
 
 ```zirric
 func _arrayIterate(v, yield)
@@ -315,7 +315,7 @@ func _arrayIterate(v, yield)
 
 No documentation.
 
-### _dictIterate
+### func _dictIterate
 
 ```zirric
 func _dictIterate(v, yield)
@@ -323,7 +323,7 @@ func _dictIterate(v, yield)
 
 No documentation.
 
-### _stringIterate
+### func _stringIterate
 
 ```zirric
 func _stringIterate(v, yield)
@@ -331,7 +331,7 @@ func _stringIterate(v, yield)
 
 No documentation.
 
-### _rangeCount
+### func _rangeCount
 
 ```zirric
 func _rangeCount(v)
@@ -339,7 +339,7 @@ func _rangeCount(v)
 
 No documentation.
 
-### _rangeIterate
+### func _rangeIterate
 
 ```zirric
 func _rangeIterate(v, yield)
@@ -347,7 +347,7 @@ func _rangeIterate(v, yield)
 
 No documentation.
 
-### _closedRangeCount
+### func _closedRangeCount
 
 ```zirric
 func _closedRangeCount(v)
@@ -355,7 +355,7 @@ func _closedRangeCount(v)
 
 No documentation.
 
-### _closedRangeIterate
+### func _closedRangeIterate
 
 ```zirric
 func _closedRangeIterate(v, yield)

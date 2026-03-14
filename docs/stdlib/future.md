@@ -12,7 +12,7 @@ complete, and some require additional syntax not yet available in Zirric.
 
 ## Annotations
 
-### Proposal
+### annotation Proposal
 
 ```zirric
 annotation Proposal

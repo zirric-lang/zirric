@@ -10,7 +10,7 @@ The `cave` module defines annotations and types used by Cavefiles, moved under
 
 ## Values
 
-### ZE_002
+### let ZE_002
 
 ```zirric
 let ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
@@ -20,7 +20,7 @@ ZE-002: The Cavefile.
 
 ## Annotations
 
-### Dependencies
+### annotation Dependencies
 
 ```zirric
 @Proposal(ZE_002)
@@ -29,7 +29,7 @@ annotation Dependencies
 
 Marks the current data structure as a dependencies manifest.
 
-### Version
+### annotation Version
 
 ```zirric
 @Proposal(ZE_002)
@@ -42,7 +42,7 @@ Fields:
 
 - `@String predicate` — The version predicate string.
 
-### Stdlib
+### annotation Stdlib
 
 ```zirric
 @Proposal(ZE_002)
@@ -55,7 +55,7 @@ Fields:
 
 - `@String name` — The name of the standard library dependency.
 
-### Git
+### annotation Git
 
 ```zirric
 @Proposal(ZE_002)
@@ -69,7 +69,7 @@ Fields:
 
 - `@String url` — The URL of the Git repository.
 
-### Local
+### annotation Local
 
 ```zirric
 @Proposal(ZE_002)
@@ -84,7 +84,7 @@ Fields:
 
 ## Union
 
-### Source
+### union Source
 
 ```zirric
 @Proposal(ZE_002)
