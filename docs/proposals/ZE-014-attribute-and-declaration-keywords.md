@@ -5,9 +5,10 @@ description: Replace `func`, `annotation`, and `module` with `fn`, `attr`, and `
 
 # Attribute and Declaration Keywords
 
-::: callout draft <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-icon lucide-circle"><circle cx="12" cy="12" r="10"/></svg> Draft
-This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design.
-Features described here may not be implemented as described and cannot be used right now.
+::: callout warning <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-dot-icon lucide-circle-dot"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg> In Progress
+This proposal has been accepted in principle.
+It is currently under active development.
+Parts might be incomplete or missing in Zirric.
 :::
 
 ## Introduction
@@ -47,26 +48,26 @@ Everything else — `let`, `data`, `union`, `import`, `extern` — remains as-is
 
 ```zirric
 // Before
+module math
+
 annotation Numeric {}
 
 func add(a, b) {
     return a + b
 }
 
-module math
-
 func square(n) {
     return n * n
 }
 
 // After
+mod math
+
 attr Numeric {}
 
 fn add(a, b) {
     return a + b
 }
-
-mod math
 
 fn square(n) {
     return n * n
