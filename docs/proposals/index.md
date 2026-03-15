@@ -29,6 +29,7 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 | [ZE-010](/proposals/ZE-010-iterable)                        | Iterable                        | In Progress | [@vknabel](https://code.knabel.dev/vknabel)                                        |
 | [ZE-011](/proposals/ZE-011-zirric-cli)                      | Zirric CLI                      | In Progress | [@vknabel](https://code.knabel.dev/vknabel)                                        |
 | [ZE-012](/proposals/ZE-012-type-and-returns-sugar)          | Type and Returns Sugar          | In Progress | [@vknabel](https://code.knabel.dev/vknabel)                                        |
+| [ZE-013](/proposals/ZE-013-mutability-and-constants)        | Mutability and Constants        | Draft       | [@vknabel](https://code.knabel.dev/vknabel)                                        |
 
 ## Submitting Proposals
 

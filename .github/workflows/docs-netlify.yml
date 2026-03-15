@@ -16,11 +16,11 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install
-        working-directory: .tasks/docmd
+        working-directory: tasks/docmd
         run: npm install
 
       - name: Build docs
-        working-directory: .tasks/docmd
+        working-directory: tasks/docmd
         run: npm run build
 
       - name: Deploy preview to Netlify
@@ -28,11 +28,11 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: npx netlify-cli deploy --dir .tasks/docmd/site --message "Forgejo deploy ${{ github.sha }}"
+        run: npx netlify-cli deploy --dir tasks/docmd/site --message "Forgejo deploy ${{ github.sha }}"
 
       - name: Deploy production to Netlify
         if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: npx netlify-cli deploy --dir .tasks/docmd/site --prod --message "Forgejo deploy ${{ github.ref }}"
+        run: npx netlify-cli deploy --dir tasks/docmd/site --prod --message "Forgejo deploy ${{ github.ref }}"

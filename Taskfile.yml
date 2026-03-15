@@ -2,8 +2,8 @@ version: "3"
 
 includes:
   docs:
-    taskfile: ./.tasks/docmd/Taskfile.yml
-    dir: ./.tasks/docmd
+    taskfile: ./tasks/docmd/Taskfile.yml
+    dir: ./tasks/docmd
   ci:
     taskfile: ./.github/Taskfile.yml
     dir: ./
