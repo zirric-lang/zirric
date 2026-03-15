@@ -245,6 +245,11 @@ module.exports = {
           icon: "circle",
           title: "ZE-14 Attribute and Declaration Keywords",
           path: "/proposals/ZE-014-attribute-and-declaration-keywords"
+        },
+        {
+          icon: "circle",
+          title: "ZE-15 Extern Type Constructors",
+          path: "/proposals/ZE-015-extern-type-constructors"
         }
       ]
     },
