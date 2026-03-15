@@ -23,13 +23,13 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 | [ZE-004](/proposals/ZE-004-Variadic-Arguments)                 | Variadic Arguments                 | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
 | [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)            | Mixin Type Declarations            | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
 | [ZE-006](/proposals/ZE-006-Annotation-Based-Parsing-System)    | Attribute-Based Parsing System     | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-007](/proposals/ZE-007-attribute-binding)                 | Attribute Binding                  | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
+| [ZE-007](/proposals/ZE-007-attribute-binding)                  | Attribute Binding                  | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
 | [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                     | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
 | [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                      | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
 | [ZE-010](/proposals/ZE-010-iterable)                           | Iterable                           | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
 | [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                         | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
 | [ZE-012](/proposals/ZE-012-type-and-returns-sugar)             | Type and Returns Sugar             | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-013](/proposals/ZE-013-mutability-and-constants)           | Mutability and Constants           | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
+| [ZE-013](/proposals/ZE-013-mutability-and-constants)           | Mutability and Constants           | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
 | [ZE-014](/proposals/ZE-014-attribute-and-declaration-keywords) | Attribute and Declaration Keywords | Implemented | [@vknabel](https://code.knabel.dev/vknabel) |
 | [ZE-015](/proposals/ZE-015-extern-type-constructors)           | Extern Type Constructors           | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
 

@@ -237,7 +237,7 @@ module.exports = {
           path: "/proposals/ZE-012-type-and-returns-sugar"
         },
         {
-          icon: "circle",
+          icon: "circle-dot",
           title: "ZE-13 Mutability and Constants",
           path: "/proposals/ZE-013-mutability-and-constants"
         },
