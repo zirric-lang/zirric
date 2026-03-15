@@ -25,7 +25,7 @@ test "any in unions matches all types", { fail ->
 		Any
 	}
 
-	let isCorrect = with "should be any", type AnyUnion {
+	const isCorrect = with "should be any", type AnyUnion {
 		Int: { _ -> False },
 		Any: { _ -> True }
 	}
@@ -65,7 +65,7 @@ test "any in unions matches all types", { fail ->
 		{token.IDENT, "Int"},
 		{token.IDENT, "Any"},
 		{token.RBRACE, "}"},
-		{token.LET, "let"},
+		{token.CONST, "const"},
 		{token.IDENT, "isCorrect"},
 		{token.ASSIGN, "="},
 		{token.IDENT, "with"},
@@ -847,13 +847,24 @@ func TestAllTokens(t *testing.T) {
 			},
 		},
 		{
-			name:  "keyword let",
-			input: `let`,
+			name:  "keyword const",
+			input: `const`,
 			expected: []struct {
 				expectedType    token.TokenType
 				expectedLiteral string
 			}{
-				{token.LET, "let"},
+				{token.CONST, "const"},
+				{token.EOF, ""},
+			},
+		},
+		{
+			name:  "keyword var",
+			input: `var`,
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.VAR, "var"},
 				{token.EOF, ""},
 			},
 		},

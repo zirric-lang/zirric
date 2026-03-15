@@ -1,3 +1,3 @@
 mod reflect
 
-let hello = "reflect"
+const hello = "reflect"

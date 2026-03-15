@@ -6,7 +6,7 @@ import code.knabel.dev.zirric_lang.zirric.future {
 
 // ZE-002: Error Handling
 // https://zirric.knabel.dev/proposals/ze-002-the-cavefile/
-let ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
+const ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
 
 // Marks the current data structure as a dependencies manifest.
 @Proposal(ZE_002)

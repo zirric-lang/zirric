@@ -122,19 +122,19 @@ All `.zirr` files in `prelude/` and `future/` must be updated:
 
 As part of the broader "Annotation → Attribute" rename, the following identifiers in `prelude/` and `future/` are also updated:
 
-| Old name                | New name               | Location                   | Kind                                                |
-| ----------------------- | ---------------------- | -------------------------- | --------------------------------------------------- |
-| `AnnotationType`        | `AttributeType`        | `prelude/shim.zirr`        | `extern type` declaration                           |
-| `AnnotationType`        | `AttributeType`        | `prelude/attributes.zirr` | type reference (field type and attribute argument) |
-| `annotationType`        | `attributeType`        | `prelude/attributes.zirr` | field name in `Has`                                 |
-| `Annotation`            | `Attribute`            | `future/reflect/stub.zirr` | `data` declaration                                  |
-| `annotations`           | `attributes`           | `future/reflect/stub.zirr` | field name in `Field`                               |
-| `@ItemType(Annotation)` | `@ItemType(Attribute)` | `future/reflect/stub.zirr` | annotation argument                                 |
-| `@AnyAnnotation`        | `@AnyAttribute`        | `future/reflect/stub.zirr` | annotation application                              |
-| `annotation`            | `attribute`            | `future/reflect/stub.zirr` | function name                                       |
-| `hasAnnotation`         | `hasAttribute`         | `future/reflect/stub.zirr` | function name                                       |
-| `annotationType`        | `attributeType`        | `future/reflect/stub.zirr` | parameter name                                      |
-| `@AnnotationType`       | `@AttributeType`       | `future/reflect/stub.zirr` | annotation application                              |
+| Old name                | New name               | Location                   | Kind                                               |
+| ----------------------- | ---------------------- | -------------------------- | -------------------------------------------------- |
+| `AnnotationType`        | `AttributeType`        | `prelude/shim.zirr`        | `extern type` declaration                          |
+| `AnnotationType`        | `AttributeType`        | `prelude/attributes.zirr`  | type reference (field type and attribute argument) |
+| `annotationType`        | `attributeType`        | `prelude/attributes.zirr`  | field name in `Has`                                |
+| `Annotation`            | `Attribute`            | `future/reflect/stub.zirr` | `data` declaration                                 |
+| `annotations`           | `attributes`           | `future/reflect/stub.zirr` | field name in `Field`                              |
+| `@ItemType(Annotation)` | `@ItemType(Attribute)` | `future/reflect/stub.zirr` | annotation argument                                |
+| `@AnyAnnotation`        | `@AnyAttribute`        | `future/reflect/stub.zirr` | annotation application                             |
+| `annotation`            | `attribute`            | `future/reflect/stub.zirr` | function name                                      |
+| `hasAnnotation`         | `hasAttribute`         | `future/reflect/stub.zirr` | function name                                      |
+| `annotationType`        | `attributeType`        | `future/reflect/stub.zirr` | parameter name                                     |
+| `@AnnotationType`       | `@AttributeType`       | `future/reflect/stub.zirr` | annotation application                             |
 
 The corresponding Go compiler and runtime internals are renamed in the same way — `AnnotationType` → `AttributeType`, `AnnotationValue` → `AttributeValue`, `DeclAnnotation` → `DeclAttribute`, `AnnotationChain` → `AttributeChain`, and so on.
 

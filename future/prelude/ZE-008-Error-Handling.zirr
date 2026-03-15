@@ -6,7 +6,7 @@ import code.knabel.dev.zirric_lang.zirric.future {
 
 // ZE-008: Error Handling
 // https://zirric.knabel.dev/proposals/ZE-008-error-handling
-let ZE_008 = "https://zirric.knabel.dev/proposals/ZE-008-error-handling"
+const ZE_008 = "https://zirric.knabel.dev/proposals/ZE-008-error-handling"
 
 // Marks a type as an error type.
 @Proposal(ZE_008)

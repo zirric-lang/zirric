@@ -10,7 +10,7 @@ import (
 var _ Expr = ExprFor{}
 
 type ExprForBody struct {
-	Decls      []*DeclVariable
+	Decls      []Decl
 	Stmts      Block
 	DeclsTable *DeclTable
 	Symbols    *SymbolTable

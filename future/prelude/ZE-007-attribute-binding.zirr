@@ -6,7 +6,7 @@ import code.knabel.dev.zirric_lang.zirric.future {
 
 // ZE-007: Attribute Binding
 // https://zirric.knabel.dev/proposals/ZE-007-attribute-binding
-let ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-attribute-binding"
+const ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-attribute-binding"
 
 // A bound function of an attribute receives the targeted value as first argument.
 //

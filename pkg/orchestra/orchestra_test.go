@@ -13,7 +13,7 @@ import (
 
 func TestParseModulePreloadsPrelude(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "app/main.zirr", "mod app\nlet greeting = \"hi\"\n")
+	writeFile(t, projectFS, "app/main.zirr", "mod app\nconst greeting = \"hi\"\n")
 
 	orch := newTestOrchestra(t, projectFS, "project")
 	resolver, err := orch.NewResolver()
@@ -104,7 +104,7 @@ func TestParseFileUsesPreludeAttribute(t *testing.T) {
 // itself was only installed when declared dependencies were missing.
 func TestRunFileNoDeclaredDependencies(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "main.zirr", "mod main\nlet answer = \"42\"\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\nconst answer = \"42\"\n")
 
 	// Deliberately no PackageName-derived dependencies beyond stdlib (injected automatically).
 	orch := newTestOrchestra(t, projectFS, "main")
@@ -121,7 +121,7 @@ func TestRunFileNoDeclaredDependencies(t *testing.T) {
 func TestRunFileWithCrossModuleImport(t *testing.T) {
 	projectFS := memfs.New()
 	// utils/ subdirectory → URI "project.utils" (directory name is the URI segment)
-	writeFile(t, projectFS, "utils/greet.zirr", "mod utils\nlet greeting = \"hello\"\n")
+	writeFile(t, projectFS, "utils/greet.zirr", "mod utils\nconst greeting = \"hello\"\n")
 	writeFile(t, projectFS, "main.zirr", "mod main\nimport utils = project.utils\n")
 
 	orch := newTestOrchestra(t, projectFS, "project")
@@ -149,7 +149,7 @@ func newTestOrchestra(t *testing.T, projectFS billy.Filesystem, name string) *or
 // compiler's pointer-equality checks to work correctly.
 func TestMainModuleIsRegisteredAfterParse(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "main.zirr", "mod main\nlet x = 42\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\nconst x = 42\n")
 
 	orch := newTestOrchestra(t, projectFS, "main")
 	resolver, err := orch.NewResolver()
@@ -170,11 +170,11 @@ func TestMainModuleIsRegisteredAfterParse(t *testing.T) {
 	}
 }
 
-// TestRunFileWithLetBinding verifies that a file with a let binding compiles
+// TestRunFileWithConstBinding verifies that a file with a const binding compiles
 // and runs correctly — exercising full main-module symbol compilation.
 func TestRunFileWithLetBinding(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "main.zirr", "mod main\nlet greeting = \"hello\"\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\nconst greeting = \"hello\"\n")
 
 	orch := newTestOrchestra(t, projectFS, "main")
 	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {

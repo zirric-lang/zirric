@@ -66,7 +66,7 @@ func TestBasicFunctions(t *testing.T) {
 		{input: "fn example() { return }\nexample()", expected: nil},
 		{input: `
 		fn example() {
-			let x = 1
+			const x = 1
 			return x + x
 		}
 		example()
@@ -367,7 +367,46 @@ func BenchmarkFib32(t *testing.B) {
 
 func TestBasicVariables(t *testing.T) {
 	tests := []vmTestCase{
-		{input: "let a = 42\na", expected: 42},
+		{input: "const a = 42\na", expected: 42},
+		{input: "var b = 10\nb", expected: 10},
+		{input: "const x = 1\nconst y = 2\nx + y", expected: 3},
+		{input: "var x = 1\nvar y = 2\nx + y", expected: 3},
+		{input: "const x = 5\nvar y = x\ny", expected: 5},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestConstAndVarLocalBindings(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+fn f() {
+	const x = 10
+	return x
+}
+f()`,
+			expected: 10,
+		},
+		{
+			input: `
+fn f() {
+	var x = 20
+	return x
+}
+f()`,
+			expected: 20,
+		},
+		{
+			input: `
+fn add() {
+	const a = 3
+	var b = 4
+	return a + b
+}
+add()`,
+			expected: 7,
+		},
 	}
 
 	runVmTests(t, tests)
@@ -440,7 +479,7 @@ func TestForStatements(t *testing.T) {
 			input: `
 			fn example() {
 				for false { return 7 }
-				let x = 8
+				const x = 8
 				return x
 			}
 			example()
@@ -472,7 +511,7 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "array for expression",
 			input: `
-			let result = for item <- [1, 2, 3] { item }
+			const result = for item <- [1, 2, 3] { item }
 			result
 			`,
 			expected: []any{1, 2, 3},
@@ -480,8 +519,8 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "array for expression decls",
 			input: `
-			let result = for item <- [1, 2, 3] {
-				let doubled = item * 2
+			const result = for item <- [1, 2, 3] {
+				const doubled = item * 2
 				doubled
 			}
 			result
@@ -491,7 +530,7 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "array for expression continue",
 			input: `
-			let result = for item <- [1, 2, 3] {
+			const result = for item <- [1, 2, 3] {
 				if item == 2 {
 					continue
 				}
@@ -504,7 +543,7 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "for expression empty",
 			input: `
-			let result = for false { 1 }
+			const result = for false { 1 }
 			result
 			`,
 			expected: []any{},
@@ -592,7 +631,7 @@ func TestVMExtend(t *testing.T) {
 		prevLen := len(bytecode.Globals)
 
 		// Parse a new variable and compile it incrementally.
-		l, err := lexer.New(staticmodule.NewSourceString("testing:///test/line2.zirr", "let x = 99"))
+		l, err := lexer.New(staticmodule.NewSourceString("testing:///test/line2.zirr", "const x = 99"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -990,8 +1029,8 @@ func native(val runtime.RuntimeValue) (any, error) {
 
 func TestReplRollbackAndReuse(t *testing.T) {
 	// Simulates the REPL rollback scenario:
-	// 1. Failed `let x = undeclaredVar` — compile error, rollback symbol tables and compiler state.
-	// 2. Successful `let x = 42`        — same name now works.
+	// 1. Failed `const x = undeclaredVar` — compile error, rollback symbol tables and compiler state.
+	// 2. Successful `const x = 42`        — same name now works.
 	// 3. `x`                            — must return 42 (not panic with index OOB).
 
 	module := prepareContextModuleParsing(t, "test", "mod repl")
@@ -1077,15 +1116,15 @@ func TestReplRollbackAndReuse(t *testing.T) {
 	}
 
 	// Step 1: fail — undeclaredVar doesn't exist; the compiler catches it.
-	_, err := evalLine("let x = undeclaredVar", "testing:///test/line1.zirr")
+	_, err := evalLine("const x = undeclaredVar", "testing:///test/line1.zirr")
 	if err == nil {
 		t.Fatal("expected compile error for undeclaredVar, got nil")
 	}
 
 	// Step 2: same name x must work now (rollback cleared the zombie).
-	_, err = evalLine("let x = 42", "testing:///test/line2.zirr")
+	_, err = evalLine("const x = 42", "testing:///test/line2.zirr")
 	if err != nil {
-		t.Fatalf("expected success for let x = 42: %v", err)
+		t.Fatalf("expected success for const x = 42: %v", err)
 	}
 
 	// Step 3: reading x must return 42, not panic.

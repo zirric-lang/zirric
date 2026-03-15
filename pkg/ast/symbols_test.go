@@ -22,7 +22,7 @@ func TestSymbolTableInsertCreatesSymbol(t *testing.T) {
 	table := ast.MakeModuleSymbolTable(module)
 
 	decl := &ast.DeclVariable{
-		Token: token.Token{Type: token.LET, Literal: "let"},
+		Token: token.Token{Type: token.VAR, Literal: "var"},
 		Name:  makeIdentifier("answer"),
 	}
 
@@ -64,7 +64,7 @@ func TestSymbolTableInsertReportsRedeclaration(t *testing.T) {
 	table := ast.MakeModuleSymbolTable(module)
 
 	decl := &ast.DeclVariable{
-		Token: token.Token{Type: token.LET, Literal: "let"},
+		Token: token.Token{Type: token.VAR, Literal: "var"},
 		Name:  makeIdentifier("value"),
 	}
 
@@ -117,7 +117,7 @@ func TestChildSymbolTableCreatesFreeSymbol(t *testing.T) {
 	child := parent.MakeChild(nil)
 
 	decl := &ast.DeclVariable{
-		Token: token.Token{Type: token.LET, Literal: "let"},
+		Token: token.Token{Type: token.VAR, Literal: "var"},
 		Name:  makeIdentifier("capture"),
 	}
 

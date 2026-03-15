@@ -89,7 +89,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 		return nil
 
-	case *ast.DeclVariable, *ast.DeclFunc:
+	case *ast.DeclVariable, *ast.DeclConstant, *ast.DeclFunc:
 		symbols := c.currentSymbols()
 		if symbols == nil {
 			return fmt.Errorf("missing symbols for declaration %T", node)
@@ -205,7 +205,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(op.Const, *sym.ConstantId)
 			return nil
 
-		case *ast.DeclVariable, *ast.DeclForBinding:
+		case *ast.DeclVariable, *ast.DeclConstant, *ast.DeclForBinding:
 			sym := symbol.Original()
 
 			if sym.LocalId != nil {
@@ -311,6 +311,27 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 		return nil
 
 	case *ast.DeclVariable:
+		switch decl.ExportScope() {
+		case ast.ExportScopeInternal, ast.ExportScopePublic:
+			if sym.GlobalId == nil {
+				return fmt.Errorf("global %q has no global id", decl.Name.Value)
+			}
+			c.ensureGlobalSlot(*sym.GlobalId)
+			return nil
+
+		case ast.ExportScopeLocal:
+			if sym.LocalId == nil {
+				return fmt.Errorf("local %q has no local id", decl.Name.Value)
+			}
+			c.ensureLocalSlot(*sym.LocalId)
+			c.scopes[c.scopeIdx].locals[*sym.LocalId] = sym
+			return nil
+
+		default:
+			return fmt.Errorf("unknown variable scope %v", sym.Scope)
+		}
+
+	case *ast.DeclConstant:
 		switch decl.ExportScope() {
 		case ast.ExportScopeInternal, ast.ExportScopePublic:
 			if sym.GlobalId == nil {
@@ -838,15 +859,23 @@ func (c *Compiler) compileExprForBlock(body ast.ExprForBody, arrayLocal int, con
 		return fmt.Errorf("expr-for body missing symbols")
 	}
 	for _, decl := range body.Decls {
-		sym := symbols.LookupIdentifier(decl.Name)
+		name := decl.DeclName()
+		sym := symbols.LookupIdentifier(name)
 		if sym == nil {
-			return fmt.Errorf("expr-for declaration %q missing symbol", decl.Name.Value)
+			return fmt.Errorf("expr-for declaration %q missing symbol", name.Value)
 		}
 		local, err := c.requireLocalId(sym)
 		if err != nil {
 			return err
 		}
-		err = c.Compile(decl.Value)
+		var value ast.Expr
+		switch d := decl.(type) {
+		case *ast.DeclVariable:
+			value = d.Value
+		case *ast.DeclConstant:
+			value = d.Value
+		}
+		err = c.Compile(value)
 		if err != nil {
 			return err
 		}
@@ -1301,8 +1330,41 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return fmt.Errorf("unknown variable scope %v", sym.Scope)
 		}
 
-	case *ast.DeclForBinding:
-		return nil
+	case *ast.DeclConstant:
+		switch decl.ExportScope() {
+		case ast.ExportScopeInternal, ast.ExportScopePublic:
+			c.enterScope(sym.ChildTable)
+
+			err := c.Compile(decl.Value)
+			if err != nil {
+				return err
+			}
+
+			scope := c.leaveScope()
+
+			c.globals[*sym.GlobalId] = scope
+
+			return nil
+
+		case ast.ExportScopeLocal:
+			if sym.LocalId == nil {
+				return fmt.Errorf("local %q has no local id", decl.Name.Value)
+			}
+			err := c.Compile(decl.Value)
+			if err != nil {
+				return err
+			}
+
+			c.ensureLocalSlot(*sym.LocalId)
+			c.scopes[c.scopeIdx].locals[*sym.LocalId] = sym
+
+			c.emit(op.SetLocal, *sym.LocalId)
+
+			return nil
+
+		default:
+			return fmt.Errorf("unknown variable scope %v", sym.Scope)
+		}
 
 	case *ast.DeclParameter:
 		return nil
@@ -1606,7 +1668,7 @@ func (c *Compiler) emitModuleExport(sym *ast.Symbol) error {
 		c.emit(op.Const, *sym.ConstantId)
 		return nil
 
-	case *ast.DeclVariable:
+	case *ast.DeclVariable, *ast.DeclConstant:
 		if sym.GlobalId == nil {
 			return fmt.Errorf("variable %q has no global id", sym.Name)
 		}

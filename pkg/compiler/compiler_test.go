@@ -636,7 +636,7 @@ func TestDeclFunction(t *testing.T) {
 		{
 			label: "function can access global variables",
 			input: `
-			let x = 42
+			const x = 42
 			fn example() {
 				return x
 			}
@@ -663,7 +663,7 @@ func TestDeclFunction(t *testing.T) {
 			fn example() {
 				return x
 			}
-			let x = 42
+			const x = 42
 			`,
 			expectedConstants: []any{
 				compiledFunction{
@@ -685,7 +685,7 @@ func TestDeclFunction(t *testing.T) {
 			label: "function with local variable",
 			input: `
 			fn example() {
-				let x = 42
+				const x = 42
 				return x+x
 			}
 			`,
@@ -714,7 +714,8 @@ func TestDeclFunction(t *testing.T) {
 func TestVariables(t *testing.T) {
 	tests := []compilerTestCase{
 		{
-			input: "let a = 42\na",
+			label: "const global binding",
+			input: "const a = 42\na",
 			expectedConstants: []any{
 				42,
 			},
@@ -724,6 +725,61 @@ func TestVariables(t *testing.T) {
 			expectedInstructions: []code.Instructions{
 				code.Make(code.GetGlobal, 0),
 				code.Make(code.Pop),
+			},
+		},
+		{
+			label: "var global binding",
+			input: "var a = 42\na",
+			expectedConstants: []any{
+				42,
+			},
+			expectedGlobals: [][]code.Instructions{
+				{code.Make(code.Const, 0)},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.GetGlobal, 0),
+				code.Make(code.Pop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
+func TestLocalConstAndVar(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			label: "const local binding",
+			input: `fn f() { const x = 7 return x }`,
+			expectedConstants: []any{
+				compiledFunction{
+					name:   "f",
+					params: 0,
+					ins: []code.Instructions{
+						code.Make(code.Const, 1),
+						code.Make(code.SetLocal, 0),
+						code.Make(code.GetLocal, 0),
+						code.Make(code.Return),
+					},
+				},
+				7,
+			},
+		},
+		{
+			label: "var local binding",
+			input: `fn f() { var x = 7 return x }`,
+			expectedConstants: []any{
+				compiledFunction{
+					name:   "f",
+					params: 0,
+					ins: []code.Instructions{
+						code.Make(code.Const, 1),
+						code.Make(code.SetLocal, 0),
+						code.Make(code.GetLocal, 0),
+						code.Make(code.Return),
+					},
+				},
+				7,
 			},
 		},
 	}
@@ -974,14 +1030,14 @@ func TestImports(t *testing.T) {
 func TestModuleValueMultipleModules(t *testing.T) {
 	moduleA := prepareContextModuleParsing(t, "foo.a", `
 		mod a
-		let pub = 1
-		let _priv = 2
+		const pub = 1
+		const _priv = 2
 	`)
 	moduleB := prepareContextModuleParsing(t, "bar.b", `
 		mod b
 		fn compute() { return 1 }
-		let val = 3
-		let _priv = 4
+		const val = 3
+		const _priv = 4
 	`)
 	mainModule, program := prepareSourceFileParsing(t, `
 		import a = foo.a
@@ -1028,7 +1084,7 @@ func TestModuleValueMultipleModules(t *testing.T) {
 func TestModuleDeclLookup(t *testing.T) {
 	module := prepareContextModuleParsing(t, "module.test", `
 		mod foo
-		let value = 1
+		const value = 1
 		foo.value
 	`)
 	resolver := newTestModuleResolver(module, nil)
@@ -1422,7 +1478,7 @@ func TestInitFunctionWrapping(t *testing.T) {
 	})
 
 	t.Run("__init__ accesses module-level globals", func(t *testing.T) {
-		module := prepareContextModuleParsing(t, "module.test", "mod foo\nlet x = 5\nx")
+		module := prepareContextModuleParsing(t, "module.test", "mod foo\nconst x = 5\nx")
 		resolver := newTestModuleResolver(module, nil)
 		comp := compiler.New(resolver)
 		if err := comp.Compile(module); err != nil {

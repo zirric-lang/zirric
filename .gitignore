@@ -35,3 +35,6 @@ dist/
 # documentation
 site/
 
+# Temp files
+/zirric
+BUGS.md

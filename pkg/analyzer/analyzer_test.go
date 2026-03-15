@@ -15,7 +15,7 @@ import (
 func TestAnalyzerResolvesIdentifierFreeSymbols(t *testing.T) {
 	module := parseModule(t, "test", `
 		module test
-		let x = 1
+		const x = 1
 		fn example() {
 			return x
 		}
@@ -43,7 +43,7 @@ func TestAnalyzerResolvesIdentifierFreeSymbols(t *testing.T) {
 	if id.Symbol.Parent == nil || id.Symbol.Parent.Decl == nil {
 		t.Fatal("expected free symbol to reference global declaration")
 	}
-	if decl, ok := id.Symbol.Parent.Decl.(*ast.DeclVariable); !ok || decl.Name.Value != "x" {
+	if decl, ok := id.Symbol.Parent.Decl.(*ast.DeclConstant); !ok || decl.Name.Value != "x" {
 		t.Fatalf("expected free symbol parent to be global x, got %T", id.Symbol.Parent.Decl)
 	}
 }

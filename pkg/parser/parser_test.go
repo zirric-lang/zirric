@@ -41,9 +41,9 @@ union Optional {
 	Some
 }
 
-extern let b // this is an extern constant
+extern const b // this is an extern constant
 // <- ast.DeclExternValue
-//         ^ ast.Identifier
+//           ^ ast.Identifier
 
 extern fn doSomething()
 // <- ast.DeclExternFunc
@@ -97,10 +97,10 @@ fn greet(@String name) {}
 //                     ^ ast.ExprFunc
 
 fn example() {
-    let x = 4
-//  ^ ast.DeclVariable
-//      ^ ast.Identifier
-//          ^ ast.ExprInt
+    const x = 4
+//  ^ ast.DeclConstant
+//        ^ ast.Identifier
+//            ^ ast.ExprInt
     if True {
 //  ^ ast.StmtIf
 //     ^ ast.ExprIdentifier
@@ -271,8 +271,8 @@ func TestParseForStatementsMultipleBody(t *testing.T) {
 	contents := `
 fn sample() {
 	for {
-		let x = 1
-		let y = 2
+		const x = 1
+		const y = 2
 		return x
 	}
 }
@@ -300,11 +300,11 @@ fn sample() {
 	if len(stmt.Body) != 3 {
 		t.Fatalf("expected three body statements, got %d", len(stmt.Body))
 	}
-	if _, ok := stmt.Body[0].(*ast.DeclVariable); !ok {
-		t.Fatalf("statement is %T, want *ast.DeclVariable", stmt.Body[0])
+	if _, ok := stmt.Body[0].(*ast.DeclConstant); !ok {
+		t.Fatalf("statement is %T, want *ast.DeclConstant", stmt.Body[0])
 	}
-	if _, ok := stmt.Body[1].(*ast.DeclVariable); !ok {
-		t.Fatalf("statement is %T, want *ast.DeclVariable", stmt.Body[1])
+	if _, ok := stmt.Body[1].(*ast.DeclConstant); !ok {
+		t.Fatalf("statement is %T, want *ast.DeclConstant", stmt.Body[1])
 	}
 	if _, ok := stmt.Body[2].(*ast.StmtReturn); !ok {
 		t.Fatalf("statement is %T, want *ast.StmtReturn", stmt.Body[2])
@@ -388,6 +388,101 @@ func TestParseAttrNoPanic(t *testing.T) {
 			p := parser.NewSourceParser(l, module.Decls, "test.zirr")
 			p.ParseSourceFile()
 			// We expect parse errors but no panic.
+		})
+	}
+}
+
+// TestParseConstVarTypes verifies that `const` produces DeclConstant and `var` produces DeclVariable.
+func TestParseConstVarTypes(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		varName   string
+		wantConst bool
+	}{
+		{
+			name:      "const global binding",
+			input:     "const x = 42",
+			varName:   "x",
+			wantConst: true,
+		},
+		{
+			name:      "var global binding",
+			input:     "var x = 42",
+			varName:   "x",
+			wantConst: false,
+		},
+		{
+			name:      "const local binding",
+			input:     "fn f() { const x = 42 x }",
+			varName:   "x",
+			wantConst: true,
+		},
+		{
+			name:      "var local binding",
+			input:     "fn f() { var x = 42 x }",
+			varName:   "x",
+			wantConst: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srcFile := prepareSourceFileParsing(t, tt.input)
+			sym, ok := srcFile.Decls.Parent.Symbols[tt.varName]
+			if !ok {
+				// Also look inside the function symbol table.
+				for _, s := range srcFile.Decls.Parent.Symbols {
+					if s.ChildTable != nil {
+						if inner, ok2 := s.ChildTable.Symbols[tt.varName]; ok2 {
+							sym = inner
+							ok = true
+							break
+						}
+					}
+				}
+			}
+			if !ok {
+				t.Fatalf("symbol %q not found", tt.varName)
+			}
+			if tt.wantConst {
+				if _, ok := sym.Decl.(*ast.DeclConstant); !ok {
+					t.Errorf("expected *ast.DeclConstant for const, got %T", sym.Decl)
+				}
+			} else {
+				if _, ok := sym.Decl.(*ast.DeclVariable); !ok {
+					t.Errorf("expected *ast.DeclVariable for var, got %T", sym.Decl)
+				}
+			}
+		})
+	}
+}
+
+// TestParseDeclOverview verifies DeclOverview returns the correct keyword.
+func TestParseDeclOverview(t *testing.T) {
+	tests := []struct {
+		input    string
+		varName  string
+		wantWord string
+	}{
+		{"const answer = 42", "answer", "const answer"},
+		{"var counter = 0", "counter", "var counter"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			srcFile := prepareSourceFileParsing(t, tt.input)
+			sym, ok := srcFile.Decls.Parent.Symbols[tt.varName]
+			if !ok {
+				t.Fatalf("symbol %q not found", tt.varName)
+			}
+			type overviewable interface{ DeclOverview() string }
+			ov, ok := sym.Decl.(overviewable)
+			if !ok {
+				t.Fatalf("declaration does not implement DeclOverview")
+			}
+			if got := ov.DeclOverview(); got != tt.wantWord {
+				t.Errorf("DeclOverview() = %q, want %q", got, tt.wantWord)
+			}
 		})
 	}
 }

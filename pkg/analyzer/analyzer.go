@@ -119,6 +119,15 @@ func (a *Analyzer) assignModuleIDs(module *ast.ContextModule, reserveModule bool
 					sym.GlobalId = &id
 				}
 			}
+		case *ast.DeclConstant:
+			switch decl.ExportScope() {
+			case ast.ExportScopeInternal, ast.ExportScopePublic:
+				if sym.GlobalId == nil {
+					id := a.nextGlobal
+					a.nextGlobal++
+					sym.GlobalId = &id
+				}
+			}
 		case *ast.DeclModule:
 			if sym.GlobalId == nil && moduleGlobal >= 0 {
 				id := moduleGlobal

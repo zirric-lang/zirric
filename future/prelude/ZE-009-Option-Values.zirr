@@ -6,7 +6,7 @@ import code.knabel.dev.zirric_lang.zirric.future {
 
 // ZE-009: Option Values
 // https://zirric.knabel.dev/proposals/ZE-009-option-values
-let ZE_009 = "https://zirric.knabel.dev/proposals/ZE-009-option-values"
+const ZE_009 = "https://zirric.knabel.dev/proposals/ZE-009-option-values"
 
 // Marks a type as an option type.
 // It is expected that types annotated with `@Option` are unions.

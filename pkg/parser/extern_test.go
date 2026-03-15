@@ -42,8 +42,8 @@ func TestParseExternDeclarations(t *testing.T) {
 			expectedName: "add",
 		},
 		{
-			name:         "extern let value",
-			input:        "extern let myvalue",
+			name:         "extern const value",
+			input:        "extern const myvalue",
 			expectedType: "*ast.DeclExternValue",
 			expectedName: "myvalue",
 		},
@@ -113,8 +113,8 @@ func TestParseExternDeclarations(t *testing.T) {
 						t.Errorf("Expected overview to contain 'extern fn', got: %s", overview)
 					}
 				case "*ast.DeclExternValue":
-					if !contains(overview, "extern let") {
-						t.Errorf("Expected overview to contain 'extern let', got: %s", overview)
+					if !contains(overview, "extern const") {
+						t.Errorf("Expected overview to contain 'extern const', got: %s", overview)
 					}
 				}
 			}

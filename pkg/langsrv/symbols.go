@@ -242,7 +242,7 @@ func symbolKindForDecl(decl ast.Decl) protocol.SymbolKind {
 	switch decl.(type) {
 	case *ast.DeclFunc, ast.DeclFunc, *ast.DeclExternFunc, ast.DeclExternFunc:
 		return protocol.SymbolKindFunction
-	case *ast.DeclVariable, ast.DeclVariable, *ast.DeclExternValue, ast.DeclExternValue:
+	case *ast.DeclVariable, ast.DeclVariable, *ast.DeclConstant, ast.DeclConstant, *ast.DeclExternValue, ast.DeclExternValue:
 		return protocol.SymbolKindVariable
 	case *ast.DeclData, ast.DeclData:
 		return protocol.SymbolKindStruct

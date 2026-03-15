@@ -40,7 +40,7 @@ func (e DeclExternValue) ExportScope() ExportScope {
 }
 
 func (e DeclExternValue) DeclOverview() string {
-	return fmt.Sprintf("extern let %s", e.Name)
+	return fmt.Sprintf("extern const %s", e.Name)
 }
 
 func MakeDeclExternValue(tok token.Token, name Identifier) *DeclExternValue {

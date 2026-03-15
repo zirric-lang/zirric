@@ -69,9 +69,9 @@ func TestParseExprFor(t *testing.T) {
 		stmts           int
 		lastStmtType    string
 	}{
-		{"let result = for false { 1 }", true, "", "", 0, 1, "*ast.StmtExpr"},
-		{"let result = for false { let value = 1 value }", true, "", "", 1, 1, "*ast.StmtExpr"},
-		{"let result = for item <- items { item }", false, "item", "items", 0, 1, "*ast.StmtExpr"},
+		{"const result = for false { 1 }", true, "", "", 0, 1, "*ast.StmtExpr"},
+		{"const result = for false { const value = 1 value }", true, "", "", 1, 1, "*ast.StmtExpr"},
+		{"const result = for item <- items { item }", false, "item", "items", 0, 1, "*ast.StmtExpr"},
 	}
 
 	for _, tt := range tests {
@@ -81,9 +81,9 @@ func TestParseExprFor(t *testing.T) {
 			if !ok || symbol.Decl == nil {
 				t.Fatal("expected result declaration")
 			}
-			decl, ok := symbol.Decl.(*ast.DeclVariable)
+			decl, ok := symbol.Decl.(*ast.DeclConstant)
 			if !ok {
-				t.Fatalf("declaration is %T, want *ast.DeclVariable", symbol.Decl)
+				t.Fatalf("declaration is %T, want *ast.DeclConstant", symbol.Decl)
 			}
 			expr, ok := decl.Value.(ast.ExprFor)
 			if !ok {

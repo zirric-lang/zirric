@@ -266,8 +266,8 @@ func TestIsAttributeContext(t *testing.T) {
 		{"at-sign with partial name", "@Num", protocol.Position{Line: 0, Character: 4}, true},
 		{"plain name no at", "Num", protocol.Position{Line: 0, Character: 3}, false},
 		{"space then at name", "  @Foo", protocol.Position{Line: 0, Character: 6}, true},
-		{"at-sign on second line", "let x = 0\n@Bar", protocol.Position{Line: 1, Character: 4}, true},
-		{"normal code on second line", "let x = 0\nfn", protocol.Position{Line: 1, Character: 2}, false},
+		{"at-sign on second line", "const x = 0\n@Bar", protocol.Position{Line: 1, Character: 4}, true},
+		{"normal code on second line", "const x = 0\nfn", protocol.Position{Line: 1, Character: 2}, false},
 		{"cursor at start", "@Foo", protocol.Position{Line: 0, Character: 0}, false},
 	}
 	for _, tt := range tests {
@@ -328,8 +328,8 @@ func TestLocalParamCompletion(t *testing.T) {
 
 func TestLocalLetCompletion(t *testing.T) {
 	// Local let binding should be suggested after it is declared.
-	// "fn f() {\n  let x = 1\n  |cursor|\n}"
-	src := "fn f() {\n  let x = 1\n  \n}"
+	// "fn f() {\n  const x = 1\n  |cursor|\n}"
+	src := "fn f() {\n  const x = 1\n  \n}"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
 
@@ -361,8 +361,8 @@ func TestLocalLetCompletion(t *testing.T) {
 
 func TestLocalLetNotBeforeDecl(t *testing.T) {
 	// A local let should NOT appear before its declaration.
-	// "fn f() {\n  |cursor|\n  let x = 1\n}"
-	src := "fn f() {\n  \n  let x = 1\n}"
+	// "fn f() {\n  |cursor|\n  const x = 1\n}"
+	src := "fn f() {\n  \n  const x = 1\n}"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
 

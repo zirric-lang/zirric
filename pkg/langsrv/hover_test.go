@@ -99,7 +99,7 @@ func TestTextDocumentHover(t *testing.T) {
 func TestHoverAcrossFiles(t *testing.T) {
 	base := memfs.New()
 	writeFile(t, base, "types.zirr", "data Point { x }")
-	writeFile(t, base, "main.zirr", "let p = Point")
+	writeFile(t, base, "main.zirr", "const p = Point")
 
 	ls := zirricLangserver{
 		docs:     newDocumentStore(),
@@ -108,11 +108,11 @@ func TestHoverAcrossFiles(t *testing.T) {
 	}
 	ls.setFilesystem(base, "/")
 
-	// Hover over "Point" in main.zirr (col 8)
+	// Hover over "Point" in main.zirr (col 10)
 	params := &protocol.HoverParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///main.zirr"},
-			Position:     protocol.Position{Line: 0, Character: 8},
+			Position:     protocol.Position{Line: 0, Character: 10},
 		},
 	}
 	result, err := ls.textDocumentHover(nil, params)

@@ -66,7 +66,8 @@ const (
 	ANNOTATION TokenType = "ANNOTATION"
 	EXTERN     TokenType = "EXTERN"
 	FUNCTION   TokenType = "FUNCTION"
-	LET        TokenType = "LET"
+	CONST      TokenType = "CONST"
+	VAR        TokenType = "VAR"
 	TYPE       TokenType = "TYPE"
 	SWITCH     TokenType = "SWITCH"
 	CASE       TokenType = "CASE"
@@ -90,7 +91,8 @@ var keywords = map[string]TokenType{
 	"attr":     ANNOTATION,
 	"extern":   EXTERN,
 	"fn":       FUNCTION,
-	"let":      LET,
+	"const":    CONST,
+	"var":      VAR,
 	"type":     TYPE,
 	"switch":   SWITCH,
 	"case":     CASE,

@@ -322,7 +322,7 @@ func completionKindForDecl(decl ast.Decl) protocol.CompletionItemKind {
 	case *ast.DeclFunc, ast.DeclFunc, *ast.DeclExternFunc, ast.DeclExternFunc:
 		return protocol.CompletionItemKindFunction
 
-	case *ast.DeclVariable, ast.DeclVariable, *ast.DeclExternValue, ast.DeclExternValue:
+	case *ast.DeclVariable, ast.DeclVariable, *ast.DeclConstant, ast.DeclConstant, *ast.DeclExternValue, ast.DeclExternValue:
 		return protocol.CompletionItemKindVariable
 
 	case *ast.DeclData, ast.DeclData, *ast.DeclExternType, ast.DeclExternType:
@@ -480,11 +480,11 @@ func blockLocals(block ast.Block, cursorOffset int) []ast.Decl {
 		}
 
 		switch s := stmt.(type) {
-		case ast.DeclVariable:
+		case *ast.DeclVariable:
 			if !s.IsGlobal {
 				results = append(results, s)
 			}
-		case *ast.DeclVariable:
+		case *ast.DeclConstant:
 			if !s.IsGlobal {
 				results = append(results, s)
 			}
@@ -496,11 +496,6 @@ func blockLocals(block ast.Block, cursorOffset int) []ast.Decl {
 			if s.Impl != nil {
 				results = append(results, exprFuncLocals(s.Impl, cursorOffset)...)
 			}
-		case ast.StmtFor:
-			if s.CollectionIdent != nil {
-				results = append(results, ast.MakeDeclForBinding(s.Token, *s.CollectionIdent))
-			}
-			results = append(results, blockLocals(s.Body, cursorOffset)...)
 		case *ast.StmtFor:
 			if s.CollectionIdent != nil {
 				results = append(results, ast.MakeDeclForBinding(s.Token, *s.CollectionIdent))

@@ -10,7 +10,7 @@ import (
 
 func TestRefreshDiagnosticsUsesOverlay(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "main.zirr", "fn example() { let x = 4 }")
+	writeFile(t, base, "main.zirr", "fn example() { const x = 4 }")
 
 	ls := zirricLangserver{
 		docs:     newDocumentStore(),
@@ -18,7 +18,7 @@ func TestRefreshDiagnosticsUsesOverlay(t *testing.T) {
 		openDocs: make(map[string]protocol.DocumentUri),
 	}
 	ls.setFilesystem(base, "/")
-	ls.docs.Open("main.zirr", 1, "fn example() { let = }")
+	ls.docs.Open("main.zirr", 1, "fn example() { const = }")
 	ls.openDocs["main.zirr"] = ls.fileURI("main.zirr")
 
 	rec := &diagnosticRecorder{}

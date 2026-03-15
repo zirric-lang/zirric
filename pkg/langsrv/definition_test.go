@@ -96,7 +96,7 @@ func TestTextDocumentDefinition(t *testing.T) {
 func TestDefinitionAcrossFiles(t *testing.T) {
 	base := memfs.New()
 	writeFile(t, base, "types.zirr", "data Point { x }")
-	writeFile(t, base, "main.zirr", "let p = Point")
+	writeFile(t, base, "main.zirr", "const p = Point")
 
 	ls := zirricLangserver{
 		docs:     newDocumentStore(),
@@ -105,11 +105,11 @@ func TestDefinitionAcrossFiles(t *testing.T) {
 	}
 	ls.setFilesystem(base, "/")
 
-	// "Point" in main.zirr starts at col 8
+	// "Point" in main.zirr starts at col 10
 	params := &protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///main.zirr"},
-			Position:     protocol.Position{Line: 0, Character: 8},
+			Position:     protocol.Position{Line: 0, Character: 10},
 		},
 	}
 	result, err := ls.textDocumentDefinition(nil, params)

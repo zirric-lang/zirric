@@ -60,6 +60,8 @@ func assignLocalIDsInDecl(symbols *ast.SymbolTable, counter *int, decl ast.Decl,
 	switch d := decl.(type) {
 	case *ast.DeclVariable:
 		assignLocalIDsInExpr(symbols, counter, d.Value, seen)
+	case *ast.DeclConstant:
+		assignLocalIDsInExpr(symbols, counter, d.Value, seen)
 	case *ast.DeclFunc:
 		if d.Impl == nil {
 			return
@@ -81,6 +83,11 @@ func assignLocalIDsInBlock(symbols *ast.SymbolTable, counter *int, block ast.Blo
 func assignLocalIDsInStmt(symbols *ast.SymbolTable, counter *int, stmt ast.Statement, seen map[*ast.ExprFunc]struct{}) {
 	switch s := stmt.(type) {
 	case *ast.DeclVariable:
+		if s.ExportScope() == ast.ExportScopeLocal {
+			assignLocalSymbol(symbols, s.Name.Value, counter)
+		}
+		assignLocalIDsInExpr(symbols, counter, s.Value, seen)
+	case *ast.DeclConstant:
 		if s.ExportScope() == ast.ExportScopeLocal {
 			assignLocalSymbol(symbols, s.Name.Value, counter)
 		}
@@ -178,9 +185,14 @@ func assignLocalIDsInExprFor(node *ast.ExprFor, symbols *ast.SymbolTable, counte
 	}
 	for _, decl := range node.Body.Decls {
 		if decl.ExportScope() == ast.ExportScopeLocal {
-			assignLocalSymbol(bodySymbols, decl.Name.Value, counter)
+			assignLocalSymbol(bodySymbols, decl.DeclName().Value, counter)
 		}
-		assignLocalIDsInExpr(bodySymbols, counter, decl.Value, seen)
+		switch d := decl.(type) {
+		case *ast.DeclVariable:
+			assignLocalIDsInExpr(bodySymbols, counter, d.Value, seen)
+		case *ast.DeclConstant:
+			assignLocalIDsInExpr(bodySymbols, counter, d.Value, seen)
+		}
 	}
 	assignLocalIDsInBlock(bodySymbols, counter, node.Body.Stmts, seen)
 }

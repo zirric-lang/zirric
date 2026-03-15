@@ -22,9 +22,9 @@ extern type Array {
 }
 
 @Bool
-let true = 0 == 0
+const true = 0 == 0
 @Bool
-let false = 0 != 0
+const false = 0 != 0
 
 // Represents boolean values like `True` and `False`.
 // Typically used for conditionals and flags.
@@ -67,6 +67,6 @@ extern type String {
 
 // Represents the absence of a value.
 @Type(Void)
-extern let void
+extern const void
 // The type of the `void` value.
 extern type Void {}

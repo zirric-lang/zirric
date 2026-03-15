@@ -51,7 +51,7 @@ func TestCallContext(t *testing.T) {
 		},
 		{
 			name:      "not in a call",
-			text:      "let x = 1",
+			text:      "const x = 1",
 			offset:    9,
 			wantFound: false,
 		},

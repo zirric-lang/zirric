@@ -352,24 +352,24 @@ func (p *Parser) parseModuleDecl(pos StatementPosition, annos ast.AttributeChain
 // parseExternDecl parses three possible types:
 // 1. an external type: extern type <identifier> [{ fields }]
 // 2. an external function: extern fn <identifier>([params])
-// 3. an external value: extern let <identifier>
+// 3. an external value: extern const <identifier>
 func (p *Parser) parseExternDecl(pos StatementPosition, annos ast.AttributeChain) ast.StatementDeclaration {
 	if pos != IN_INITIAL && pos != IN_GLOBAL {
 		p.errStatementMisplaced(pos)
 	}
 	externTok, _ := p.expect(token.EXTERN)
 
-	// Expect one of: type, fn, let
+	// Expect one of: type, fn, const
 	if p.curIs(token.TYPE) {
 		return p.parseExternTypeDecl(externTok, annos)
 	} else if p.curIs(token.FUNCTION) {
 		return p.parseExternFuncDecl(externTok, annos)
-	} else if p.curIs(token.LET) {
+	} else if p.curIs(token.CONST) {
 		return p.parseExternValueDecl(externTok, annos)
 	} else {
 		p.detectError(ParseError{
 			Token:   p.curToken,
-			Summary: "expected 'type', 'fn', or 'let' after 'extern'",
+			Summary: "expected 'type', 'fn', or 'const' after 'extern'",
 			Details: fmt.Sprintf("got %q", p.curToken.Literal),
 		})
 		return nil
@@ -425,9 +425,9 @@ func (p *Parser) parseExternFuncDecl(externTok token.Token, annos ast.AttributeC
 	return extern
 }
 
-// parseExternValueDecl parses extern let declarations
+// parseExternValueDecl parses extern const declarations
 func (p *Parser) parseExternValueDecl(externTok token.Token, annos ast.AttributeChain) *ast.DeclExternValue {
-	p.expect(token.LET)
+	p.expect(token.CONST)
 	nameTok, _ := p.expect(token.IDENT, token.TRUE, token.FALSE, token.VOID)
 	nameIdent := ast.MakeIdentifier(nameTok)
 
@@ -508,18 +508,28 @@ func (p *Parser) parseImportDecl(pos StatementPosition, annos ast.AttributeChain
 	return importDecl
 }
 
-func (p *Parser) parseVariableDecl(pos StatementPosition, annos ast.AttributeChain) *ast.DeclVariable {
-	letTok, _ := p.expect(token.LET)
+func (p *Parser) parseVariableDecl(pos StatementPosition, annos ast.AttributeChain) ast.Statement {
+	declTok, _ := p.expect(token.CONST, token.VAR)
 	nameTok, _ := p.expect(token.IDENT, token.TRUE, token.FALSE, token.VOID)
 	name := ast.MakeIdentifier(nameTok)
 	p.expect(token.ASSIGN)
 	expr := p.parseExpr()
-	let := ast.MakeDeclVariable(letTok, name, expr)
-	let.IsGlobal = pos < IN_FUNC
-	let.Attributes = annos
 
-	p.curSymbolTable.Insert(let)
-	return let
+	var decl ast.Decl
+	if declTok.Type == token.CONST {
+		c := ast.MakeDeclConstant(declTok, name, expr)
+		c.IsGlobal = pos < IN_FUNC
+		c.Attributes = annos
+		decl = c
+	} else {
+		v := ast.MakeDeclVariable(declTok, name, expr)
+		v.IsGlobal = pos < IN_FUNC
+		v.Attributes = annos
+		decl = v
+	}
+
+	p.curSymbolTable.Insert(decl)
+	return decl.(ast.Statement)
 }
 
 func (p *Parser) parsePropertyDeclarationList() []ast.DeclField {
@@ -739,7 +749,7 @@ func (p *Parser) parseStmtBlock(pos StatementPosition) ast.Block {
 }
 
 func (p *Parser) parseExprForBlock(symbols *ast.DeclTable) ast.ExprForBody {
-	decls := make([]*ast.DeclVariable, 0)
+	decls := make([]ast.Decl, 0)
 	stmts := make([]ast.Statement, 0)
 	seenStmt := false
 
@@ -751,7 +761,7 @@ func (p *Parser) parseExprForBlock(symbols *ast.DeclTable) ast.ExprForBody {
 			break
 		}
 		annos := p.parseAttributeChain()
-		if p.curIs(token.LET) {
+		if p.curIs(token.CONST, token.VAR) {
 			if seenStmt {
 				p.detectError(ParseError{
 					Token:   p.curToken,
@@ -761,7 +771,7 @@ func (p *Parser) parseExprForBlock(symbols *ast.DeclTable) ast.ExprForBody {
 			}
 			decl := p.parseVariableDecl(IN_FOR, annos)
 			if !seenStmt {
-				decls = append(decls, decl)
+				decls = append(decls, decl.(ast.Decl))
 			}
 			continue
 		}

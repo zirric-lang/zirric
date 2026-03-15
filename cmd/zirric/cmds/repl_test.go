@@ -204,7 +204,7 @@ func TestReplEvalLine_ArithmeticExpression(t *testing.T) {
 
 func TestReplEvalLine_Declaration_ReturnsVoid(t *testing.T) {
 	state := newTestReplState(t)
-	result, err := replEvalLine(state, "let x = 42")
+	result, err := replEvalLine(state, "const x = 42")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -217,7 +217,7 @@ func TestReplEvalLine_Declaration_ReturnsVoid(t *testing.T) {
 func TestReplEvalLine_ReadDeclaredVariable(t *testing.T) {
 	state := newTestReplState(t)
 
-	if _, err := replEvalLine(state, "let x = 13"); err != nil {
+	if _, err := replEvalLine(state, "const x = 13"); err != nil {
 		t.Fatalf("declaration failed: %v", err)
 	}
 
@@ -233,10 +233,10 @@ func TestReplEvalLine_ReadDeclaredVariable(t *testing.T) {
 func TestReplEvalLine_AccumulatesState(t *testing.T) {
 	state := newTestReplState(t)
 
-	if _, err := replEvalLine(state, "let a = 10"); err != nil {
+	if _, err := replEvalLine(state, "const a = 10"); err != nil {
 		t.Fatalf("let a failed: %v", err)
 	}
-	if _, err := replEvalLine(state, "let b = 20"); err != nil {
+	if _, err := replEvalLine(state, "const b = 20"); err != nil {
 		t.Fatalf("let b failed: %v", err)
 	}
 
@@ -275,7 +275,7 @@ func TestReplEvalLine_ParseError_RollsBack(t *testing.T) {
 	state := newTestReplState(t)
 
 	// An invalid declaration triggers a parse error.
-	_, err := replEvalLine(state, "let =")
+	_, err := replEvalLine(state, "const =")
 	if err == nil {
 		t.Fatal("expected parse error, got nil")
 	}
@@ -294,13 +294,13 @@ func TestReplEvalLine_CompileError_RollsBack(t *testing.T) {
 	state := newTestReplState(t)
 
 	// Referencing an undeclared identifier is caught at compile time.
-	_, err := replEvalLine(state, "let x = undeclaredVar")
+	_, err := replEvalLine(state, "const x = undeclaredVar")
 	if err == nil {
 		t.Fatal("expected compile error for undeclared identifier, got nil")
 	}
 
 	// After rollback, declaring x under the same name must succeed.
-	if _, err := replEvalLine(state, "let x = 42"); err != nil {
+	if _, err := replEvalLine(state, "const x = 42"); err != nil {
 		t.Fatalf("expected success re-declaring x after rollback: %v", err)
 	}
 
@@ -320,12 +320,12 @@ func TestReplEvalLine_CompileError_DoesNotCorruptSubsequentLines(t *testing.T) {
 	// Multiple failed lines must not accumulate zombie state that
 	// corrupts the index mapping of later successful declarations.
 	for i := 0; i < 3; i++ {
-		if _, err := replEvalLine(state, "let y = undeclaredVar"); err == nil {
+		if _, err := replEvalLine(state, "const y = undeclaredVar"); err == nil {
 			t.Fatalf("iteration %d: expected compile error, got nil", i)
 		}
 	}
 
-	if _, err := replEvalLine(state, "let y = 99"); err != nil {
+	if _, err := replEvalLine(state, "const y = 99"); err != nil {
 		t.Fatalf("let y after repeated failures: %v", err)
 	}
 
@@ -370,7 +370,7 @@ func TestReplEvalLine_RollbackReclaims_AnalyzerIDs(t *testing.T) {
 
 	// Three failed compile attempts.
 	for i := 0; i < 3; i++ {
-		if _, err := replEvalLine(state, "let z = undeclaredVar"); err == nil {
+		if _, err := replEvalLine(state, "const z = undeclaredVar"); err == nil {
 			t.Fatalf("iteration %d: expected error, got nil", i)
 		}
 	}
@@ -386,7 +386,7 @@ func TestReplEvalLine_RollbackReclaims_AnalyzerIDs(t *testing.T) {
 	}
 
 	// A successful declaration after failures must still work correctly.
-	if _, err := replEvalLine(state, "let z = 7"); err != nil {
+	if _, err := replEvalLine(state, "const z = 7"); err != nil {
 		t.Fatalf("declaration after rollbacks: %v", err)
 	}
 	result, err := replEvalLine(state, "z")
