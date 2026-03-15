@@ -240,6 +240,11 @@ module.exports = {
           icon: "circle",
           title: "ZE-13 Mutability and Constants",
           path: "/proposals/ZE-013-mutability-and-constants"
+        },
+        {
+          icon: "circle",
+          title: "ZE-14 Attribute and Declaration Keywords",
+          path: "/proposals/ZE-014-attribute-and-declaration-keywords"
         }
       ]
     },
