@@ -24,7 +24,7 @@ flows consistently.
 
 ## Proposed Solution
 
-Define an `Option` union with `Some` and `None` variants and a marker annotation
+Define an `Option` union with `Some` and `None` variants and a marker attribute
 that enables optional operators.
 
 ```zirric
@@ -35,7 +35,7 @@ union Option {
 }
 
 @Returns(User?)
-func findUser(id) {
+fn findUser(id) {
   // returns Some(User) or None
 }
 
@@ -61,7 +61,7 @@ In case of `?.` the value will be wrapped into `prelude.Some` if needed if it is
 The goal is to support strongly typed optional types like `PersonOption`.
 
 ```zirric
-annotation AnyOption {}
+attr AnyOption {}
 
 union Option {
 	data Some {
@@ -71,7 +71,7 @@ union Option {
 	data None
 }
 
-annotation SomeType {
+attr SomeType {
 	@Type(AnyType) type
 }
 ```

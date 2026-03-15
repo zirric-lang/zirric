@@ -1,11 +1,11 @@
 ---
 title: Future.Cave
-description: Experimental Cavefile schema, dependency annotations, and package metadata.
+description: Experimental Cavefile schema, dependency attributes, and package metadata.
 ---
 
 # Future.Cave
 
-The `cave` module defines annotations and types used by Cavefiles, moved under
+The `cave` module defines attributes and types used by Cavefiles, moved under
 `future/cave` as part of the ZE-002 proposal work.
 
 ## Values
@@ -18,22 +18,22 @@ let ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
 
 ZE-002: The Cavefile.
 
-## Annotations
+## Attributes
 
-### annotation Dependencies
+### attr Dependencies
 
 ```zirric
 @Proposal(ZE_002)
-annotation Dependencies
+attr Dependencies
 ```
 
 Marks the current data structure as a dependencies manifest.
 
-### annotation Version
+### attr Version
 
 ```zirric
 @Proposal(ZE_002)
-annotation Version
+attr Version
 ```
 
 The version predicate for the Git dependency.
@@ -42,11 +42,11 @@ Fields:
 
 - `@String predicate` — The version predicate string.
 
-### annotation Stdlib
+### attr Stdlib
 
 ```zirric
 @Proposal(ZE_002)
-annotation Stdlib
+attr Stdlib
 ```
 
 Marks the current data structure as a standard library dependency.
@@ -55,11 +55,11 @@ Fields:
 
 - `@String name` — The name of the standard library dependency.
 
-### annotation Git
+### attr Git
 
 ```zirric
 @Proposal(ZE_002)
-annotation Git
+attr Git
 ```
 
 Marks a field as a Git dependency with a URL and predicate. The field name
@@ -69,11 +69,11 @@ Fields:
 
 - `@String url` — The URL of the Git repository.
 
-### annotation Local
+### attr Local
 
 ```zirric
 @Proposal(ZE_002)
-annotation Local
+attr Local
 ```
 
 Marks a field as a local dependency with a path.

@@ -14,8 +14,8 @@ import (
 
 func TestCaveRegistryIncludesRootModule(t *testing.T) {
 	fs := memfs.New()
-	writeFile(t, fs, "moduleA/alpha.zirr", "module a")
-	writeFile(t, fs, "moduleB/beta.zirr", "module b")
+	writeFile(t, fs, "moduleA/alpha.zirr", "mod a")
+	writeFile(t, fs, "moduleB/beta.zirr", "mod b")
 
 	provider, err := cavereg.New(cavefile.Cavefile{
 		Package: cavefile.Package{

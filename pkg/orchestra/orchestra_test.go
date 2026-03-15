@@ -13,7 +13,7 @@ import (
 
 func TestParseModulePreloadsPrelude(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "app/main.zirr", "module app\nlet greeting = \"hi\"\n")
+	writeFile(t, projectFS, "app/main.zirr", "mod app\nlet greeting = \"hi\"\n")
 
 	orch := newTestOrchestra(t, projectFS, "project")
 	resolver, err := orch.NewResolver()
@@ -40,7 +40,7 @@ func TestParseModulePreloadsPrelude(t *testing.T) {
 
 func TestRunFile(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "main.zirr", "module main\n1\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\n1\n")
 
 	orch := newTestOrchestra(t, projectFS, "project")
 	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
@@ -48,9 +48,9 @@ func TestRunFile(t *testing.T) {
 	}
 }
 
-func TestParseFileUsesPreludeAnnotation(t *testing.T) {
+func TestParseFileUsesPreludeAttribute(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "main.zirr", "module main\n@Type(String)\ndata Example { name }\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\n@Type(String)\ndata Example { name }\n")
 
 	orch := newTestOrchestra(t, projectFS, "project")
 	resolver, err := orch.NewResolver()
@@ -65,7 +65,7 @@ func TestParseFileUsesPreludeAnnotation(t *testing.T) {
 		t.Fatal("expected prelude decls to be parented")
 	}
 	if module.Decls.Parent.Symbols["Type"] == nil {
-		t.Fatal("expected prelude annotation Type to be present")
+		t.Fatal("expected prelude attribute Type to be present")
 	}
 	if module.Decls.Parent.Symbols["String"] == nil {
 		t.Fatal("expected prelude type String to be present")
@@ -79,22 +79,22 @@ func TestParseFileUsesPreludeAnnotation(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected Example to be data, got %T", sym.Decl)
 	}
-	if len(decl.Annotations) != 1 {
-		t.Fatalf("expected 1 annotation, got %d", len(decl.Annotations))
+	if len(decl.Attributes) != 1 {
+		t.Fatalf("expected 1 attribute, got %d", len(decl.Attributes))
 	}
-	anno := decl.Annotations[0]
+	anno := decl.Attributes[0]
 	if len(anno.Reference) != 1 || anno.Reference[0].Value != "Type" {
-		t.Fatalf("expected @Type annotation, got %v", anno.Reference)
+		t.Fatalf("expected @Type attribute, got %v", anno.Reference)
 	}
 	if len(anno.Arguments) != 1 {
-		t.Fatalf("expected 1 annotation argument, got %d", len(anno.Arguments))
+		t.Fatalf("expected 1 attribute argument, got %d", len(anno.Arguments))
 	}
 	arg, ok := anno.Arguments[0].(*ast.ExprIdentifier)
 	if !ok {
-		t.Fatalf("expected annotation argument to be identifier, got %T", anno.Arguments[0])
+		t.Fatalf("expected attribute argument to be identifier, got %T", anno.Arguments[0])
 	}
 	if arg.Name.Value != "String" {
-		t.Fatalf("expected annotation argument String, got %q", arg.Name.Value)
+		t.Fatalf("expected attribute argument String, got %q", arg.Name.Value)
 	}
 }
 
@@ -104,7 +104,7 @@ func TestParseFileUsesPreludeAnnotation(t *testing.T) {
 // itself was only installed when declared dependencies were missing.
 func TestRunFileNoDeclaredDependencies(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "main.zirr", "module main\nlet answer = \"42\"\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\nlet answer = \"42\"\n")
 
 	// Deliberately no PackageName-derived dependencies beyond stdlib (injected automatically).
 	orch := newTestOrchestra(t, projectFS, "main")
@@ -121,8 +121,8 @@ func TestRunFileNoDeclaredDependencies(t *testing.T) {
 func TestRunFileWithCrossModuleImport(t *testing.T) {
 	projectFS := memfs.New()
 	// utils/ subdirectory → URI "project.utils" (directory name is the URI segment)
-	writeFile(t, projectFS, "utils/greet.zirr", "module utils\nlet greeting = \"hello\"\n")
-	writeFile(t, projectFS, "main.zirr", "module main\nimport utils = project.utils\n")
+	writeFile(t, projectFS, "utils/greet.zirr", "mod utils\nlet greeting = \"hello\"\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\nimport utils = project.utils\n")
 
 	orch := newTestOrchestra(t, projectFS, "project")
 	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
@@ -149,7 +149,7 @@ func newTestOrchestra(t *testing.T, projectFS billy.Filesystem, name string) *or
 // compiler's pointer-equality checks to work correctly.
 func TestMainModuleIsRegisteredAfterParse(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "main.zirr", "module main\nlet x = 42\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\nlet x = 42\n")
 
 	orch := newTestOrchestra(t, projectFS, "main")
 	resolver, err := orch.NewResolver()
@@ -174,7 +174,7 @@ func TestMainModuleIsRegisteredAfterParse(t *testing.T) {
 // and runs correctly — exercising full main-module symbol compilation.
 func TestRunFileWithLetBinding(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "main.zirr", "module main\nlet greeting = \"hello\"\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\nlet greeting = \"hello\"\n")
 
 	orch := newTestOrchestra(t, projectFS, "main")
 	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
@@ -186,7 +186,7 @@ func TestRunFileWithLetBinding(t *testing.T) {
 // is reused across multiple ParseFile+Compile calls, as the REPL does.
 func TestREPLLoop(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "repl.zirr", "module repl\n")
+	writeFile(t, projectFS, "repl.zirr", "mod repl\n")
 
 	orch := newTestOrchestra(t, projectFS, "repl")
 	resolver, err := orch.NewResolver()
@@ -195,8 +195,8 @@ func TestREPLLoop(t *testing.T) {
 	}
 
 	iterations := []string{
-		"module repl\n1\n",
-		"module repl\n2\n",
+		"mod repl\n1\n",
+		"mod repl\n2\n",
 	}
 	for i, src := range iterations {
 		if err := projectFS.Remove("repl.zirr"); err != nil {

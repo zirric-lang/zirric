@@ -18,10 +18,10 @@ func TestTextDocumentDefinition(t *testing.T) {
 	}{
 		{
 			name:     "definition of func from its own name",
-			src:      "func greet() {}",
+			src:      "fn greet() {}",
 			pos:      protocol.Position{Line: 0, Character: 6},
 			wantLine: 0,
-			wantChar: 5, // 'g' in 'greet'
+			wantChar: 3, // 'g' in 'greet'
 		},
 		{
 			name:     "definition of data from its own name",
@@ -32,14 +32,14 @@ func TestTextDocumentDefinition(t *testing.T) {
 		},
 		{
 			name:    "definition of unknown word returns nil",
-			src:     "func greet() {}",
+			src:     "fn greet() {}",
 			pos:     protocol.Position{Line: 0, Character: 14},
 			wantNil: true,
 		},
 		{
 			name:    "definition of whitespace returns nil",
-			src:     "func greet() {}",
-			pos:     protocol.Position{Line: 0, Character: 4},
+			src:     "fn greet() {}",
+			pos:     protocol.Position{Line: 0, Character: 2},
 			wantNil: true,
 		},
 	}
@@ -142,7 +142,7 @@ func TestDefinitionQualifiedModule(t *testing.T) {
 	if err := base.MkdirAll("mymod", 0755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, base, "mymod/types.zirr", "func helper() {}")
+	writeFile(t, base, "mymod/types.zirr", "fn helper() {}")
 	writeFile(t, base, "main.zirr", "import mymod\nmymod.helper")
 
 	ls := &zirricLangserver{

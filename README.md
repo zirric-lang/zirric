@@ -23,7 +23,7 @@ More details are available in the [language documentation](https://zirric.knabel
 let answer = 42
 let items = [1, 2, 3]
 
-func greet(name) {
+fn greet(name) {
     "Hello, " + name
 }
 
@@ -80,14 +80,14 @@ union Result {
 let r = Ok(42)
 ```
 
-### Annotations
+### Attributes
 
-Zirric has no interfaces; instead, annotations attach behaviour and metadata to
+Zirric has no interfaces; instead, attributes attach behaviour and metadata to
 types and functions. They enable generic code to rely on declared capabilities
 without a formal interface system:
 
 ```zirric
-annotation Countable {
+attr Countable {
     @Returns(Int)
     length(@Has(Countable) value)
 }
@@ -104,7 +104,7 @@ Here `Countable` supplies a `length` implementation, allowing tools to treat
 
 ### Cavefile manifests
 
-Cavefiles are Zirric sources that declare dependencies and tasks via annotations:
+Cavefiles are Zirric sources that declare dependencies and tasks via attributes:
 
 ```zirric
 import future.cave

@@ -9,7 +9,7 @@ import (
 
 func TestFindReferencesInFile(t *testing.T) {
 	// "greet" appears 3 times: declaration, call in main, call in other func.
-	src := "func greet(name) {}\nfunc main() { greet(\"world\") }\nfunc run() { greet(\"hi\") }"
+	src := "fn greet(name) {}\nfn main() { greet(\"world\") }\nfn run() { greet(\"hi\") }"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
 
@@ -38,7 +38,7 @@ func TestFindReferencesInFile(t *testing.T) {
 }
 
 func TestFindReferencesExcludeDeclaration(t *testing.T) {
-	src := "func greet(name) {}\nfunc main() { greet(\"world\") }"
+	src := "fn greet(name) {}\nfn main() { greet(\"world\") }"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
 
@@ -72,8 +72,8 @@ func TestFindReferencesExcludeDeclaration(t *testing.T) {
 
 func TestFindReferencesAcrossFiles(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "types.zirr", "func helper() {}")
-	writeFile(t, base, "main.zirr", "func main() { helper() }")
+	writeFile(t, base, "types.zirr", "fn helper() {}")
+	writeFile(t, base, "main.zirr", "fn main() { helper() }")
 
 	ls := &zirricLangserver{
 		docs:     newDocumentStore(),
@@ -115,10 +115,10 @@ func TestFindReferencesNoDuplicatesMultiFile(t *testing.T) {
 	// bug where SourceFile.EnumerateChildNodes visiting parent symbols caused
 	// each cross-file reference to be emitted N times.
 	base := memfs.New()
-	writeFile(t, base, "lib.zirr", "func helper() {}")
-	writeFile(t, base, "a.zirr", "func fa() { helper() }")
-	writeFile(t, base, "b.zirr", "func fb() { helper() }")
-	writeFile(t, base, "c.zirr", "func fc() { helper() }")
+	writeFile(t, base, "lib.zirr", "fn helper() {}")
+	writeFile(t, base, "a.zirr", "fn fa() { helper() }")
+	writeFile(t, base, "b.zirr", "fn fb() { helper() }")
+	writeFile(t, base, "c.zirr", "fn fc() { helper() }")
 
 	ls := &zirricLangserver{
 		docs:     newDocumentStore(),

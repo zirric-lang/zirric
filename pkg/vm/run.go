@@ -311,16 +311,16 @@ func (vm *VM) runTask(taskId TaskId) error {
 				return err
 			}
 
-		case op.MakeAnnotation:
+		case op.MakeAttribute:
 			argCount := int(op.ReadUint16(ins[ip:]))
 			fr.ip += 2
 			callee := vm.pop()
-			at, ok := callee.(*runtime.AnnotationType)
+			at, ok := callee.(*runtime.AttributeType)
 			if !ok {
-				return fmt.Errorf("annotation value expects AnnotationType (%T %q)", callee, callee.Inspect())
+				return fmt.Errorf("attribute value expects AttributeType (%T %q)", callee, callee.Inspect())
 			}
 			if argCount != len(at.FieldSymbols) {
-				return fmt.Errorf("wrong number of annotation arguments: want=%d, got=%d", len(at.FieldSymbols), argCount)
+				return fmt.Errorf("wrong number of attribute arguments: want=%d, got=%d", len(at.FieldSymbols), argCount)
 			}
 			vals := make([]runtime.RuntimeValue, argCount)
 			for i := 0; i < argCount; i++ {
@@ -337,20 +337,20 @@ func (vm *VM) runTask(taskId TaskId) error {
 			callee := vm.pop()
 
 			switch callee := callee.(type) {
-			case *runtime.AnnotationType:
+			case *runtime.AttributeType:
 				if argCount != callee.Arity() {
 					return fmt.Errorf("wrong number of arguments: want=%d, got=%d", callee.Arity(), argCount)
 				}
 				val := vm.pop()
 				switch val := val.(type) {
 				case *runtime.CompiledFunction:
-					if val.Annotations == nil {
+					if val.Attributes == nil {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err
 						}
 						break
 					}
-					annoId, ok := val.Annotations[callee.TypeConstantId()]
+					annoId, ok := val.Attributes[callee.TypeConstantId()]
 					if !ok {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err
@@ -365,13 +365,13 @@ func (vm *VM) runTask(taskId TaskId) error {
 						return err
 					}
 				case runtime.ExternFunc:
-					if val.Annotations == nil {
+					if val.Attributes == nil {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err
 						}
 						break
 					}
-					annoId, ok := val.Annotations[callee.TypeConstantId()]
+					annoId, ok := val.Attributes[callee.TypeConstantId()]
 					if !ok {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err
@@ -386,13 +386,13 @@ func (vm *VM) runTask(taskId TaskId) error {
 						return err
 					}
 				case runtime.SimpleType:
-					if val.Annotations == nil {
+					if val.Attributes == nil {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err
 						}
 						break
 					}
-					annoId, ok := val.Annotations[callee.TypeConstantId()]
+					annoId, ok := val.Attributes[callee.TypeConstantId()]
 					if !ok {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err
@@ -406,14 +406,14 @@ func (vm *VM) runTask(taskId TaskId) error {
 					if err := vm.push(annoVal); err != nil {
 						return err
 					}
-				case *runtime.AnnotationType:
-					if val.Annotations == nil {
+				case *runtime.AttributeType:
+					if val.Attributes == nil {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err
 						}
 						break
 					}
-					annoId, ok := val.Annotations[callee.TypeConstantId()]
+					annoId, ok := val.Attributes[callee.TypeConstantId()]
 					if !ok {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err
@@ -427,23 +427,23 @@ func (vm *VM) runTask(taskId TaskId) error {
 					if err := vm.push(annoVal); err != nil {
 						return err
 					}
-				case *runtime.AnnotationValue:
+				case *runtime.AttributeValue:
 					typeId := val.TypeConstantId()
 					typeIdx := int(typeId)
 					if typeIdx < 0 || typeIdx >= len(vm.constants) {
-						return fmt.Errorf("annotation lookup failed for type id %d", typeId)
+						return fmt.Errorf("attribute lookup failed for type id %d", typeId)
 					}
-					at, ok := vm.constants[typeIdx].(*runtime.AnnotationType)
+					at, ok := vm.constants[typeIdx].(*runtime.AttributeType)
 					if !ok {
-						return fmt.Errorf("annotation lookup requires annotation type, got=%T", vm.constants[typeIdx])
+						return fmt.Errorf("attribute lookup requires attribute type, got=%T", vm.constants[typeIdx])
 					}
-					if at.Annotations == nil {
+					if at.Attributes == nil {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err
 						}
 						break
 					}
-					annoId, ok := at.Annotations[callee.TypeConstantId()]
+					annoId, ok := at.Attributes[callee.TypeConstantId()]
 					if !ok {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err
@@ -461,19 +461,19 @@ func (vm *VM) runTask(taskId TaskId) error {
 					typeId := val.TypeConstantId()
 					typeIdx := int(typeId)
 					if typeIdx < 0 || typeIdx >= len(vm.constants) {
-						return fmt.Errorf("annotation lookup failed for type id %d", typeId)
+						return fmt.Errorf("attribute lookup failed for type id %d", typeId)
 					}
 					dt, ok := vm.constants[typeIdx].(*runtime.DataType)
 					if !ok {
-						return fmt.Errorf("annotation lookup requires data type, got=%T", vm.constants[typeIdx])
+						return fmt.Errorf("attribute lookup requires data type, got=%T", vm.constants[typeIdx])
 					}
-					if dt.Annotations == nil {
+					if dt.Attributes == nil {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err
 						}
 						break
 					}
-					annoId, ok := dt.Annotations[callee.TypeConstantId()]
+					annoId, ok := dt.Attributes[callee.TypeConstantId()]
 					if !ok {
 						if err := vm.push(runtime.Void{}); err != nil {
 							return err

@@ -52,7 +52,7 @@ func (p *Parser) errStatementMisplaced(pos StatementPosition) {
 	case token.EXTERN:
 		summary = "extern must be global"
 	case token.MODULE:
-		summary = "module may only appear first"
+		summary = "mod may only appear first"
 	}
 
 	details := "here"

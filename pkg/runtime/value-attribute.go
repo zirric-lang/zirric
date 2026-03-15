@@ -2,18 +2,18 @@ package runtime
 
 import "fmt"
 
-type AnnotationValue struct {
+type AttributeValue struct {
 	TypeId TypeId
 	Values []RuntimeValue
 	Fields map[string]int
 }
 
-func MakeAnnotationValue(at *AnnotationType, values []RuntimeValue) *AnnotationValue {
+func MakeAttributeValue(at *AttributeType, values []RuntimeValue) *AttributeValue {
 	fields := make(map[string]int, len(at.FieldSymbols))
 	for i, f := range at.FieldSymbols {
 		fields[f.Name] = i
 	}
-	return &AnnotationValue{
+	return &AttributeValue{
 		TypeId: TypeId(*at.Symbol.ConstantId),
 		Fields: fields,
 		Values: values,
@@ -21,12 +21,12 @@ func MakeAnnotationValue(at *AnnotationType, values []RuntimeValue) *AnnotationV
 }
 
 // Inspect implements RuntimeValue.
-func (av *AnnotationValue) Inspect() string {
-	return fmt.Sprintf("annotation #%d { %+v }", av.TypeId, av.Fields)
+func (av *AttributeValue) Inspect() string {
+	return fmt.Sprintf("attr #%d { %+v }", av.TypeId, av.Fields)
 }
 
 // Lookup implements RuntimeValue.
-func (av *AnnotationValue) Lookup(name string) RuntimeValue {
+func (av *AttributeValue) Lookup(name string) RuntimeValue {
 	idx, ok := av.Fields[name]
 	if !ok {
 		return nil
@@ -35,6 +35,6 @@ func (av *AnnotationValue) Lookup(name string) RuntimeValue {
 }
 
 // TypeConstantId implements RuntimeValue.
-func (av *AnnotationValue) TypeConstantId() TypeId {
+func (av *AttributeValue) TypeConstantId() TypeId {
 	return av.TypeId
 }

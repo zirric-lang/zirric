@@ -1,22 +1,22 @@
 ---
 title: Future.Prelude
-description: Experimental prelude extensions for proposals (iterables, options, results, and annotation binding).
+description: Experimental prelude extensions for proposals (iterables, options, results, and attribute binding).
 ---
 
 # Future.Prelude
 
 The `prelude` module holds proposal-driven extensions to the prelude, including
-iterable helpers, option/result types, and annotation binding.
+iterable helpers, option/result types, and attribute binding.
 
 ## Values
 
 ### let ZE_007
 
 ```zirric
-let ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-annotation-binding"
+let ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-attribute-binding"
 ```
 
-ZE-007: Annotation Binding.
+ZE-007: Attribute Binding.
 
 ### let ZE_008
 
@@ -42,21 +42,21 @@ let ZE_010 = "https://zirric.knabel.dev/proposals/ZE-010-iterable"
 
 ZE-010: Iterable.
 
-## Annotations
+## Attributes
 
-### annotation Bound
+### attr Bound
 
 ```zirric
 @Proposal(ZE_007)
-annotation Bound
+attr Bound
 ```
 
-A bound function of an annotation receives the targeted value as first argument.
+A bound function of an attribute receives the targeted value as first argument.
 
 Example:
 
 ```zirric
-annotation Error {
+attr Error {
   @Bound()
   @Returns(String)
   debug(err)
@@ -70,11 +70,11 @@ data MessageError {
 MessageError("msg")[@Error].debug()
 ```
 
-### annotation Countable
+### attr Countable
 
 ```zirric
 @Proposal(ZE_010)
-annotation Countable
+attr Countable
 ```
 
 Denotes that a type is countable and has a length.
@@ -83,11 +83,11 @@ Members:
 
 - `@Returns(Int) length(@Has(Countable) value)`
 
-### annotation Iterable
+### attr Iterable
 
 ```zirric
 @Proposal(ZE_010)
-annotation Iterable
+attr Iterable
 ```
 
 Marks a type as iterable. This allows using `for ... <- ...` on the type.
@@ -96,11 +96,11 @@ Members:
 
 - `iterate(@Has(Iterable) value, @Func yield)`
 
-### annotation Error
+### attr Error
 
 ```zirric
 @Proposal(ZE_008)
-annotation Error
+attr Error
 ```
 
 Marks a type as an error type.
@@ -110,10 +110,10 @@ Members:
 - `@Bound() @Returns(String) debug(err)` — Returns a debug string representation
   of the error.
 
-### annotation AnyResult
+### attr AnyResult
 
 ```zirric
-annotation AnyResult
+attr AnyResult
 ```
 
 Marks a type as a result type. It is expected that types annotated with
@@ -124,11 +124,11 @@ syntactic sugar for working with result types:
 - `result !! "default value"` resolves to the value of `Ok` or the provided
   default value if `Err`.
 
-### annotation OkType
+### attr OkType
 
 ```zirric
 @Proposal(ZE_008)
-annotation OkType
+attr OkType
 ```
 
 Provides a type hint for the `Ok` type of a `Result`.
@@ -137,11 +137,11 @@ Fields:
 
 - `@Type(AnyType) type` — The type of `Ok.value`.
 
-### annotation ErrType
+### attr ErrType
 
 ```zirric
 @Proposal(ZE_008)
-annotation ErrType
+attr ErrType
 ```
 
 Provides a type hint for the `Err` type of a `Result`.
@@ -150,10 +150,10 @@ Fields:
 
 - `@Type(AnyType) type` — The type of `Err.error`.
 
-### annotation AnyOption
+### attr AnyOption
 
 ```zirric
-annotation AnyOption
+attr AnyOption
 ```
 
 Marks a type as an option type. It is expected that types annotated with
@@ -164,11 +164,11 @@ syntactic sugar for working with option types:
 - `option ?? "default value"` resolves to the value of `Some` or the provided
   default value if `None`.
 
-### annotation SomeType
+### attr SomeType
 
 ```zirric
 @Proposal(ZE_009)
-annotation SomeType
+attr SomeType
 ```
 
 Provides a type hint for the `Some` type of an `Option`.
@@ -307,58 +307,58 @@ Members:
 
 ## Functions
 
-### func _arrayIterate
+### fn _arrayIterate
 
 ```zirric
-func _arrayIterate(v, yield)
+fn _arrayIterate(v, yield)
 ```
 
 No documentation.
 
-### func _dictIterate
+### fn _dictIterate
 
 ```zirric
-func _dictIterate(v, yield)
+fn _dictIterate(v, yield)
 ```
 
 No documentation.
 
-### func _stringIterate
+### fn _stringIterate
 
 ```zirric
-func _stringIterate(v, yield)
+fn _stringIterate(v, yield)
 ```
 
 No documentation.
 
-### func _rangeCount
+### fn _rangeCount
 
 ```zirric
-func _rangeCount(v)
+fn _rangeCount(v)
 ```
 
 No documentation.
 
-### func _rangeIterate
+### fn _rangeIterate
 
 ```zirric
-func _rangeIterate(v, yield)
+fn _rangeIterate(v, yield)
 ```
 
 No documentation.
 
-### func _closedRangeCount
+### fn _closedRangeCount
 
 ```zirric
-func _closedRangeCount(v)
+fn _closedRangeCount(v)
 ```
 
 No documentation.
 
-### func _closedRangeIterate
+### fn _closedRangeIterate
 
 ```zirric
-func _closedRangeIterate(v, yield)
+fn _closedRangeIterate(v, yield)
 ```
 
 No documentation.

@@ -14,7 +14,7 @@ type DeclField struct {
 	Name       Identifier
 	Parameters []DeclParameter
 
-	Annotations AnnotationChain
+	Attributes AttributeChain
 
 	Docs *Docs
 }
@@ -51,12 +51,12 @@ func (e DeclField) ExportScope() ExportScope {
 	return ExportScopeInternal
 }
 
-func MakeDeclField(name Identifier, params []DeclParameter, annotations AnnotationChain) *DeclField {
+func MakeDeclField(name Identifier, params []DeclParameter, attributes AttributeChain) *DeclField {
 	return &DeclField{
-		Name:        name,
-		Parameters:  params,
-		Annotations: annotations,
-		Docs:        MakeDocs([]string{}),
+		Name:       name,
+		Parameters: params,
+		Attributes: attributes,
+		Docs:       MakeDocs([]string{}),
 	}
 }
 
@@ -66,9 +66,9 @@ func (decl DeclField) ProvidedDocs() *Docs {
 
 // EnumerateChildNodes implements Decl.
 func (f DeclField) EnumerateChildNodes(action func(child Node)) {
-	if len(f.Annotations) > 0 {
-		action(f.Annotations)
-		f.Annotations.EnumerateChildNodes(action)
+	if len(f.Attributes) > 0 {
+		action(f.Attributes)
+		f.Attributes.EnumerateChildNodes(action)
 	}
 	action(f.Name)
 	for _, node := range f.Parameters {

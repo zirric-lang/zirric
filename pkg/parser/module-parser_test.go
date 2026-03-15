@@ -10,14 +10,14 @@ import (
 
 func TestModuleParserParsesMultipleSources(t *testing.T) {
 	sourceOne := staticmodule.NewSourceString("test/module/one.zirr", `
-module testingmodule
+mod testingmodule
 
-func first() {}
+fn first() {}
 `)
 	sourceTwo := staticmodule.NewSourceString("test/module/two.zirr", `
-module testingmodule
+mod testingmodule
 
-func second() {}
+fn second() {}
 `)
 
 	module := staticmodule.NewModule("test/module", []registry.Source{sourceOne, sourceTwo})

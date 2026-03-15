@@ -8,7 +8,7 @@ This documentation focuses on how the language feels to use, how the tooling is
 shaped, and where to dig deeper into the implementation.
 
 It favors small, explicit building blocks: declarations over inheritance,
-annotations over interfaces, and expression-oriented control flow. The standard
+attributes over interfaces, and expression-oriented control flow. The standard
 library is written in Zirric itself, and the language is designed so Zirric code
 is easy to reason about.
 
@@ -20,7 +20,7 @@ ongoing proposals. Use the proposals as the authoritative roadmap.
 ## Zirric in a nutshell
 
 ```zirric
-annotation Countable {
+attr Countable {
     @Returns(Int)
     length(@Has(Countable) value)
 }
@@ -32,7 +32,7 @@ data Bag {
 }
 
 @Returns(Result)
-func summarize(@Bag bag) {
+fn summarize(@Bag bag) {
     let length = Countable(bag).length(bag)
 
     return if length > 0 {
@@ -56,7 +56,7 @@ The core language surface is documented in the syntax references:
 - [Expressions](/specification/expressions)
 - [Declarations](/specification/declarations)
 - [Control flow](/specification/control-flow)
-- [Annotations](/specification/annotations)
+- [Attributes](/specification/attributes)
 - [Typesystem](/specification/typesystem)
 
 When you want more depth or future-facing design notes, read the

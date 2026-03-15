@@ -25,23 +25,23 @@ the declarations they contain.
 
 ```zirric
 // good
-module http
-module json
-module strings
-module reflect // reflect.typeOf
+mod http
+mod json
+mod strings
+mod reflect // reflect.typeOf
 
 // bad
-module http_client
-module json_parser
-module string_utils
-module reflection // reflection.typeOf
+mod http_client
+mod json_parser
+mod string_utils
+mod reflection // reflection.typeOf
 ```
 
 If a filename or its declarations could clash with another module, declare the
-`module` explicitly at the top of the file:
+`mod` explicitly at the top of the file:
 
 ```zirric
-module my_module
+mod my_module
 ```
 
 ## Data types
@@ -93,7 +93,7 @@ let name = "John"
 let person = Person("John", 42)
 let err = http.Error("Not found")
 
-func printPersonName(p) {
+fn printPersonName(p) {
     print(p.name)
 }
 
@@ -102,25 +102,25 @@ let n = "John"
 let p = Person("John", 42)
 let error = http.Error("Not found")
 
-func printName(n) {
+fn printName(n) {
     print(n.name)
 }
 ```
 
-## Annotations
+## Attributes
 
 Annotations use `PascalCase` and should describe the property they declare.
 
 ```zirric
 // good
-annotation Returns
-annotation HasKey
-annotation IsOptional
+attr Returns
+attr HasKey
+attr IsOptional
 
 // bad
-annotation Return
-annotation Key
-annotation Optional
+attr Return
+attr Key
+attr Optional
 ```
 
 ## Unions
@@ -169,5 +169,5 @@ union Maybe {
 ## Imports and layout
 
 - Group imports together near the top of the file.
-- Keep one declaration per block to make annotations and docs obvious.
+- Keep one declaration per block to make attributes and docs obvious.
 - Prefer blank lines to separate logical sections.

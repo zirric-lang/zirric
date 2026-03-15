@@ -26,7 +26,7 @@ components:
       <h1>Explicit structure. Expression-first code.</h1>
       <p class="lead">
         Zirric is a compact language that favors declarations, readable data
-        modeling, and annotations that describe capabilities without interfaces.
+        modeling, and attributes that describe capabilities without interfaces.
       </p>
       <div class="hero-actions">
         <a class="button primary" href="/guides/getting-started">Get Started</a>
@@ -36,7 +36,7 @@ components:
       <p class="note">Experimental: features and syntax may change.</p>
     </div>
     <div class="hero-code">
-      <pre><code class="language-zirric">annotation Countable {
+      <pre><code class="language-zirric">attr Countable {
     @Returns(Int)
     length(@Has(Countable) value)
 }
@@ -48,7 +48,7 @@ data Bag {
 }
 
 @Returns(Result)
-func summarize(@Bag bag) {
+fn summarize(@Bag bag) {
   let length = Countable(bag).length(bag)
   return if length > 0 {
     Ok(length)
@@ -65,14 +65,14 @@ func summarize(@Bag bag) {
 <section class="cards">
     <article class="card">
       <h3>Declarations first</h3>
-      <p>Small set of primitives: <code>let</code>, <code>func</code>, <code>data</code>, <code>union</code>, <code>annotation</code>, <code>module</code>.</p>
+      <p>Small set of primitives: <code>let</code>, <code>fn</code>, <code>data</code>, <code>union</code>, <code>attr</code>, <code>mod</code>.</p>
     </article>
     <article class="card">
       <h3>Expression-oriented</h3>
       <p><code>if</code> and <code>for</code> return values when you need them, so data flow stays explicit.</p>
     </article>
     <article class="card">
-      <h3>Annotations over interfaces</h3>
+      <h3>Attributes over interfaces</h3>
       <p>Capabilities are declared, composed, and exposed to tooling.</p>
     </article>
     <article class="card">

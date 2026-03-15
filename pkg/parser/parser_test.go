@@ -15,7 +15,7 @@ import (
 
 func TestParseSourceFile(t *testing.T) {
 	contents := `
-module testingmodule
+mod testingmodule
 // <- ast.DeclModule
 
 import json
@@ -24,7 +24,7 @@ import big
 // <- ast.DeclImport
 
 @json.Type(json.Null)
-// <- ast.DeclAnnotationInstance
+// <- ast.DeclAttrInstance
 data None
 // <- ast.DeclData
 
@@ -45,13 +45,13 @@ extern let b // this is an extern constant
 // <- ast.DeclExternValue
 //         ^ ast.Identifier
 
-extern func doSomething()
+extern fn doSomething()
 // <- ast.DeclExternFunc
 	
-extern func doSomethingWith(argument)
+extern fn doSomethingWith(argument)
 // <- ast.DeclExternFunc
-//          ^ ast.Identifier
-//                          ^ ast.DeclParameter
+//        ^ ast.Identifier
+//                        ^ ast.DeclParameter
 
 extern type SomeType {
 // <- ast.DeclExternType
@@ -63,40 +63,40 @@ extern type SomeEmptyType {}
 // <- ast.DeclExternType
 //          ^ ast.Identifier
 
-annotation Type {
-// <- ast.DeclAnnotation
+attr Type {
+// <- ast.DeclAttr
 	@AnyType
 	value
 //  ^ ast.DeclField
 }
 
-annotation ValidationRule {
+attr ValidationRule {
 	@Type(Function)
     isValid(value)
 //  ^ ast.DeclField
 //          ^ ast.DeclParameter
 }
 
-func doNothingWithNothing {}
+fn doNothingWithNothing {}
 // <- ast.DeclFunc
-//   ^ ast.Identifier
-//                        ^ ast.ExprFunc
-func doNothingWithSomething(some, thing) {}
+// ^ ast.Identifier
+//                      ^ ast.ExprFunc
+fn doNothingWithSomething(some, thing) {}
 // <- ast.DeclFunc
-//                          ^ ast.DeclParameter
-//                                ^ ast.DeclParameter
-//                                       ^ ast.ExprFunc
+//                        ^ ast.DeclParameter
+//                              ^ ast.DeclParameter
+//                                     ^ ast.ExprFunc
 
 @Returns(None)
-// <- ast.DeclAnnotationInstance
+// <- ast.DeclAttrInstance
 @big.O("constant")
-func greet(@String name) {}
+fn greet(@String name) {}
 // <- ast.DeclFunc
-//         ^ ast.DeclAnnotationInstance
-//                 ^ ast.DeclParameter
-//                       ^ ast.ExprFunc
+//       ^ ast.DeclAttrInstance
+//               ^ ast.DeclParameter
+//                     ^ ast.ExprFunc
 
-func example() {
+fn example() {
     let x = 4
 //  ^ ast.DeclVariable
 //      ^ ast.Identifier
@@ -145,7 +145,7 @@ func example() {
 
 func TestParseForStatements(t *testing.T) {
 	contents := `
-func sample() {
+fn sample() {
 	for { break }
 	for true { continue }
 	for item <- items { break }
@@ -237,7 +237,7 @@ func sample() {
 
 func TestParseForStatementsEmptyBody(t *testing.T) {
 	contents := `
-func sample() {
+fn sample() {
 	for {
 	}
 }
@@ -269,7 +269,7 @@ func sample() {
 
 func TestParseForStatementsMultipleBody(t *testing.T) {
 	contents := `
-func sample() {
+fn sample() {
 	for {
 		let x = 1
 		let y = 2
@@ -313,7 +313,7 @@ func sample() {
 
 func TestParseForStatementsNestedIfBreakContinue(t *testing.T) {
 	contents := `
-func sample() {
+fn sample() {
 	for {
 		if True {
 			continue
@@ -364,9 +364,9 @@ func sample() {
 	}
 }
 
-// TestParseAnnotationNoPanic ensures the parser does not panic on malformed
-// annotations (regression test for invariant panic in parseStaticIdentifierReference).
-func TestParseAnnotationNoPanic(t *testing.T) {
+// TestParseAttrNoPanic ensures the parser does not panic on malformed
+// attributes (regression test for invariant panic in parseStaticIdentifierReference).
+func TestParseAttrNoPanic(t *testing.T) {
 	inputs := []string{
 		"@@Numeric",
 		"@(Numeric",

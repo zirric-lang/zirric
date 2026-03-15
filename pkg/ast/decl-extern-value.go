@@ -10,9 +10,9 @@ var _ Decl = DeclExternValue{}
 var _ Overviewable = DeclExternValue{}
 
 type DeclExternValue struct {
-	Token       token.Token
-	Name        Identifier
-	Annotations AnnotationChain
+	Token      token.Token
+	Name       Identifier
+	Attributes AttributeChain
 
 	Docs *Docs
 }

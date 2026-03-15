@@ -197,7 +197,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("undefined identifier %q", node.Name)
 		}
 		switch symbol.Decl.(type) {
-		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAnnotation:
+		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAttr:
 			sym := symbol.Original()
 			if sym.ConstantId == nil {
 				return fmt.Errorf("identifier %q has no constant id", node.Name)
@@ -347,7 +347,7 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 		c.scopes[c.scopeIdx].locals[*sym.LocalId] = sym
 		return nil
 
-	case *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAnnotation:
+	case *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAttr:
 		if sym.ConstantId == nil {
 			return fmt.Errorf("declaration %q has no constant id", sym.Name)
 		}
@@ -1155,49 +1155,49 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return err
 		}
 
-		annotations, err := c.compileAnnotationChain(decl.Annotations, c.currentSymbols())
+		attributes, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols())
 		if err != nil {
 			return err
 		}
-		dt.Annotations = annotations
+		dt.Attributes = attributes
 
 		c.constants[*sym.ConstantId] = dt
 
 		return nil
 
 	case *ast.DeclUnion:
-		annotations, err := c.compileAnnotationChain(decl.Annotations, c.currentSymbols())
+		attributes, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols())
 		if err != nil {
 			return err
 		}
 		ut := runtime.MakeUnionType(sym)
-		_ = annotations // unions may carry annotations in future
+		_ = attributes // unions may carry attributes in future
 		c.constants[*sym.ConstantId] = ut
 		return nil
 
-	case *ast.DeclAnnotation:
-		at, err := runtime.MakeAnnotationType(sym)
+	case *ast.DeclAttr:
+		at, err := runtime.MakeAttributeType(sym)
 		if err != nil {
 			return err
 		}
-		annotations, err := c.compileAnnotationChain(decl.Annotations, c.currentSymbols())
+		attributes, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols())
 		if err != nil {
 			return err
 		}
-		at.Annotations = annotations
+		at.Attributes = attributes
 		c.constants[*sym.ConstantId] = at
 		return nil
 
 	case *ast.DeclExternType:
-		annotations, err := c.compileAnnotationChain(decl.Annotations, c.currentSymbols())
+		attributes, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols())
 		if err != nil {
 			return err
 		}
-		c.constants[*sym.ConstantId] = runtime.SimpleType{Decl: sym, Annotations: annotations}
+		c.constants[*sym.ConstantId] = runtime.SimpleType{Decl: sym, Attributes: attributes}
 		return nil
 
 	case *ast.DeclExternFunc:
-		annotations, err := c.compileAnnotationChain(decl.Annotations, c.currentSymbols())
+		attributes, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols())
 		if err != nil {
 			return err
 		}
@@ -1205,7 +1205,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		if paramSymbols == nil {
 			paramSymbols = c.currentSymbols()
 		}
-		paramAnnotations, err := c.compileParamAnnotations(decl.Parameters, paramSymbols)
+		paramAttributes, err := c.compileParamAttributes(decl.Parameters, paramSymbols)
 		if err != nil {
 			return err
 		}
@@ -1213,13 +1213,13 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		if err != nil {
 			return err
 		}
-		extern.Annotations = annotations
-		extern.ParamAnnotations = paramAnnotations
+		extern.Attributes = attributes
+		extern.ParamAttributes = paramAttributes
 		c.constants[*sym.ConstantId] = extern
 		return nil
 
 	case *ast.DeclFunc:
-		functionAnnotations, err := c.compileAnnotationChain(decl.Annotations, c.currentSymbols())
+		functionAttributes, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols())
 		if err != nil {
 			return err
 		}
@@ -1227,7 +1227,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		if paramSymbols == nil {
 			paramSymbols = c.currentSymbols()
 		}
-		paramAnnotations, err := c.compileParamAnnotations(decl.Impl.Parameters, paramSymbols)
+		paramAttributes, err := c.compileParamAttributes(decl.Impl.Parameters, paramSymbols)
 		if err != nil {
 			return err
 		}
@@ -1259,8 +1259,8 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			len(scope.locals),
 			sym,
 		)
-		function.Annotations = functionAnnotations
-		function.ParamAnnotations = paramAnnotations
+		function.Attributes = functionAttributes
+		function.ParamAttributes = paramAttributes
 		c.constants[*sym.ConstantId] = function
 
 		return nil
@@ -1599,7 +1599,7 @@ func (c *Compiler) compileModuleValue(module *ast.ContextModule) error {
 
 func (c *Compiler) emitModuleExport(sym *ast.Symbol) error {
 	switch sym.Decl.(type) {
-	case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAnnotation:
+	case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAttr:
 		if sym.ConstantId == nil {
 			return fmt.Errorf("identifier %q has no constant id", sym.Name)
 		}
@@ -1618,7 +1618,7 @@ func (c *Compiler) emitModuleExport(sym *ast.Symbol) error {
 	}
 }
 
-func (c *Compiler) compileAnnotationChain(chain ast.AnnotationChain, symbols *ast.SymbolTable) (map[runtime.TypeId]int, error) {
+func (c *Compiler) compileAttributeChain(chain ast.AttributeChain, symbols *ast.SymbolTable) (map[runtime.TypeId]int, error) {
 	if len(chain) == 0 {
 		return nil, nil
 	}
@@ -1627,15 +1627,15 @@ func (c *Compiler) compileAnnotationChain(chain ast.AnnotationChain, symbols *as
 		if inst == nil {
 			continue
 		}
-		annoSym, err := c.resolveAnnotationReference(inst.Reference, symbols)
+		annoSym, err := c.resolveAttributeReference(inst.Reference, symbols)
 		if err != nil {
 			return nil, err
 		}
 		if annoSym.ConstantId == nil {
-			return nil, fmt.Errorf("annotation %q has no constant id", annoSym.Name)
+			return nil, fmt.Errorf("attribute %q has no constant id", annoSym.Name)
 		}
 		c.ensureConstantSlot(*annoSym.ConstantId)
-		globalId, err := c.compileAnnotationInstance(inst, annoSym, symbols)
+		globalId, err := c.compileAttributeInstance(inst, annoSym, symbols)
 		if err != nil {
 			return nil, err
 		}
@@ -1647,7 +1647,7 @@ func (c *Compiler) compileAnnotationChain(chain ast.AnnotationChain, symbols *as
 	return result, nil
 }
 
-func (c *Compiler) compileParamAnnotations(params []ast.DeclParameter, symbols *ast.SymbolTable) ([]map[runtime.TypeId]int, error) {
+func (c *Compiler) compileParamAttributes(params []ast.DeclParameter, symbols *ast.SymbolTable) ([]map[runtime.TypeId]int, error) {
 	if len(params) == 0 {
 		return nil, nil
 	}
@@ -1655,15 +1655,15 @@ func (c *Compiler) compileParamAnnotations(params []ast.DeclParameter, symbols *
 	hasAny := false
 	for i := range params {
 		param := params[i]
-		if len(param.Annotations) == 0 {
+		if len(param.Attributes) == 0 {
 			continue
 		}
-		annotations, err := c.compileAnnotationChain(param.Annotations, symbols)
+		attributes, err := c.compileAttributeChain(param.Attributes, symbols)
 		if err != nil {
 			return nil, err
 		}
-		if annotations != nil {
-			result[i] = annotations
+		if attributes != nil {
+			result[i] = attributes
 			hasAny = true
 		}
 	}
@@ -1673,15 +1673,15 @@ func (c *Compiler) compileParamAnnotations(params []ast.DeclParameter, symbols *
 	return result, nil
 }
 
-func (c *Compiler) compileAnnotationInstance(inst *ast.DeclAnnotationInstance, sym *ast.Symbol, symbols *ast.SymbolTable) (int, error) {
+func (c *Compiler) compileAttributeInstance(inst *ast.DeclAttrInstance, sym *ast.Symbol, symbols *ast.SymbolTable) (int, error) {
 	if inst == nil {
-		return 0, fmt.Errorf("annotation instance is nil")
+		return 0, fmt.Errorf("attribute instance is nil")
 	}
 	if sym == nil {
-		return 0, fmt.Errorf("annotation symbol is nil")
+		return 0, fmt.Errorf("attribute symbol is nil")
 	}
 	if sym.ConstantId == nil {
-		return 0, fmt.Errorf("annotation %q has no constant id", sym.Name)
+		return 0, fmt.Errorf("attribute %q has no constant id", sym.Name)
 	}
 
 	c.enterScope(symbols)
@@ -1692,7 +1692,7 @@ func (c *Compiler) compileAnnotationInstance(inst *ast.DeclAnnotationInstance, s
 		}
 	}
 	c.emit(op.Const, *sym.ConstantId)
-	c.emit(op.MakeAnnotation, len(inst.Arguments))
+	c.emit(op.MakeAttribute, len(inst.Arguments))
 	scope := c.leaveScope()
 
 	return c.addGlobalScope(scope), nil
@@ -1707,56 +1707,56 @@ func (c *Compiler) addGlobalScope(scope *CompilationScope) int {
 	return id
 }
 
-func (c *Compiler) resolveAnnotationReference(ref ast.StaticReference, symbols *ast.SymbolTable) (*ast.Symbol, error) {
+func (c *Compiler) resolveAttributeReference(ref ast.StaticReference, symbols *ast.SymbolTable) (*ast.Symbol, error) {
 	if len(ref) == 0 {
-		return nil, fmt.Errorf("annotation reference is empty")
+		return nil, fmt.Errorf("attribute reference is empty")
 	}
 	if symbols == nil {
-		return nil, fmt.Errorf("missing symbols for annotation reference %q", ref.String())
+		return nil, fmt.Errorf("missing symbols for attribute reference %q", ref.String())
 	}
 	if len(ref) == 1 {
 		sym := symbols.LookupIdentifier(ref[0])
 		if sym == nil || sym.Decl == nil {
-			return nil, fmt.Errorf("unknown annotation %q", ref.String())
+			return nil, fmt.Errorf("unknown attribute %q", ref.String())
 		}
-		return requireAnnotationSymbol(sym, ref.String())
+		return requireAttributeSymbol(sym, ref.String())
 	}
 
 	head := ref[0]
 	if sym := symbols.LookupIdentifier(head); sym != nil && sym.Decl != nil {
 		if decl, ok := sym.Decl.(*ast.DeclImport); ok {
-			return c.resolveAnnotationFromImport(decl, ref[1:], ref.String())
+			return c.resolveAttributeFromImport(decl, ref[1:], ref.String())
 		}
 		if sym.ChildTable != nil {
 			found, err := resolveStaticRefInTable(sym.ChildTable, ref[1:], false)
 			if err != nil {
 				return nil, err
 			}
-			return requireAnnotationSymbol(found, ref.String())
+			return requireAttributeSymbol(found, ref.String())
 		}
 	}
 
 	if moduleName := c.findImportedModuleByPrefix(symbols.Module(), ref); moduleName != nil {
-		return c.resolveAnnotationFromModuleName(moduleName, ref[len(moduleName):], ref.String())
+		return c.resolveAttributeFromModuleName(moduleName, ref[len(moduleName):], ref.String())
 	}
 
-	return nil, fmt.Errorf("unknown annotation %q", ref.String())
+	return nil, fmt.Errorf("unknown attribute %q", ref.String())
 }
 
-func (c *Compiler) resolveAnnotationFromImport(decl *ast.DeclImport, tail ast.StaticReference, refName string) (*ast.Symbol, error) {
+func (c *Compiler) resolveAttributeFromImport(decl *ast.DeclImport, tail ast.StaticReference, refName string) (*ast.Symbol, error) {
 	if decl == nil {
-		return nil, fmt.Errorf("unknown annotation %q", refName)
+		return nil, fmt.Errorf("unknown attribute %q", refName)
 	}
-	return c.resolveAnnotationFromModuleName(decl.ModuleName, tail, refName)
+	return c.resolveAttributeFromModuleName(decl.ModuleName, tail, refName)
 }
 
-func (c *Compiler) resolveAnnotationFromModuleName(moduleName ast.ModuleName, tail ast.StaticReference, refName string) (*ast.Symbol, error) {
+func (c *Compiler) resolveAttributeFromModuleName(moduleName ast.ModuleName, tail ast.StaticReference, refName string) (*ast.Symbol, error) {
 	if c.resolver == nil {
-		return nil, fmt.Errorf("module resolver is required for annotation %q", refName)
+		return nil, fmt.Errorf("module resolver is required for attribute %q", refName)
 	}
 	resolved, err := c.resolver.ResolveModule(context.Background(), moduleName.URI())
 	if err != nil || resolved == nil {
-		return nil, fmt.Errorf("unknown annotation %q", refName)
+		return nil, fmt.Errorf("unknown attribute %q", refName)
 	}
 	if err := c.ensureAnalyzed(resolved, true); err != nil {
 		return nil, err
@@ -1771,16 +1771,16 @@ func (c *Compiler) resolveAnnotationFromModuleName(moduleName ast.ModuleName, ta
 	if err != nil {
 		return nil, err
 	}
-	return requireAnnotationSymbol(found, refName)
+	return requireAttributeSymbol(found, refName)
 }
 
-func requireAnnotationSymbol(sym *ast.Symbol, refName string) (*ast.Symbol, error) {
+func requireAttributeSymbol(sym *ast.Symbol, refName string) (*ast.Symbol, error) {
 	if sym == nil || sym.Decl == nil {
-		return nil, fmt.Errorf("unknown annotation %q", refName)
+		return nil, fmt.Errorf("unknown attribute %q", refName)
 	}
 	sym = sym.Original()
-	if _, ok := sym.Decl.(*ast.DeclAnnotation); !ok {
-		return nil, fmt.Errorf("annotation %q does not refer to annotation type", refName)
+	if _, ok := sym.Decl.(*ast.DeclAttr); !ok {
+		return nil, fmt.Errorf("attribute %q does not refer to attribute type", refName)
 	}
 	return sym, nil
 }

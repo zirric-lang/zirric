@@ -46,7 +46,7 @@ func newTestReplState(t testing.TB) *replState {
 	t.Helper()
 
 	moduleURI := registry.LogicalURI("repl")
-	src := staticmodule.NewSourceString(moduleURI.Join("main.zirr"), "module repl\n")
+	src := staticmodule.NewSourceString(moduleURI.Join("main.zirr"), "mod repl\n")
 	mod := staticmodule.NewModule(moduleURI, []registry.Source{src})
 	mp := parser.NewModuleParse(mod)
 	ctxMod, err := mp.Parse(mod)
@@ -253,7 +253,7 @@ func TestReplEvalLine_FunctionDeclarationAndCall(t *testing.T) {
 	state := newTestReplState(t)
 
 	// Declaring a function produces no executable __init__, so result is nil.
-	result, err := replEvalLine(state, "func double(n) { return n + n }")
+	result, err := replEvalLine(state, "fn double(n) { return n + n }")
 	if err != nil {
 		t.Fatalf("func declaration failed: %v", err)
 	}

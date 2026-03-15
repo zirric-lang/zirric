@@ -1,18 +1,18 @@
 ---
 title: Prelude
-description: Core types, annotations, and primitives available in every Zirric program.
+description: Core types, attributes, and primitives available in every Zirric program.
 ---
 
 # Prelude
 
-The `prelude` module defines Zirric's core types, builtins, and foundational annotations.
+The `prelude` module defines Zirric's core types, builtins, and foundational attributes.
 
-## Annotations
+## Attributes
 
-### annotation Type
+### attr Type
 
 ```zirric
-annotation Type
+attr Type
 ```
 
 Annotates a declaration to be of a given type. Instead of annotating declarations
@@ -20,26 +20,26 @@ with `@Type(SomeType)`, the shorthand of `@SomeType` can be used.
 
 Fields:
 
-- `@Type(AnyType) type` — The type of the annotation.
+- `@Type(AnyType) type` — The type of the attribute.
 
-### annotation Has
+### attr Has
 
 ```zirric
-annotation Has
+attr Has
 ```
 
-Has requests passed values to have the given annotation type present. For example,
-`@Has(Numeric)` requests that the passed value has the `@Numeric` annotation. Do
+Has requests passed values to have the given attribute type present. For example,
+`@Has(Numeric)` requests that the passed value has the `@Numeric` attribute. Do
 not annotate types with `@Has`, as it does not make sense there.
 
 Fields:
 
-- `@Type(AnnotationType) annotationType` — The required annotation type.
+- `@Type(AttributeType) attributeType` — The required attribute type.
 
-### annotation Returns
+### attr Returns
 
 ```zirric
-annotation Returns
+attr Returns
 ```
 
 Annotates a function declaration to return a value of the given type.
@@ -48,10 +48,10 @@ Fields:
 
 - `@Type(AnyType) type`
 
-### annotation Default
+### attr Default
 
 ```zirric
-annotation Default
+attr Default
 ```
 
 Transparently indicates the assumed default value of a parameter or field. Can be
@@ -61,10 +61,10 @@ Fields:
 
 - `@Type(AnyType) value` — The default value for a parameter.
 
-### annotation Doc
+### attr Doc
 
 ```zirric
-annotation Doc
+attr Doc
 ```
 
 Provides access to the documentation string of a declaration.
@@ -74,10 +74,10 @@ Fields:
 - `@String description` — The documentation string without leading comment markers
   and whitespace.
 
-### annotation Deprecated
+### attr Deprecated
 
 ```zirric
-annotation Deprecated
+attr Deprecated
 ```
 
 Annotates a declaration as deprecated with a reason. IDEs and other tools can use
@@ -87,10 +87,10 @@ Fields:
 
 - `@String @Default("without alternative") reason`
 
-### annotation Numeric
+### attr Numeric
 
 ```zirric
-annotation Numeric
+attr Numeric
 ```
 
 Annotates a declaration as numeric, providing a way to convert it to a number.
@@ -117,21 +117,21 @@ extern type AnyType
 
 All types are of type `AnyType`.
 
-### extern type Annotation
+### extern type Attribute
 
 ```zirric
-extern type Annotation
+extern type Attribute
 ```
 
-All annotations are of type `Annotation`.
+All attributes are of type `Attribute`.
 
-### extern type AnnotationType
+### extern type AttributeType
 
 ```zirric
-extern type AnnotationType
+extern type AttributeType
 ```
 
-All annotation types are of type `AnnotationType`.
+All attribute types are of type `AttributeType`.
 
 ### extern type Module
 

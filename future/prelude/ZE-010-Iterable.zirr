@@ -1,4 +1,4 @@
-module xprelude
+mod xprelude
 
 import code.knabel.dev.zirric_lang.zirric.future {
 	Proposal
@@ -10,7 +10,7 @@ let ZE_010 = "https://zirric.knabel.dev/proposals/ZE-010-iterable"
 
 // Denotes that a type is countable and has a length.
 @Proposal(ZE_010)
-annotation Countable {
+attr Countable {
   @Returns(Int)
   length(@Has(Countable) value)
 }
@@ -18,7 +18,7 @@ annotation Countable {
 // Marks a type as iterable.
 // This allows using `for ... <- ...` on the type.
 @Proposal(ZE_010)
-annotation Iterable {
+attr Iterable {
   iterate(@Has(Iterable) value, @Func yield)
 }
 
@@ -64,7 +64,7 @@ data ClosedRange {
 //   @Int
 //   length
 // }
-func _arrayIterate(v, yield) {
+fn _arrayIterate(v, yield) {
   let i = 0
   let l = v.length
   for {
@@ -78,7 +78,7 @@ func _arrayIterate(v, yield) {
   }
 }
 
-func _dictIterate(v, yield) {
+fn _dictIterate(v, yield) {
   for k <- v.keys {
     if !yield(v[k]) {
       break
@@ -86,7 +86,7 @@ func _dictIterate(v, yield) {
   }
 }
 
-func _stringIterate(v, yield) {
+fn _stringIterate(v, yield) {
   let i = 0
   let l = v.length
   for {
@@ -100,14 +100,14 @@ func _stringIterate(v, yield) {
   }
 }
 
-func _rangeCount(v) {
+fn _rangeCount(v) {
   if v.start >= v.end {
     return 0
   }
   return v.end - v.start
 }
 
-func _rangeIterate(v, yield) {
+fn _rangeIterate(v, yield) {
   let i = v.start
   let l = v.end
   for {
@@ -121,14 +121,14 @@ func _rangeIterate(v, yield) {
   }
 }
 
-func _closedRangeCount(v) {
+fn _closedRangeCount(v) {
   if v.start >= v.end {
     return 0
   }
   return v.end - v.start + 1
 }
 
-func _closedRangeIterate(v, yield) {
+fn _closedRangeIterate(v, yield) {
   let i = v.start
   let l = v.end
   for {

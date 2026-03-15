@@ -13,7 +13,7 @@ available modules and their declarations as they appear in the source files.
 - [Prelude](/stdlib/prelude) - Core types, annotations, and language primitives.
 - [Future](/stdlib/future) - Experimental proposal scaffolding and annotations.
 - [Future.Prelude](/stdlib/future/prelude) - Proposed prelude extensions such
-  as iterables, option/result types, and annotation binding.
+  as iterables, option/result types, and attribute binding.
 - [Future.Reflect](/stdlib/future/reflect) - Reflection stubs for future-facing
   metadata access.
 - [Future.Cave](/stdlib/future/cave) - Cavefile schema, dependency annotations,

@@ -16,7 +16,7 @@ Parts might be incomplete or missing in Zirric.
 This proposal introduces a compact signature syntax that desugars to existing annotations:
 `greet(name: String) -> String` becomes `@Returns(String) greet(@String name)`.
 The goal is to reduce annotation noise while staying fully compatible with the
-annotation system.
+attr system.
 
 ## Motivation
 
@@ -31,15 +31,15 @@ semantics.
 Add a signature sugar that is allowed in:
 
 - `let` declarations
-- `func` declarations
+- `fn` declarations
 - function fields inside `data`
-- function fields inside `annotation`
+- function fields inside `attr`
 
 ### Examples
 
 ```zirric
-// func declaration
-func greet(name: String) -> String {
+// fn declaration
+fn greet(name: String) -> String {
   "Hello, " + name
 }
 ```
@@ -48,7 +48,7 @@ Desugars to:
 
 ```zirric
 @Returns(String)
-func greet(@String name) {
+fn greet(@String name) {
   "Hello, " + name
 }
 ```
@@ -68,7 +68,7 @@ data Greeter {
 
 ```zirric
 // annotation fields
-annotation Formatter {
+attr Formatter {
   format(value: String) -> String
 }
 ```

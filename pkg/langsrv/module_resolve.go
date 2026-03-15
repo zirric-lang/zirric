@@ -11,7 +11,7 @@ import (
 // qualifiedContext detects if the cursor is immediately after "alias." and returns
 // the alias name, the position just after the dot, and true.
 // For example: "mymod.Foo" with cursor on/after "Foo" → ("mymod", posAfterDot, true).
-// Also works for annotation context, e.g. "@alias.Foo".
+// Also works for attribute context, e.g. "@alias.Foo".
 func qualifiedContext(text string, pos protocol.Position) (alias string, afterDot protocol.Position, ok bool) {
 	line := lineAtPosition(text, pos)
 	col := int(pos.Character)

@@ -7,8 +7,8 @@ import (
 var _ Decl = DeclParameter{}
 
 type DeclParameter struct {
-	Name        Identifier
-	Annotations AnnotationChain
+	Name       Identifier
+	Attributes AttributeChain
 
 	Docs *Docs
 }
@@ -29,10 +29,10 @@ func (e DeclParameter) ExportScope() ExportScope {
 	return ExportScopeLocal
 }
 
-func MakeDeclParameter(name Identifier, annotations AnnotationChain) *DeclParameter {
+func MakeDeclParameter(name Identifier, attributes AttributeChain) *DeclParameter {
 	return &DeclParameter{
-		Name:        name,
-		Annotations: annotations,
+		Name:       name,
+		Attributes: attributes,
 	}
 }
 
@@ -42,8 +42,8 @@ func (decl DeclParameter) ProvidedDocs() *Docs {
 
 // EnumerateChildNodes implements Decl.
 func (n DeclParameter) EnumerateChildNodes(action func(child Node)) {
-	if n.Annotations != nil {
-		n.Annotations.EnumerateChildNodes(action)
+	if n.Attributes != nil {
+		n.Attributes.EnumerateChildNodes(action)
 	}
 	action(n.Name)
 }

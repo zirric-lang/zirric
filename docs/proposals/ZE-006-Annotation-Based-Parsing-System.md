@@ -1,9 +1,9 @@
 ---
-title: ZE-006 - Annotation-Based Parsing System
-description: Annotation-based parsing system in Zirric.
+title: ZE-006 - Attribute-Based Parsing System
+description: Attribute-based parsing system in Zirric.
 ---
 
-# Annotation-Based Parsing System
+# Attribute-Based Parsing System
 
 ::: callout draft <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-icon lucide-circle"><circle cx="12" cy="12" r="10"/></svg> Draft
 This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design.
@@ -12,7 +12,7 @@ Features described here may not be implemented as described and cannot be used r
 
 ## Introduction
 
-This proposal introduces an **annotation-based parsing system** for Zirric, enabling flexible and format-agnostic encoding/decoding of data types. The system leverages Zirric's annotation capabilities to define how data should be serialized and deserialized, supporting multiple formats (e.g., JSON, YAML, Protobuf) through modular extensions.
+This proposal introduces an **attribute-based parsing system** for Zirric, enabling flexible and format-agnostic encoding/decoding of data types. The system leverages Zirric's attribute capabilities to define how data should be serialized and deserialized, supporting multiple formats (e.g., JSON, YAML, Protobuf) through modular extensions.
 
 ## Motivation
 
@@ -20,7 +20,7 @@ Zirric currently lacks a unified mechanism for encoding/decoding data types to/f
 
 - Provide a **format-agnostic** core system for encoding/decoding.
 - Support **format-specific** extensions (e.g., JSON, YAML, Protobuf).
-- Use **annotations** to define serialization rules, enabling fine-grained control over encoding/decoding behavior.
+- Use **attributes** to define serialization rules, enabling fine-grained control over encoding/decoding behavior.
 
 ## Proposed Solution
 
@@ -28,16 +28,16 @@ Zirric currently lacks a unified mechanism for encoding/decoding data types to/f
 
 #### `prelude` Module
 
-Core annotations and types used across the codebase.
+Core attributes and types used across the codebase.
 
 ```zirric
-module prelude
+mod prelude
 
 extern type Binary {
     @Int length
 }
 
-annotation ItemType {
+attr ItemType {
     @AnyType type
 }
 ```
@@ -47,65 +47,65 @@ annotation ItemType {
 Central module for encoding/decoding logic.
 
 ```zirric
-module coding
+mod coding
 
-annotation Inline {}
+attr Inline {}
 
-annotation Default {
+attr Default {
     @Any value
 }
 
-annotation RawType {
+attr RawType {
     @AnyType type
 }
 
-annotation Encodable {
+attr Encodable {
     @Returns(Result) encode(value)
 }
 
-annotation Decodable {
+attr Decodable {
     @Returns(Result) decode(value)
 }
 
-annotation Key {
+attr Key {
     @String name
 }
 
 @Returns(Result)
-func encode(value, encoder)
+fn encode(value, encoder)
 
 @Returns(Result)
-func decode(@AnyType type, decoder)
+fn decode(@AnyType type, decoder)
 ```
 
 #### `coding.json` Module
 
-JSON-specific annotations and functions.
+JSON-specific attributes and functions.
 
 ```zirric
-module coding.json
+mod coding.json
 
 // same as coding, but these will only be respected by the JSON encoder/decoder
 ```
 
 #### `coding.yaml` Module
 
-YAML-specific annotations and functions.
+YAML-specific attributes and functions.
 
 ```zirric
-module coding.yaml
+mod coding.yaml
 
 // same as coding, but these will only be respected by the YAML encoder/decoder
 ```
 
 ## Detailed Design
 
-### 1. Core Annotations
+### 1. Core Attributes
 
-- **`coding.Encodable` and `coding.Decodable`**: Annotations to mark types/fields as encodable/decodable, specifying the encoding/decoding functions.
+- **`coding.Encodable` and `coding.Decodable`**: Attributes to mark types/fields as encodable/decodable, specifying the encoding/decoding functions.
 - **`coding.Key`**: Specifies the key to use for encoding/decoding a field.
 
-### 2. Format-Specific Annotations
+### 2. Format-Specific Attributes
 
 - **`json.Inline`**: Explicitly inlines (flattens) the fields of a `data` type or `union` member during JSON encoding/decoding.
 - **`json.RawType`**: Overrides the raw type for JSON encoding/decoding.
@@ -121,13 +121,13 @@ module coding.yaml
 
 - **New Modules**: `coding`, `coding.json`, `coding.yaml`
 - **New Types**: `coding.Error`, `prelude.Binary`
-- **New Annotations**: `coding.Encodable`, `coding.Decodable`, `coding.Key`, `json.Inline`, etc.
+- **New Attributes**: `coding.Encodable`, `coding.Decodable`, `coding.Key`, `json.Inline`, etc.
 
 ## Behavior and Rules
 
 ### 1. Inlining
 
-- **Explicit Inlining**: `@json.Inline` must be explicitly applied to enable inlining. Nested inlining also requires explicit `@json.Inline` annotations.
+- **Explicit Inlining**: `@json.Inline` must be explicitly applied to enable inlining. Nested inlining also requires explicit `@json.Inline` attributes.
 
 ### 2. Conflict Resolution
 
@@ -135,7 +135,7 @@ module coding.yaml
 
 ### 3. Optional Fields
 
-- **`@prelude.Option`**: When used with an union, the `None` member should be parsed due to the `@json.Type(json.Null)` annotation.
+- **`@prelude.Option`**: When used with an union, the `None` member should be parsed due to the `@json.Type(json.Null)` attribute.
 
 ## Acknowledgements
 

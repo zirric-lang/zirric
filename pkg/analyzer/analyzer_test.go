@@ -16,7 +16,7 @@ func TestAnalyzerResolvesIdentifierFreeSymbols(t *testing.T) {
 	module := parseModule(t, "test", `
 		module test
 		let x = 1
-		func example() {
+		fn example() {
 			return x
 		}
 	`)
@@ -48,10 +48,10 @@ func TestAnalyzerResolvesIdentifierFreeSymbols(t *testing.T) {
 	}
 }
 
-func TestAnalyzerResolvesAnnotationReferences(t *testing.T) {
+func TestAnalyzerResolvesAttributeReferences(t *testing.T) {
 	module := parseModule(t, "test", `
 		module test
-		annotation Type { value }
+		attr Type { value }
 		data String { value }
 		@Type(String)
 		data Example { name }
@@ -63,18 +63,18 @@ func TestAnalyzerResolvesAnnotationReferences(t *testing.T) {
 
 	sym := module.Symbols.Symbols["Type"]
 	if sym == nil || sym.Decl == nil {
-		t.Fatal("expected Type annotation to be declared")
+		t.Fatal("expected Type attribute to be declared")
 	}
-	if _, ok := sym.Decl.(*ast.DeclAnnotation); !ok {
-		t.Fatalf("expected Type to be annotation, got %T", sym.Decl)
+	if _, ok := sym.Decl.(*ast.DeclAttr); !ok {
+		t.Fatalf("expected Type to be attribute, got %T", sym.Decl)
 	}
 	if len(sym.Usages) == 0 {
-		t.Fatal("expected annotation Type to be referenced at least once")
+		t.Fatal("expected attribute Type to be referenced at least once")
 	}
 
 	id := findExprIdentifier(module, "String")
 	if id == nil || id.Symbol == nil {
-		t.Fatal("expected annotation argument String to resolve")
+		t.Fatal("expected attribute argument String to resolve")
 	}
 	if decl, ok := id.Symbol.Decl.(*ast.DeclData); !ok || decl.Name.Value != "String" {
 		t.Fatalf("expected String identifier to resolve to data String, got %T", id.Symbol.Decl)

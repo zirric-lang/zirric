@@ -30,14 +30,14 @@ func TestParseExternDeclarations(t *testing.T) {
 			expectedName: "String",
 		},
 		{
-			name:         "extern func without parameters",
-			input:        "extern func print()",
+			name:         "extern fn without parameters",
+			input:        "extern fn print()",
 			expectedType: "*ast.DeclExternFunc",
 			expectedName: "print",
 		},
 		{
-			name:         "extern func with parameters",
-			input:        "extern func add(a, b)",
+			name:         "extern fn with parameters",
+			input:        "extern fn add(a, b)",
 			expectedType: "*ast.DeclExternFunc",
 			expectedName: "add",
 		},
@@ -109,8 +109,8 @@ func TestParseExternDeclarations(t *testing.T) {
 						t.Errorf("Expected overview to contain 'extern type', got: %s", overview)
 					}
 				case "*ast.DeclExternFunc":
-					if !contains(overview, "extern func") {
-						t.Errorf("Expected overview to contain 'extern func', got: %s", overview)
+					if !contains(overview, "extern fn") {
+						t.Errorf("Expected overview to contain 'extern fn', got: %s", overview)
 					}
 				case "*ast.DeclExternValue":
 					if !contains(overview, "extern let") {

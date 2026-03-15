@@ -11,11 +11,11 @@ var _ CallableRuntimeValue = ExternFunc{}
 type ExternFuncImpl func(args []RuntimeValue) RuntimeValue
 
 type ExternFunc struct {
-	symbol           *ast.Symbol
-	arity            int
-	Impl             ExternFuncImpl
-	Annotations      map[TypeId]int
-	ParamAnnotations []map[TypeId]int
+	symbol          *ast.Symbol
+	arity           int
+	Impl            ExternFuncImpl
+	Attributes      map[TypeId]int
+	ParamAttributes []map[TypeId]int
 }
 
 func MakeExternFunc(symbol *ast.Symbol, impl ExternFuncImpl) (ExternFunc, error) {

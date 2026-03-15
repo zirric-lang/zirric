@@ -1,4 +1,4 @@
-module tasks
+mod tasks
 
 import code.knabel.dev.zirric_lang.zirric.future {
   Proposal
@@ -20,14 +20,14 @@ union Task {
 
 // Indicates that this task is implemented in an external file.
 @Proposal(ZE_002)
-annotation Exec {
+attr Exec {
   // The file that contains the implementation of the task.
   @String file
 }
 
 // Indicates that this task is implemented by a function.
 @Proposal(ZE_002)
-annotation Call {
+attr Call {
   // The function to run for the task.
   @Function function
 }
@@ -35,21 +35,21 @@ annotation Call {
 // Indicates that this task uses a module for its implementation.
 // Must be declared on the field of a data declaration with @Dependencies.
 @Proposal(ZE_002)
-annotation Import {
+attr Import {
   // The module to use for the task.
   @Module module
 }
 
 // Renames the task, flag or argument.
 @Proposal(ZE_002)
-annotation Name {
+attr Name {
   // The new name.
   @String name
 }
 
 // Provides alternative names for the task, flag or argument.
 @Proposal(ZE_002)
-annotation Alias {
+attr Alias {
   // Alternative names.
   @Array alias
 }
@@ -57,22 +57,22 @@ annotation Alias {
 // Provides a short name for the flag.
 // Not applicable to arguments.
 @Proposal(ZE_002)
-annotation Short {
+attr Short {
   // The short name of the flag.
   @Char short
 }
 
 // A short help text for the task, flag or argument.
 @Proposal(ZE_002)
-annotation Help {
+attr Help {
   // A short help text.
   @String help
 }
 
 // Marks this field as a commandline flag.
 @Proposal(ZE_002)
-annotation Flag {}
+attr Flag {}
 
 // Marks this field as a positional commandline argument.
 @Proposal(ZE_002)
-annotation Arg {}
+attr Arg {}

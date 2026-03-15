@@ -52,7 +52,7 @@ type SymbolUsage struct {
 }
 
 type SymbolRequirement interface{}
-type RequireAnnotation *DeclAnnotationInstance
+type RequireAttribute *DeclAttrInstance
 type RequireStaticRef struct {
 	StaticReference
 	ResolveRequirements SymbolRequirement
@@ -317,5 +317,5 @@ func (st *SymbolTable) NextAnonymousFunctionName() string {
 	defer st.mu.Unlock()
 
 	st.functionCounter++
-	return fmt.Sprintf("func#%d", st.functionCounter)
+	return fmt.Sprintf("fn#%d", st.functionCounter)
 }

@@ -19,9 +19,9 @@ func MakeModuleValue(name string, exports map[string]RuntimeValue) *ModuleValue 
 // Inspect implements RuntimeValue.
 func (m *ModuleValue) Inspect() string {
 	if m.name == "" {
-		return "module"
+		return "mod"
 	}
-	return fmt.Sprintf("module %s", m.name)
+	return fmt.Sprintf("mod %s", m.name)
 }
 
 // Lookup implements RuntimeValue.

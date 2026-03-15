@@ -7,8 +7,8 @@ import (
 var _ RuntimeValue = SimpleType{}
 
 type SimpleType struct {
-	Decl        *ast.Symbol
-	Annotations map[TypeId]int
+	Decl       *ast.Symbol
+	Attributes map[TypeId]int
 }
 
 // Inspect implements runtime.RuntimeValue.

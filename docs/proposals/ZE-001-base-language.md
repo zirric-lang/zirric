@@ -35,7 +35,7 @@ Things that proved to be good in Lithia and are kept in Zirric:
 - the combination of `union` and `data` types work great together
 - `union` was called `enum` in Lithia which was slightly misleading
 - the concept of `extern` types
-- the concept of `module`, `import`
+- the concept of `mod`, `import`
 - the path based module system
 - the prelude modules
 - the convention of small modules
@@ -46,7 +46,7 @@ Things that proved to be good in Lithia and are kept in Zirric:
 
 Additionally there will be a few ideas that worked great in Lithia, but won't in Zirric:
 
-- witnesses had their place, but are now far easier to implement with annotations
+- witnesses had their place, but are now far easier to implement with attributes
 - currying is nice and might have its revival in Zirric, but not from the beginning
 - immutability conflicts with potential use cases of Zirric
 
@@ -63,12 +63,12 @@ Zirric is an imperative and functional programming language.
 Different kinds of declarations are supported:
 
 - `let` variables
-- `func` functions
+- `fn` functions
 - `union` that group other types
 - `data` that define custom data types
 - `extern` that define bindings to external libraries
-- `annotation` that add metadata to other declarations
-- `module` that allows access to the current module
+- `attr` that add metadata to other declarations
+- `mod` that allows access to the current module
 - `import` that allows access to other modules
 
 Besides that there are a few control flow structures:
@@ -179,7 +179,7 @@ decl_data = "data", type_identifier, [ "{", { decl_field }, "}" ] ;
 
 #### Fields
 
-Fields are the building blocks of data types. They are defined by their name and optionally annotations.
+Fields are the building blocks of data types. They are defined by their name and optionally attributes.
 To increase the expressiveness, function fields can be defined by adding a function signature after the field name.
 
 In practice this serves just as documentation, as fields can store any value.
@@ -220,31 +220,31 @@ decl_union = "union", type_identifier, "{", { union_member }, "}" ;
 union_member = ( static_reference | decl_data ) ;
 ```
 
-### Annotation types
+### Attribute types
 
-Annotations are metadata that can be attached to declarations like `let`, `func`, `data`, `union`, `extern` and `module`.
-Instantiations of annotation types can only be created at compile time.
-As syntactic sugar non-annotation types can be used as annotations. In this case an annotation of type `Type` will be created with the type as argument. Annotations that are actual annotation types, parenthesis are required.
+Attributes are metadata that can be attached to declarations like `let`, `fn`, `data`, `union`, `extern` and `mod`.
+Instantiations of attribute types can only be created at compile time.
+As syntactic sugar non-attribute types can be used as attributes. In this case an attribute of type `Type` will be created with the type as argument. Attributes that are actual attribute types require parentheses.
 
 ```zirric
 @OtherAnnotation()
-annotation SomeAnnotation {
+attr SomeAnnotation {
   field1
   @Int field2 // @Type(Int) field2
 }
 ```
 
 ```ebnf
-decl = [annotation_chain], ( decl_let | decl_func | decl_union | decl_data | decl_annotation | decl_extern_type | decl_extern_func | decl_module ) ;
-annotation_chain = annotation, { annotation } ;
-annotation = "@", static_reference, [ "(", [ argument_list ], ")" ] ;
+decl = [attr_chain], ( decl_let | decl_fn | decl_union | decl_data | decl_attr | decl_extern_type | decl_extern_fn | decl_mod ) ;
+attr_chain = attr, { attr } ;
+attr = "@", static_reference, [ "(", [ argument_list ], ")" ] ;
 
-decl_annotation = "annotation", type_identifier, [ "{", { decl_field }, "}" ] ;
+decl_attr = "attr", type_identifier, [ "{", { decl_field }, "}" ] ;
 ```
 
-#### Field annotations
+#### Field attributes
 
-Fields of `data` and `annotation` types can be annotated with metadata. These annotations will be processed at compile time and can be accessed at runtime.
+Fields of `data` and `attr` types can be annotated with metadata. These attributes will be processed at compile time and can be accessed at runtime.
 
 ```zirric
 data Person {
@@ -258,20 +258,20 @@ data Person {
 }
 ```
 
-#### Parameter annotations
+#### Parameter attributes
 
-Parameters of functions can be annotated with metadata. These annotations will be processed at compile time and can be accessed at runtime.
+Parameters of functions can be annotated with metadata. These attributes will be processed at compile time and can be accessed at runtime.
 
 ```zirric
 @Returns(Int)
-func add(@Int a, @Int b) {
+fn add(@Int a, @Int b) {
     return a + b
 }
 ```
 
-#### Accessing annotations
+#### Accessing attributes
 
-Annotations can be accessed at runtime by using the `reflect` module.
+Attributes can be accessed at runtime by using the `reflect` module.
 
 ```zirric
 import json
@@ -280,7 +280,7 @@ let person = Person("John", 42)
 
 let nameAnnotation = reflect.typeOf(person).
     field("name").
-    annotation(json.HasKey)
+    attribute(json.HasKey)
 ```
 
 > [!attention] Undefined
@@ -318,32 +318,32 @@ extern let void
 
 ### Extern functions
 
-Extern functions are functions that are implemented in the runtime like `print`. They are defined by the `extern func` keywords followed by the function signature.
+Extern functions are functions that are implemented in the runtime like `print`. They are defined by the `extern fn` keywords followed by the function signature.
 
 Extern declarations must always be global and cannot be nested.
 
 ```zirric
-extern func print(@Has(StringLike) str)
+extern fn print(@Has(StringLike) str)
 ```
 
 Similar to functions these can be called like normal functions.
 
 ```ebnf
-decl_extern_func = "extern", "func", identifier, "(", [ parameter_list ], ")" ;
+decl_extern_fn = "extern", "fn", identifier, "(", [ parameter_list ], ")" ;
 ```
 
 ### Functions
 
-Functions are defined by the `func` keyword followed by the function name, a list of parameters and a body.
+Functions are defined by the `fn` keyword followed by the function name, a list of parameters and a body.
 
 ```zirric
-func add(a, b) {
+fn add(a, b) {
     return a + b
 }
 let result = add(1, 2) // result is 3
 
 @Returns(Int)
-func add(@Int a, @Int b) {
+fn add(@Int a, @Int b) {
     return a + b
 }
 
@@ -357,12 +357,12 @@ let multiline = { a, b ->
 ```
 
 ```ebnf
-decl_func = "func", identifier, "(", [ parameter_list ], ")", block ;
+decl_fn = "fn", identifier, "(", [ parameter_list ], ")", block ;
 parameter_list = parameter, { ",", parameter } ;
-parameter = [ annotation_chain ], identifier ;
+parameter = [ attr_chain ], identifier ;
 block = "{", { statement }, "}" ;
 
-func_literal = "{",[ [ parameter_list ], "->" ], block, "}" ;
+fn_literal = "{",[ [ parameter_list ], "->" ], block, "}" ;
 
 stmt_return = "return", [ expression ] ;
 ```
@@ -403,7 +403,7 @@ Switch expressions and statements are used to conditionally execute code based o
 switch value {
 case @String: // if value has type String
   //multiple statements and local declarations are allowed
-case @Has(Annotation): // if type of value has the annotation
+case @Has(Attribute): // if type of value has the attribute
   // multiple statements and local declarations are allowed
 case 1:
   // multiple statements and local declarations are allowed
@@ -417,7 +417,7 @@ let result = switch value {
 case @String:
   // variables allowed, but just one expression
   0
-case @Has(Annotation):
+case @Has(Attribute):
   1
 case 1:
   2
@@ -487,21 +487,21 @@ expr_for_block = { decl }, ( "break" | "continue" | expression ) ;
 ### Modules
 
 Modules are defined by the folder structure on the file system. Each folder is a module. The root module is defined by the folder containing the `Cavefile`.
-Each module has a corresponding value of type `Module` that can be accessed by the `module` declaration. That way it can also be annotated with metadata.
+Each module has a corresponding value of type `Module` that can be accessed by the `mod` declaration. That way it can also be annotated with attributes.
 
 Declarations that precede with `_` are treated as private and cannot be accessed from other modules. The same applies to nested declarations, imports and module-self references.
 
 ```zirric
 @Deprecated("Use other module instead")
-module examples
+mod examples
 
-func greet() {
+fn greet() {
     print(examples) // prints the module
 }
 ```
 
 ```ebnf
-decl_module = "module", identifier ;
+decl_mod = "mod", identifier ;
 ```
 
 ### Imports
@@ -515,7 +515,7 @@ import some.examples {
 }
 
 import alias = some.other.example // import with alias to avoid name clashes
-func main() {
+fn main() {
     maths.sin(0.5) // requires prefix of module
     func1() // directly accessible
     examples.func2() // others require prefix of module
@@ -534,10 +534,10 @@ This introduces lots of new concepts that will be used by the standard library.
 
 - shims for common extern types like `Int`, `String`, `Char`, `Float`, `Bool`, `Array`, `Dict`, `Func`, `Any`, `AnyType`, `Void` and `Module`
 - extern constants like `void`
-- annotations for common use cases like `Type`, `Numeric`, `Has`, `Returns` and `Deprecated`, `Countable`, `Iterable`
+- attributes for common use cases like `Type`, `Numeric`, `Has`, `Returns` and `Deprecated`, `Countable`, `Iterable`
 - data types like `Range`
 
-This also requires the existence of a `reflect` module to be able to access annotations at runtime, but this will be defined in a separate proposal.
+This also requires the existence of a `reflect` module to be able to access attributes at runtime, but this will be defined in a separate proposal.
 
 ### Special Extern Types
 
@@ -552,7 +552,7 @@ This also requires the existence of a `reflect` module to be able to access anno
 
 - `@Iterable(iter)` is used by the `for item <- items` syntax to indicate that a type is iterable. Used by compiler and tooling.
 - `@Type(type)` that indicates that a value must be of the given type. Used by tooling.
-- `@Has(annotation)` that indicates that a type must have the given annotation. Intended for parameters, fields and `case @Has(Annotation)` in switch statements. Not intended for declarations on types. Used by tooling.
+- `@Has(attribute)` that indicates that a type must have the given attribute. Intended for parameters, fields and `case @Has(Attribute)` in switch statements. Not intended for declarations on types. Used by tooling.
 - `@Returns(type)` that indicates that a function returns a value of the given type. Used by tooling.
 - `@Deprecated(reason)` that indicates that a declaration is deprecated and should not be used anymore. Used by tooling.
 - `@Doc(description)` generated by compiler. Contains the documentation comment of a declaration. Used by tooling.

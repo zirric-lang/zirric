@@ -11,7 +11,7 @@ var _ CallableRuntimeValue = &DataType{}
 type DataType struct {
 	Symbol       *ast.Symbol
 	FieldSymbols []*ast.Symbol
-	Annotations  map[TypeId]int
+	Attributes   map[TypeId]int
 }
 
 func MakeDataType(symbol *ast.Symbol) (*DataType, error) {
@@ -34,7 +34,7 @@ func MakeDataType(symbol *ast.Symbol) (*DataType, error) {
 	return &DataType{
 		Symbol:       symbol,
 		FieldSymbols: fieldSymbols,
-		Annotations:  nil,
+		Attributes:   nil,
 	}, nil
 }
 

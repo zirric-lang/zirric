@@ -40,9 +40,9 @@ func resolveNode(node ast.Node, symbols *ast.SymbolTable) {
 		}
 		n.Symbol = symbols.LookupIdentifier(n.Name)
 		return
-	case *ast.DeclAnnotationInstance:
+	case *ast.DeclAttrInstance:
 		if symbols != nil {
-			symbols.LookupRef(n.Reference, ast.RequireAnnotation(n))
+			symbols.LookupRef(n.Reference, ast.RequireAttribute(n))
 		}
 		for _, arg := range n.Arguments {
 			resolveNode(arg, symbols)
@@ -61,8 +61,8 @@ func resolveNode(node ast.Node, symbols *ast.SymbolTable) {
 		}
 		return
 	case *ast.DeclFunc:
-		if len(n.Annotations) > 0 {
-			resolveNode(n.Annotations, symbols)
+		if len(n.Attributes) > 0 {
+			resolveNode(n.Attributes, symbols)
 		}
 		if n.Impl != nil {
 			resolveNode(n.Impl, n.Impl.Symbols)

@@ -11,10 +11,10 @@ var _ Decl = &DeclData{}
 var _ Overviewable = &DeclData{}
 
 type DeclData struct {
-	Token       token.Token
-	Name        Identifier
-	Fields      []DeclField
-	Annotations AnnotationChain
+	Token      token.Token
+	Name       Identifier
+	Fields     []DeclField
+	Attributes AttributeChain
 }
 
 func MakeDeclData(tok token.Token, name Identifier) *DeclData {
@@ -64,9 +64,9 @@ func (e *DeclData) AddField(field DeclField) {
 
 // EnumerateChildNodes implements Decl.
 func (d DeclData) EnumerateChildNodes(action func(child Node)) {
-	if len(d.Annotations) > 0 {
-		action(d.Annotations)
-		d.Annotations.EnumerateChildNodes(action)
+	if len(d.Attributes) > 0 {
+		action(d.Attributes)
+		d.Attributes.EnumerateChildNodes(action)
 	}
 	action(d.Name)
 	for _, node := range d.Fields {

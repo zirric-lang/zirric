@@ -47,17 +47,17 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 	}
 
 	var (
-		atPos, inAnnotation = annotationContextStart(text, pos)
-		cursorOffset        = offsetForPosition(text, pos)
-		sourceURI           = string(registry.JoinModuleURI("", path))
-		currentSF           = findSourceFile(module, sourceURI)
+		atPos, inAttribute = attributeContextStart(text, pos)
+		cursorOffset       = offsetForPosition(text, pos)
+		sourceURI          = string(registry.JoinModuleURI("", path))
+		currentSF          = findSourceFile(module, sourceURI)
 	)
 
 	// Handle qualified context: "alias.member" or "@alias.member"
 	if alias, afterDot, isQualified := qualifiedContext(text, pos); isQualified {
 		if imp, ok := findImportDecl(currentSF, alias); ok {
 			if importedMod, _, ok := ls.loadImportedModule(imp); ok {
-				return importedModuleCompletions(importedMod, inAnnotation, afterDot, pos), nil
+				return importedModuleCompletions(importedMod, inAttribute, afterDot, pos), nil
 			}
 		}
 		// Unknown module alias — return empty rather than irrelevant globals.
@@ -70,8 +70,8 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 			continue
 		}
 
-		if inAnnotation {
-			if item, ok := annotationContextCompletionItem(sym, atPos, pos); ok {
+		if inAttribute {
+			if item, ok := attributeContextCompletionItem(sym, atPos, pos); ok {
 				items = append(items, item)
 			}
 		} else {
@@ -87,15 +87,15 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 			}
 			switch sym.Decl.(type) {
 			case ast.DeclImport, *ast.DeclImport, ast.DeclImportMember, *ast.DeclImportMember:
-				if !inAnnotation {
+				if !inAttribute {
 					items = append(items, completionItemForDeclSymbol(sym))
 				}
 			}
 		}
 	}
 
-	// Add local bindings (params, local lets, for bindings) in non-annotation context.
-	if !inAnnotation {
+	// Add local bindings (params, local lets, for bindings) in non-attribute context.
+	if !inAttribute {
 		for _, decl := range collectLocalsBeforeCursor(module, sourceURI, cursorOffset) {
 			kind := protocol.CompletionItemKindVariable
 			name := decl.DeclName().Value
@@ -117,10 +117,10 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 }
 
 // importedModuleCompletions returns completion items for all public symbols in an imported module.
-// In annotation context, only annotation/type declarations are included with snippet TextEdits.
+// In attribute context, only attribute/type declarations are included with snippet TextEdits.
 func importedModuleCompletions(
 	mod *ast.ContextModule,
-	inAnnotation bool,
+	inAttribute bool,
 	afterDot, cursorPos protocol.Position,
 ) []protocol.CompletionItem {
 	memberRange := protocol.Range{Start: afterDot, End: cursorPos}
@@ -129,13 +129,13 @@ func importedModuleCompletions(
 		if sym == nil || sym.Decl == nil {
 			continue
 		}
-		if inAnnotation {
+		if inAttribute {
 			switch decl := sym.Decl.(type) {
-			case *ast.DeclAnnotation:
-				items = append(items, annotationMemberSnippetItem(sym.Name, decl.Fields, memberRange))
+			case *ast.DeclAttr:
+				items = append(items, attributeMemberSnippetItem(sym.Name, decl.Fields, memberRange))
 			case *ast.DeclData, *ast.DeclUnion, *ast.DeclExternType:
 				_ = decl
-				items = append(items, typeAnnotationMemberItem(sym.Name, memberRange))
+				items = append(items, typeAttributeMemberItem(sym.Name, memberRange))
 			}
 		} else {
 			items = append(items, completionItemForDeclSymbol(sym))
@@ -144,10 +144,10 @@ func importedModuleCompletions(
 	return items
 }
 
-// annotationContextStart returns the position of '@' and true when the cursor
+// attributeContextStart returns the position of '@' and true when the cursor
 // is directly after a '@' sign (possibly followed by partial identifier chars),
-// indicating the user is completing an annotation reference.
-func annotationContextStart(text string, pos protocol.Position) (protocol.Position, bool) {
+// indicating the user is completing an attribute reference.
+func attributeContextStart(text string, pos protocol.Position) (protocol.Position, bool) {
 	lineNum := int(pos.Line)
 	start := 0
 	for i := 0; i < lineNum; i++ {
@@ -186,9 +186,9 @@ func annotationContextStart(text string, pos protocol.Position) (protocol.Positi
 	return protocol.Position{Line: pos.Line, Character: atChar}, true
 }
 
-// isAnnotationContext reports whether pos is directly after a '@' sign.
-func isAnnotationContext(text string, pos protocol.Position) bool {
-	_, ok := annotationContextStart(text, pos)
+// isAttributeContext reports whether pos is directly after a '@' sign.
+func isAttributeContext(text string, pos protocol.Position) bool {
+	_, ok := attributeContextStart(text, pos)
 	return ok
 }
 
@@ -196,21 +196,21 @@ func isIdentByte(b byte) bool {
 	return b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9' || b == '_' || b == '.'
 }
 
-// annotationContextCompletionItem returns a completion item for use after '@'.
+// attributeContextCompletionItem returns a completion item for use after '@'.
 // Annotation declarations get a snippet with their field names as placeholders.
 // Type declarations (data, union, extern type) are included as plain names.
 // Value and function declarations are excluded.
 // The TextEdit replaces from the '@' character up to the cursor so that the
 // resulting text always contains the leading '@'.
-func annotationContextCompletionItem(sym *ast.DeclSymbol, atPos, cursorPos protocol.Position) (protocol.CompletionItem, bool) {
+func attributeContextCompletionItem(sym *ast.DeclSymbol, atPos, cursorPos protocol.Position) (protocol.CompletionItem, bool) {
 	editRange := protocol.Range{Start: atPos, End: cursorPos}
 
 	switch decl := sym.Decl.(type) {
-	case *ast.DeclAnnotation:
-		return annotationSnippetItem(sym.Name, decl.Fields, editRange), true
+	case *ast.DeclAttr:
+		return attributeSnippetItem(sym.Name, decl.Fields, editRange), true
 
 	case *ast.DeclData, *ast.DeclUnion, *ast.DeclExternType:
-		return typeAnnotationItem(sym.Name, editRange), true
+		return typeAttributeItem(sym.Name, editRange), true
 
 	default:
 		_ = decl
@@ -218,11 +218,11 @@ func annotationContextCompletionItem(sym *ast.DeclSymbol, atPos, cursorPos proto
 	}
 }
 
-// annotationSnippetItem builds a CompletionItem for an annotation declaration.
-// When the annotation has fields, the insert text is a snippet with each field
+// attributeSnippetItem builds a CompletionItem for an attribute declaration.
+// When the attribute has fields, the insert text is a snippet with each field
 // name as a tab-stop placeholder: @Name(${1:field1}, ${2:field2}).
 // The TextEdit replaces from '@' to the cursor so the '@' is always present.
-func annotationSnippetItem(name string, fields []ast.DeclField, editRange protocol.Range) protocol.CompletionItem {
+func attributeSnippetItem(name string, fields []ast.DeclField, editRange protocol.Range) protocol.CompletionItem {
 	var (
 		kind       = protocol.CompletionItemKindInterface
 		label      = "@" + name
@@ -249,8 +249,8 @@ func annotationSnippetItem(name string, fields []ast.DeclField, editRange protoc
 	}
 }
 
-// typeAnnotationItem builds a CompletionItem for a type used in annotation position.
-func typeAnnotationItem(name string, editRange protocol.Range) protocol.CompletionItem {
+// typeAttributeItem builds a CompletionItem for a type used in attribute position.
+func typeAttributeItem(name string, editRange protocol.Range) protocol.CompletionItem {
 	var (
 		kind       = protocol.CompletionItemKindStruct
 		label      = "@" + name
@@ -268,9 +268,9 @@ func typeAnnotationItem(name string, editRange protocol.Range) protocol.Completi
 }
 
 func completionItemForDeclSymbol(sym *ast.DeclSymbol) protocol.CompletionItem {
-	// Annotations outside annotation context are offered with '@' prefix and snippet.
-	if decl, ok := sym.Decl.(*ast.DeclAnnotation); ok {
-		return annotationNonContextItem(sym.Name, decl.Fields)
+	// Attributes outside attribute context are offered with '@' prefix and snippet.
+	if decl, ok := sym.Decl.(*ast.DeclAttr); ok {
+		return attributeNonContextItem(sym.Name, decl.Fields)
 	}
 
 	kind := completionKindForDecl(sym.Decl)
@@ -289,10 +289,10 @@ func completionItemForDeclSymbol(sym *ast.DeclSymbol) protocol.CompletionItem {
 	return item
 }
 
-// annotationNonContextItem returns a completion item for an annotation when
+// attributeNonContextItem returns a completion item for an attribute when
 // there is no '@' before the cursor. The '@' is prepended to the label and
 // included in the insertText snippet so it is always part of the result.
-func annotationNonContextItem(name string, fields []ast.DeclField) protocol.CompletionItem {
+func attributeNonContextItem(name string, fields []ast.DeclField) protocol.CompletionItem {
 	var (
 		kind       = protocol.CompletionItemKindInterface
 		label      = "@" + name
@@ -331,7 +331,7 @@ func completionKindForDecl(decl ast.Decl) protocol.CompletionItemKind {
 	case *ast.DeclUnion, ast.DeclUnion:
 		return protocol.CompletionItemKindClass
 
-	case *ast.DeclAnnotation, ast.DeclAnnotation:
+	case *ast.DeclAttr, ast.DeclAttr:
 		return protocol.CompletionItemKindInterface
 
 	case *ast.DeclImport, ast.DeclImport, *ast.DeclModule, ast.DeclModule:
@@ -345,9 +345,9 @@ func completionKindForDecl(decl ast.Decl) protocol.CompletionItemKind {
 	}
 }
 
-// annotationMemberSnippetItem builds an annotation completion for qualified context (@alias.Name).
+// attributeMemberSnippetItem builds an attribute completion for qualified context (@alias.Name).
 // The TextEdit replaces only the member portion (after the dot), so "@alias." is preserved.
-func annotationMemberSnippetItem(name string, fields []ast.DeclField, memberRange protocol.Range) protocol.CompletionItem {
+func attributeMemberSnippetItem(name string, fields []ast.DeclField, memberRange protocol.Range) protocol.CompletionItem {
 	var (
 		kind       = protocol.CompletionItemKindInterface
 		label      = "@" + name
@@ -374,8 +374,8 @@ func annotationMemberSnippetItem(name string, fields []ast.DeclField, memberRang
 	}
 }
 
-// typeAnnotationMemberItem builds a type completion for qualified annotation context (@alias.Type).
-func typeAnnotationMemberItem(name string, memberRange protocol.Range) protocol.CompletionItem {
+// typeAttributeMemberItem builds a type completion for qualified attribute context (@alias.Type).
+func typeAttributeMemberItem(name string, memberRange protocol.Range) protocol.CompletionItem {
 	var (
 		kind       = protocol.CompletionItemKindStruct
 		label      = "@" + name

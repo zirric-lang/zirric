@@ -34,13 +34,13 @@ Define two annotations in the prelude future module:
 
 ```zirric
 @Proposal(ZE_010)
-annotation Countable {
+attr Countable {
   @Returns(Int)
   length(@Has(Countable) value)
 }
 
 @Proposal(ZE_010)
-annotation Iterable {
+attr Iterable {
   iterate(@Has(Iterable) value, @Func yield)
 }
 ```

@@ -1,4 +1,4 @@
-module xreflect
+mod xreflect
 
 data Field {
     @String name
@@ -6,28 +6,28 @@ data Field {
     @Type(AnyType) type
 
     @Array
-    @ItemType(Annotation)
-    annotations
+    @ItemType(Attribute)
+    attributes
 }
 
-data Annotation {
-    @AnyAnnotation annotationType
+data Attribute {
+    @AnyAttribute attributeType
     @Array args
 }
 
-annotation Name {
+attr Name {
     @String name
 }
 
 @Returns(Type)
-func typeOf(@Any value) {}
+fn typeOf(@Any value) {}
 
 @Returns(Array(Field))
-func fieldsOf(@Type type) {}
+fn fieldsOf(@Type type) {}
 
 @Returns(Result)
-@OkType(AnyAnnotation)
-func annotation(@Field field, @AnnotationType annotationType) {}
+@OkType(AnyAttribute)
+fn attribute(@Field field, @AttributeType attributeType) {}
 
 @Returns(Bool)
-func hasAnnotation(@Field field, @AnnotationType annotationType) {}
+fn hasAttribute(@Field field, @AttributeType attributeType) {}

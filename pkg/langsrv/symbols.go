@@ -209,13 +209,13 @@ func childSymbols(decl ast.Decl, text string) []protocol.DocumentSymbol {
 				children = append(children, *c)
 			}
 		}
-	case ast.DeclAnnotation:
+	case ast.DeclAttr:
 		for _, f := range d.Fields {
 			if c := documentSymbolForDecl(f, text); c != nil {
 				children = append(children, *c)
 			}
 		}
-	case *ast.DeclAnnotation:
+	case *ast.DeclAttr:
 		for _, f := range d.Fields {
 			if c := documentSymbolForDecl(f, text); c != nil {
 				children = append(children, *c)
@@ -250,7 +250,7 @@ func symbolKindForDecl(decl ast.Decl) protocol.SymbolKind {
 		return protocol.SymbolKindClass
 	case *ast.DeclUnion, ast.DeclUnion:
 		return protocol.SymbolKindEnum
-	case *ast.DeclAnnotation, ast.DeclAnnotation:
+	case *ast.DeclAttr, ast.DeclAttr:
 		return protocol.SymbolKindInterface
 	case *ast.DeclField, ast.DeclField:
 		return protocol.SymbolKindField

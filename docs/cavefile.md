@@ -1,7 +1,7 @@
 # Cavefile manifests
 
 Zirric packages declare dependencies and tasks in a `Cavefile`. A Cavefile is
-regular Zirric source code that uses annotations from the
+regular Zirric source code that uses attributes from the
 `code.knabel.dev.zirric_lang.zirric.future.cave` and
 `code.knabel.dev.zirric_lang.zirric.future.tasks` standard library modules.
 For
@@ -46,5 +46,5 @@ data GenerateTask {
 }
 ```
 
-Tasks are registered by annotations such as `@tasks.Exec` or `@tasks.Call`. Flags
+Tasks are registered by attributes such as `@tasks.Exec` or `@tasks.Call`. Flags
 and positional arguments are expressed as annotated fields.

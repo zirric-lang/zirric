@@ -10,12 +10,12 @@ care as they might break. Once a proposal is accepted, the implementation will
 be moved to the appropriate module. Not all proposals are implemented nor
 complete, and some require additional syntax not yet available in Zirric.
 
-## Annotations
+## Attributes
 
-### annotation Proposal
+### attr Proposal
 
 ```zirric
-annotation Proposal
+attr Proposal
 ```
 
 No documentation.

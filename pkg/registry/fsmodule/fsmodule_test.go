@@ -34,36 +34,36 @@ func TestDiscoderFSModules(t *testing.T) {
 			cwd:  "/code.knabel.dev/zirric-lang/zirric-example",
 			base: "memory:///code.knabel.dev/zirric-lang/zirric-example",
 			files: map[string]string{
-				"/code.knabel.dev/zirric-lang/zirric-example/Cavefile":       "module cavefile",
-				"/code.knabel.dev/zirric-lang/zirric-example/tools/fmt.zirr": "module tools",
-				"/code.knabel.dev/zirric-lang/zirric-example/cmd/main.zirr":  "module cmd",
-				"/code.knabel.dev/zirric-lang/zirric-example/app/root.zirr":  "module app",
+				"/code.knabel.dev/zirric-lang/zirric-example/Cavefile":       "mod cavefile",
+				"/code.knabel.dev/zirric-lang/zirric-example/tools/fmt.zirr": "mod tools",
+				"/code.knabel.dev/zirric-lang/zirric-example/cmd/main.zirr":  "mod cmd",
+				"/code.knabel.dev/zirric-lang/zirric-example/app/root.zirr":  "mod app",
 
-				"/code.knabel.dev/zirric-lang/zirric-example/app/views/body.zirr": "module views",
+				"/code.knabel.dev/zirric-lang/zirric-example/app/views/body.zirr": "mod views",
 			},
 			want: []testWant{
 				{
 					uri: "memory:///code.knabel.dev/zirric-lang/zirric-example.app",
 					sources: map[registry.LogicalURI]string{
-						"memory:///code.knabel.dev/zirric-lang/zirric-example/app/root.zirr": "module app",
+						"memory:///code.knabel.dev/zirric-lang/zirric-example/app/root.zirr": "mod app",
 					},
 				},
 				{
 					uri: "memory:///code.knabel.dev/zirric-lang/zirric-example.app.views",
 					sources: map[registry.LogicalURI]string{
-						"memory:///code.knabel.dev/zirric-lang/zirric-example/app/views/body.zirr": "module views",
+						"memory:///code.knabel.dev/zirric-lang/zirric-example/app/views/body.zirr": "mod views",
 					},
 				},
 				{
 					uri: "memory:///code.knabel.dev/zirric-lang/zirric-example.cmd",
 					sources: map[registry.LogicalURI]string{
-						"memory:///code.knabel.dev/zirric-lang/zirric-example/cmd/main.zirr": "module cmd",
+						"memory:///code.knabel.dev/zirric-lang/zirric-example/cmd/main.zirr": "mod cmd",
 					},
 				},
 				{
 					uri: "memory:///code.knabel.dev/zirric-lang/zirric-example.tools",
 					sources: map[registry.LogicalURI]string{
-						"memory:///code.knabel.dev/zirric-lang/zirric-example/tools/fmt.zirr": "module tools",
+						"memory:///code.knabel.dev/zirric-lang/zirric-example/tools/fmt.zirr": "mod tools",
 					},
 				},
 			},

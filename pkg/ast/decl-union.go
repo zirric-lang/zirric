@@ -11,10 +11,10 @@ var _ Decl = DeclUnion{}
 var _ Overviewable = DeclUnion{}
 
 type DeclUnion struct {
-	Token       token.Token
-	Name        Identifier
-	Members     []*DeclUnionMember
-	Annotations AnnotationChain
+	Token      token.Token
+	Name       Identifier
+	Members    []*DeclUnionMember
+	Attributes AttributeChain
 
 	Docs *Docs
 }
@@ -83,9 +83,9 @@ func (decl DeclUnion) ProvidedDocs() *Docs {
 
 // EnumerateChildNodes implements Decl.
 func (n DeclUnion) EnumerateChildNodes(action func(child Node)) {
-	if len(n.Annotations) > 0 {
-		action(n.Annotations)
-		n.Annotations.EnumerateChildNodes(action)
+	if len(n.Attributes) > 0 {
+		action(n.Attributes)
+		n.Attributes.EnumerateChildNodes(action)
 	}
 	action(n.Name)
 	for _, node := range n.Members {

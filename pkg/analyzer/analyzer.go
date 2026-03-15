@@ -105,7 +105,7 @@ func (a *Analyzer) assignModuleIDs(module *ast.ContextModule, reserveModule bool
 			continue
 		}
 		switch decl := sym.Decl.(type) {
-		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAnnotation:
+		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAttr:
 			if sym.ConstantId == nil {
 				id := a.AllocateConstantId()
 				sym.ConstantId = &id

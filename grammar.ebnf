@@ -48,12 +48,12 @@ LBRACKET = "[";
 RBRACKET = "]";
 AT = "@";
 
-MODULE = "module";
+MODULE = "mod";
 IMPORT = "import";
 UNION = "union";
 DATA = "data";
 EXTERN = "extern";
-FUNCTION = "func";
+FUNCTION = "fn";
 LET = "let";
 TYPE = "type";
 RETURN = "return";

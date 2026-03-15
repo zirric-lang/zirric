@@ -8,7 +8,7 @@ description: A step-by-step guide to getting started with the Zirric programming
 Zirric is a declaration-driven language with an expression-first feel. It aims
 to stay small while keeping enough structure to build real programs. Values are
 dynamic, but conversions are explicit, and behavior is described through
-annotations rather than interfaces.
+attributes rather than interfaces.
 
 ::: callout warning Experimental
 Zirric is still evolving. Some features are specified but not fully implemented
@@ -28,17 +28,17 @@ yet. Use the proposals for authoritative intent.
 Zirric code is built from a small set of declarations:
 
 ```zirric
-module app
+mod app
 
 import strings
 
-annotation Returns {
+attr Returns {
     type
 }
 
 let answer = 42
 
-func greet(name) {
+fn greet(name) {
     return "Hello, " + name
 }
 
@@ -69,13 +69,13 @@ true               // Bool
 
 ## Variables and functions
 
-Declare variables with `let` and functions with `func`. Functions can return
+Declare variables with `let` and functions with `fn`. Functions can return
 any value.
 
 ```zirric
 let answer = 42
 
-func greet(name) {
+fn greet(name) {
     return "Hello, " + name
 }
 
@@ -85,7 +85,7 @@ let message = greet("Zirric")
 Functions are values and can be passed around like any other expression:
 
 ```zirric
-func applyTwice(f, value) {
+fn applyTwice(f, value) {
     return f(f(value))
 }
 ```
@@ -143,14 +143,14 @@ let oddNumbers = for item <- [1, 2, 3] {
 // oddNumbers is [1, 3]
 ```
 
-## Annotations and capabilities
+## Attributes and capabilities
 
-Zirric does not use interfaces. Instead, annotations describe capabilities and
+Zirric does not use interfaces. Instead, attributes describe capabilities and
 attach metadata to declarations. They are a core part of the language and
 tooling story.
 
 ```zirric
-annotation Countable {
+attr Countable {
     @Returns(Int)
     length(@Has(Countable) value)
 }
@@ -166,14 +166,14 @@ Annotations are central to tooling, defaults, and protocol-like behavior.
 
 ## Modules and imports
 
-Zirric code is organized into modules. Use `module` to declare the namespace
+Zirric code is organized into modules. Use `mod` to declare the namespace
 and `import` to access other modules.
 
 ```zirric
-module http
+mod http
 import strings
 
-func statusLine(code) {
+fn statusLine(code) {
     return "HTTP " + strings.fromInt(code)
 }
 ```
@@ -183,7 +183,7 @@ func statusLine(code) {
 - Interfaces or inheritance as a primary abstraction
 - Implicit conversions between types
 
-Zirric favors explicit declarations and annotations instead.
+Zirric favors explicit declarations and attributes instead.
 
 ## Learn more
 

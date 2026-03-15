@@ -1,16 +1,16 @@
-module xprelude
+mod xprelude
 
 import code.knabel.dev.zirric_lang.zirric.future {
 	Proposal
 }
 
-// ZE-007: Annotation Binding
-// https://zirric.knabel.dev/proposals/ZE-007-annotation-binding
-let ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-annotation-binding"
+// ZE-007: Attribute Binding
+// https://zirric.knabel.dev/proposals/ZE-007-attribute-binding
+let ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-attribute-binding"
 
-// A bound function of an annotation receives the targeted value as first argument.
+// A bound function of an attribute receives the targeted value as first argument.
 //
-//   annotation Error {
+//   attr Error {
 //     @Bound()
 //     @Returns(String)
 //     debug(err)
@@ -23,4 +23,4 @@ let ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-annotation-binding"
 //
 //   MessageError("msg")[@Error].debug() // err-receiver passed automatically
 @Proposal(ZE_007)
-annotation Bound {}
+attr Bound {}

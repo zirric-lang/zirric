@@ -6,18 +6,18 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 )
 
-var _ CallableRuntimeValue = &AnnotationType{}
+var _ CallableRuntimeValue = &AttributeType{}
 
-type AnnotationType struct {
+type AttributeType struct {
 	Symbol       *ast.Symbol
 	FieldSymbols []*ast.Symbol
-	Annotations  map[TypeId]int
+	Attributes   map[TypeId]int
 }
 
-func MakeAnnotationType(symbol *ast.Symbol) (*AnnotationType, error) {
-	decl, ok := symbol.Decl.(*ast.DeclAnnotation)
+func MakeAttributeType(symbol *ast.Symbol) (*AttributeType, error) {
+	decl, ok := symbol.Decl.(*ast.DeclAttr)
 	if !ok {
-		return nil, fmt.Errorf("declaration is not a DeclAnnotation, got %T", symbol.Decl)
+		return nil, fmt.Errorf("declaration is not a DeclAttr, got %T", symbol.Decl)
 	}
 	fieldSymbols := make([]*ast.Symbol, len(decl.Fields))
 	for i, f := range decl.Fields {
@@ -31,33 +31,33 @@ func MakeAnnotationType(symbol *ast.Symbol) (*AnnotationType, error) {
 		}
 	}
 
-	return &AnnotationType{
+	return &AttributeType{
 		Symbol:       symbol,
 		FieldSymbols: fieldSymbols,
-		Annotations:  nil,
+		Attributes:   nil,
 	}, nil
 }
 
 // Arity implements CallableRuntimeValue.
-func (*AnnotationType) Arity() int {
+func (*AttributeType) Arity() int {
 	return 1
 }
 
 // Inspect implements RuntimeValue.
-func (at *AnnotationType) Inspect() string {
-	return fmt.Sprintf("annotation %s", at.Symbol.Decl.DeclName())
+func (at *AttributeType) Inspect() string {
+	return fmt.Sprintf("attr %s", at.Symbol.Decl.DeclName())
 }
 
 // Lookup implements RuntimeValue.
-func (*AnnotationType) Lookup(name string) RuntimeValue {
+func (*AttributeType) Lookup(name string) RuntimeValue {
 	return nil
 }
 
 // TypeConstantId implements RuntimeValue.
-func (at *AnnotationType) TypeConstantId() TypeId {
+func (at *AttributeType) TypeConstantId() TypeId {
 	return TypeId(*at.Symbol.ConstantId)
 }
 
-func (at *AnnotationType) MakeValue(values []RuntimeValue) *AnnotationValue {
-	return MakeAnnotationValue(at, values)
+func (at *AttributeType) MakeValue(values []RuntimeValue) *AttributeValue {
+	return MakeAttributeValue(at, values)
 }

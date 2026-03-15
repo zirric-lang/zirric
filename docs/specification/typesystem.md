@@ -9,7 +9,7 @@ of types:
 
 - `data` types are the most common types. They are used to store data and can be easily created by calling the type name as a function.
 - `union` types are used to express that their values can be one of a group of types. In other languages they are also called union types.
-- `annotation` types are used to annotate declarations with metadata. They can only be constructed at compile time.
+- `attr` types are used to annotate declarations with metadata. They can only be constructed at compile time.
 - `extern` types are built-in types that are implemented in the runtime like `Func`, `String` or `Int`.
 
 ## Data types
@@ -31,7 +31,7 @@ let person = Person("John", 42)
 
 ### Fields
 
-Fields are the building blocks of data types. They are defined by their name and optionally annotations.
+Fields are the building blocks of data types. They are defined by their name and optionally attributes.
 To increase the expressiveness, function fields can be defined by adding a function signature after the field name.
 
 ```zirric
@@ -40,9 +40,9 @@ data Greetable {
 }
 ```
 
-### Field annotations
+### Field attributes
 
-Fields can be annotated with metadata. These annotations will be processed at compile time and can be accessed at runtime.
+Fields can be annotated with metadata. These attributes will be processed at compile time and can be accessed at runtime.
 
 ```zirric
 data Person {
@@ -73,10 +73,10 @@ union JuristicPerson {
 
 In this example every `Person` and every `Company` is a `JuristicPerson`.
 
-To discriminate union values, use `switch` with annotation cases:
+To discriminate union values, use `switch` with attribute cases:
 
 ```zirric
-func nameOf(juristic) {
+fn nameOf(juristic) {
     switch juristic {
     case @Person:
         juristic.name
@@ -88,20 +88,20 @@ func nameOf(juristic) {
 }
 ```
 
-## Annotation types
+## Attribute types
 
-Annotation types are used to annotate declarations with metadata. They can only be constructed at compile time.
-They are defined by the `annotation` keyword followed by the type name and a list of fields.
+Attribute types are used to annotate declarations with metadata. They can only be constructed at compile time.
+They are defined by the `attr` keyword followed by the type name and a list of fields.
 
 ```zirric
-module json
+mod json
 
-annotation HasKey {
+attr HasKey {
     name
 }
 ```
 
-To annotate a declaration, start with the `@` symbol followed by the annotation type name and a list of field values.
+To annotate a declaration, start with the `@` symbol followed by the attribute type name and a list of field values.
 
 ```zirric
 import json
@@ -117,9 +117,9 @@ data Person {
 }
 ```
 
-### Accessing annotations
+### Accessing attributes
 
-Annotations can be accessed at runtime by using the `reflect` module.
+Attributes can be accessed at runtime by using the `reflect` module.
 
 ```zirric
 import json
@@ -128,13 +128,13 @@ import code.knabel.dev.zirric_lang.zirric.future.reflect
 let person = Person("John", 42)
 let personType = reflect.typeOf(person)
 let fields = reflect.fieldsOf(personType)
-let nameAnnotation = reflect.annotation(fields[0], json.HasKey)
+let nameAnnotation = reflect.attribute(fields[0], json.HasKey)
 ```
 
-## Protocol-like annotations
+## Protocol-like attributes
 
-The prelude defines annotations such as `@Countable` and `@Iterable` to describe
-capabilities of types. The compiler and tooling use these annotations to drive
+The prelude defines attributes such as `@Countable` and `@Iterable` to describe
+capabilities of types. The compiler and tooling use these attributes to drive
 loop behavior and helper utilities.
 
 ```zirric

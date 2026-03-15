@@ -14,12 +14,12 @@ count = count + 1
 
 `_ = expr` explicitly discards a value.
 
-## `func`
+## `fn`
 
-Functions are declared with `func name(params) { ... }`.
+Functions are declared with `fn name(params) { ... }`.
 
 ```zirric
-func greet(name) {
+fn greet(name) {
     "Hello, " + name
 }
 ```
@@ -62,32 +62,32 @@ extern type String {
 }
 ```
 
-## `annotation`
+## `attr`
 
-`annotation` defines metadata schemas used by tooling and the runtime.
+`attr` defines metadata schemas used by tooling and the runtime.
 
 ```zirric
-annotation Returns {
+attr Returns {
     @Type(AnyType) type
 }
 ```
 
-## `module` and `import`
+## `mod` and `import`
 
 Modules group declarations. Imports bring other modules into scope.
 
 ```zirric
-module http
+mod http
 
 import code.knabel.dev.zirric_lang.zirric.prelude
 import code.knabel.dev.zirric_lang.zirric.future.tasks
 ```
 
-## Annotations on declarations
+## Attributes on declarations
 
 Annotations attach metadata and behavior to declarations and fields.
 
 ```zirric
 @Deprecated("use newFn")
-func oldFn() { ... }
+fn oldFn() { ... }
 ```

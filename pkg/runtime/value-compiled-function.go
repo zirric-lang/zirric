@@ -10,12 +10,12 @@ import (
 var _ CallableRuntimeValue = CompiledFunction{}
 
 type CompiledFunction struct {
-	Instructions     op.Instructions
-	Params           int
-	Locals           int
-	Symbol           *ast.Symbol
-	Annotations      map[TypeId]int
-	ParamAnnotations []map[TypeId]int
+	Instructions    op.Instructions
+	Params          int
+	Locals          int
+	Symbol          *ast.Symbol
+	Attributes      map[TypeId]int
+	ParamAttributes []map[TypeId]int
 }
 
 func MakeCompiledFunction(
@@ -39,7 +39,7 @@ func (c CompiledFunction) Arity() int {
 
 // Inspect implements CallableRuntimeValue.
 func (c CompiledFunction) Inspect() string {
-	return fmt.Sprintf("func %s(#%d)", c.Symbol.Decl.DeclName(), c.Arity())
+	return fmt.Sprintf("fn %s(#%d)", c.Symbol.Decl.DeclName(), c.Arity())
 }
 
 // Lookup implements CallableRuntimeValue.

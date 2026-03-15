@@ -7,34 +7,34 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
 )
 
-var _ Decl = &DeclAnnotation{}
+var _ Decl = &DeclAttr{}
 var _ Overviewable = &DeclData{}
 
-type DeclAnnotation struct {
-	Token       token.Token
-	Name        Identifier
-	Fields      []DeclField
-	Annotations AnnotationChain
+type DeclAttr struct {
+	Token      token.Token
+	Name       Identifier
+	Fields     []DeclField
+	Attributes AttributeChain
 
 	Docs *Docs
 }
 
 // TokenLiteral implements Node
-func (d DeclAnnotation) TokenLiteral() token.Token {
+func (d DeclAttr) TokenLiteral() token.Token {
 	return d.Token
 }
 
 // statementNode implements Statement
-func (DeclAnnotation) statementNode() {}
+func (DeclAttr) statementNode() {}
 
 // declarationNode implements Statement
-func (DeclAnnotation) declarationNode() {}
+func (DeclAttr) declarationNode() {}
 
-func (e DeclAnnotation) DeclName() Identifier {
+func (e DeclAttr) DeclName() Identifier {
 	return e.Name
 }
 
-func (e DeclAnnotation) DeclOverview() string {
+func (e DeclAttr) DeclOverview() string {
 	if len(e.Fields) == 0 {
 		return fmt.Sprintf("data %s", e.Name)
 	}
@@ -42,18 +42,18 @@ func (e DeclAnnotation) DeclOverview() string {
 	for _, field := range e.Fields {
 		fieldLines = append(fieldLines, "    "+field.DeclOverview())
 	}
-	return fmt.Sprintf("annotation %s {\n%s\n}", e.Name, strings.Join(fieldLines, "\n"))
+	return fmt.Sprintf("attr %s {\n%s\n}", e.Name, strings.Join(fieldLines, "\n"))
 }
 
-func (e DeclAnnotation) ExportScope() ExportScope {
+func (e DeclAttr) ExportScope() ExportScope {
 	if e.Name.Value[0] == '_' {
 		return ExportScopeInternal
 	}
 	return ExportScopePublic
 }
 
-func MakeDeclAnnotation(tok token.Token, name Identifier) *DeclAnnotation {
-	return &DeclAnnotation{
+func MakeDeclAttr(tok token.Token, name Identifier) *DeclAttr {
+	return &DeclAttr{
 		Token:  tok,
 		Name:   name,
 		Fields: []DeclField{},
@@ -61,16 +61,16 @@ func MakeDeclAnnotation(tok token.Token, name Identifier) *DeclAnnotation {
 	}
 }
 
-func (e *DeclAnnotation) AddField(field DeclField) {
+func (e *DeclAttr) AddField(field DeclField) {
 	e.Fields = append(e.Fields, field)
 }
 
-func (decl DeclAnnotation) ProvidedDocs() *Docs {
+func (decl DeclAttr) ProvidedDocs() *Docs {
 	return decl.Docs
 }
 
 // EnumerateChildNodes implements Decl.
-func (d DeclAnnotation) EnumerateChildNodes(action func(child Node)) {
+func (d DeclAttr) EnumerateChildNodes(action func(child Node)) {
 	action(d.Name)
 	for _, node := range d.Fields {
 		action(node)

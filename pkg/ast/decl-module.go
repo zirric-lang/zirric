@@ -10,9 +10,9 @@ var _ Decl = DeclModule{}
 var _ Overviewable = DeclModule{}
 
 type DeclModule struct {
-	Token       token.Token
-	Name        Identifier
-	Annotations AnnotationChain
+	Token      token.Token
+	Name       Identifier
+	Attributes AttributeChain
 
 	Docs *Docs
 }
@@ -33,7 +33,7 @@ func (e DeclModule) DeclName() Identifier {
 }
 
 func (e DeclModule) DeclOverview() string {
-	return fmt.Sprintf("module %s", e.Name)
+	return fmt.Sprintf("mod %s", e.Name)
 }
 
 func (e DeclModule) ExportScope() ExportScope {

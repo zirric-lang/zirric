@@ -31,7 +31,7 @@ file-types = [
 
 [[grammar]]
 name = "zirric"
-source = { git = "https://code.knabel.dev/zirric-lang/tree-sitter-zirric", rev = "v0.1.0" }
+source = { git = "https://code.knabel.dev/zirric-lang/tree-sitter-zirric", rev = "v0.2.0" }
 
 [language-server.zirric]
 command = "zirric"

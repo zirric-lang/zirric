@@ -160,7 +160,7 @@ func (p *Parser) popSymbolTable() *ast.DeclTable {
 }
 
 func (p *Parser) parseAnnotatedStatementDeclaration(pos StatementPosition) (ast.Statement, []ast.StatementDeclaration) {
-	annos := p.parseAnnotationChain()
+	annos := p.parseAttributeChain()
 	return p.parseStatementInContext(pos, annos)
 }
 
@@ -169,17 +169,17 @@ func (p *Parser) parseAnnotatedStatementDeclaration(pos StatementPosition) (ast.
 //		union <identifier> // empty union
 //		union <identifier> { } // empty union
 //		union <identifier> {
-//		  <identifier> // referencing: no annotations allowed!
+//		  <identifier> // referencing: no attributes allowed!
 //		  <fully-qualified-identifier> // global reference
-//		  <optional:annotations> <data_decl>
-//		  <optional:annotations> <union_decl>
+//		  <optional:attributes> <data_decl>
+//		  <optional:attributes> <union_decl>
 //	 	}
-func (p *Parser) parseUnionDecl(pos StatementPosition, annos ast.AnnotationChain) (*ast.DeclUnion, []ast.StatementDeclaration) {
+func (p *Parser) parseUnionDecl(pos StatementPosition, annos ast.AttributeChain) (*ast.DeclUnion, []ast.StatementDeclaration) {
 	unionToken, _ := p.expect(token.UNION)
 	identToken, _ := p.expect(token.IDENT)
 	ident := ast.MakeIdentifier(identToken)
 	union := ast.MakeDeclUnion(unionToken, ident)
-	union.Annotations = annos
+	union.Attributes = annos
 
 	if !p.curIs(token.LBRACE) {
 		return union, nil
@@ -200,22 +200,22 @@ func (p *Parser) parseUnionDecl(pos StatementPosition, annos ast.AnnotationChain
 
 // parseUnionDeclMember parses union members in these forms:
 //
-//	<identifier> // referencing: no annotations allowed!
+//	<identifier> // referencing: no attributes allowed!
 //	<fully-qualified-identifier> // global reference
-//	<optional:annotations> <data_decl>
-//	<optional:annotations> <union_decl>
+//	<optional:attributes> <data_decl>
+//	<optional:attributes> <union_decl>
 func (p *Parser) parseUnionDeclMember(pos StatementPosition) (*ast.DeclUnionMember, []ast.StatementDeclaration) {
 	if p.curToken.Type == token.IDENT {
 		ref := p.parseStaticIdentifierReference()
 		return ast.MakeDeclUnionMember(ref.TokenLiteral(), ref), nil
 	}
-	annotations := p.parseAnnotationChain()
+	attributes := p.parseAttributeChain()
 	switch p.curToken.Type {
 	case token.DATA:
-		dataDecl := p.parseDataDecl(pos, annotations)
+		dataDecl := p.parseDataDecl(pos, attributes)
 		return ast.MakeDeclUnionMember(dataDecl.Token, ast.StaticReference{dataDecl.DeclName()}), []ast.StatementDeclaration{dataDecl}
 	case token.UNION:
-		unionDecl, childDecls := p.parseUnionDecl(pos, annotations)
+		unionDecl, childDecls := p.parseUnionDecl(pos, attributes)
 		return ast.MakeDeclUnionMember(unionDecl.Token, ast.StaticReference{unionDecl.DeclName()}), append(childDecls, unionDecl)
 	default:
 		p.errUnexpectedToken(token.DATA, token.UNION)
@@ -249,20 +249,20 @@ func (p *Parser) parseStaticIdentifierReference() ast.StaticReference {
 //	data <identifier> // name
 //	data <identifier> { }
 //	data <identifier> {
-//	  <optional:annotations> <identifer> // property name
-//	  <optional:annotations> <identifier>(<param_list>) // function member
-//	  <optional:annotations> <identifier> = <expr> // defaulted member
+//	  <optional:attributes> <identifer> // property name
+//	  <optional:attributes> <identifier>(<param_list>) // function member
+//	  <optional:attributes> <identifier> = <expr> // defaulted member
 //
 //	  // optional
-//	  <optional:annotations> <func_decl>
-//	  <optional:annotations> <var_decl>
+//	  <optional:attributes> <func_decl>
+//	  <optional:attributes> <var_decl>
 //	}
-func (p *Parser) parseDataDecl(_ StatementPosition, annos ast.AnnotationChain) *ast.DeclData {
+func (p *Parser) parseDataDecl(_ StatementPosition, annos ast.AttributeChain) *ast.DeclData {
 	declToken, _ := p.expect(token.DATA)
 	identToken, _ := p.expect(token.IDENT)
 	ident := ast.MakeIdentifier(identToken)
 	data := ast.MakeDeclData(declToken, ident)
-	data.Annotations = annos
+	data.Attributes = annos
 
 	sym := p.curSymbolTable.Insert(data)
 
@@ -289,32 +289,32 @@ func (p *Parser) parseDataDecl(_ StatementPosition, annos ast.AnnotationChain) *
 //	@Annotation() field
 //	@Annotation() method()
 func (p *Parser) parseDataDeclField() *ast.DeclField {
-	annotations := p.parseAnnotationChain()
+	attributes := p.parseAttributeChain()
 	identTok, _ := p.expect(token.IDENT, token.TYPE)
 	name := ast.MakeIdentifier(identTok)
 
 	if !p.curIs(token.LPAREN) {
-		return ast.MakeDeclField(name, nil, annotations)
+		return ast.MakeDeclField(name, nil, attributes)
 	}
 
 	p.expect(token.LPAREN)
 	params := p.parseDeclParameterListWithInsert(false)
 	p.expect(token.RPAREN)
-	return ast.MakeDeclField(name, params, annotations)
+	return ast.MakeDeclField(name, params, attributes)
 }
 
-// parseAnnotationDecl parses the declaration of an annotation type.
+// parseAttrDecl parses the declaration of an attribute type.
 //
-//	annotation <identifier>
-//	annotation <identifier> {
+//	attribute <identifier>
+//	attribute <identifier> {
 //	  // properties
 //	}
-func (p *Parser) parseAnnotationDecl(_ StatementPosition, annos ast.AnnotationChain) *ast.DeclAnnotation {
+func (p *Parser) parseAttrDecl(_ StatementPosition, annos ast.AttributeChain) *ast.DeclAttr {
 	declToken, _ := p.expect(token.ANNOTATION)
 	identToken, _ := p.expect(token.IDENT)
 	ident := ast.MakeIdentifier(identToken)
-	declAnno := ast.MakeDeclAnnotation(declToken, ident)
-	declAnno.Annotations = annos
+	declAnno := ast.MakeDeclAttr(declToken, ident)
+	declAnno.Attributes = annos
 
 	sym := p.curSymbolTable.Insert(declAnno)
 	sym.ChildTable = p.curSymbolTable.MakeChild(declAnno)
@@ -336,7 +336,7 @@ func (p *Parser) parseAnnotationDecl(_ StatementPosition, annos ast.AnnotationCh
 // parseModuleDecl parses a declared module
 //
 //	module <identifier>
-func (p *Parser) parseModuleDecl(pos StatementPosition, annos ast.AnnotationChain) *ast.DeclModule {
+func (p *Parser) parseModuleDecl(pos StatementPosition, annos ast.AttributeChain) *ast.DeclModule {
 	if pos != IN_INITIAL {
 		p.errStatementMisplaced(pos)
 	}
@@ -345,21 +345,21 @@ func (p *Parser) parseModuleDecl(pos StatementPosition, annos ast.AnnotationChai
 	name := ast.MakeIdentifier(nameTok)
 
 	mod := ast.MakeDeclModule(modToken, name)
-	mod.Annotations = annos
+	mod.Attributes = annos
 	return mod
 }
 
 // parseExternDecl parses three possible types:
 // 1. an external type: extern type <identifier> [{ fields }]
-// 2. an external function: extern func <identifier>([params])
+// 2. an external function: extern fn <identifier>([params])
 // 3. an external value: extern let <identifier>
-func (p *Parser) parseExternDecl(pos StatementPosition, annos ast.AnnotationChain) ast.StatementDeclaration {
+func (p *Parser) parseExternDecl(pos StatementPosition, annos ast.AttributeChain) ast.StatementDeclaration {
 	if pos != IN_INITIAL && pos != IN_GLOBAL {
 		p.errStatementMisplaced(pos)
 	}
 	externTok, _ := p.expect(token.EXTERN)
 
-	// Expect one of: type, func, let
+	// Expect one of: type, fn, let
 	if p.curIs(token.TYPE) {
 		return p.parseExternTypeDecl(externTok, annos)
 	} else if p.curIs(token.FUNCTION) {
@@ -369,7 +369,7 @@ func (p *Parser) parseExternDecl(pos StatementPosition, annos ast.AnnotationChai
 	} else {
 		p.detectError(ParseError{
 			Token:   p.curToken,
-			Summary: "expected 'type', 'func', or 'let' after 'extern'",
+			Summary: "expected 'type', 'fn', or 'let' after 'extern'",
 			Details: fmt.Sprintf("got %q", p.curToken.Literal),
 		})
 		return nil
@@ -377,13 +377,13 @@ func (p *Parser) parseExternDecl(pos StatementPosition, annos ast.AnnotationChai
 }
 
 // parseExternTypeDecl parses extern type declarations
-func (p *Parser) parseExternTypeDecl(externTok token.Token, annos ast.AnnotationChain) *ast.DeclExternType {
+func (p *Parser) parseExternTypeDecl(externTok token.Token, annos ast.AttributeChain) *ast.DeclExternType {
 	p.expect(token.TYPE)
 	nameTok, _ := p.expect(token.IDENT)
 	nameIdent := ast.MakeIdentifier(nameTok)
 
 	extern := ast.MakeDeclExternType(externTok, nameIdent)
-	extern.Annotations = annos
+	extern.Attributes = annos
 	sym := p.curSymbolTable.Insert(extern)
 	sym.ChildTable = p.curSymbolTable.MakeChild(extern)
 
@@ -402,14 +402,14 @@ func (p *Parser) parseExternTypeDecl(externTok token.Token, annos ast.Annotation
 	return extern
 }
 
-// parseExternFuncDecl parses extern func declarations
-func (p *Parser) parseExternFuncDecl(externTok token.Token, annos ast.AnnotationChain) *ast.DeclExternFunc {
+// parseExternFuncDecl parses extern fn declarations
+func (p *Parser) parseExternFuncDecl(externTok token.Token, annos ast.AttributeChain) *ast.DeclExternFunc {
 	p.expect(token.FUNCTION)
 	nameTok, _ := p.expect(token.IDENT)
 	nameIdent := ast.MakeIdentifier(nameTok)
 
 	extern := ast.MakeDeclExternFunc(externTok, nameIdent)
-	extern.Annotations = annos
+	extern.Attributes = annos
 	sym := p.curSymbolTable.Insert(extern)
 	sym.ChildTable = p.curSymbolTable.MakeChild(extern)
 	p.curSymbolTable = sym.ChildTable
@@ -426,19 +426,19 @@ func (p *Parser) parseExternFuncDecl(externTok token.Token, annos ast.Annotation
 }
 
 // parseExternValueDecl parses extern let declarations
-func (p *Parser) parseExternValueDecl(externTok token.Token, annos ast.AnnotationChain) *ast.DeclExternValue {
+func (p *Parser) parseExternValueDecl(externTok token.Token, annos ast.AttributeChain) *ast.DeclExternValue {
 	p.expect(token.LET)
 	nameTok, _ := p.expect(token.IDENT, token.TRUE, token.FALSE, token.VOID)
 	nameIdent := ast.MakeIdentifier(nameTok)
 
 	extern := ast.MakeDeclExternValue(externTok, nameIdent)
-	extern.Annotations = annos
+	extern.Attributes = annos
 
 	p.curSymbolTable.Insert(extern)
 	return extern
 }
 
-func (p *Parser) parseFunctionDecl(_ StatementPosition, annos ast.AnnotationChain) *ast.DeclFunc {
+func (p *Parser) parseFunctionDecl(_ StatementPosition, annos ast.AttributeChain) *ast.DeclFunc {
 	funcTok, _ := p.expect(token.FUNCTION)
 	nameTok, _ := p.expect(token.IDENT)
 
@@ -465,13 +465,13 @@ func (p *Parser) parseFunctionDecl(_ StatementPosition, annos ast.AnnotationChai
 	}
 
 	decl := ast.MakeDeclFunc(funcTok, ast.MakeIdentifier(nameTok), impl)
-	decl.Annotations = annos
+	decl.Attributes = annos
 	sym := p.curSymbolTable.Insert(decl)
 	sym.ChildTable = impl.Decls
 	return decl
 }
 
-func (p *Parser) parseImportDecl(pos StatementPosition, annos ast.AnnotationChain) *ast.DeclImport {
+func (p *Parser) parseImportDecl(pos StatementPosition, annos ast.AttributeChain) *ast.DeclImport {
 	if pos != IN_INITIAL && pos != IN_GLOBAL {
 		p.errStatementMisplaced(pos)
 	}
@@ -508,7 +508,7 @@ func (p *Parser) parseImportDecl(pos StatementPosition, annos ast.AnnotationChai
 	return importDecl
 }
 
-func (p *Parser) parseVariableDecl(pos StatementPosition, annos ast.AnnotationChain) *ast.DeclVariable {
+func (p *Parser) parseVariableDecl(pos StatementPosition, annos ast.AttributeChain) *ast.DeclVariable {
 	letTok, _ := p.expect(token.LET)
 	nameTok, _ := p.expect(token.IDENT, token.TRUE, token.FALSE, token.VOID)
 	name := ast.MakeIdentifier(nameTok)
@@ -516,7 +516,7 @@ func (p *Parser) parseVariableDecl(pos StatementPosition, annos ast.AnnotationCh
 	expr := p.parseExpr()
 	let := ast.MakeDeclVariable(letTok, name, expr)
 	let.IsGlobal = pos < IN_FUNC
-	let.Annotations = annos
+	let.Attributes = annos
 
 	p.curSymbolTable.Insert(let)
 	return let
@@ -541,20 +541,20 @@ func (p *Parser) parsePropertyDeclarationList() []ast.DeclField {
 	}
 }
 
-func (p *Parser) parseAnnotationChain() ast.AnnotationChain {
-	var annotationChain ast.AnnotationChain
+func (p *Parser) parseAttributeChain() ast.AttributeChain {
+	var annotationChain ast.AttributeChain
 	for p.curIs(token.AT) {
-		anno := p.parseAnnotationInstance()
+		anno := p.parseAttributeInstance()
 		annotationChain = append(annotationChain, anno)
 	}
 	return annotationChain
 }
 
-func (p *Parser) parseAnnotationInstance() *ast.DeclAnnotationInstance {
+func (p *Parser) parseAttributeInstance() *ast.DeclAttrInstance {
 	atTok, _ := p.expect(token.AT)
 	ref := p.parseStaticIdentifierReference()
 
-	anno := ast.MakeAnnotationInstance(atTok, ref)
+	anno := ast.MakeAttributeInstance(atTok, ref)
 	// Annotation resolution is handled by the analyzer.
 
 	if !p.curIs(token.LPAREN) {
@@ -573,7 +573,7 @@ func (p *Parser) parseDeclParameterListWithInsert(insert bool) []ast.DeclParamet
 	params := make([]ast.DeclParameter, 0)
 
 	for {
-		annos := p.parseAnnotationChain()
+		annos := p.parseAttributeChain()
 		if !p.curIs(token.IDENT) {
 			// eventual errors will be triggered by parent
 			return params
@@ -750,7 +750,7 @@ func (p *Parser) parseExprForBlock(symbols *ast.DeclTable) ast.ExprForBody {
 		if p.curIs(token.EOF) {
 			break
 		}
-		annos := p.parseAnnotationChain()
+		annos := p.parseAttributeChain()
 		if p.curIs(token.LET) {
 			if seenStmt {
 				p.detectError(ParseError{

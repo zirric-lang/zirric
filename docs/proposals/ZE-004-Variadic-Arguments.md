@@ -1,9 +1,9 @@
 ---
-title: ZE-004 - Variadic Annotations
-description: Introduce variadic annotations to allow annotations to accept a variable number of arguments.
+title: ZE-004 - Variadic Attributes
+description: Introduce variadic attributes to allow attributes to accept a variable number of arguments.
 ---
 
-# Variadic Annotations
+# Variadic Attributes
 
 ::: callout draft <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-icon lucide-circle"><circle cx="12" cy="12" r="10"/></svg> Draft
 This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design.
@@ -12,22 +12,22 @@ Features described here may not be implemented as described and cannot be used r
 
 ## Introduction
 
-This proposal introduces **variadic annotations** to Zirric, enabling annotations and functions to accept a variable number of arguments. This feature addresses the need for multi-instance constraints (e.g., `@Requires(Countable, Iterable)`) while maintaining a clean and expressive syntax.
+This proposal introduces **variadic attributes** to Zirric, enabling attributes and functions to accept a variable number of arguments. This feature addresses the need for multi-instance constraints (e.g., `@Requires(Countable, Iterable)`) while maintaining a clean and expressive syntax.
 
-Variadic annotations are particularly useful for:
+Variadic attributes are particularly useful for:
 
 - Representing requirements or constraints on fields, parameters, or types.
 - Improving readability and reducing verbosity compared to alternatives like `@HasAll([Countable, Iterable])`.
 
 ## Motivation
 
-Zirric currently lacks a concise way to specify multiple constraints or requirements in annotations. For example, to enforce that a parameter must satisfy both `Countable` and `Iterable`, users must use workarounds like `@HasAll([Countable, Iterable])`, which is less readable and feels unnatural.
+Zirric currently lacks a concise way to specify multiple constraints or requirements in attributes. For example, to enforce that a parameter must satisfy both `Countable` and `Iterable`, users must use workarounds like `@HasAll([Countable, Iterable])`, which is less readable and feels unnatural.
 
 This could be useful in scenarios such as:
 
 1. **Type Constraints**: Annotating parameters or fields to require multiple traits or interfaces.
    ```zirric
-   func process(@Requires(Countable, Iterable) data) {}
+   fn process(@Requires(Countable, Iterable) data) {}
    ```
 2. **Tooling and Compile-Time Checks**: Enabling tools (e.g., LSP, compilers) to validate that values meet multiple constraints.
 3. **Library Design**: Allowing library authors to define flexible APIs that accept variadic constraints.
@@ -44,23 +44,23 @@ This could be useful in scenarios such as:
 
 ### Syntax
 
-Introduce a `@Variadic` annotation to mark annotation fields as accepting a variable number of arguments. When used, the field's type is treated as an `Array` of the specified element type.
+Introduce a `@Variadic` attribute to mark attribute fields as accepting a variable number of arguments. When used, the field's type is treated as an `Array` of the specified element type.
 
-#### Example: Defining a Variadic Annotation
+#### Example: Defining a Variadic Attribute
 
 ```zirric
-annotation Requires {
+attr Requires {
   @Variadic()
-  @ArgType(Type)  // Accepts types or type-like annotations
+  @ArgType(Type)  // Accepts types or type-like attributes
   constraints
 }
 ```
 
-#### Example: Using a Variadic Annotation
+#### Example: Using a Variadic Attribute
 
 ```zirric
 // Function with variadic constraints
-func process(@Requires(Countable, Iterable) data) {
+fn process(@Requires(Countable, Iterable) data) {
   // `data` must satisfy both `Countable` and `Iterable`
 }
 
@@ -82,12 +82,12 @@ process("hello")    // Compiler error: String is not Iterable
 
 ## Detailed Design
 
-### Annotation Definition
+### Attribute Definition
 
-- The `@Variadic` annotation marks a field within another annotation as variadic.
+- The `@Variadic` attribute marks a field within another attribute as variadic.
 - The field's type is implicitly an `Array` of the type specified by `@ArgType`.
   ```zirric
-  annotation VariadicExample {
+  attr VariadicExample {
     @Variadic()
     @ArgType(Int)  // Accepts variadic Int arguments
     numbers
@@ -96,13 +96,13 @@ process("hello")    // Compiler error: String is not Iterable
 
 ### Usage in Functions
 
-- Variadic annotations can be applied to function parameters, fields, or types.
+- Variadic attributes can be applied to function parameters, fields, or types.
   ```zirric
-  func example(@VariadicExample(1, 2, 3) nums) {}
+  fn example(@VariadicExample(1, 2, 3) nums) {}
   ```
-- Functions themselves can also have a variadic parameter syntax similar to annotations.
+- Functions themselves can also have a variadic parameter syntax similar to attributes.
   ```zirric
-  func sum(@Variadic() @ArgType(Int) numbers) {
+  fn sum(@Variadic() @ArgType(Int) numbers) {
     // `numbers` is an Array of Int
   }
   sum(1, 2, 3, 4)  // Valid call
@@ -110,7 +110,7 @@ process("hello")    // Compiler error: String is not Iterable
 
 ### Compiler and Tooling Support
 
-- **Parsing**: The compiler treats variadic annotation fields as arrays during parsing.
+- **Parsing**: The compiler treats variadic attribute fields as arrays during parsing.
 - **Type Checking**: Ensures all arguments match the element type specified by `@ArgType`.
 - **Error Messages**: Provides clear errors for type mismatches or invalid usage.
 
@@ -122,11 +122,11 @@ process("hello")    // Compiler error: String is not Iterable
 
 ## Changes to the Standard Library
 
-### New Annotations
+### New Attributes
 
 1. **`@Variadic`**:
    - Marks a field as accepting a variable number of arguments.
-   - Only valid within annotation definitions.
+   - Only valid within attribute definitions.
 
 2. **`@ArgType`**:
    - Specifies the type of elements in a variadic field (e.g., `@ArgType(Type)`).
@@ -136,8 +136,8 @@ process("hello")    // Compiler error: String is not Iterable
 
 ```zirric
 // Standard library addition
-annotation Variadic {}
-annotation ArgType {
+attr Variadic {}
+attr ArgType {
   type
 }
 ```
@@ -152,15 +152,15 @@ annotation ArgType {
    - **Pros**: Clean and intuitive.
    - **Cons**: Doesn't translate to function arguments and requires new grammar rules.
 
-3. **Multiple Annotations (e.g., `@Requires(Countable) @Requires(Iterable)`)**:
+3. **Multiple Attributes (e.g., `@Requires(Countable) @Requires(Iterable)`)**:
    - **Pros**: Simple and explicit.
-   - **Cons**: Verbose and ambiguous for single-instance annotations.
+   - **Cons**: Verbose and ambiguous for single-instance attributes.
 
 **Why `@Variadic` Was Chosen**:
 
 - Balances flexibility and readability.
 - Works seamlessly with function arguments and fields.
-- Aligns with Zirric's existing annotation system.
+- Aligns with Zirric's existing attribute system.
 
 ## Acknowledgements
 

@@ -62,10 +62,10 @@ func TestBasicOperations(t *testing.T) {
 
 func TestBasicFunctions(t *testing.T) {
 	tests := []vmTestCase{
-		{input: "func example() { return 42 }\nexample()", expected: 42},
-		{input: "func example() { return }\nexample()", expected: nil},
+		{input: "fn example() { return 42 }\nexample()", expected: 42},
+		{input: "fn example() { return }\nexample()", expected: nil},
 		{input: `
-		func example() {
+		fn example() {
 			let x = 1
 			return x + x
 		}
@@ -74,7 +74,7 @@ func TestBasicFunctions(t *testing.T) {
 		{
 			label: "function with parameter",
 			input: `
-		func twice(n) {
+		fn twice(n) {
 			return n+n
 		}
 		twice(2)
@@ -86,8 +86,8 @@ func TestBasicFunctions(t *testing.T) {
 
 func TestModuleCall(t *testing.T) {
 	moduleA := prepareContextModuleParsing(t, "foo.a", `
-		module a
-		func answer() { return 42 }
+		mod a
+		fn answer() { return 42 }
 	`)
 	mainModule, program := prepareSourceFileParsing(t, `
 		import a = foo.a
@@ -160,12 +160,12 @@ func TestData(t *testing.T) {
 	runVmTests(t, tests)
 }
 
-func TestDataAnnotations(t *testing.T) {
+func TestDataAttributes(t *testing.T) {
 	tests := []vmTestCase{
 		{
-			label: "annotation type call",
+			label: "attribute type call",
 			input: `
-			annotation Job {
+			attr Job {
 				jobName
 			}
 			@Job("Singer")
@@ -177,9 +177,9 @@ func TestDataAnnotations(t *testing.T) {
 			expected: "Singer",
 		},
 		{
-			label: "missing annotation returns void",
+			label: "missing attribute returns void",
 			input: `
-			annotation Job {
+			attr Job {
 				jobName
 			}
 			data Person {
@@ -194,27 +194,27 @@ func TestDataAnnotations(t *testing.T) {
 	runVmTests(t, tests)
 }
 
-func TestFunctionAnnotations(t *testing.T) {
+func TestFunctionAttributes(t *testing.T) {
 	tests := []vmTestCase{
 		{
-			label: "function annotation lookup",
+			label: "function attribute lookup",
 			input: `
-			annotation Job {
+			attr Job {
 				jobName
 			}
 			@Job("Singer")
-			func greet() {}
+			fn greet() {}
 			Job(greet).jobName
 			`,
 			expected: "Singer",
 		},
 		{
-			label: "missing function annotation returns void",
+			label: "missing function attribute returns void",
 			input: `
-			annotation Job {
+			attr Job {
 				jobName
 			}
-			func greet() {}
+			fn greet() {}
 			Job(greet)
 			`,
 			expected: runtime.Void{},
@@ -224,22 +224,22 @@ func TestFunctionAnnotations(t *testing.T) {
 	runVmTests(t, tests)
 }
 
-func TestExternAnnotations(t *testing.T) {
+func TestExternAttributes(t *testing.T) {
 	tests := []vmTestCase{
 		{
-			label: "extern func annotation lookup",
+			label: "extern fn attribute lookup",
 			input: `
-			annotation Job { jobName }
+			attr Job { jobName }
 			@Job("Singer")
-			extern func greet(name)
+			extern fn greet(name)
 			Job(greet).jobName
 			`,
 			expected: "Singer",
 		},
 		{
-			label: "extern type annotation lookup",
+			label: "extern type attribute lookup",
 			input: `
-			annotation Job { jobName }
+			attr Job { jobName }
 			@Job("Actor")
 			extern type Person {}
 			Job(Person).jobName
@@ -251,14 +251,14 @@ func TestExternAnnotations(t *testing.T) {
 	runVmTests(t, tests)
 }
 
-func TestAnnotationTypeAnnotations(t *testing.T) {
+func TestAttributeTypeAnnotations(t *testing.T) {
 	tests := []vmTestCase{
 		{
-			label: "annotation type annotation lookup",
+			label: "attribute type attribute lookup",
 			input: `
-			annotation Meta { label }
+			attr Meta { label }
 			@Meta("Primary")
-			annotation Job { jobName }
+			attr Job { jobName }
 			Meta(Job).label
 			`,
 			expected: "Primary",
@@ -268,14 +268,14 @@ func TestAnnotationTypeAnnotations(t *testing.T) {
 	runVmTests(t, tests)
 }
 
-func TestAnnotationValueAnnotations(t *testing.T) {
+func TestAttributeValueAnnotations(t *testing.T) {
 	tests := []vmTestCase{
 		{
-			label: "annotation value annotation lookup",
+			label: "attribute value attribute lookup",
 			input: `
-			annotation Meta { label }
+			attr Meta { label }
 			@Meta("Primary")
-			annotation Job { jobName }
+			attr Job { jobName }
 			@Job("Singer")
 			data Person {
 				name
@@ -293,7 +293,7 @@ func TestFastBenchmark(t *testing.T) {
 	tests := []vmTestCase{
 		{
 			input: `
-	func fib(n) {
+	fn fib(n) {
 		return if n < 2 {
 			n
 		} else {
@@ -311,7 +311,7 @@ func TestFastBenchmark(t *testing.T) {
 
 func BenchmarkFib10(t *testing.B) {
 	runBench(t, `
-	func fib(n) {
+	fn fib(n) {
 		return if n < 2 {
 			n
 		} else {
@@ -325,7 +325,7 @@ func BenchmarkFib10(t *testing.B) {
 
 func BenchmarkFib28(t *testing.B) {
 	runBench(t, `
-	func fib(n) {
+	fn fib(n) {
 		return if n < 2 {
 			n
 		} else {
@@ -339,7 +339,7 @@ func BenchmarkFib28(t *testing.B) {
 
 func BenchmarkFib30(t *testing.B) {
 	runBench(t, `
-	func fib(n) {
+	fn fib(n) {
 		return if n < 2 {
 			n
 		} else {
@@ -353,7 +353,7 @@ func BenchmarkFib30(t *testing.B) {
 
 func BenchmarkFib32(t *testing.B) {
 	runBench(t, `
-	func fib(n) {
+	fn fib(n) {
 		return if n < 2 {
 			n
 		} else {
@@ -378,7 +378,7 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "infinite loop break",
 			input: `
-			func example() {
+			fn example() {
 				for { break }
 				return 1
 			}
@@ -389,7 +389,7 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "conditional loop false",
 			input: `
-			func example() {
+			fn example() {
 				for false { return 2 }
 				return 3
 			}
@@ -400,7 +400,7 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "conditional loop break",
 			input: `
-			func example() {
+			fn example() {
 				for true { break }
 				return 4
 			}
@@ -411,7 +411,7 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "nested continue break",
 			input: `
-			func example() {
+			fn example() {
 				for {
 					if false {
 						continue
@@ -428,7 +428,7 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "return inside loop",
 			input: `
-			func example() {
+			fn example() {
 				for { return 6 }
 			}
 			example()
@@ -438,7 +438,7 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "statement after loop",
 			input: `
-			func example() {
+			fn example() {
 				for false { return 7 }
 				let x = 8
 				return x
@@ -450,7 +450,7 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "array collection loop literal",
 			input: `
-			func example() {
+			fn example() {
 				for item <- [1, 2] { return item }
 				return 9
 			}
@@ -461,7 +461,7 @@ func TestForStatements(t *testing.T) {
 		{
 			label: "array collection loop empty",
 			input: `
-			func example() {
+			fn example() {
 				for item <- [] { return 1 }
 				return 2
 			}
@@ -573,7 +573,7 @@ func TestVMExtend(t *testing.T) {
 	})
 
 	t.Run("ExtendGlobals makes new globals accessible", func(t *testing.T) {
-		module, program := prepareSourceFileParsing(t, "func foo() {}")
+		module, program := prepareSourceFileParsing(t, "fn foo() {}")
 		resolver := newTestModuleResolver(module)
 		analysis := analyzer.New(resolver)
 		if errs, _ := analysis.Analyze(module, false); len(errs) > 0 {
@@ -612,7 +612,7 @@ func TestVMExtend(t *testing.T) {
 	})
 
 	t.Run("CallFunction executes a zero-arg compiled function", func(t *testing.T) {
-		module, program := prepareSourceFileParsing(t, "func addOne() { return 1 + 2 }")
+		module, program := prepareSourceFileParsing(t, "fn addOne() { return 1 + 2 }")
 		resolver := newTestModuleResolver(module)
 		analysis := analyzer.New(resolver)
 		if errs, _ := analysis.Analyze(module, false); len(errs) > 0 {
@@ -807,8 +807,8 @@ func testValue(expected interface{}, actual runtime.RuntimeValue) error {
 		return testDict(map[any]any(expected), actual)
 	case data:
 		return testData(expected, actual)
-	case annotation:
-		return testAnnotation(expected, actual)
+	case attribute:
+		return testAttribute(expected, actual)
 	default:
 		return fmt.Errorf("unhandled type %T", expected)
 	}
@@ -946,19 +946,19 @@ func testData(expected data, actual runtime.RuntimeValue) error {
 	return nil
 }
 
-type annotation struct {
+type attribute struct {
 	typeId runtime.TypeId
 	values []any
 }
 
-func testAnnotation(expected annotation, actual runtime.RuntimeValue) error {
-	result, ok := actual.(*runtime.AnnotationValue)
+func testAttribute(expected attribute, actual runtime.RuntimeValue) error {
+	result, ok := actual.(*runtime.AttributeValue)
 	if !ok {
-		return fmt.Errorf("object is not Annotation. got=%T (%+v)", actual, actual)
+		return fmt.Errorf("object is not Attribute. got=%T (%+v)", actual, actual)
 	}
 
 	if result.TypeConstantId() != expected.typeId {
-		return fmt.Errorf("annotation type does not match. got=%q, want=%q", result.TypeConstantId(), expected.typeId)
+		return fmt.Errorf("attribute type does not match. got=%q, want=%q", result.TypeConstantId(), expected.typeId)
 	}
 
 	if len(expected.values) != len(result.Values) {
@@ -994,7 +994,7 @@ func TestReplRollbackAndReuse(t *testing.T) {
 	// 2. Successful `let x = 42`        — same name now works.
 	// 3. `x`                            — must return 42 (not panic with index OOB).
 
-	module := prepareContextModuleParsing(t, "test", "module repl")
+	module := prepareContextModuleParsing(t, "test", "mod repl")
 	resolver := newTestModuleResolver(module)
 	analysis := analyzer.New(resolver)
 	if errs, _ := analysis.Analyze(module, true); len(errs) > 0 {

@@ -1,24 +1,24 @@
-# Annotations
+# Attributes
 
-Zirric supports annotating declarations with metadata. Annotations are processed
+Zirric supports annotating declarations with metadata via attributes. Attributes are processed
 at compile time and can be accessed at runtime via reflection.
 
 ## Syntax
 
-Annotations are written as `@Name(args...)`. Arguments are comma-separated
+Attributes are written as `@Name(args...)`. Arguments are comma-separated
 expressions, including literals, identifiers, or function literals.
 
 ```zirric
-@AnnotationName("argument", 123)
+@AttrName("argument", 123)
 data MyData
 ```
 
-Before being able to use an annotation, it must be declared and imported:
+Before being able to use an attribute, it must be declared and imported:
 
 ```zirric
-module my
+mod my
 
-annotation AnnotationName {
+attr AttrName {
     field
     field2
 }
@@ -26,21 +26,21 @@ annotation AnnotationName {
 // other module
 import my
 
-@my.AnnotationName
+@my.AttrName
 data SomeDeclaration
 ```
 
 ### Syntactic sugar
 
-If the annotation has no arguments, the parentheses can be omitted.
+If the attribute has no arguments, the parentheses can be omitted.
 
 ```zirric
-@AnnotationName
+@AttrName
 data MyData
 ```
 
-If the referenced type is not an annotation, it will implicitly be converted to
-an `@Type` annotation.
+If the referenced type is not an attribute, it will implicitly be converted to
+an `@Type` attribute.
 
 ```zirric
 data MyData {
@@ -49,12 +49,12 @@ data MyData {
 }
 ```
 
-## Built-in annotations
+## Built-in attributes
 
-The prelude defines common annotations used by the compiler, runtime, and tools:
+The prelude defines common attributes used by the compiler, runtime, and tools:
 
 - `@Type(T)`: declares a value or field to be of type `T`.
-- `@Has(AnnotationType)`: requires values to carry a specific annotation.
+- `@Has(AttributeType)`: requires values to carry a specific attribute.
 - `@Returns(T)`: declares a function return type.
 - `@Default(value)`: documents a default value.
 - `@Doc(text)`: attaches a documentation string.
@@ -64,7 +64,7 @@ The prelude defines common annotations used by the compiler, runtime, and tools:
 ### `@Type`
 
 `@Type` specifies the type of a declaration. It is also used implicitly when
-annotating with non-annotation types like `@String`.
+annotating with non-attribute types like `@String`.
 
 ```zirric
 data MyData {

@@ -18,9 +18,9 @@ func TestTextDocumentHover(t *testing.T) {
 	}{
 		{
 			name:        "hover over func name",
-			src:         "func greet() {}",
+			src:         "fn greet() {}",
 			pos:         protocol.Position{Line: 0, Character: 6},
-			wantContain: "func greet",
+			wantContain: "fn greet",
 		},
 		{
 			name:        "hover over data name",
@@ -29,20 +29,20 @@ func TestTextDocumentHover(t *testing.T) {
 			wantContain: "data Point",
 		},
 		{
-			name:        "hover over annotation name",
-			src:         "annotation Numeric { toNumber }",
+			name:        "hover over attribute name",
+			src:         "attr Numeric { toNumber }",
 			pos:         protocol.Position{Line: 0, Character: 12},
-			wantContain: "annotation Numeric",
+			wantContain: "attr Numeric",
 		},
 		{
 			name:    "hover over whitespace returns nil",
-			src:     "func greet() {}",
-			pos:     protocol.Position{Line: 0, Character: 4},
+			src:     "fn greet() {}",
+			pos:     protocol.Position{Line: 0, Character: 2},
 			wantNil: true,
 		},
 		{
 			name:    "hover over unknown word returns nil",
-			src:     "func greet() {}",
+			src:     "fn greet() {}",
 			pos:     protocol.Position{Line: 0, Character: 14},
 			wantNil: true,
 		},
@@ -140,9 +140,9 @@ func TestWordAtPosition(t *testing.T) {
 		wantWord string
 		wantNone bool
 	}{
-		{"func greet() {}", protocol.Position{Line: 0, Character: 6}, "greet", false},
-		{"func greet() {}", protocol.Position{Line: 0, Character: 14}, "", true}, // space before '{'
-		{"func greet() {}", protocol.Position{Line: 0, Character: 0}, "func", false},
+		{"fn greet() {}", protocol.Position{Line: 0, Character: 6}, "greet", false},
+		{"fn greet() {}", protocol.Position{Line: 0, Character: 14}, "", true}, // space before '{'
+		{"fn greet() {}", protocol.Position{Line: 0, Character: 0}, "fn", false},
 		{"hello\nworld", protocol.Position{Line: 1, Character: 2}, "world", false},
 	}
 	for _, tt := range tests {

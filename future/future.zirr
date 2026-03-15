@@ -5,8 +5,8 @@
 //
 // Not all proposals are implemented nor complete.
 // Some require addtional syntax not yet available in Zirric.
-module future
+mod future
 
-annotation Proposal {
+attr Proposal {
 	@String link
 }

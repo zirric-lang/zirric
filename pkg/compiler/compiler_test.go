@@ -565,7 +565,7 @@ func TestDeclFunction(t *testing.T) {
 	tests := []compilerTestCase{
 		{
 			label: "function with value return",
-			input: "func example() { return 42 }",
+			input: "fn example() { return 42 }",
 			expectedConstants: []any{
 				compiledFunction{
 					name:   "example",
@@ -581,7 +581,7 @@ func TestDeclFunction(t *testing.T) {
 		},
 		{
 			label: "function call with value return",
-			input: "func example() { return 42 }\nexample()",
+			input: "fn example() { return 42 }\nexample()",
 			expectedConstants: []any{
 				compiledFunction{
 					name:   "example",
@@ -601,7 +601,7 @@ func TestDeclFunction(t *testing.T) {
 		},
 		{
 			label: "function with blank return",
-			input: "func example() { return }",
+			input: "fn example() { return }",
 			expectedConstants: []any{
 				compiledFunction{
 					name:   "example",
@@ -616,7 +616,7 @@ func TestDeclFunction(t *testing.T) {
 		},
 		{
 			label: "function call with blank return",
-			input: "func example() { return }\nexample()",
+			input: "fn example() { return }\nexample()",
 			expectedConstants: []any{
 				compiledFunction{
 					name:   "example",
@@ -637,7 +637,7 @@ func TestDeclFunction(t *testing.T) {
 			label: "function can access global variables",
 			input: `
 			let x = 42
-			func example() {
+			fn example() {
 				return x
 			}
 			`,
@@ -660,7 +660,7 @@ func TestDeclFunction(t *testing.T) {
 		{
 			label: "function can access global variables declared after usage",
 			input: `
-			func example() {
+			fn example() {
 				return x
 			}
 			let x = 42
@@ -684,7 +684,7 @@ func TestDeclFunction(t *testing.T) {
 		{
 			label: "function with local variable",
 			input: `
-			func example() {
+			fn example() {
 				let x = 42
 				return x+x
 			}
@@ -824,7 +824,7 @@ func TestModuleDecl(t *testing.T) {
 	}{
 		{
 			label: "module declaration provides global slot",
-			input: "module foo",
+			input: "mod foo",
 			expectedGlobals: [][]code.Instructions{
 				{
 					code.Make(code.Const, 0),
@@ -842,7 +842,7 @@ func TestModuleDecl(t *testing.T) {
 		},
 		{
 			label: "module identifier emits GetGlobal",
-			input: "module foo\nfoo",
+			input: "mod foo\nfoo",
 			expectedGlobals: [][]code.Instructions{
 				{
 					code.Make(code.Const, 0),
@@ -899,7 +899,7 @@ func TestModuleDecl(t *testing.T) {
 }
 
 func TestModuleDeclRequiresContextModule(t *testing.T) {
-	module, program := prepareSourceFileParsing(t, "module foo")
+	module, program := prepareSourceFileParsing(t, "mod foo")
 	resolver := newTestModuleResolver(module, nil)
 	comp := compiler.New(resolver)
 	if err := comp.Compile(program); err == nil {
@@ -973,13 +973,13 @@ func TestImports(t *testing.T) {
 
 func TestModuleValueMultipleModules(t *testing.T) {
 	moduleA := prepareContextModuleParsing(t, "foo.a", `
-		module a
+		mod a
 		let pub = 1
 		let _priv = 2
 	`)
 	moduleB := prepareContextModuleParsing(t, "bar.b", `
-		module b
-		func fn() { return 1 }
+		mod b
+		fn compute() { return 1 }
 		let val = 3
 		let _priv = 4
 	`)
@@ -1020,14 +1020,14 @@ func TestModuleValueMultipleModules(t *testing.T) {
 	if bName != "bar.b" {
 		t.Fatalf("unexpected module name for b: %q", bName)
 	}
-	if diff := cmp.Diff([]string{"fn", "val"}, bExports); diff != "" {
+	if diff := cmp.Diff([]string{"compute", "val"}, bExports); diff != "" {
 		t.Fatalf("unexpected exports for b (-want +got):\n%s", diff)
 	}
 }
 
 func TestModuleDeclLookup(t *testing.T) {
 	module := prepareContextModuleParsing(t, "module.test", `
-		module foo
+		mod foo
 		let value = 1
 		foo.value
 	`)
@@ -1059,9 +1059,9 @@ func TestModuleDeclLookup(t *testing.T) {
 	}
 }
 
-func TestDataTypeAnnotations(t *testing.T) {
+func TestDataTypeAttributes(t *testing.T) {
 	module := prepareContextModuleParsing(t, "module.test", `
-		annotation Example { value }
+		attr Example { value }
 		@Example(1)
 		data Foo {}
 	`)
@@ -1075,14 +1075,14 @@ func TestDataTypeAnnotations(t *testing.T) {
 	bytecode := comp.Bytecode()
 
 	var dataType *runtime.DataType
-	var annoType *runtime.AnnotationType
+	var annoType *runtime.AttributeType
 	for _, constant := range bytecode.Constants {
 		switch constant := constant.(type) {
 		case *runtime.DataType:
 			if constant.Symbol.Name == "Foo" {
 				dataType = constant
 			}
-		case *runtime.AnnotationType:
+		case *runtime.AttributeType:
 			if constant.Symbol.Name == "Example" {
 				annoType = constant
 			}
@@ -1094,21 +1094,21 @@ func TestDataTypeAnnotations(t *testing.T) {
 		return
 	}
 	if annoType == nil {
-		t.Fatal("missing annotation type constant for Example")
+		t.Fatal("missing attribute type constant for Example")
 		return
 	}
 
-	if len(dataType.Annotations) != 1 {
-		t.Fatalf("unexpected annotation count: %d", len(dataType.Annotations))
+	if len(dataType.Attributes) != 1 {
+		t.Fatalf("unexpected attribute count: %d", len(dataType.Attributes))
 	}
 
 	typeId := runtime.TypeId(*annoType.Symbol.ConstantId)
-	globalId, ok := dataType.Annotations[typeId]
+	globalId, ok := dataType.Attributes[typeId]
 	if !ok {
-		t.Fatalf("missing annotation for type id %d", typeId)
+		t.Fatalf("missing attribute for type id %d", typeId)
 	}
 	if globalId >= len(bytecode.Globals) {
-		t.Fatalf("annotation global id out of range: %d", globalId)
+		t.Fatalf("attribute global id out of range: %d", globalId)
 	}
 
 	scope := bytecode.Globals[globalId]
@@ -1119,36 +1119,36 @@ func TestDataTypeAnnotations(t *testing.T) {
 			t.Fatalf("unknown opcode: %s", err)
 		}
 		operands, read := code.ReadOperands(def, scope.Instructions[i+1:])
-		if code.Opcode(scope.Instructions[i]) == code.MakeAnnotation {
+		if code.Opcode(scope.Instructions[i]) == code.MakeAttribute {
 			found = true
 			if len(operands) != 1 || operands[0] != 1 {
-				t.Fatalf("unexpected annotation operand: %v", operands)
+				t.Fatalf("unexpected attribute operand: %v", operands)
 			}
 		}
 		i += 1 + read
 	}
 	if !found {
-		t.Fatal("annotation global missing MakeAnnotation instruction")
+		t.Fatal("attribute global missing MakeAttribute instruction")
 	}
 }
 
-func TestDeclAnnotation(t *testing.T) {
+func TestDeclAttr(t *testing.T) {
 	tests := []compilerTestCase{
 		{
-			label: "empty annotation declaration",
-			input: `annotation Example`,
+			label: "empty attribute declaration",
+			input: `attr Example`,
 			expectedConstants: []any{
-				compiledAnnotationType{
+				compiledAttributeType{
 					name:   "Example",
 					fields: []compiledField{},
 				},
 			},
 		},
 		{
-			label: "annotation declaration",
-			input: `annotation Example { field }`,
+			label: "attribute declaration",
+			input: `attr Example { field }`,
 			expectedConstants: []any{
-				compiledAnnotationType{
+				compiledAttributeType{
 					name:   "Example",
 					fields: []compiledField{{name: "field"}},
 				},
@@ -1159,11 +1159,11 @@ func TestDeclAnnotation(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
-func TestFunctionAnnotations(t *testing.T) {
+func TestFunctionAttributes(t *testing.T) {
 	module := prepareContextModuleParsing(t, "module.test", `
-		annotation Job { jobName }
+		attr Job { jobName }
 		@Job("Singer")
-		func greet(@Job("Vocalist") name) {}
+		fn greet(@Job("Vocalist") name) {}
 	`)
 	resolver := newTestModuleResolver(module, nil)
 
@@ -1175,14 +1175,14 @@ func TestFunctionAnnotations(t *testing.T) {
 	bytecode := comp.Bytecode()
 
 	var funcConst *runtime.CompiledFunction
-	var annoType *runtime.AnnotationType
+	var annoType *runtime.AttributeType
 	for _, constant := range bytecode.Constants {
 		switch constant := constant.(type) {
 		case *runtime.CompiledFunction:
 			if constant.Symbol.Name == "greet" {
 				funcConst = constant
 			}
-		case *runtime.AnnotationType:
+		case *runtime.AttributeType:
 			if constant.Symbol.Name == "Job" {
 				annoType = constant
 			}
@@ -1194,34 +1194,34 @@ func TestFunctionAnnotations(t *testing.T) {
 		return
 	}
 	if annoType == nil {
-		t.Fatal("missing annotation type constant for Job")
+		t.Fatal("missing attribute type constant for Job")
 		return
 	}
 
 	typeId := runtime.TypeId(*annoType.Symbol.ConstantId)
-	if funcConst.Annotations == nil {
-		t.Fatal("missing function annotations map")
+	if funcConst.Attributes == nil {
+		t.Fatal("missing function attributes map")
 	}
-	if _, ok := funcConst.Annotations[typeId]; !ok {
-		t.Fatalf("missing function annotation for type id %d", typeId)
+	if _, ok := funcConst.Attributes[typeId]; !ok {
+		t.Fatalf("missing function attribute for type id %d", typeId)
 	}
 
-	if len(funcConst.ParamAnnotations) != 1 {
-		t.Fatalf("unexpected param annotation length: %d", len(funcConst.ParamAnnotations))
+	if len(funcConst.ParamAttributes) != 1 {
+		t.Fatalf("unexpected param attribute length: %d", len(funcConst.ParamAttributes))
 	}
-	if funcConst.ParamAnnotations[0] == nil {
-		t.Fatal("missing param annotations map")
+	if funcConst.ParamAttributes[0] == nil {
+		t.Fatal("missing param attributes map")
 	}
-	if _, ok := funcConst.ParamAnnotations[0][typeId]; !ok {
-		t.Fatalf("missing param annotation for type id %d", typeId)
+	if _, ok := funcConst.ParamAttributes[0][typeId]; !ok {
+		t.Fatalf("missing param attribute for type id %d", typeId)
 	}
 }
 
-func TestExternAnnotations(t *testing.T) {
+func TestExternAttributes(t *testing.T) {
 	module := prepareContextModuleParsing(t, "module.test", `
-		annotation Job { jobName }
+		attr Job { jobName }
 		@Job("Singer")
-		extern func greet(@Job("Vocalist") name)
+		extern fn greet(@Job("Vocalist") name)
 		@Job("Actor")
 		extern type Person {}
 	`)
@@ -1236,7 +1236,7 @@ func TestExternAnnotations(t *testing.T) {
 
 	var externFunc runtime.ExternFunc
 	var externType runtime.SimpleType
-	var annoType *runtime.AnnotationType
+	var annoType *runtime.AttributeType
 	for _, constant := range bytecode.Constants {
 		switch constant := constant.(type) {
 		case runtime.ExternFunc:
@@ -1247,7 +1247,7 @@ func TestExternAnnotations(t *testing.T) {
 			if constant.Decl.Name == "Person" {
 				externType = constant
 			}
-		case *runtime.AnnotationType:
+		case *runtime.AttributeType:
 			if constant.Symbol.Name == "Job" {
 				annoType = constant
 			}
@@ -1255,39 +1255,39 @@ func TestExternAnnotations(t *testing.T) {
 	}
 
 	if annoType == nil {
-		t.Fatal("missing annotation type constant for Job")
+		t.Fatal("missing attribute type constant for Job")
 		return
 	}
 	typeId := runtime.TypeId(*annoType.Symbol.ConstantId)
-	if externFunc.Annotations == nil {
-		t.Fatal("missing extern func annotations map")
+	if externFunc.Attributes == nil {
+		t.Fatal("missing extern fn attributes map")
 	}
-	if _, ok := externFunc.Annotations[typeId]; !ok {
-		t.Fatalf("missing extern func annotation for type id %d", typeId)
+	if _, ok := externFunc.Attributes[typeId]; !ok {
+		t.Fatalf("missing extern fn attribute for type id %d", typeId)
 	}
-	if len(externFunc.ParamAnnotations) != 1 {
-		t.Fatalf("unexpected extern func param annotation length: %d", len(externFunc.ParamAnnotations))
+	if len(externFunc.ParamAttributes) != 1 {
+		t.Fatalf("unexpected extern fn param attribute length: %d", len(externFunc.ParamAttributes))
 	}
-	if externFunc.ParamAnnotations[0] == nil {
-		t.Fatal("missing extern func param annotations map")
+	if externFunc.ParamAttributes[0] == nil {
+		t.Fatal("missing extern fn param attributes map")
 	}
-	if _, ok := externFunc.ParamAnnotations[0][typeId]; !ok {
-		t.Fatalf("missing extern func param annotation for type id %d", typeId)
+	if _, ok := externFunc.ParamAttributes[0][typeId]; !ok {
+		t.Fatalf("missing extern fn param attribute for type id %d", typeId)
 	}
 
-	if externType.Annotations == nil {
-		t.Fatal("missing extern type annotations map")
+	if externType.Attributes == nil {
+		t.Fatal("missing extern type attributes map")
 	}
-	if _, ok := externType.Annotations[typeId]; !ok {
-		t.Fatalf("missing extern type annotation for type id %d", typeId)
+	if _, ok := externType.Attributes[typeId]; !ok {
+		t.Fatalf("missing extern type attribute for type id %d", typeId)
 	}
 }
 
-func TestAnnotationTypeAnnotations(t *testing.T) {
+func TestAttributeTypeAnnotations(t *testing.T) {
 	module := prepareContextModuleParsing(t, "module.test", `
-		annotation Meta { label }
+		attr Meta { label }
 		@Meta("Primary")
-		annotation Job { jobName }
+		attr Job { jobName }
 	`)
 	resolver := newTestModuleResolver(module, nil)
 
@@ -1298,10 +1298,10 @@ func TestAnnotationTypeAnnotations(t *testing.T) {
 
 	bytecode := comp.Bytecode()
 
-	var annoType *runtime.AnnotationType
-	var metaType *runtime.AnnotationType
+	var annoType *runtime.AttributeType
+	var metaType *runtime.AttributeType
 	for _, constant := range bytecode.Constants {
-		if at, ok := constant.(*runtime.AnnotationType); ok {
+		if at, ok := constant.(*runtime.AttributeType); ok {
 			if at.Symbol.Name == "Job" {
 				annoType = at
 			}
@@ -1312,20 +1312,20 @@ func TestAnnotationTypeAnnotations(t *testing.T) {
 	}
 
 	if annoType == nil {
-		t.Fatal("missing annotation type constant for Job")
+		t.Fatal("missing attribute type constant for Job")
 		return
 	}
 	if metaType == nil {
-		t.Fatal("missing annotation type constant for Meta")
+		t.Fatal("missing attribute type constant for Meta")
 		return
 	}
 
 	typeId := runtime.TypeId(*metaType.Symbol.ConstantId)
-	if annoType.Annotations == nil {
-		t.Fatal("missing annotation type annotations map")
+	if annoType.Attributes == nil {
+		t.Fatal("missing attribute type attributes map")
 	}
-	if _, ok := annoType.Annotations[typeId]; !ok {
-		t.Fatalf("missing annotation type annotation for type id %d", typeId)
+	if _, ok := annoType.Attributes[typeId]; !ok {
+		t.Fatalf("missing attribute type attribute for type id %d", typeId)
 	}
 }
 
@@ -1378,7 +1378,7 @@ func prepareSourceFileParsing(t *testing.T, input string) (*ast.ContextModule, *
 
 func TestInitFunctionWrapping(t *testing.T) {
 	t.Run("module with no statements produces no __init__", func(t *testing.T) {
-		module := prepareContextModuleParsing(t, "module.test", "module foo\nfunc bar() {}")
+		module := prepareContextModuleParsing(t, "module.test", "mod foo\nfn bar() {}")
 		resolver := newTestModuleResolver(module, nil)
 		comp := compiler.New(resolver)
 		if err := comp.Compile(module); err != nil {
@@ -1392,7 +1392,7 @@ func TestInitFunctionWrapping(t *testing.T) {
 	})
 
 	t.Run("module with statements wraps them in __init__", func(t *testing.T) {
-		module := prepareContextModuleParsing(t, "module.test", "module foo\n1 + 2")
+		module := prepareContextModuleParsing(t, "module.test", "mod foo\n1 + 2")
 		resolver := newTestModuleResolver(module, nil)
 		comp := compiler.New(resolver)
 		if err := comp.Compile(module); err != nil {
@@ -1422,7 +1422,7 @@ func TestInitFunctionWrapping(t *testing.T) {
 	})
 
 	t.Run("__init__ accesses module-level globals", func(t *testing.T) {
-		module := prepareContextModuleParsing(t, "module.test", "module foo\nlet x = 5\nx")
+		module := prepareContextModuleParsing(t, "module.test", "mod foo\nlet x = 5\nx")
 		resolver := newTestModuleResolver(module, nil)
 		comp := compiler.New(resolver)
 		if err := comp.Compile(module); err != nil {
@@ -1451,7 +1451,7 @@ func TestInitFunctionWrapping(t *testing.T) {
 
 func TestCompileSourceFileIncremental(t *testing.T) {
 	t.Run("declaration only adds constant without init", func(t *testing.T) {
-		module, src1 := prepareSourceFileParsing(t, "func foo() {}")
+		module, src1 := prepareSourceFileParsing(t, "fn foo() {}")
 		resolver := newTestModuleResolver(module, nil)
 		analysis := analyzer.New(resolver)
 		if errs, _ := analysis.Analyze(module, false); len(errs) > 0 {
@@ -1462,7 +1462,7 @@ func TestCompileSourceFileIncremental(t *testing.T) {
 			t.Fatalf("initial compile: %s", err)
 		}
 
-		l, err := lexer.New(staticmodule.NewSourceString("testing:///test/line2.zirr", "func bar() {}"))
+		l, err := lexer.New(staticmodule.NewSourceString("testing:///test/line2.zirr", "fn bar() {}"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1486,7 +1486,7 @@ func TestCompileSourceFileIncremental(t *testing.T) {
 	})
 
 	t.Run("statement produces __init__ constant", func(t *testing.T) {
-		module, src1 := prepareSourceFileParsing(t, "func foo() {}")
+		module, src1 := prepareSourceFileParsing(t, "fn foo() {}")
 		resolver := newTestModuleResolver(module, nil)
 		analysis := analyzer.New(resolver)
 		if errs, _ := analysis.Analyze(module, false); len(errs) > 0 {
@@ -1784,14 +1784,14 @@ func testConstants(
 					return fmt.Errorf("wrong field name at %d.%d.\nwant=%q\ngot=%q", i, j, field.name, got.FieldSymbols[j].Name)
 				}
 			}
-		case compiledAnnotationType:
-			got, ok := actual[i].(*runtime.AnnotationType)
+		case compiledAttributeType:
+			got, ok := actual[i].(*runtime.AttributeType)
 			if !ok {
-				return fmt.Errorf("constant %d is not an annotation type: %T", i, actual[i])
+				return fmt.Errorf("constant %d is not an attribute type: %T", i, actual[i])
 			}
 
 			if got.Symbol.Name != want.name {
-				return fmt.Errorf("wrong annotation type name at %d.\nwant=%q\ngot=%q", i, want.name, got.Symbol.Name)
+				return fmt.Errorf("wrong attribute type name at %d.\nwant=%q\ngot=%q", i, want.name, got.Symbol.Name)
 			}
 
 			if len(got.FieldSymbols) != len(want.fields) {
@@ -1805,10 +1805,10 @@ func testConstants(
 			}
 
 			if got.Symbol.ConstantId == nil {
-				return fmt.Errorf("annotation type %q has no constant id", got.Symbol.Name)
+				return fmt.Errorf("attribute type %q has no constant id", got.Symbol.Name)
 			}
 			if got.TypeConstantId() != runtime.TypeId(*got.Symbol.ConstantId) {
-				return fmt.Errorf("annotation type %q has mismatched type id", got.Symbol.Name)
+				return fmt.Errorf("attribute type %q has mismatched type id", got.Symbol.Name)
 			}
 
 		case synthCompiledFunction:
@@ -1867,7 +1867,7 @@ type compiledDataType struct {
 	name   string
 	fields []compiledField
 }
-type compiledAnnotationType struct {
+type compiledAttributeType struct {
 	name   string
 	fields []compiledField
 }

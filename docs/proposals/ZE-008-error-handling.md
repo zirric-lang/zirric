@@ -25,13 +25,13 @@ The usage of results should be ergonomic, minimizing boilerplate when extracting
 
 ## Proposed Solution
 
-First of all there will be a `@Error` annotation. This annotation can be enforced.
-Introduce an `@AnyResult` annotation to be defined on unions.
+First of all there will be a `@Error` attribute. This attribute can be enforced.
+Introduce an `@AnyResult` attribute to be defined on unions.
 Then there will be a standard `Result` union with `Ok` and `Err` variants.
 
 ```zirric
 @Returns(String!) // Syntactic sugar for @Type(Result) @OkType(String)
-func readFile(path) {
+fn readFile(path) {
   // returns Ok(String) or Err(Error)
 }
 
@@ -60,20 +60,20 @@ case Err(error):
 - `Err.error` must satisfy `@Has(Error)`.
 - `panic` to immediately terminate execution with an error message.
 
-For the `!!`, `!.` operators, the VM needs to look at the presence of the `@prelude.Error` annotation. This should be doable with a deref of the underlying type and checking for the annotation presence using a Type ID.
+For the `!!`, `!.` operators, the VM needs to look at the presence of the `@prelude.Error` attribute. This should be doable with a deref of the underlying type and checking for the attribute presence using a Type ID.
 If present, the value is treated as an error. Otherwise it is treated as a normal value.
 If these values are not nested in `Ok` or `Err`, they will be wrapped accordingly.
 
 The goal is to support strongly typed result types like `PersonResult`.
 
 ```zirric
-annotation Error {
+attr Error {
 	@Bound()
 	@Returns(String)
 	debug(err)
 }
 
-annotation AnyResult {}
+attr AnyResult {}
 
 @AnyResult()
 union Result {
@@ -88,11 +88,11 @@ union Result {
 	}
 }
 
-annotation OkType {
+attr OkType {
 	@Type(AnyType) type
 }
 
-annotation ErrType {
+attr ErrType {
 	@Type(AnyType) type
 }
 ```
@@ -105,7 +105,7 @@ annotation ErrType {
 
 ## Alternatives Considered
 
-- Exceptions or panics, which do not fit the explicit, annotation-driven model.
+- Exceptions or panics, which do not fit the explicit, attribute-driven model.
 - Returning `Option`, which loses error context and diagnostics.
 
 ## Acknowledgements

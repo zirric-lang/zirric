@@ -6,14 +6,14 @@ description: Experimental reflection stubs for inspecting Zirric declarations.
 # Future.Reflect
 
 The `reflect` module provides proposal-era reflection stubs for fields,
-annotations, and types.
+attributes, and types.
 
-## Annotations
+## Attributes
 
-### annotation Name
+### attr Name
 
 ```zirric
-annotation Name
+attr Name
 ```
 
 No documentation.
@@ -36,56 +36,56 @@ Fields:
 
 - `@String name`
 - `@Type(AnyType) type`
-- `@Array @ItemType(Annotation) annotations`
+- `@Array @ItemType(Attribute) attributes`
 
-### data Annotation
+### data Attribute
 
 ```zirric
-data Annotation
+data Attribute
 ```
 
 No documentation.
 
 Fields:
 
-- `@AnyAnnotation annotationType`
+- `@AnyAttribute attributeType`
 - `@Array args`
 
 ## Functions
 
-### func typeOf
+### fn typeOf
 
 ```zirric
 @Returns(Type)
-func typeOf(@Any value)
+fn typeOf(@Any value)
 ```
 
 No documentation.
 
-### func fieldsOf
+### fn fieldsOf
 
 ```zirric
 @Returns(Array(Field))
-func fieldsOf(@Type type)
+fn fieldsOf(@Type type)
 ```
 
 No documentation.
 
-### func annotation
+### fn attribute
 
 ```zirric
 @Returns(Result)
-@OkType(AnyAnnotation)
-func annotation(@Field field, @AnnotationType annotationType)
+@OkType(AnyAttribute)
+fn attribute(@Field field, @AttributeType attributeType)
 ```
 
 No documentation.
 
-### func hasAnnotation
+### fn hasAttribute
 
 ```zirric
 @Returns(Bool)
-func hasAnnotation(@Field field, @AnnotationType annotationType)
+fn hasAttribute(@Field field, @AttributeType attributeType)
 ```
 
 No documentation.

@@ -25,7 +25,7 @@ func (c *Closure) Arity() int {
 
 // Inspect implements CallableRuntimeValue.
 func (c *Closure) Inspect() string {
-	return fmt.Sprintf("func %s(#%d)", c.Fn.Symbol.Decl.DeclName(), c.Arity())
+	return fmt.Sprintf("fn %s(#%d)", c.Fn.Symbol.Decl.DeclName(), c.Arity())
 }
 
 // Lookup implements CallableRuntimeValue.

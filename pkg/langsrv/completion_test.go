@@ -16,7 +16,7 @@ func TestCompletionItemsForFile(t *testing.T) {
 	}{
 		{
 			name:       "func declaration",
-			src:        "func greet() {}",
+			src:        "fn greet() {}",
 			wantLabels: []string{"greet"},
 			wantKinds:  map[string]protocol.CompletionItemKind{"greet": protocol.CompletionItemKindFunction},
 		},
@@ -34,7 +34,7 @@ func TestCompletionItemsForFile(t *testing.T) {
 		},
 		{
 			name:       "multiple globals",
-			src:        "func add() {}\nfunc count() {}",
+			src:        "fn add() {}\nfn count() {}",
 			wantLabels: []string{"add", "count"},
 		},
 	}
@@ -85,7 +85,7 @@ func TestCompletionItemsForFile(t *testing.T) {
 
 func TestCompletionItemsWithParseErrors(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "main.zirr", "func ok() {}\nfunc bad( {}")
+	writeFile(t, base, "main.zirr", "fn ok() {}\nfn bad( {}")
 
 	ls := zirricLangserver{
 		docs:     newDocumentStore(),
@@ -109,8 +109,8 @@ func TestCompletionItemsWithParseErrors(t *testing.T) {
 
 func TestCompletionAcrossFiles(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "types.zirr", "data Point { x }\nfunc helper() {}")
-	writeFile(t, base, "main.zirr", "func main() {}")
+	writeFile(t, base, "types.zirr", "data Point { x }\nfn helper() {}")
+	writeFile(t, base, "main.zirr", "fn main() {}")
 
 	ls := zirricLangserver{
 		docs:     newDocumentStore(),
@@ -136,8 +136,8 @@ func TestCompletionAcrossFiles(t *testing.T) {
 	}
 }
 
-func TestAnnotationContextCompletion(t *testing.T) {
-	src := "annotation Numeric { toNumber }\nfunc add() {}\ndata Foo {}\nunion Bar {\n\tFoo\n}"
+func TestAttributeContextCompletion(t *testing.T) {
+	src := "attr Numeric { toNumber }\nfn add() {}\ndata Foo {}\nunion Bar {\n\tFoo\n}"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
 
@@ -150,7 +150,7 @@ func TestAnnotationContextCompletion(t *testing.T) {
 
 	// Position after '@' on a new line: simulate "@N" at col 2
 	pos := protocol.Position{Line: 6, Character: 2}
-	// Append the annotation line to the source so the position exists.
+	// Append the attribute line to the source so the position exists.
 	// We use a separate source string that has an @-prefixed line at line 6.
 	src2 := src + "\n@N"
 	base2 := memfs.New()
@@ -175,7 +175,7 @@ func TestAnnotationContextCompletion(t *testing.T) {
 	// Annotation should be present with '@' label and TextEdit snippet that includes '@'.
 	anno, ok := labelSet["@Numeric"]
 	if !ok {
-		t.Fatalf("expected @Numeric annotation in completion, got: %v", labelKeys(labelSet))
+		t.Fatalf("expected @Numeric attribute in completion, got: %v", labelKeys(labelSet))
 	}
 	textEdit, ok := anno.TextEdit.(protocol.TextEdit)
 	if !ok {
@@ -199,23 +199,23 @@ func TestAnnotationContextCompletion(t *testing.T) {
 
 	// Type declarations should be present with '@' prefix (data, union).
 	if _, ok := labelSet["@Foo"]; !ok {
-		t.Errorf("expected @Foo in annotation completion, got: %v", labelKeys(labelSet))
+		t.Errorf("expected @Foo in attribute completion, got: %v", labelKeys(labelSet))
 	}
 	if _, ok := labelSet["@Bar"]; !ok {
-		t.Errorf("expected @Bar in annotation completion, got: %v", labelKeys(labelSet))
+		t.Errorf("expected @Bar in attribute completion, got: %v", labelKeys(labelSet))
 	}
 
 	// Functions and values must NOT be present
 	for label := range labelSet {
 		if label == "add" || label == "@add" {
-			t.Errorf("func add must not appear in annotation completion (got %q)", label)
+			t.Errorf("func add must not appear in attribute completion (got %q)", label)
 		}
 	}
 }
 
-func TestAnnotationNonContextCompletion(t *testing.T) {
-	// Annotations should appear with '@' prefix even outside annotation context.
-	src := "annotation Numeric { toNumber }\nfunc add() {}"
+func TestAttributeNonContextCompletion(t *testing.T) {
+	// Attributes should appear with '@' prefix even outside attribute context.
+	src := "attr Numeric { toNumber }\nfn add() {}"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
 
@@ -239,7 +239,7 @@ func TestAnnotationNonContextCompletion(t *testing.T) {
 	// Annotation should appear with '@' prefix and snippet insertText.
 	anno, ok := labelSet["@Numeric"]
 	if !ok {
-		t.Fatalf("expected @Numeric in non-annotation completion, got: %v", labelKeys(labelSet))
+		t.Fatalf("expected @Numeric in non-attribute completion, got: %v", labelKeys(labelSet))
 	}
 	wantInsert := "@Numeric(${1:toNumber})"
 	if anno.InsertText == nil || *anno.InsertText != wantInsert {
@@ -255,7 +255,7 @@ func TestAnnotationNonContextCompletion(t *testing.T) {
 	}
 }
 
-func TestIsAnnotationContext(t *testing.T) {
+func TestIsAttributeContext(t *testing.T) {
 	tests := []struct {
 		name string
 		text string
@@ -267,14 +267,14 @@ func TestIsAnnotationContext(t *testing.T) {
 		{"plain name no at", "Num", protocol.Position{Line: 0, Character: 3}, false},
 		{"space then at name", "  @Foo", protocol.Position{Line: 0, Character: 6}, true},
 		{"at-sign on second line", "let x = 0\n@Bar", protocol.Position{Line: 1, Character: 4}, true},
-		{"normal code on second line", "let x = 0\nfunc", protocol.Position{Line: 1, Character: 4}, false},
+		{"normal code on second line", "let x = 0\nfn", protocol.Position{Line: 1, Character: 2}, false},
 		{"cursor at start", "@Foo", protocol.Position{Line: 0, Character: 0}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isAnnotationContext(tt.text, tt.pos)
+			got := isAttributeContext(tt.text, tt.pos)
 			if got != tt.want {
-				t.Errorf("isAnnotationContext(%q, {%d,%d}) = %v, want %v",
+				t.Errorf("isAttributeContext(%q, {%d,%d}) = %v, want %v",
 					tt.text, tt.pos.Line, tt.pos.Character, got, tt.want)
 			}
 		})
@@ -299,8 +299,8 @@ func labelKeys2(items []protocol.CompletionItem) []string {
 
 func TestLocalParamCompletion(t *testing.T) {
 	// Cursor inside a function body — params should be suggested.
-	// "func greet(name) {\n  |cursor|\n}"
-	src := "func greet(name) {\n  \n}"
+	// "fn greet(name) {\n  |cursor|\n}"
+	src := "fn greet(name) {\n  \n}"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
 
@@ -328,8 +328,8 @@ func TestLocalParamCompletion(t *testing.T) {
 
 func TestLocalLetCompletion(t *testing.T) {
 	// Local let binding should be suggested after it is declared.
-	// "func f() {\n  let x = 1\n  |cursor|\n}"
-	src := "func f() {\n  let x = 1\n  \n}"
+	// "fn f() {\n  let x = 1\n  |cursor|\n}"
+	src := "fn f() {\n  let x = 1\n  \n}"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
 
@@ -361,8 +361,8 @@ func TestLocalLetCompletion(t *testing.T) {
 
 func TestLocalLetNotBeforeDecl(t *testing.T) {
 	// A local let should NOT appear before its declaration.
-	// "func f() {\n  |cursor|\n  let x = 1\n}"
-	src := "func f() {\n  \n  let x = 1\n}"
+	// "fn f() {\n  |cursor|\n  let x = 1\n}"
+	src := "fn f() {\n  \n  let x = 1\n}"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
 
@@ -418,7 +418,7 @@ func TestQualifiedContext(t *testing.T) {
 			wantOk: false,
 		},
 		{
-			name:         "annotation qualified",
+			name:         "attribute qualified",
 			text:         "@mymod.Annotation",
 			pos:          protocol.Position{Line: 0, Character: 17},
 			wantAlias:    "mymod",
@@ -451,7 +451,7 @@ func TestImportAliasCompletion(t *testing.T) {
 	if err := base.MkdirAll("mymod", 0755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, base, "mymod/types.zirr", "func helper() {}")
+	writeFile(t, base, "mymod/types.zirr", "fn helper() {}")
 	writeFile(t, base, "main.zirr", "import mymod\n")
 
 	ls := &zirricLangserver{
@@ -480,7 +480,7 @@ func TestQualifiedModuleCompletion(t *testing.T) {
 	if err := base.MkdirAll("mymod", 0755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, base, "mymod/types.zirr", "func helper() {}\ndata Point { x }")
+	writeFile(t, base, "mymod/types.zirr", "fn helper() {}\ndata Point { x }")
 	// main.zirr with "mymod." at cursor position (line 1, col 6)
 	writeFile(t, base, "main.zirr", "import mymod\nmymod.")
 

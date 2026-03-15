@@ -5,10 +5,9 @@ description: Replace `func`, `annotation`, and `module` with `fn`, `attr`, and `
 
 # Attribute and Declaration Keywords
 
-::: callout warning <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-dot-icon lucide-circle-dot"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg> In Progress
-This proposal has been accepted in principle.
-It is currently under active development.
-Parts might be incomplete or missing in Zirric.
+::: callout tip <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Implemented
+This proposal has been accepted and implemented.
+You can use this feature in the latest version of Zirric.
 :::
 
 ## Introduction
@@ -126,8 +125,8 @@ As part of the broader "Annotation → Attribute" rename, the following identifi
 | Old name                | New name               | Location                   | Kind                                                |
 | ----------------------- | ---------------------- | -------------------------- | --------------------------------------------------- |
 | `AnnotationType`        | `AttributeType`        | `prelude/shim.zirr`        | `extern type` declaration                           |
-| `AnnotationType`        | `AttributeType`        | `prelude/annotations.zirr` | type reference (field type and annotation argument) |
-| `annotationType`        | `attributeType`        | `prelude/annotations.zirr` | field name in `Has`                                 |
+| `AnnotationType`        | `AttributeType`        | `prelude/attributes.zirr` | type reference (field type and attribute argument) |
+| `annotationType`        | `attributeType`        | `prelude/attributes.zirr` | field name in `Has`                                 |
 | `Annotation`            | `Attribute`            | `future/reflect/stub.zirr` | `data` declaration                                  |
 | `annotations`           | `attributes`           | `future/reflect/stub.zirr` | field name in `Field`                               |
 | `@ItemType(Annotation)` | `@ItemType(Attribute)` | `future/reflect/stub.zirr` | annotation argument                                 |

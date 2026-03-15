@@ -17,7 +17,7 @@ func TestTextDocumentDocumentSymbol(t *testing.T) {
 	}{
 		{
 			name:      "func declaration",
-			src:       "func greet() {}",
+			src:       "fn greet() {}",
 			wantNames: []string{"greet"},
 		},
 		{
@@ -26,13 +26,13 @@ func TestTextDocumentDocumentSymbol(t *testing.T) {
 			wantNames: []string{"Point"},
 		},
 		{
-			name:      "annotation declaration",
-			src:       "annotation Numeric { toNumber }",
+			name:      "attribute declaration",
+			src:       "attr Numeric { toNumber }",
 			wantNames: []string{"Numeric"},
 		},
 		{
 			name:      "multiple declarations",
-			src:       "func greet() {}\ndata Point { x }",
+			src:       "fn greet() {}\ndata Point { x }",
 			wantNames: []string{"greet", "Point"},
 		},
 	}
@@ -86,7 +86,7 @@ func TestTextDocumentDocumentSymbol(t *testing.T) {
 func TestDocumentSymbolOnlyCurrentFile(t *testing.T) {
 	base := memfs.New()
 	writeFile(t, base, "types.zirr", "data Point { x }")
-	writeFile(t, base, "main.zirr", "func greet() {}")
+	writeFile(t, base, "main.zirr", "fn greet() {}")
 
 	ls := zirricLangserver{
 		docs:     newDocumentStore(),
@@ -117,7 +117,7 @@ func TestDocumentSymbolOnlyCurrentFile(t *testing.T) {
 
 func TestWorkspaceSymbol(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "main.zirr", "func greet() {}")
+	writeFile(t, base, "main.zirr", "fn greet() {}")
 	writeFile(t, base, "types.zirr", "data Point { x }")
 
 	ls := zirricLangserver{
@@ -163,7 +163,7 @@ func TestWorkspaceSymbol(t *testing.T) {
 
 func TestWorkspaceSymbolLocation(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "main.zirr", "func greet() {}")
+	writeFile(t, base, "main.zirr", "fn greet() {}")
 
 	ls := zirricLangserver{
 		docs:     newDocumentStore(),
@@ -190,9 +190,9 @@ func TestWorkspaceSymbolLocation(t *testing.T) {
 	if !strings.HasSuffix(string(sym.Location.URI), "main.zirr") {
 		t.Errorf("URI = %q, want .../main.zirr", sym.Location.URI)
 	}
-	// "greet" starts at col 5 in "func greet() {}"
-	if sym.Location.Range.Start.Character != 5 {
-		t.Errorf("start.character = %d, want 5", sym.Location.Range.Start.Character)
+	// "greet" starts at col 3 in "fn greet() {}"
+	if sym.Location.Range.Start.Character != 3 {
+		t.Errorf("start.character = %d, want 3", sym.Location.Range.Start.Character)
 	}
 }
 

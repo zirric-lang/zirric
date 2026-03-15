@@ -23,16 +23,16 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 ### Where to look first (authoritative Zirric source)
 
 - **Language proposals**: `proposals/ZE-001-base-language.md` (core syntax/semantics) and `proposals/ZE-002-the-cavefile.md` (package manifest + tasks). For future-facing features, see `proposals/ZE-004-Variadic-Arguments.md`, `proposals/ZE-005-Mixin-Type-Declarations.md`, and `proposals/ZE-006-Annotation-Based-Parsing-System.md`.
-- **Standard library Zirric sources**: `prelude/shim.zirr` (core types and values), `prelude/annotations.zirr` (annotation system), `prelude/countable.zirr` (protocol-like annotations), `prelude/result.zirr` (Result/Optional patterns), `future/reflect/stub.zirr` (reflection surface).
+- **Standard library Zirric sources**: `prelude/shim.zirr` (core types and values), `prelude/attributes.zirr` (attribute system), `prelude/countable.zirr` (protocol-like attributes), `prelude/result.zirr` (Result/Optional patterns), `future/reflect/stub.zirr` (reflection surface).
 - **Cavefile schema and tasks**: `future/cave/manifest.zirr` and `future/tasks/manifest.zirr` define the annotation-driven dependency/task model used by the package manager.
 - **Example manifest**: `examples/project/Cavefile` shows real-world dependency + task declarations.
 
 ### Core mental model (intuition)
 
-- **Declarations**: Zirric is declaration-driven (`let`, `func`, `data`, `union`, `extern`, `annotation`, `module`, `import`), with annotations as the primary metadata mechanism.
+- **Declarations**: Zirric is declaration-driven (`let`, `fn`, `data`, `union`, `extern`, `attr`, `mod`, `import`), with attributes as the primary metadata mechanism.
 - **Dynamic but strict**: Values are dynamic, yet conversions are explicit; annotations like `@Type`, `@Has`, and `@Returns` communicate intent to tooling and runtime checks.
 - **Data and unions**: `data` defines record-like types with named fields; `union` are a declared nominal supertype consisting of a fixed set of existing types; values are implicitly usable as a union if their concrete type is a member (often with nested `data` members).
-- **Annotations are first-class**: Many behaviors (type hints, defaults, docs, protocols) are expressed via annotations in `prelude/annotations.zirr`.
+- **Attributes are first-class**: Many behaviors (type hints, defaults, docs, protocols) are expressed via attributes in `prelude/attributes.zirr`.
 - **Collection protocols**: `@Countable`/`@Iterable` in `prelude/countable.zirr` describe the “protocols” used by loops and helpers.
 - **Cavefile is just Zirric**: Dependency and task manifests are Zirric `data` declarations annotated with `@cave.Dependencies` and `@tasks.*` (see `future/cave/manifest.zirr` and `future/tasks/manifest.zirr`).
 

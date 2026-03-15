@@ -35,7 +35,7 @@ func populateDeclTableFieldDecls(dt *ast.DeclTable) {
 					child.Insert(field)
 					insertDeclParams(child, field.Parameters)
 				}
-			case *ast.DeclAnnotation:
+			case *ast.DeclAttr:
 				for i := range decl.Fields {
 					field := decl.Fields[i]
 					if existing, ok := child.Symbols[field.Name.Value]; ok && existing.Decl != nil {

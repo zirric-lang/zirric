@@ -145,10 +145,10 @@ func TestNextAnonymousFunctionName(t *testing.T) {
 	module := ast.MakeContextModule(registry.LogicalURI("test"))
 	table := ast.MakeModuleSymbolTable(module)
 
-	if name := table.NextAnonymousFunctionName(); name != "func#1" {
-		t.Fatalf("expected first anonymous function name to be func#1, got %s", name)
+	if name := table.NextAnonymousFunctionName(); name != "fn#1" {
+		t.Fatalf("expected first anonymous function name to be fn#1, got %s", name)
 	}
-	if name := table.NextAnonymousFunctionName(); name != "func#2" {
-		t.Fatalf("expected second anonymous function name to be func#2, got %s", name)
+	if name := table.NextAnonymousFunctionName(); name != "fn#2" {
+		t.Fatalf("expected second anonymous function name to be fn#2, got %s", name)
 	}
 }

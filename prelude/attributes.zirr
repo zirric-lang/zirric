@@ -1,49 +1,49 @@
-module prelude
+mod prelude
 
 // Annotates a declaration to be of a given type.
 // Instead of annotating declarations with `@Type(SomeType)`, the shorthand of `@SomeType` can be used.
-annotation Type {
-  // The type of the annotation.
+attr Type {
+  // The type of the attribute.
   @Type(AnyType) type
 }
 
-// Has requests passed values to have the given annotation type present.
-// For example, `@Has(Numeric)` requests that the passed value has the `@Numeric` annotation.
+// Has requests passed values to have the given attribute type present.
+// For example, `@Has(Numeric)` requests that the passed value has the `@Numeric` attribute.
 // 
 // DO NOT annotate types with `@Has`, as it does not make sense there.
-annotation Has {
-  // The required annotation type.
-  @Type(AnnotationType)
-  annotationType
+attr Has {
+  // The required attribute type.
+  @Type(AttributeType)
+  attributeType
 }
 
 // Annotates a function declaration to return a value of the given type.
-annotation Returns {
+attr Returns {
   @Type(AnyType) type
 }
 
 // Transparently indicates the assumed default value of a parameter or field.
 // Can be used by tooling and libraries.
-annotation Default {
+attr Default {
   // The default value for a parameter.
   @Type(AnyType) value
 }
 
 // Provides access to the documentation string of a declaration.
-annotation Doc {
+attr Doc {
   // The documentation string without leading comment markers and whitespace.
   @String description
 }
 
 // Annotates a declaration as deprecated with a reason.
 // IDEs and other tools can use this information to warn users about deprecated declarations.
-annotation Deprecated {
+attr Deprecated {
   @String
   @Default("without alternative") reason
 }
 
 // Annotates a declaration as numeric, providing a way to convert it to a number.
-annotation Numeric {
+attr Numeric {
   // A function to convert the annotated value to a number.
   @Returns(Number)
   toNumber(@Has(Numeric) value)

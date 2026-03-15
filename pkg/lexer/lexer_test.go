@@ -12,7 +12,7 @@ import (
 func TestLexer(t *testing.T) {
 	input := `
 #!/usr/bin/env zirric
-module example
+mod example
 
 import tests {
 	test
@@ -42,7 +42,7 @@ test "any in unions matches all types", { fail ->
 		expectedLiteral string
 	}{
 		// {token.COMMENT, "!/usr/bin/env zirric"},
-		{token.MODULE, "module"},
+		{token.MODULE, "mod"},
 		{token.IDENT, "example"},
 		{token.IMPORT, "import"},
 		{token.IDENT, "tests"},
@@ -781,13 +781,13 @@ func TestAllTokens(t *testing.T) {
 			},
 		},
 		{
-			name:  "keyword module",
-			input: `module`,
+			name:  "keyword mod",
+			input: `mod`,
 			expected: []struct {
 				expectedType    token.TokenType
 				expectedLiteral string
 			}{
-				{token.MODULE, "module"},
+				{token.MODULE, "mod"},
 				{token.EOF, ""},
 			},
 		},
@@ -836,13 +836,13 @@ func TestAllTokens(t *testing.T) {
 			},
 		},
 		{
-			name:  "keyword func",
-			input: `func`,
+			name:  "keyword fn",
+			input: `fn`,
 			expected: []struct {
 				expectedType    token.TokenType
 				expectedLiteral string
 			}{
-				{token.FUNCTION, "func"},
+				{token.FUNCTION, "fn"},
 				{token.EOF, ""},
 			},
 		},

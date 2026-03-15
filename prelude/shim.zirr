@@ -1,14 +1,14 @@
-module prelude
+mod prelude
 
 // Anything is a value of type `Any`.
 extern type Any {}
 // All types are of type `AnyType`.
 extern type AnyType {}
 
-// All annotations are of type `Annotation`.
-extern type Annotation {}
-// All annotation types are of type `AnnotationType`.
-extern type AnnotationType {}
+// All attributes are of type `Attribute`.
+extern type Attribute {}
+// All attribute types are of type `AttributeType`.
+extern type AttributeType {}
 
 // All modules are of type `Module`.
 extern type Module {}

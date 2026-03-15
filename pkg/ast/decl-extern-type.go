@@ -11,10 +11,10 @@ var _ Decl = DeclExternType{}
 var _ Overviewable = DeclExternType{}
 
 type DeclExternType struct {
-	Token       token.Token
-	Name        Identifier
-	Fields      map[string]DeclField
-	Annotations AnnotationChain
+	Token      token.Token
+	Name       Identifier
+	Fields     map[string]DeclField
+	Attributes AttributeChain
 
 	Docs *Docs
 }

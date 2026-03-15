@@ -79,7 +79,7 @@ func TestCallContext(t *testing.T) {
 }
 
 func TestSignatureHelp(t *testing.T) {
-	src := "func greet(name) {}\nfunc add(x, y) {}\ngreet("
+	src := "fn greet(name) {}\nfn add(x, y) {}\ngreet("
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
 
@@ -110,7 +110,7 @@ func TestSignatureHelp(t *testing.T) {
 		return
 	}
 	sig := result.Signatures[0]
-	wantLabel := "func greet { name -> }"
+	wantLabel := "fn greet { name -> }"
 	if sig.Label != wantLabel {
 		t.Errorf("signature label = %q, want %q", sig.Label, wantLabel)
 	}
@@ -123,7 +123,7 @@ func TestSignatureHelp(t *testing.T) {
 }
 
 func TestSignatureHelpActiveParam(t *testing.T) {
-	src := "func add(x, y) {}\nadd(1, "
+	src := "fn add(x, y) {}\nadd(1, "
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
 

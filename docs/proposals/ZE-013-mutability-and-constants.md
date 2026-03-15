@@ -54,7 +54,7 @@ const person = Person("John", 40)
 person.age = 42         // ok — mutates the field; the binding person is not rebound
 person = Person("Jane", 30) // compile-time error: person is const
 
-func increment(n) {     // n is implicitly const
+fn increment(n) {     // n is implicitly const
     n = n + 1           // compile-time error: n is const
     return n
 }
@@ -71,12 +71,12 @@ extern const void
 ### Syntax
 
 ```ebnf
-decl_const = [annotation_chain], "const", identifier, "=", expression ;
-decl_var   = [annotation_chain], "var",   identifier, "=", expression ;
+decl_const = [attr_chain], "const", identifier, "=", expression ;
+decl_var   = [attr_chain], "var",   identifier, "=", expression ;
 
 decl_extern_const = "extern", "const", identifier ;
 
-decl = [annotation_chain], ( decl_const | decl_var | decl_func | decl_union | decl_data | decl_annotation | decl_extern_type | decl_extern_const | decl_extern_func | decl_module ) ;
+decl = [attr_chain], ( decl_const | decl_var | decl_fn | decl_union | decl_data | decl_attr | decl_extern_type | decl_extern_const | decl_extern_fn | decl_mod ) ;
 ```
 
 The discard pattern `_ = expression` continues to work unchanged. `_` is special syntax and not a valid identifier; `_[0] = x` and `_.field = x` are not valid forms.
@@ -207,7 +207,7 @@ Module-scope `var` bindings may be read and reassigned by any function declared 
 ```zirric
 var requestCount = 0
 
-func trackRequest() {
+fn trackRequest() {
     requestCount = requestCount + 1
 }
 ```
@@ -239,9 +239,9 @@ add(2)
 // total == 3
 ```
 
-### Annotations
+### Attributes
 
-Both `const` and `var` declarations may carry annotation chains, just as `let` did:
+Both `const` and `var` declarations may carry attribute chains, just as `let` did:
 
 ```zirric
 @Int

@@ -1,4 +1,4 @@
-module xprelude
+mod xprelude
 
 import code.knabel.dev.zirric_lang.zirric.future {
 	Proposal
@@ -10,7 +10,7 @@ let ZE_008 = "https://zirric.knabel.dev/proposals/ZE-008-error-handling"
 
 // Marks a type as an error type.
 @Proposal(ZE_008)
-annotation Error {
+attr Error {
 	// Returns a debug string representation of the error.
 	@Bound()
 	@Returns(String)
@@ -24,7 +24,7 @@ annotation Error {
 // - `result!.value` resolves to a `Result` with either `Ok(value)` or `Err(error)`.
 // - `result !! "default value"` resolves to the value of `Ok` or the provided default value if `Err`.
 //
-annotation AnyResult {}
+attr AnyResult {}
 
 // A result type that can be either Ok or Err.
 // Used for functions that can fail.
@@ -56,14 +56,14 @@ union Result {
 
 // Provides a type hint for the `Ok` type of a `Result`.
 @Proposal(ZE_008)
-annotation OkType {
+attr OkType {
 	// The type of `Ok.value`.
 	@Type(AnyType) type
 }
 
 // Provides a type hint for the `Err` type of a `Result`.
 @Proposal(ZE_008)
-annotation ErrType {
+attr ErrType {
 	// The type of `Err.error`.
 	@Type(AnyType) type
 }

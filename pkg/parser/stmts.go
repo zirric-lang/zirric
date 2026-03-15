@@ -22,7 +22,7 @@ const (
 	IN_SWITCH
 )
 
-func (p *Parser) parseStatementInContext(pos StatementPosition, annos ast.AnnotationChain) (ast.Statement, []ast.StatementDeclaration) {
+func (p *Parser) parseStatementInContext(pos StatementPosition, annos ast.AttributeChain) (ast.Statement, []ast.StatementDeclaration) {
 	switch p.curToken.Type {
 	case token.MODULE:
 		return p.parseModuleDecl(pos, annos), nil
@@ -33,7 +33,7 @@ func (p *Parser) parseStatementInContext(pos StatementPosition, annos ast.Annota
 	case token.DATA:
 		return p.parseDataDecl(pos, annos), nil
 	case token.ANNOTATION:
-		return p.parseAnnotationDecl(pos, annos), nil
+		return p.parseAttrDecl(pos, annos), nil
 	case token.FUNCTION:
 		return p.parseFunctionDecl(pos, annos), nil
 	case token.LET:
