@@ -44,21 +44,45 @@ func (l *Lexer) NextToken() token.Token {
 		} else {
 			tok = l.newToken(token.BANG, l.ch)
 		}
-	case '+': // PLUS
-		tok = l.newToken(token.PLUS, l.ch)
-	case '-': // MINUS, new ARROW
-		if l.peekChar() == '>' {
-			tok = token.Token{Type: token.RIGHT_ARROW, Literal: "->"}
+	case '+': // PLUS, PLUS_ASSIGN
+		if l.peekChar() == '=' {
+			tok = token.Token{Type: token.PLUS_ASSIGN, Literal: "+="}
 			l.advance()
 		} else {
+			tok = l.newToken(token.PLUS, l.ch)
+		}
+	case '-': // MINUS, MINUS_ASSIGN, RIGHT_ARROW
+		switch l.peekChar() {
+		case '>':
+			tok = token.Token{Type: token.RIGHT_ARROW, Literal: "->"}
+			l.advance()
+		case '=':
+			tok = token.Token{Type: token.MINUS_ASSIGN, Literal: "-="}
+			l.advance()
+		default:
 			tok = l.newToken(token.MINUS, l.ch)
 		}
-	case '*': // ASTERISK
-		tok = l.newToken(token.ASTERISK, l.ch)
-	case '/': // SLASH
-		tok = l.newToken(token.SLASH, l.ch)
-	case '%': // PERCENT
-		tok = l.newToken(token.PERCENT, l.ch)
+	case '*': // ASTERISK, STAR_ASSIGN
+		if l.peekChar() == '=' {
+			tok = token.Token{Type: token.STAR_ASSIGN, Literal: "*="}
+			l.advance()
+		} else {
+			tok = l.newToken(token.ASTERISK, l.ch)
+		}
+	case '/': // SLASH, SLASH_ASSIGN
+		if l.peekChar() == '=' {
+			tok = token.Token{Type: token.SLASH_ASSIGN, Literal: "/="}
+			l.advance()
+		} else {
+			tok = l.newToken(token.SLASH, l.ch)
+		}
+	case '%': // PERCENT, PERCENT_ASSIGN
+		if l.peekChar() == '=' {
+			tok = token.Token{Type: token.PERCENT_ASSIGN, Literal: "%="}
+			l.advance()
+		} else {
+			tok = l.newToken(token.PERCENT, l.ch)
+		}
 
 	case '<': // LT, LTE
 		switch l.peekChar() {

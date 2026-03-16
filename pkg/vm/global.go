@@ -78,6 +78,7 @@ func (s *Global) Set(owner TaskId, v runtime.RuntimeValue) error {
 		switch state {
 		case globalSlotStateInitialized:
 			s.value = v
+			return nil
 
 		case globalSlotStateUninitialized:
 			if atomic.CompareAndSwapUint32(&s.state, globalSlotStateUninitialized, globalSlotStateInitializing) {

@@ -34,6 +34,13 @@ const (
 	SLASH    TokenType = "/"
 	PERCENT  TokenType = "%"
 
+	// Augmented assignment operators
+	PLUS_ASSIGN    TokenType = "+="
+	MINUS_ASSIGN   TokenType = "-="
+	STAR_ASSIGN    TokenType = "*="
+	SLASH_ASSIGN   TokenType = "/="
+	PERCENT_ASSIGN TokenType = "%="
+
 	LT  TokenType = "<"
 	GT  TokenType = ">"
 	EQ  TokenType = "=="

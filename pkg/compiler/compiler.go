@@ -87,6 +87,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 			scope.Instructions...,
 		)
 
+		// Carry any temp locals allocated in the inlined scope up to the parent,
+		// so that the parent's LocalsCount() covers the SetLocal/GetLocal indices.
+		for len(c.scopes[c.scopeIdx].locals) < len(scope.locals) {
+			c.scopes[c.scopeIdx].locals = append(c.scopes[c.scopeIdx].locals, nil)
+		}
+
 		return nil
 
 	case *ast.DeclVariable, *ast.DeclConstant, *ast.DeclFunc:
@@ -107,6 +113,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emit(op.Pop)
 		return nil
+	case *ast.StmtAssign:
+		return c.compileStmtAssign(node)
 	case ast.StmtIf:
 		return c.compileStmtIf(node)
 	case ast.StmtFor:
@@ -1919,4 +1927,180 @@ func hasStaticPrefix(ref ast.StaticReference, prefix ast.StaticReference) bool {
 		}
 	}
 	return true
+}
+
+// compileStmtAssign compiles an assignment statement.
+//
+// Stack conventions used by the emitted instructions:
+//   - SetField: expects [..., val, obj] — pops obj (top), then pops val, sets obj.field = val
+//   - SetIndex: expects [..., val, target, index] — pops index (top), target, then val; sets target[index] = val
+func (c *Compiler) compileStmtAssign(node *ast.StmtAssign) error {
+	switch target := node.Target.(type) {
+	case *ast.ExprIdentifier:
+		return c.compileIdentAssign(target, node.Op, node.Value)
+	case *ast.ExprMemberAccess:
+		return c.compileMemberAssign(target, node.Op, node.Value)
+	case *ast.ExprIndexAccess:
+		return c.compileIndexAssign(target, node.Op, node.Value)
+	default:
+		return fmt.Errorf("unsupported lvalue type %T", node.Target)
+	}
+}
+
+// compileIdentAssign compiles assignment to a simple identifier lvalue.
+// Returns an error if the identifier resolves to a const or parameter binding.
+func (c *Compiler) compileIdentAssign(target *ast.ExprIdentifier, augOp token.TokenType, value ast.Expr) error {
+	symbol := target.Symbol
+	if symbol == nil {
+		syms := c.currentSymbols()
+		if syms != nil {
+			symbol = syms.LookupIdentifier(target.Name)
+		}
+	}
+	if symbol == nil || symbol.Decl == nil {
+		return fmt.Errorf("undefined identifier %q", target.Name)
+	}
+
+	switch symbol.Decl.(type) {
+	case *ast.DeclConstant:
+		return fmt.Errorf("cannot assign to const %q", target.Name)
+	case *ast.DeclParameter:
+		return fmt.Errorf("cannot assign to parameter %q", target.Name)
+	}
+
+	if augOp != "" {
+		// Read current value, compile rhs, apply op, then write.
+		if err := c.Compile(target); err != nil {
+			return err
+		}
+		if err := c.Compile(value); err != nil {
+			return err
+		}
+		if err := c.emitBinaryOp(augOp); err != nil {
+			return err
+		}
+	} else {
+		if err := c.Compile(value); err != nil {
+			return err
+		}
+	}
+
+	sym := symbol.Original()
+	switch symbol.Decl.(type) {
+	case *ast.DeclVariable, *ast.DeclForBinding:
+		if sym.LocalId != nil {
+			c.emit(op.SetLocal, *sym.LocalId)
+			return nil
+		}
+		if sym.GlobalId != nil {
+			c.emit(op.SetGlobal, *sym.GlobalId)
+			return nil
+		}
+		return fmt.Errorf("variable %q has no local or global id", target.Name)
+	case *ast.DeclImport, *ast.DeclModule:
+		return fmt.Errorf("cannot assign to import/module %q", target.Name)
+	default:
+		return fmt.Errorf("cannot assign to %T %q", symbol.Decl, target.Name)
+	}
+}
+
+// compileMemberAssign compiles assignment to a member access lvalue (obj.field = val).
+// Stack layout for SetField: [..., val, obj] — obj is on top, val beneath it.
+func (c *Compiler) compileMemberAssign(target *ast.ExprMemberAccess, augOp token.TokenType, value ast.Expr) error {
+	nameConst := c.addConstant(c.plugins.Prelude().String(target.Property.Value))
+
+	if augOp != "" {
+		// Evaluate the object once and cache it in a temp local to avoid double evaluation.
+		objLocal := c.allocateTempLocal()
+		if err := c.Compile(target.Target); err != nil {
+			return err
+		}
+		c.emit(op.SetLocal, objLocal)
+		// Read old value: GetLocal obj, GetField → old_val
+		c.emit(op.GetLocal, objLocal)
+		c.emit(op.GetField, nameConst)
+		// Push rhs and apply op → result on stack
+		if err := c.Compile(value); err != nil {
+			return err
+		}
+		if err := c.emitBinaryOp(augOp); err != nil {
+			return err
+		}
+		// Push cached obj for the write: [..., result, obj]
+		c.emit(op.GetLocal, objLocal)
+	} else {
+		// Push val first, then obj: [..., val, obj]
+		if err := c.Compile(value); err != nil {
+			return err
+		}
+		if err := c.Compile(target.Target); err != nil {
+			return err
+		}
+	}
+	c.emit(op.SetField, nameConst)
+	return nil
+}
+
+// compileIndexAssign compiles assignment to an index access lvalue (target[index] = val).
+// Stack layout for SetIndex: [..., val, target, index] — index on top, target beneath, val at bottom.
+func (c *Compiler) compileIndexAssign(target *ast.ExprIndexAccess, augOp token.TokenType, value ast.Expr) error {
+	if augOp != "" {
+		// Evaluate target and index once; cache in temp locals to avoid double evaluation.
+		targetLocal := c.allocateTempLocal()
+		indexLocal := c.allocateTempLocal()
+		if err := c.Compile(target.Target); err != nil {
+			return err
+		}
+		c.emit(op.SetLocal, targetLocal)
+		if err := c.Compile(target.IndexExpr); err != nil {
+			return err
+		}
+		c.emit(op.SetLocal, indexLocal)
+		// Read old value: GetLocal target, GetLocal index, GetIndex → old_val
+		c.emit(op.GetLocal, targetLocal)
+		c.emit(op.GetLocal, indexLocal)
+		c.emit(op.GetIndex)
+		// Push rhs and apply op → result
+		if err := c.Compile(value); err != nil {
+			return err
+		}
+		if err := c.emitBinaryOp(augOp); err != nil {
+			return err
+		}
+		// Push cached target and index for the write
+		c.emit(op.GetLocal, targetLocal)
+		c.emit(op.GetLocal, indexLocal)
+	} else {
+		// Stack: [..., val, target, index]
+		if err := c.Compile(value); err != nil {
+			return err
+		}
+		if err := c.Compile(target.Target); err != nil {
+			return err
+		}
+		if err := c.Compile(target.IndexExpr); err != nil {
+			return err
+		}
+	}
+	c.emit(op.SetIndex)
+	return nil
+}
+
+// emitBinaryOp emits the opcode for an arithmetic binary operator.
+func (c *Compiler) emitBinaryOp(op_ token.TokenType) error {
+	switch op_ {
+	case token.PLUS:
+		c.emit(op.Add)
+	case token.MINUS:
+		c.emit(op.Sub)
+	case token.ASTERISK:
+		c.emit(op.Mul)
+	case token.SLASH:
+		c.emit(op.Div)
+	case token.PERCENT:
+		c.emit(op.Mod)
+	default:
+		return fmt.Errorf("unsupported augmented assignment operator %q", op_)
+	}
+	return nil
 }

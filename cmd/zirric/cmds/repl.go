@@ -49,7 +49,7 @@ var replCmd = &cobra.Command{
 
 		ctx := context.Background()
 		replPath := "repl.zirr"
-		if err := writeProjectFile(tmpfs, replPath, []byte("module repl\n")); err != nil {
+		if err := writeProjectFile(tmpfs, replPath, []byte("")); err != nil {
 			return err
 		}
 

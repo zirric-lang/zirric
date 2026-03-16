@@ -297,6 +297,73 @@ func TestAllTokens(t *testing.T) {
 			},
 		},
 		{
+			name:  "plus_assign",
+			input: `+=`,
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.PLUS_ASSIGN, "+="},
+				{token.EOF, ""},
+			},
+		},
+		{
+			name:  "minus_assign",
+			input: `-=`,
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.MINUS_ASSIGN, "-="},
+				{token.EOF, ""},
+			},
+		},
+		{
+			name:  "star_assign",
+			input: `*=`,
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.STAR_ASSIGN, "*="},
+				{token.EOF, ""},
+			},
+		},
+		{
+			name:  "slash_assign",
+			input: `/=`,
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.SLASH_ASSIGN, "/="},
+				{token.EOF, ""},
+			},
+		},
+		{
+			name:  "percent_assign",
+			input: `%=`,
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.PERCENT_ASSIGN, "%="},
+				{token.EOF, ""},
+			},
+		},
+		{
+			name:  "plus is not confused with plus_assign",
+			input: `+ =`,
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.PLUS, "+"},
+				{token.ASSIGN, "="},
+				{token.EOF, ""},
+			},
+		},
+		{
 			name:  "comma",
 			input: `,`,
 			expected: []struct {

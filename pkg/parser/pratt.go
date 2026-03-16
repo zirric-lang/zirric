@@ -84,10 +84,66 @@ func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParser) {
 	p.infixParsers[tokenType] = fn
 }
 
-func (p *Parser) parseExprStmt() *ast.StmtExpr {
+func (p *Parser) parseExprStmt() ast.Statement {
 	stmtTok := p.curToken
 	expr := p.parsePrattExpr(LOWEST)
+
+	if augOp, assignTok, isAssign := p.tryConsumeAssignOp(); isAssign {
+		return p.parseAssignStmt(assignTok, expr, augOp)
+	}
+
 	return ast.MakeStmtExpr(stmtTok, expr)
+}
+
+// tryConsumeAssignOp checks whether the current token is an assignment operator.
+// If so, it advances past it and returns the arithmetic op (empty for plain =), the token, and true.
+func (p *Parser) tryConsumeAssignOp() (token.TokenType, token.Token, bool) {
+	switch p.curToken.Type {
+	case token.ASSIGN:
+		tok := p.nextToken()
+		return "", tok, true
+	case token.PLUS_ASSIGN:
+		tok := p.nextToken()
+		return token.PLUS, tok, true
+	case token.MINUS_ASSIGN:
+		tok := p.nextToken()
+		return token.MINUS, tok, true
+	case token.STAR_ASSIGN:
+		tok := p.nextToken()
+		return token.ASTERISK, tok, true
+	case token.SLASH_ASSIGN:
+		tok := p.nextToken()
+		return token.SLASH, tok, true
+	case token.PERCENT_ASSIGN:
+		tok := p.nextToken()
+		return token.PERCENT, tok, true
+	}
+	return "", token.Token{}, false
+}
+
+func (p *Parser) parseAssignStmt(assignTok token.Token, target ast.Expr, augOp token.TokenType) *ast.StmtAssign {
+	if !isValidLValue(target) {
+		p.detectError(ParseError{
+			Token:   assignTok,
+			Summary: "invalid assignment target",
+			Details: "left-hand side of assignment must be an identifier, member access, or index expression",
+		})
+		return nil
+	}
+	value := p.parsePrattExpr(LOWEST)
+	return ast.MakeStmtAssign(assignTok, target, augOp, value)
+}
+
+func isValidLValue(expr ast.Expr) bool {
+	switch expr.(type) {
+	case *ast.ExprIdentifier:
+		return true
+	case *ast.ExprMemberAccess:
+		return true
+	case *ast.ExprIndexAccess:
+		return true
+	}
+	return false
 }
 
 func (p *Parser) parsePrattExpr(precedence Precedence) ast.Expr {

@@ -46,6 +46,9 @@ func TestMakeOpcodes(t *testing.T) {
 	}{
 		{"const", Const, []int{65535}, []byte{byte(Const), 255, 255}},
 		{"add", Add, nil, []byte{byte(Add)}},
+		{"mod", Mod, nil, []byte{byte(Mod)}},
+		{"setfield", SetField, []int{3}, []byte{byte(SetField), 0, 3}},
+		{"setindex", SetIndex, nil, []byte{byte(SetIndex)}},
 		{"undefined", Opcode(255), nil, []byte{}},
 	}
 

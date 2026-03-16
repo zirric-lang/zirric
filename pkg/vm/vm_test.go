@@ -412,6 +412,434 @@ add()`,
 	runVmTests(t, tests)
 }
 
+func TestAssignment(t *testing.T) {
+	tests := []vmTestCase{
+		// Local var rebind
+		{
+			label: "local var rebind",
+			input: `
+fn f() {
+	var x = 5
+	x = 10
+	return x
+}
+f()`,
+			expected: 10,
+		},
+		{
+			label: "local var rebind multiple times",
+			input: `
+fn f() {
+	var x = 1
+	x = 2
+	x = 3
+	return x
+}
+f()`,
+			expected: 3,
+		},
+
+		// Global var rebind
+		{
+			label: "global var rebind",
+			input: `
+var x = 5
+x = 10
+x`,
+			expected: 10,
+		},
+		{
+			label: "global var rebind then read in function",
+			input: `
+var counter = 0
+fn inc() {
+	counter = counter + 1
+}
+inc()
+inc()
+counter`,
+			expected: 2,
+		},
+
+		// Const rebind errors
+		{
+			label: "const local rebind is a compile error",
+			input: `
+fn f() {
+	const x = 5
+	x = 10
+}`,
+			err: `cannot assign to const "x"`,
+		},
+		{
+			label: "const global rebind is a compile error",
+			input: `
+const x = 5
+x = 10`,
+			err: `cannot assign to const "x"`,
+		},
+		{
+			label: "parameter rebind is a compile error",
+			input: `
+fn f(x) {
+	x = 10
+}`,
+			err: `cannot assign to parameter "x"`,
+		},
+
+		// Compound assignment operators
+		{
+			label: "local var += operator",
+			input: `
+fn f() {
+	var x = 5
+	x += 3
+	return x
+}
+f()`,
+			expected: 8,
+		},
+		{
+			label: "local var -= operator",
+			input: `
+fn f() {
+	var x = 10
+	x -= 4
+	return x
+}
+f()`,
+			expected: 6,
+		},
+		{
+			label: "local var *= operator",
+			input: `
+fn f() {
+	var x = 3
+	x *= 4
+	return x
+}
+f()`,
+			expected: 12,
+		},
+		{
+			label: "local var /= operator",
+			input: `
+fn f() {
+	var x = 12
+	x /= 3
+	return x
+}
+f()`,
+			expected: 4,
+		},
+		{
+			label: "local var %= operator",
+			input: `
+fn f() {
+	var x = 10
+	x %= 3
+	return x
+}
+f()`,
+			expected: 1,
+		},
+
+		// Member (field) assignment
+		{
+			label: "member assignment on var data instance",
+			input: `
+data Person {
+	name
+	age
+}
+var p = Person("Max", 42)
+p.name = "Min"
+p.name`,
+			expected: "Min",
+		},
+		{
+			label: "member assignment updates only the named field",
+			input: `
+data Person {
+	name
+	age
+}
+var p = Person("Max", 42)
+p.age = 99
+p.age`,
+			expected: 99,
+		},
+		{
+			label: "member assignment on const root (allowed, mutates object)",
+			input: `
+data Point {
+	x
+	y
+}
+const p = Point(1, 2)
+p.x = 10
+p.x`,
+			expected: 10,
+		},
+		{
+			label: "member compound assignment +=",
+			input: `
+data Counter {
+	val
+}
+var c = Counter(10)
+c.val += 5
+c.val`,
+			expected: 15,
+		},
+
+		// Index assignment
+		{
+			label: "array index assignment",
+			input: `
+var a = [10, 20, 30]
+a[1] = 99
+a[1]`,
+			expected: 99,
+		},
+		{
+			label: "array index assignment preserves other elements",
+			input: `
+fn f() {
+	var a = [1, 2, 3]
+	a[0] = 99
+	return a[2]
+}
+f()`,
+			expected: 3,
+		},
+		{
+			label: "dict index assignment new key",
+			input: `
+var d = [1: "a"]
+d[2] = "b"
+d[2]`,
+			expected: "b",
+		},
+		{
+			label: "dict index assignment overwrite key",
+			input: `
+var d = [1: "a", 2: "b"]
+d[1] = "z"
+d[1]`,
+			expected: "z",
+		},
+		{
+			label: "array index compound assignment +=",
+			input: `
+fn f() {
+	var a = [10, 20, 30]
+	a[0] += 5
+	return a[0]
+}
+f()`,
+			expected: 15,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestAssignmentAdditional(t *testing.T) {
+	tests := []vmTestCase{
+		// Global compound assignment
+		{
+			label: "global var compound +=",
+			input: `
+var x = 5
+x += 3
+x`,
+			expected: 8,
+		},
+		{
+			label: "global var compound -= then read in fn",
+			input: `
+var score = 100
+fn penalty() {
+	score -= 10
+}
+penalty()
+penalty()
+score`,
+			expected: 80,
+		},
+
+		// Index compound with all operators
+		{
+			label: "array index compound -=",
+			input: `
+fn f() {
+	var a = [100]
+	a[0] -= 30
+	return a[0]
+}
+f()`,
+			expected: 70,
+		},
+		{
+			label: "array index compound *=",
+			input: `
+fn f() {
+	var a = [6]
+	a[0] *= 7
+	return a[0]
+}
+f()`,
+			expected: 42,
+		},
+		{
+			label: "array index compound /=",
+			input: `
+fn f() {
+	var a = [20]
+	a[0] /= 4
+	return a[0]
+}
+f()`,
+			expected: 5,
+		},
+		{
+			label: "array index compound %=",
+			input: `
+fn f() {
+	var a = [17]
+	a[0] %= 5
+	return a[0]
+}
+f()`,
+			expected: 2,
+		},
+
+		// Dict compound assignment
+		{
+			label: "dict index compound +=",
+			input: `
+fn f() {
+	var d = ["count": 10]
+	d["count"] += 1
+	return d["count"]
+}
+f()`,
+			expected: 11,
+		},
+
+		// Member compound with remaining operators
+		{
+			label: "member compound -=",
+			input: `
+data Val { n }
+var v = Val(100)
+v.n -= 25
+v.n`,
+			expected: 75,
+		},
+		{
+			label: "member compound *=",
+			input: `
+data Val { n }
+var v = Val(3)
+v.n *= 7
+v.n`,
+			expected: 21,
+		},
+		{
+			label: "member compound /=",
+			input: `
+data Val { n }
+var v = Val(20)
+v.n /= 4
+v.n`,
+			expected: 5,
+		},
+		{
+			label: "member compound %=",
+			input: `
+data Val { n }
+var v = Val(17)
+v.n %= 5
+v.n`,
+			expected: 2,
+		},
+
+		// Chained lvalue: x[i].f = v and x.f[i] = v
+		{
+			label: "chained x[i].field assignment",
+			input: `
+data Item { name }
+fn f() {
+	var items = [Item("a"), Item("b")]
+	items[0].name = "z"
+	return items[0].name
+}
+f()`,
+			expected: "z",
+		},
+		{
+			label: "chained x.field[i] assignment",
+			input: `
+data Box { values }
+fn f() {
+	var b = Box([1, 2, 3])
+	b.values[1] = 99
+	return b.values[1]
+}
+f()`,
+			expected: 99,
+		},
+
+		// Plain % expression (regression: op.Mod was missing from definitions)
+		{
+			label:    "plain 10 % 3",
+			input:    "10 % 3",
+			expected: 1,
+		},
+		{
+			label:    "plain modulo in expression",
+			input:    "7 % 3",
+			expected: 1,
+		},
+		{
+			// Regression: compound member assignment must evaluate the object
+			// expression exactly once, not twice. A counter incremented by a
+			// helper fn is used to detect double evaluation.
+			label: "compound member assignment evaluates object exactly once",
+			input: `
+data Box { val }
+var calls = 0
+var b = Box(10)
+fn getBox() {
+	calls += 1
+	return b
+}
+getBox().val += 5
+calls`,
+			expected: 1,
+		},
+		{
+			// Regression: compound index assignment must evaluate target exactly once.
+			label: "compound index assignment evaluates target exactly once",
+			input: `
+var arr = [10, 20, 30]
+var tCalls = 0
+fn getArr() {
+	tCalls += 1
+	return arr
+}
+fn getIdx() { return 1 }
+getArr()[getIdx()] += 5
+tCalls`,
+			expected: 1,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
 func TestForStatements(t *testing.T) {
 	tests := []vmTestCase{
 		{

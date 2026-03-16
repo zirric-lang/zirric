@@ -124,3 +124,91 @@ func TestParseStatementForCollection(t *testing.T) {
 		t.Fatalf("body statement is %T, want ast.StmtBreak", stmt.Body[0])
 	}
 }
+
+func TestParseStmtAssign(t *testing.T) {
+	t.Run("plain assignment to identifier", func(t *testing.T) {
+		srcFile := prepareSourceFileParsing(t, "x = 5")
+		if len(srcFile.Statements) != 1 {
+			t.Fatalf("expected one statement, got %d", len(srcFile.Statements))
+		}
+		stmt, ok := srcFile.Statements[0].(*ast.StmtAssign)
+		if !ok {
+			t.Fatalf("statement is %T, want *ast.StmtAssign", srcFile.Statements[0])
+		}
+		if _, ok := stmt.Target.(*ast.ExprIdentifier); !ok {
+			t.Fatalf("target is %T, want *ast.ExprIdentifier", stmt.Target)
+		}
+		if stmt.Op != "" {
+			t.Errorf("expected plain assignment Op=\"\", got %q", stmt.Op)
+		}
+	})
+
+	t.Run("compound assignment += to identifier", func(t *testing.T) {
+		srcFile := prepareSourceFileParsing(t, "x += 3")
+		stmt, ok := srcFile.Statements[0].(*ast.StmtAssign)
+		if !ok {
+			t.Fatalf("statement is %T, want *ast.StmtAssign", srcFile.Statements[0])
+		}
+		if stmt.Op != "+" {
+			t.Errorf("expected Op=\"+\", got %q", stmt.Op)
+		}
+	})
+
+	t.Run("assignment to member access", func(t *testing.T) {
+		srcFile := prepareSourceFileParsing(t, "x.f = 5")
+		stmt, ok := srcFile.Statements[0].(*ast.StmtAssign)
+		if !ok {
+			t.Fatalf("statement is %T, want *ast.StmtAssign", srcFile.Statements[0])
+		}
+		if _, ok := stmt.Target.(*ast.ExprMemberAccess); !ok {
+			t.Fatalf("target is %T, want *ast.ExprMemberAccess", stmt.Target)
+		}
+	})
+
+	t.Run("assignment to index access", func(t *testing.T) {
+		srcFile := prepareSourceFileParsing(t, "x[0] = 5")
+		stmt, ok := srcFile.Statements[0].(*ast.StmtAssign)
+		if !ok {
+			t.Fatalf("statement is %T, want *ast.StmtAssign", srcFile.Statements[0])
+		}
+		if _, ok := stmt.Target.(*ast.ExprIndexAccess); !ok {
+			t.Fatalf("target is %T, want *ast.ExprIndexAccess", stmt.Target)
+		}
+	})
+
+	t.Run("all compound operators are parsed", func(t *testing.T) {
+		cases := []struct {
+			input  string
+			wantOp string
+		}{
+			{"x += 1", "+"},
+			{"x -= 1", "-"},
+			{"x *= 1", "*"},
+			{"x /= 1", "/"},
+			{"x %= 1", "%"},
+		}
+		for _, tt := range cases {
+			t.Run(tt.input, func(t *testing.T) {
+				srcFile := prepareSourceFileParsing(t, tt.input)
+				stmt, ok := srcFile.Statements[0].(*ast.StmtAssign)
+				if !ok {
+					t.Fatalf("statement is %T, want *ast.StmtAssign", srcFile.Statements[0])
+				}
+				if string(stmt.Op) != tt.wantOp {
+					t.Errorf("expected Op=%q, got %q", tt.wantOp, stmt.Op)
+				}
+			})
+		}
+	})
+
+	t.Run("chained member.index assignment target", func(t *testing.T) {
+		srcFile := prepareSourceFileParsing(t, "x.f[0] = 5")
+		stmt, ok := srcFile.Statements[0].(*ast.StmtAssign)
+		if !ok {
+			t.Fatalf("statement is %T, want *ast.StmtAssign", srcFile.Statements[0])
+		}
+		if _, ok := stmt.Target.(*ast.ExprIndexAccess); !ok {
+			t.Fatalf("target is %T, want *ast.ExprIndexAccess", stmt.Target)
+		}
+	})
+}

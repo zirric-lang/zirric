@@ -14,6 +14,8 @@ const (
 
 	GetIndex
 	GetField
+	SetField
+	SetIndex
 	Len
 	ArrayAppend
 
@@ -66,6 +68,8 @@ var definitions = map[Opcode]*Definition{
 
 	GetIndex:    {"getindex", []int{}},
 	GetField:    {"getfield", []int{2}}, // name id
+	SetField:    {"setfield", []int{2}}, // name id; stack: [..., val, obj] — pops obj then val
+	SetIndex:    {"setindex", []int{}},  // stack: [..., val, target, index] — pops index, target, val
 	Len:         {"len", []int{}},
 	ArrayAppend: {"arrayappend", []int{}},
 
@@ -82,6 +86,7 @@ var definitions = map[Opcode]*Definition{
 	Sub: {"sub", []int{}},
 	Mul: {"mul", []int{}},
 	Div: {"div", []int{}},
+	Mod: {"mod", []int{}},
 
 	Equal:              {"eq", []int{}},
 	NotEqual:           {"neq", []int{}},

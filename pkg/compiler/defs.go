@@ -33,6 +33,9 @@ type Bytecode struct {
 	Instructions op.Instructions
 	Constants    []runtime.RuntimeValue
 	Globals      []*CompilationScope
+	// MainLocals is the number of local slots required by the top-level script frame,
+	// including any temporaries allocated by the compiler.
+	MainLocals int
 }
 
 type Compiler struct {
@@ -93,6 +96,7 @@ func (c *Compiler) Bytecode() *Bytecode {
 		Instructions: c.currentInstructions(),
 		Constants:    c.constants,
 		Globals:      c.globals,
+		MainLocals:   c.scopes[0].LocalsCount(),
 	}
 }
 

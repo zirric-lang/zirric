@@ -311,6 +311,49 @@ func (vm *VM) runTask(taskId TaskId) error {
 				return err
 			}
 
+		case op.SetField:
+			// Stack layout: [..., val, obj] — obj is on top, val beneath it.
+			nameIdx := op.ReadUint16(ins[ip:])
+			fr.ip += 2
+			nameConst, ok := vm.constants[nameIdx].(runtime.String)
+			if !ok {
+				return fmt.Errorf("setfield requires a String constant (%T %q)", vm.constants[nameIdx], vm.constants[nameIdx].Inspect())
+			}
+			name := string(nameConst)
+			obj := vm.pop()
+			val := vm.pop()
+			dv, ok := obj.(*runtime.DataValue)
+			if !ok {
+				return fmt.Errorf("field assignment requires a data instance (%T)", obj)
+			}
+			idx, ok := dv.Fields[name]
+			if !ok {
+				return fmt.Errorf("field %q not found in data instance", name)
+			}
+			dv.Values[idx] = val
+
+		case op.SetIndex:
+			// Stack layout: [..., val, target, index] — index on top, target beneath, val at bottom.
+			index := vm.pop()
+			target := vm.pop()
+			val := vm.pop()
+			switch target := target.(type) {
+			case runtime.Array:
+				idx, ok := index.(runtime.Int)
+				if !ok {
+					return fmt.Errorf("array index must be Int (%T %q)", index, index.Inspect())
+				}
+				pos := int(idx)
+				if pos < 0 || pos >= len(target) {
+					return fmt.Errorf("array index %d out of bounds", pos)
+				}
+				target[pos] = val
+			case runtime.Dict:
+				target[index] = val
+			default:
+				return fmt.Errorf("index assignment not supported on %T", target)
+			}
+
 		case op.MakeAttribute:
 			argCount := int(op.ReadUint16(ins[ip:]))
 			fr.ip += 2

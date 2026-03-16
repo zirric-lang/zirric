@@ -54,7 +54,7 @@ type VM struct {
 
 func New(bytecode *compiler.Bytecode) *VM {
 	frames := make([]*Frame, maxFrames)
-	frames[0] = newGeneralFrame(bytecode.Instructions, 0, 0)
+	frames[0] = newGeneralFrame(bytecode.Instructions, 0, bytecode.MainLocals)
 
 	vm := &VM{
 		stack:     make([]runtime.RuntimeValue, stackSize),
