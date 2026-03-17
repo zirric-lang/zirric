@@ -1266,8 +1266,12 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		if err != nil {
 			return err
 		}
-		ut := runtime.MakeUnionType(sym)
-		_ = attributes // unions may carry attributes in future
+		memberTypeIds, err := c.resolveUnionMemberTypeIds(decl)
+		if err != nil {
+			return err
+		}
+		ut := runtime.MakeUnionType(sym, memberTypeIds)
+		ut.Attributes = attributes
 		c.constants[*sym.ConstantId] = ut
 		return nil
 
@@ -2082,6 +2086,27 @@ func resolveStaticRefInTable(table *ast.SymbolTable, ref ast.StaticReference, re
 		}
 	}
 	return nil, fmt.Errorf("unknown reference %q", ref.String())
+}
+
+// resolveUnionMemberTypeIds resolves the member type constant IDs for a union declaration.
+func (c *Compiler) resolveUnionMemberTypeIds(decl *ast.DeclUnion) ([]runtime.TypeId, error) {
+	symbols := c.currentSymbols()
+	if symbols == nil {
+		return nil, fmt.Errorf("missing symbols for union %q", decl.Name)
+	}
+	memberTypeIds := make([]runtime.TypeId, 0, len(decl.Members))
+	for _, member := range decl.Members {
+		memberSym := symbols.LookupRef(member.Member)
+		if memberSym == nil || memberSym.Decl == nil {
+			return nil, fmt.Errorf("unresolved union member %q", member.Member.String())
+		}
+		memberSym = memberSym.Original()
+		if memberSym.ConstantId == nil {
+			return nil, fmt.Errorf("union member %q has no constant id", member.Member.String())
+		}
+		memberTypeIds = append(memberTypeIds, runtime.TypeId(*memberSym.ConstantId))
+	}
+	return memberTypeIds, nil
 }
 
 func (c *Compiler) findImportedModuleByPrefix(module *ast.ContextModule, ref ast.StaticReference) ast.ModuleName {

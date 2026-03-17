@@ -1215,6 +1215,227 @@ func TestDeclAttr(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestDeclUnion(t *testing.T) {
+	t.Run("empty union", func(t *testing.T) {
+		tests := []compilerTestCase{
+			{
+				label: "empty union",
+				input: `union Example`,
+				expectedConstants: []any{
+					compiledUnionType{
+						name:        "Example",
+						memberCount: 0,
+					},
+				},
+			},
+		}
+		runCompilerTests(t, tests)
+	})
+
+	t.Run("union with data members resolves members", func(t *testing.T) {
+		module := prepareContextModuleParsing(t, "module.test", `
+			mod test
+			data A
+			data B
+			union AB {
+				A
+				B
+			}
+		`)
+		resolver := newTestModuleResolver(module, nil)
+
+		comp := compiler.New(resolver)
+		if err := comp.Compile(module); err != nil {
+			t.Fatalf("compile: %s", err)
+		}
+
+		bytecode := comp.Bytecode()
+
+		var unionType *runtime.UnionType
+		dataNames := map[string]bool{}
+		for _, constant := range bytecode.Constants {
+			switch c := constant.(type) {
+			case *runtime.UnionType:
+				if c.Symbol.Name == "AB" {
+					unionType = c
+				}
+			case *runtime.DataType:
+				dataNames[c.Symbol.Name] = true
+			}
+		}
+
+		if unionType == nil {
+			t.Fatal("missing union type constant for AB")
+			return
+		}
+		if !dataNames["A"] || !dataNames["B"] {
+			t.Fatalf("missing data type constants, got: %v", dataNames)
+		}
+		if len(unionType.MemberTypeIds) != 2 {
+			t.Fatalf("expected 2 members, got %d", len(unionType.MemberTypeIds))
+		}
+	})
+
+	t.Run("union with inline data resolves members", func(t *testing.T) {
+		module := prepareContextModuleParsing(t, "module.test", `
+			mod test
+			union Example {
+				data Foo
+				data Bar { value }
+			}
+		`)
+		resolver := newTestModuleResolver(module, nil)
+
+		comp := compiler.New(resolver)
+		if err := comp.Compile(module); err != nil {
+			t.Fatalf("compile: %s", err)
+		}
+
+		bytecode := comp.Bytecode()
+
+		var unionType *runtime.UnionType
+		dataNames := map[string]bool{}
+		for _, constant := range bytecode.Constants {
+			switch c := constant.(type) {
+			case *runtime.UnionType:
+				if c.Symbol.Name == "Example" {
+					unionType = c
+				}
+			case *runtime.DataType:
+				dataNames[c.Symbol.Name] = true
+			}
+		}
+
+		if unionType == nil {
+			t.Fatal("missing union type constant for Example")
+			return
+		}
+		if !dataNames["Foo"] || !dataNames["Bar"] {
+			t.Fatalf("missing data type constants, got: %v", dataNames)
+		}
+		if len(unionType.MemberTypeIds) != 2 {
+			t.Fatalf("expected 2 members, got %d", len(unionType.MemberTypeIds))
+		}
+	})
+}
+
+func TestUnionMemberTypeIds(t *testing.T) {
+	module := prepareContextModuleParsing(t, "module.test", `
+		mod test
+		data A
+		data B { value }
+		union AB {
+			A
+			B
+		}
+	`)
+	resolver := newTestModuleResolver(module, nil)
+
+	comp := compiler.New(resolver)
+	if err := comp.Compile(module); err != nil {
+		t.Fatalf("compile: %s", err)
+	}
+
+	bytecode := comp.Bytecode()
+
+	var unionType *runtime.UnionType
+	var dataA, dataB *runtime.DataType
+	for _, constant := range bytecode.Constants {
+		switch c := constant.(type) {
+		case *runtime.UnionType:
+			if c.Symbol.Name == "AB" {
+				unionType = c
+			}
+		case *runtime.DataType:
+			if c.Symbol.Name == "A" {
+				dataA = c
+			}
+			if c.Symbol.Name == "B" {
+				dataB = c
+			}
+		}
+	}
+
+	if unionType == nil {
+		t.Fatal("missing union type constant for AB")
+		return
+	}
+	if dataA == nil || dataB == nil {
+		t.Fatal("missing data type constants for A or B")
+		return
+	}
+
+	if len(unionType.MemberTypeIds) != 2 {
+		t.Fatalf("expected 2 members, got %d", len(unionType.MemberTypeIds))
+	}
+
+	aTypeId := runtime.TypeId(*dataA.Symbol.ConstantId)
+	bTypeId := runtime.TypeId(*dataB.Symbol.ConstantId)
+
+	if !unionType.IsMember(aTypeId) {
+		t.Errorf("expected A (type id %d) to be a member of AB", aTypeId)
+	}
+	if !unionType.IsMember(bTypeId) {
+		t.Errorf("expected B (type id %d) to be a member of AB", bTypeId)
+	}
+	if unionType.IsMember(999) {
+		t.Error("expected type id 999 NOT to be a member of AB")
+	}
+}
+
+func TestUnionTypeAttributes(t *testing.T) {
+	module := prepareContextModuleParsing(t, "module.test", `
+		mod test
+		attr Tag { label }
+		@Tag("important")
+		union Example {
+			data A
+			data B
+		}
+	`)
+	resolver := newTestModuleResolver(module, nil)
+
+	comp := compiler.New(resolver)
+	if err := comp.Compile(module); err != nil {
+		t.Fatalf("compile: %s", err)
+	}
+
+	bytecode := comp.Bytecode()
+
+	var unionType *runtime.UnionType
+	var attrType *runtime.AttributeType
+	for _, constant := range bytecode.Constants {
+		switch c := constant.(type) {
+		case *runtime.UnionType:
+			if c.Symbol.Name == "Example" {
+				unionType = c
+			}
+		case *runtime.AttributeType:
+			if c.Symbol.Name == "Tag" {
+				attrType = c
+			}
+		}
+	}
+
+	if unionType == nil {
+		t.Fatal("missing union type constant for Example")
+		return
+	}
+	if attrType == nil {
+		t.Fatal("missing attribute type constant for Tag")
+		return
+	}
+
+	if len(unionType.Attributes) != 1 {
+		t.Fatalf("expected 1 attribute on union, got %d", len(unionType.Attributes))
+	}
+
+	typeId := runtime.TypeId(*attrType.Symbol.ConstantId)
+	if _, ok := unionType.Attributes[typeId]; !ok {
+		t.Fatalf("missing Tag attribute on union (type id %d)", typeId)
+	}
+}
+
 func TestFunctionAttributes(t *testing.T) {
 	module := prepareContextModuleParsing(t, "module.test", `
 		attr Job { jobName }
@@ -1885,6 +2106,19 @@ func testConstants(
 					return fmt.Errorf("wrong field name at %d.%d.\nwant=%q\ngot=%q", i, j, field.name, got.FieldSymbols[j].Name)
 				}
 			}
+		case compiledUnionType:
+			got, ok := actual[i].(*runtime.UnionType)
+			if !ok {
+				return fmt.Errorf("constant %d is not a union type: %T", i, actual[i])
+			}
+
+			if got.Symbol.Name != want.name {
+				return fmt.Errorf("wrong union type name at %d.\nwant=%q\ngot=%q", i, want.name, got.Symbol.Name)
+			}
+
+			if len(got.MemberTypeIds) != want.memberCount {
+				return fmt.Errorf("wrong member count at %d.\nwant=%d\ngot=%d", i, want.memberCount, len(got.MemberTypeIds))
+			}
 		case compiledAttributeType:
 			got, ok := actual[i].(*runtime.AttributeType)
 			if !ok {
@@ -1967,6 +2201,10 @@ type compiledFunction struct {
 type compiledDataType struct {
 	name   string
 	fields []compiledField
+}
+type compiledUnionType struct {
+	name        string
+	memberCount int
 }
 type compiledAttributeType struct {
 	name   string

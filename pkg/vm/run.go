@@ -80,6 +80,23 @@ func (vm *VM) runTask(taskId TaskId) error {
 				return fmt.Errorf("unexpected type (%T %q)", v, v.Inspect())
 			}
 
+		case op.IsType:
+			constId := int(op.ReadUint16(ins[ip:]))
+			fr.ip += 2
+			v := vm.pop()
+			typeVal := vm.constants[constId]
+			var result runtime.Bool
+			if ut, ok := typeVal.(*runtime.UnionType); ok {
+				result = runtime.Bool(ut.IsMember(v.TypeConstantId()))
+			} else {
+				// The constant index is the type's ConstantId, which is
+				// what DataValue.TypeConstantId() returns for its type.
+				result = runtime.Bool(v.TypeConstantId() == runtime.TypeId(constId))
+			}
+			if err := vm.push(result); err != nil {
+				return err
+			}
+
 		case op.Invert:
 			v, ok := vm.pop().(runtime.Bool)
 			if !ok {

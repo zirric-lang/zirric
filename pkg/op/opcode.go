@@ -82,6 +82,11 @@ const (
 	// locals[index] = &UpvalueCell{Value: locals[index]}.
 	// Emitted right after the initial SetLocal for a captured var.
 	WrapLocal
+
+	// IsType checks whether the value on top of the stack is of a given type.
+	// If the constant is a UnionType, checks membership. Otherwise compares
+	// TypeConstantId directly. Pops the value and pushes a Bool result.
+	IsType
 )
 
 var definitions = map[Opcode]*Definition{
@@ -142,4 +147,5 @@ var definitions = map[Opcode]*Definition{
 	GetLocalCell: {"getlocalcell", []int{2}},   // local index
 	SetLocalCell: {"setlocalcell", []int{2}},   // local index
 	WrapLocal:    {"wraplocal", []int{2}},      // local index
+	IsType:       {"istype", []int{2}},         // const id of type or union
 }

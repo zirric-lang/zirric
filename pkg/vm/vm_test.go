@@ -10,6 +10,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/compiler"
 	"code.knabel.dev/zirric-lang/zirric/pkg/lexer"
+	"code.knabel.dev/zirric-lang/zirric/pkg/op"
 	"code.knabel.dev/zirric-lang/zirric/pkg/parser"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/staticmodule"
@@ -1869,6 +1870,251 @@ func TestClosures(t *testing.T) {
 			f()
 			`,
 			expected: 11,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestIsTypeOpcode(t *testing.T) {
+	// These tests construct bytecode manually since no Zirric syntax
+	// emits IsType yet (it will be used by switch/case @Type).
+
+	makeSymbol := func(name string, constId, typeConstId int) *ast.Symbol {
+		cid := constId
+		tcid := typeConstId
+		return &ast.Symbol{
+			Name: name,
+			Decl: &ast.DeclData{
+				Name: ast.Identifier{Value: name},
+			},
+			ConstantId: &cid,
+			TypeSymbol: &ast.Symbol{
+				Name:       name + "Meta",
+				ConstantId: &tcid,
+			},
+		}
+	}
+
+	t.Run("IsType with exact DataType match", func(t *testing.T) {
+		// Constants:
+		//   0 = DataType "A" (ConstantId=0)
+		//   1 = DataValue with TypeId=0
+		symA := makeSymbol("A", 0, 100)
+		dtA := &runtime.DataType{
+			Symbol:       symA,
+			FieldSymbols: nil,
+		}
+		dvA := &runtime.DataValue{TypeId: 0, Values: nil, Fields: nil}
+
+		instructions := flatten(
+			op.Make(op.Const, 1),  // push DataValue
+			op.Make(op.IsType, 0), // IsType against constant[0] = DataType "A"
+			op.Make(op.Pop),
+		)
+
+		bytecode := &compiler.Bytecode{
+			Instructions: instructions,
+			Constants:    []runtime.RuntimeValue{dtA, dvA},
+			MainLocals:   0,
+		}
+		machine := vm.New(bytecode)
+		if err := machine.Run(); err != nil {
+			t.Fatalf("vm error: %s", err)
+		}
+		result := machine.LastPoppedStackElem()
+		if result != runtime.Bool(true) {
+			t.Errorf("expected true, got %v", result)
+		}
+	})
+
+	t.Run("IsType with non-matching DataType", func(t *testing.T) {
+		symA := makeSymbol("A", 0, 100)
+		dtA := &runtime.DataType{
+			Symbol:       symA,
+			FieldSymbols: nil,
+		}
+		// DataValue with TypeId=20 (different from A's slot 0)
+		dvB := &runtime.DataValue{TypeId: 20, Values: nil, Fields: nil}
+
+		instructions := flatten(
+			op.Make(op.Const, 1),  // push DataValue
+			op.Make(op.IsType, 0), // IsType against constant[0] = DataType "A"
+			op.Make(op.Pop),
+		)
+
+		bytecode := &compiler.Bytecode{
+			Instructions: instructions,
+			Constants:    []runtime.RuntimeValue{dtA, dvB},
+			MainLocals:   0,
+		}
+		machine := vm.New(bytecode)
+		if err := machine.Run(); err != nil {
+			t.Fatalf("vm error: %s", err)
+		}
+		result := machine.LastPoppedStackElem()
+		if result != runtime.Bool(false) {
+			t.Errorf("expected false, got %v", result)
+		}
+	})
+
+	t.Run("IsType with UnionType member", func(t *testing.T) {
+		symU := makeSymbol("U", 30, 300)
+		symU.Decl = &ast.DeclUnion{Name: ast.Identifier{Value: "U"}}
+		union := runtime.MakeUnionType(symU, []runtime.TypeId{10, 20})
+
+		dvA := &runtime.DataValue{TypeId: 10, Values: nil, Fields: nil}
+
+		instructions := flatten(
+			op.Make(op.Const, 1),  // push DataValue
+			op.Make(op.IsType, 0), // IsType against UnionType "U"
+			op.Make(op.Pop),
+		)
+
+		bytecode := &compiler.Bytecode{
+			Instructions: instructions,
+			Constants:    []runtime.RuntimeValue{union, dvA},
+			MainLocals:   0,
+		}
+		machine := vm.New(bytecode)
+		if err := machine.Run(); err != nil {
+			t.Fatalf("vm error: %s", err)
+		}
+		result := machine.LastPoppedStackElem()
+		if result != runtime.Bool(true) {
+			t.Errorf("expected true (member of union), got %v", result)
+		}
+	})
+
+	t.Run("IsType with UnionType non-member", func(t *testing.T) {
+		symU := makeSymbol("U", 30, 300)
+		symU.Decl = &ast.DeclUnion{Name: ast.Identifier{Value: "U"}}
+		union := runtime.MakeUnionType(symU, []runtime.TypeId{10, 20})
+
+		dvC := &runtime.DataValue{TypeId: 99, Values: nil, Fields: nil}
+
+		instructions := flatten(
+			op.Make(op.Const, 1),  // push DataValue
+			op.Make(op.IsType, 0), // IsType against UnionType "U"
+			op.Make(op.Pop),
+		)
+
+		bytecode := &compiler.Bytecode{
+			Instructions: instructions,
+			Constants:    []runtime.RuntimeValue{union, dvC},
+			MainLocals:   0,
+		}
+		machine := vm.New(bytecode)
+		if err := machine.Run(); err != nil {
+			t.Fatalf("vm error: %s", err)
+		}
+		result := machine.LastPoppedStackElem()
+		if result != runtime.Bool(false) {
+			t.Errorf("expected false (not a member), got %v", result)
+		}
+	})
+
+	t.Run("IsType with empty UnionType", func(t *testing.T) {
+		symU := makeSymbol("U", 30, 300)
+		symU.Decl = &ast.DeclUnion{Name: ast.Identifier{Value: "U"}}
+		union := runtime.MakeUnionType(symU, []runtime.TypeId{})
+
+		dvA := &runtime.DataValue{TypeId: 10, Values: nil, Fields: nil}
+
+		instructions := flatten(
+			op.Make(op.Const, 1),
+			op.Make(op.IsType, 0),
+			op.Make(op.Pop),
+		)
+
+		bytecode := &compiler.Bytecode{
+			Instructions: instructions,
+			Constants:    []runtime.RuntimeValue{union, dvA},
+			MainLocals:   0,
+		}
+		machine := vm.New(bytecode)
+		if err := machine.Run(); err != nil {
+			t.Fatalf("vm error: %s", err)
+		}
+		result := machine.LastPoppedStackElem()
+		if result != runtime.Bool(false) {
+			t.Errorf("expected false (empty union), got %v", result)
+		}
+	})
+
+	t.Run("IsType with primitive Int value", func(t *testing.T) {
+		symU := makeSymbol("U", 30, 300)
+		symU.Decl = &ast.DeclUnion{Name: ast.Identifier{Value: "U"}}
+		intTypeId := runtime.Int(0).TypeConstantId()
+		union := runtime.MakeUnionType(symU, []runtime.TypeId{intTypeId})
+
+		instructions := flatten(
+			op.Make(op.Const, 1),  // push Int(42)
+			op.Make(op.IsType, 0), // IsType against union containing Int
+			op.Make(op.Pop),
+		)
+
+		bytecode := &compiler.Bytecode{
+			Instructions: instructions,
+			Constants:    []runtime.RuntimeValue{union, runtime.Int(42)},
+			MainLocals:   0,
+		}
+		machine := vm.New(bytecode)
+		if err := machine.Run(); err != nil {
+			t.Fatalf("vm error: %s", err)
+		}
+		result := machine.LastPoppedStackElem()
+		if result != runtime.Bool(true) {
+			t.Errorf("expected true (Int is member), got %v", result)
+		}
+	})
+}
+
+// flatten concatenates multiple byte slices into a single Instructions slice.
+func flatten(slices ...[]byte) op.Instructions {
+	var out op.Instructions
+	for _, s := range slices {
+		out = append(out, s...)
+	}
+	return out
+}
+
+func TestUnionDeclaration(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			label: "union declaration does not error",
+			input: `
+			data A
+			data B
+			union AB {
+				A
+				B
+			}
+			1
+			`,
+			expected: 1,
+		},
+		{
+			label: "union with inline data does not error",
+			input: `
+			union Shape {
+				data Circle { radius }
+				data Rect { width height }
+			}
+			Circle(5).radius
+			`,
+			expected: 5,
+		},
+		{
+			label: "inline data members accessible from outside union",
+			input: `
+			union Shape {
+				data Circle { radius }
+				data Rect { width height }
+			}
+			Rect(10, 20).height
+			`,
+			expected: 20,
 		},
 	}
 
