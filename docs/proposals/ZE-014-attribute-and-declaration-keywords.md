@@ -41,9 +41,9 @@ The following table shows every affected keyword:
 | ------------ | ----------- | ------------------------ |
 | `func`       | `fn`        | `fn greet(name) { ... }` |
 | `annotation` | `attr`      | `attr Numeric {}`        |
-| `module`     | `mod`       | `mod math { ... }`       |
+| `module`     | `mod`       | `mod math`               |
 
-Everything else — `let`, `data`, `union`, `import`, `extern` — remains as-is.
+Everything else — `var`, `const`, `data`, `union`, `import`, `extern` — remains as-is.
 
 ```zirric
 // Before

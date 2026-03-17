@@ -20,8 +20,8 @@ More details are available in the [language documentation](https://zirric.knabel
 ### Variables, functions, and data types
 
 ```zirric
-let answer = 42
-let items = [1, 2, 3]
+const answer = 42
+const items = [1, 2, 3]
 
 fn greet(name) {
     "Hello, " + name
@@ -32,7 +32,7 @@ data Person {
     age
 }
 
-let alice = Person("Alice", 30)
+const alice = Person("Alice", 30)
 print(greet(alice.name))
 ```
 
@@ -43,7 +43,7 @@ The examples below use the expression forms, which yield values and can be
 nested inside other expressions.
 
 ```zirric
-let message = if answer == 42 { "yes" } else { "no" }
+const message = if answer == 42 { "yes" } else { "no" }
 
 for item <- items {
     print(item)
@@ -77,7 +77,7 @@ union Result {
     data Err { message }
 }
 
-let r = Ok(42)
+const r = Ok(42)
 ```
 
 ### Attributes

@@ -29,7 +29,7 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 
 ### Core mental model (intuition)
 
-- **Declarations**: Zirric is declaration-driven (`let`, `fn`, `data`, `union`, `extern`, `attr`, `mod`, `import`), with attributes as the primary metadata mechanism.
+- **Declarations**: Zirric is declaration-driven (`var`, `const`, `fn`, `data`, `union`, `extern`, `attr`, `mod`, `import`), with attributes as the primary metadata mechanism.
 - **Dynamic but strict**: Values are dynamic, yet conversions are explicit; annotations like `@Type`, `@Has`, and `@Returns` communicate intent to tooling and runtime checks.
 - **Data and unions**: `data` defines record-like types with named fields; `union` are a declared nominal supertype consisting of a fixed set of existing types; values are implicitly usable as a union if their concrete type is a member (often with nested `data` members).
 - **Attributes are first-class**: Many behaviors (type hints, defaults, docs, protocols) are expressed via attributes in `prelude/attributes.zirr`.
@@ -250,6 +250,46 @@ GitHub Actions workflow (`.github/workflows/go.yml`):
 - **Module cache**: If weird dependency errors, try `go clean -cache && go mod tidy`
 - **Test timing**: `gitreg` tests can be slow (~800ms) due to Git operations
 - **CLI entrypoint**: `cmd/zirric/main.go` is the executable entry for the CLI
+
+## Zirric Evolution Proposals (ZE)
+
+Proposals live in `docs/proposals/` and follow a defined lifecycle. Each proposal has a status: **Draft**, **In Progress**, **Implemented**, or **Rejected**.
+
+### Creating a New Proposal
+
+1. Copy `docs/proposals/ZE-000-template.md` to `docs/proposals/ZE-NNN-short-name.md` where `NNN` is the next available number.
+2. Update the frontmatter (`title`, `description`) and fill out all template sections.
+3. Keep exactly one status callout block from the template (Draft for new proposals) and remove the others.
+4. Add a row to the table in `docs/proposals/index.md` with the correct status.
+5. Add a navigation entry in `tasks/docmd/docmd.config.js` under the `Proposals` children array. Use the appropriate icon for the status:
+   - Draft → `icon: "circle"`
+   - In Progress → `icon: "circle-dot"`
+   - Implemented → `icon: "circle-check"`
+   - Rejected → `icon: "circle-x"`
+
+### Updating Proposal Status
+
+When changing a proposal's status, update **all three** locations:
+
+1. **The proposal file** (`docs/proposals/ZE-NNN-*.md`): Replace the status callout block with the appropriate one from the template (`ZE-000-template.md`). Each status has a distinct callout style and SVG icon:
+   - Draft: `::: callout draft` with circle SVG
+   - In Progress: `::: callout warning` with circle-dot SVG
+   - Implemented: `::: callout tip` with circle-check SVG
+   - Rejected: `::: callout danger` with circle-x SVG
+2. **The index** (`docs/proposals/index.md`): Update the Status column in the proposals table.
+3. **The navigation config** (`tasks/docmd/docmd.config.js`): Update the `icon` field of the corresponding entry in the Proposals children array.
+
+### When a Proposal Is Implemented
+
+After marking a proposal as Implemented, perform these additional steps:
+
+1. **Update the specification**: Reflect the new feature in the relevant files under `docs/specification/` (expressions, declarations, control-flow, annotations, typesystem).
+2. **Update the getting-started guide**: If the feature affects onboarding or common usage, update `docs/guides/getting-started.md`.
+3. **Search for outdated code and docs**: Look for old APIs, syntax, or descriptions that contradict the implemented proposal in:
+   - `*.zirr` source files (e.g., `prelude/`, `future/`, `examples/`)
+   - `Cavefile` files (e.g., `examples/project/Cavefile`)
+   - All documentation under `docs/` (excluding other proposals in `docs/proposals/`)
+4. **Do NOT update other proposals** in `docs/proposals/` — proposals are historical records of their time. Update all other outdated documentation under `docs/`.
 
 ## Instructions for Coding Agents
 

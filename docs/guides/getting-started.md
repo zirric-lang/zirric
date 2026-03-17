@@ -36,7 +36,7 @@ attr Returns {
     type
 }
 
-let answer = 42
+const answer = 42
 
 fn greet(name) {
     return "Hello, " + name
@@ -73,13 +73,13 @@ Declare variables with `let` and functions with `fn`. Functions can return
 any value.
 
 ```zirric
-let answer = 42
+const answer = 42
 
 fn greet(name) {
     return "Hello, " + name
 }
 
-let message = greet("Zirric")
+const message = greet("Zirric")
 ```
 
 Functions are values and can be passed around like any other expression:
@@ -106,8 +106,8 @@ union Result {
     data Err { message }
 }
 
-let person = Person("Avery", 30)
-let ok = Ok("Done")
+const person = Person("Avery", 30)
+const ok = Ok("Done")
 ```
 
 ## Control flow
@@ -116,7 +116,7 @@ let ok = Ok("Done")
 values; statement forms are for side effects.
 
 ```zirric
-let status = if answer == 42 {
+const status = if answer == 42 {
     "yes"
 } else {
     "no"
@@ -132,7 +132,7 @@ for item <- [1, 2, 3] {
     print(item)
 }
 
-let oddNumbers = for item <- [1, 2, 3] {
+const oddNumbers = for item <- [1, 2, 3] {
     if item % 2 != 0 {
         item
     } else {

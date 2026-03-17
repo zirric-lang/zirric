@@ -234,10 +234,10 @@ func TestReplEvalLine_AccumulatesState(t *testing.T) {
 	state := newTestReplState(t)
 
 	if _, err := replEvalLine(state, "const a = 10"); err != nil {
-		t.Fatalf("let a failed: %v", err)
+		t.Fatalf("const a failed: %v", err)
 	}
 	if _, err := replEvalLine(state, "const b = 20"); err != nil {
-		t.Fatalf("let b failed: %v", err)
+		t.Fatalf("const b failed: %v", err)
 	}
 
 	result, err := replEvalLine(state, "a + b")

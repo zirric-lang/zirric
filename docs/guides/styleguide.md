@@ -81,26 +81,28 @@ print_line
 reflect.reflectType
 ```
 
-## Variables
+## Variables and Constants
 
 Variable names use `camelCase`. Names should be as long as their scope: short
 names for tight scopes, longer names for shared or public values. Reuse common
 names in well-known patterns.
 
+Prefer constants if possible.
+
 ```zirric
 // good
-let name = "John"
-let person = Person("John", 42)
-let err = http.Error("Not found")
+const name = "John"
+const person = Person("John", 42)
+const err = http.Error("Not found")
 
 fn printPersonName(p) {
     print(p.name)
 }
 
 // bad
-let n = "John"
-let p = Person("John", 42)
-let error = http.Error("Not found")
+const n = "John"
+const p = Person("John", 42)
+const error = http.Error("Not found")
 
 fn printName(n) {
     print(n.name)

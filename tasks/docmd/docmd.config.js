@@ -208,8 +208,8 @@ module.exports = {
         },
         {
           icon: "circle",
-          title: "ZE-07 Binding",
-          path: "/proposals/ZE-007-annotation-binding"
+          title: "ZE-07 Attribute Binding",
+          path: "/proposals/ZE-007-attribute-binding"
         },
         {
           icon: "circle-dot",

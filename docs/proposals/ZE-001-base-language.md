@@ -62,7 +62,7 @@ Zirric is an imperative and functional programming language.
 
 Different kinds of declarations are supported:
 
-- `let` variables
+- `let` variables, changed in [ZE-013 Mutability and Constants](./ZE-013-mutability-and-constants.md)
 - `fn` functions
 - `union` that group other types
 - `data` that define custom data types
@@ -133,6 +133,9 @@ false              // Bool
 ```
 
 ### Variables
+
+> [ZE-013 Mutability and Constants](./ZE-013-mutability-and-constants.md) replaces `let` variables into `var` and `const`.
+> This section is kept for historical reasons.
 
 Variables can be declared with the `let` keyword.
 Variables are only valid within their scope and nested scopes.
