@@ -105,7 +105,7 @@ func (a *Analyzer) assignModuleIDs(module *ast.ContextModule, reserveModule bool
 			continue
 		}
 		switch decl := sym.Decl.(type) {
-		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAttr:
+		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclExternValue, *ast.DeclAttr:
 			if sym.ConstantId == nil {
 				id := a.AllocateConstantId()
 				sym.ConstantId = &id
@@ -139,6 +139,12 @@ func (a *Analyzer) assignModuleIDs(module *ast.ContextModule, reserveModule bool
 				id := a.reserveModuleGlobal(uri)
 				sym.GlobalId = &id
 			}
+		case ast.DeclImportMember:
+			if sym.GlobalId == nil {
+				id := a.nextGlobal
+				a.nextGlobal++
+				sym.GlobalId = &id
+			}
 		}
 	}
 
@@ -159,6 +165,13 @@ func (a *Analyzer) assignModuleIDs(module *ast.ContextModule, reserveModule bool
 				if sym.GlobalId == nil {
 					uri := decl.ModuleName.URI()
 					id := a.reserveModuleGlobal(uri)
+					sym.GlobalId = &id
+				}
+			case ast.DeclImportMember:
+				_ = decl
+				if sym.GlobalId == nil {
+					id := a.nextGlobal
+					a.nextGlobal++
 					sym.GlobalId = &id
 				}
 			case *ast.DeclModule:

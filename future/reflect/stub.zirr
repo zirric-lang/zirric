@@ -23,7 +23,7 @@ attr Name {
 fn typeOf(@Any value) {}
 
 @Returns(Array(Field))
-fn fieldsOf(@Type type) {}
+fn fieldsOf(@Type typeValue) {}
 
 @Returns(Result)
 @OkType(AnyAttribute)

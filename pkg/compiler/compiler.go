@@ -208,7 +208,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("undefined identifier %q", node.Name)
 		}
 		switch symbol.Decl.(type) {
-		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAttr:
+		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclExternValue, *ast.DeclAttr:
 			sym := symbol.Original()
 			// A local DeclFunc with captures gets a LocalId pointing to
 			// its runtime Closure object. Check the direct symbol first
@@ -285,6 +285,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 			sym := symbol.Original()
 			if sym.GlobalId == nil {
 				return fmt.Errorf("module %q has no global id", node.Name)
+			}
+			c.emit(op.GetGlobal, *sym.GlobalId)
+			return nil
+
+		case ast.DeclImportMember:
+			sym := symbol.Original()
+			if sym.GlobalId == nil {
+				return fmt.Errorf("import member %q has no global id", node.Name)
 			}
 			c.emit(op.GetGlobal, *sym.GlobalId)
 			return nil
@@ -419,7 +427,7 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 		c.scopes[c.scopeIdx].locals[*sym.LocalId] = sym
 		return nil
 
-	case *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAttr:
+	case *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclExternValue, *ast.DeclAttr:
 		if sym.ConstantId == nil {
 			return fmt.Errorf("declaration %q has no constant id", sym.Name)
 		}
@@ -437,6 +445,14 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 	case *ast.DeclImport:
 		if sym.GlobalId == nil {
 			return fmt.Errorf("import %q has no global id", decl.ModuleName)
+		}
+		c.ensureGlobalSlot(*sym.GlobalId)
+		c.moduleGlobals[decl.ModuleName.URI()] = *sym.GlobalId
+		return nil
+
+	case ast.DeclImportMember:
+		if sym.GlobalId == nil {
+			return fmt.Errorf("import member %q has no global id", decl.Name.Value)
 		}
 		c.ensureGlobalSlot(*sym.GlobalId)
 		return nil
@@ -1276,6 +1292,14 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		c.constants[*sym.ConstantId] = runtime.SimpleType{Decl: sym, Attributes: attributes}
 		return nil
 
+	case *ast.DeclExternValue:
+		val := c.plugins.Prelude().Bind(c.currentSymbols(), sym)
+		if val == nil {
+			return fmt.Errorf("extern value %q has no runtime binding", sym.Name)
+		}
+		c.constants[*sym.ConstantId] = val
+		return nil
+
 	case *ast.DeclExternFunc:
 		attributes, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols())
 		if err != nil {
@@ -1495,9 +1519,28 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return fmt.Errorf("import %q has no global id", decl.ModuleName)
 		}
 		c.ensureGlobalSlot(*sym.GlobalId)
-		c.moduleGlobals[uri] = *sym.GlobalId
 
 		return c.compileModuleIfNeeded(uri, *sym.GlobalId)
+
+	case ast.DeclImportMember:
+		moduleURI := decl.ModuleName.URI()
+		moduleGlobalId, ok := c.moduleGlobals[moduleURI]
+		if !ok {
+			return fmt.Errorf("import member %q: module %q not indexed", decl.Name.Value, moduleURI)
+		}
+		if sym.GlobalId == nil {
+			return fmt.Errorf("import member %q has no global id", decl.Name.Value)
+		}
+
+		// Create an init scope that loads the module and gets the member.
+		// At runtime, GetGlobal lazily executes this scope on first access.
+		c.enterScope(nil)
+		c.emit(op.GetGlobal, moduleGlobalId)
+		nameId := c.addConstant(c.plugins.Prelude().String(decl.Name.Value))
+		c.emit(op.GetField, nameId)
+		scope := c.leaveScope()
+		c.globals[*sym.GlobalId] = scope
+		return nil
 
 	default:
 		return fmt.Errorf("unknown declaration %T", decl)
@@ -1531,6 +1574,28 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 		if err := c.reserveSymbol(sym); err != nil {
 			c.leaveScope()
 			return err
+		}
+	}
+
+	// Reserve file-level imports before compiling module-level symbols.
+	// Promoted declarations (e.g. data) may reference file-local imports
+	// in their attributes (e.g. @cave.Dependencies), so the import's
+	// module global must be registered before attribute resolution.
+	for _, src := range module.Files {
+		if src.Symbols == nil {
+			continue
+		}
+		for _, sym := range src.Symbols.Symbols {
+			if sym.Decl == nil {
+				continue
+			}
+			switch sym.Decl.(type) {
+			case *ast.DeclImport, ast.DeclImportMember:
+				if err := c.reserveSymbol(sym); err != nil {
+					c.leaveScope()
+					return err
+				}
+			}
 		}
 	}
 
@@ -1774,7 +1839,7 @@ func (c *Compiler) compileModuleValue(module *ast.ContextModule) error {
 
 func (c *Compiler) emitModuleExport(sym *ast.Symbol) error {
 	switch sym.Decl.(type) {
-	case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAttr:
+	case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclExternValue, *ast.DeclAttr:
 		if sym.ConstantId == nil {
 			return fmt.Errorf("identifier %q has no constant id", sym.Name)
 		}
@@ -1890,15 +1955,20 @@ func (c *Compiler) resolveAttributeReference(ref ast.StaticReference, symbols *a
 		return nil, fmt.Errorf("missing symbols for attribute reference %q", ref.String())
 	}
 	if len(ref) == 1 {
-		sym := symbols.LookupIdentifier(ref[0])
-		if sym == nil || sym.Decl == nil {
+		sym := c.lookupAttributeSymbol(ref[0].Value, symbols)
+		if sym == nil {
 			return nil, fmt.Errorf("unknown attribute %q", ref.String())
+		}
+		// If the symbol is an import member, resolve the actual attribute
+		// from the imported module.
+		if member, ok := sym.Original().Decl.(ast.DeclImportMember); ok {
+			return c.resolveAttributeFromModuleName(member.ModuleName, ast.StaticReference{ref[0]}, ref.String())
 		}
 		return requireAttributeSymbol(sym, ref.String())
 	}
 
 	head := ref[0]
-	if sym := symbols.LookupIdentifier(head); sym != nil && sym.Decl != nil {
+	if sym := c.lookupAttributeSymbol(head.Value, symbols); sym != nil {
 		if decl, ok := sym.Decl.(*ast.DeclImport); ok {
 			return c.resolveAttributeFromImport(decl, ref[1:], ref.String())
 		}
@@ -1916,6 +1986,33 @@ func (c *Compiler) resolveAttributeReference(ref ast.StaticReference, symbols *a
 	}
 
 	return nil, fmt.Errorf("unknown attribute %q", ref.String())
+}
+
+// lookupAttributeSymbol finds a symbol by name for attribute resolution.
+// Unlike LookupIdentifier, it does not create phantom symbols.
+// When at module scope, it also checks file scopes for file-local
+// declarations like imports that are not promoted to module level.
+func (c *Compiler) lookupAttributeSymbol(name string, symbols *ast.SymbolTable) *ast.Symbol {
+	for cur := symbols; cur != nil; cur = cur.Parent {
+		if sym, ok := cur.Symbols[name]; ok && sym != nil && sym.Decl != nil {
+			return sym
+		}
+	}
+	// Declarations like data/func are promoted to module scope but imports
+	// stay file-local. When compiling a promoted symbol's attributes in
+	// module scope, the import is only visible in the originating file's
+	// SymbolTable.
+	if module, ok := symbols.OpenedBy.(*ast.ContextModule); ok {
+		for _, file := range module.Files {
+			if file.Symbols == nil {
+				continue
+			}
+			if sym, ok := file.Symbols.Symbols[name]; ok && sym != nil && sym.Decl != nil {
+				return sym
+			}
+		}
+	}
+	return nil
 }
 
 func (c *Compiler) resolveAttributeFromImport(decl *ast.DeclImport, tail ast.StaticReference, refName string) (*ast.Symbol, error) {
@@ -2126,7 +2223,7 @@ func (c *Compiler) compileIdentAssign(target *ast.ExprIdentifier, augOp token.To
 			return nil
 		}
 		return fmt.Errorf("variable %q has no local or global id", target.Name)
-	case *ast.DeclImport, *ast.DeclModule:
+	case *ast.DeclImport, *ast.DeclModule, ast.DeclImportMember:
 		return fmt.Errorf("cannot assign to import/module %q", target.Name)
 	default:
 		return fmt.Errorf("cannot assign to %T %q", symbol.Decl, target.Name)

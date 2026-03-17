@@ -12,7 +12,7 @@ func (a *Analyzer) populateFunctionParams(module *ast.ContextModule) {
 			continue
 		}
 		populateDeclTableFuncParams(file.Decls)
-		file.EnumerateChildNodes(func(child ast.Node) {
+		walkNode(file, func(child ast.Node) {
 			fn, ok := child.(*ast.ExprFunc)
 			if !ok || fn.Decls == nil {
 				return

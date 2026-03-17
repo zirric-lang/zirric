@@ -93,9 +93,27 @@ func (r *ModuleResolver) ResolveModule(ctx context.Context, uri registry.Logical
 	if err != nil {
 		return nil, err
 	}
-	mod, err := r.findResolvedModule(uri)
-	if err != nil {
-		return nil, err
+	mod, findErr := r.findResolvedModule(uri)
+	if findErr != nil {
+		// Try expanding short stdlib paths (e.g. "prelude" → full URI).
+		expanded := registry.LogicalURI(defaultStandardLibraryName + "." + string(uri))
+		if expMod, ok := r.modules[expanded]; ok {
+			return expMod, nil
+		}
+		if expanded == preludeModuleURI {
+			return r.Prelude(ctx)
+		}
+		if stdMod, stdErr := r.findResolvedModule(expanded); stdErr == nil {
+			ctxMod, err := parseResolvedModule(stdMod, prelude)
+			if err != nil {
+				return nil, err
+			}
+			r.modules[expanded] = ctxMod
+			r.modules[uri] = ctxMod
+			return ctxMod, nil
+		}
+		// Report error using the original short module name.
+		return nil, fmt.Errorf("module %q not found", uri)
 	}
 	ctxMod, err := parseResolvedModule(mod, prelude)
 	if err != nil {

@@ -72,6 +72,9 @@ func (decl DeclExternType) ProvidedDocs() *Docs {
 // EnumerateChildNodes implements Decl.
 func (n DeclExternType) EnumerateChildNodes(action func(child Node)) {
 	action(n.Name)
+	if len(n.Attributes) > 0 {
+		action(n.Attributes)
+	}
 	for _, node := range n.Fields {
 		action(node)
 	}

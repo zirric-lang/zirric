@@ -42,6 +42,8 @@ func (*Prelude) Bind(module *ast.SymbolTable, decl *ast.Symbol) RuntimeValue {
 		return SimpleType{Decl: decl}
 	case "Any":
 		return MakeAnyType(decl)
+	case "void":
+		return Void{}
 	}
 	return nil
 }

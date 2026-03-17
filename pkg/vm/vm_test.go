@@ -251,6 +251,37 @@ func TestExternAttributes(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestExternValueImport(t *testing.T) {
+	// Verify that importing a module containing extern const declarations
+	// compiles and runs without the "unknown declaration *ast.DeclExternValue" error.
+	moduleA := prepareContextModuleParsing(t, "foo.a", `
+		mod a
+		extern type Void {}
+		@Type(Void)
+		extern const void
+		fn answer() { return 42 }
+	`)
+	mainModule, program := prepareSourceFileParsing(t, `
+		import a = foo.a
+		a.answer()
+	`)
+	resolver := newTestModuleResolverWithModules(mainModule, map[registry.LogicalURI]*ast.ContextModule{
+		moduleA.Name: moduleA,
+	})
+
+	comp := compiler.New(resolver)
+	if err := comp.Compile(program); err != nil {
+		t.Fatalf("compiler error: %s", err)
+	}
+
+	vmInstance := vm.New(comp.Bytecode())
+	if err := vmInstance.Run(); err != nil {
+		t.Fatalf("vm error: %s", err)
+	}
+
+	testExpectedValue(t, 42, vmInstance.LastPoppedStackElem())
+}
+
 func TestAttributeTypeAnnotations(t *testing.T) {
 	tests := []vmTestCase{
 		{

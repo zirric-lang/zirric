@@ -51,4 +51,7 @@ func (decl DeclModule) ProvidedDocs() *Docs {
 // EnumerateChildNodes implements Decl.
 func (n DeclModule) EnumerateChildNodes(action func(child Node)) {
 	action(n.Name)
+	if len(n.Attributes) > 0 {
+		action(n.Attributes)
+	}
 }

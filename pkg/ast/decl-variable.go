@@ -63,5 +63,8 @@ func (e DeclVariable) ProvidedDocs() *Docs {
 // EnumerateChildNodes implements Decl.
 func (n DeclVariable) EnumerateChildNodes(action func(child Node)) {
 	action(n.Name)
+	if len(n.Attributes) > 0 {
+		action(n.Attributes)
+	}
 	action(n.Value)
 }

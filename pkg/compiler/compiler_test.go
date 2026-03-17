@@ -1339,6 +1339,51 @@ func TestExternAttributes(t *testing.T) {
 	}
 }
 
+func TestExternValueCompilation(t *testing.T) {
+	// A module containing extern const must compile without
+	// "unknown declaration *ast.DeclExternValue" errors.
+	module := prepareContextModuleParsing(t, "module.test", `
+		extern type Void {}
+		extern const void
+		fn answer() { return 42 }
+	`)
+
+	mainModule := prepareContextModuleParsing(t, "module.main", `mod main`)
+	resolver := newTestModuleResolver(mainModule, map[registry.LogicalURI]*ast.ContextModule{
+		module.Name: module,
+	})
+
+	analysis := analyzer.New(resolver)
+	if errs, _ := analysis.Analyze(module, true); len(errs) > 0 {
+		t.Fatalf("analysis errors: %v", errs)
+	}
+
+	// Verify that DeclExternValue received a ConstantId.
+	voidSym := module.Symbols.Symbols["void"]
+	if voidSym == nil || voidSym.ConstantId == nil {
+		t.Fatal("expected symbol 'void' with a ConstantId in module symbols")
+	}
+
+	// Verify the module can be fully compiled (including extern const).
+	comp := compiler.NewWithAnalyzer(resolver, analysis)
+	if err := comp.Compile(module); err != nil {
+		t.Fatalf("compile: %s", err)
+	}
+
+	// Verify the constant is a Void value.
+	bytecode := comp.Bytecode()
+	found := false
+	for _, constant := range bytecode.Constants {
+		if _, ok := constant.(runtime.Void); ok {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("expected a Void constant in bytecode for extern const void")
+	}
+}
+
 func TestAttributeTypeAnnotations(t *testing.T) {
 	module := prepareContextModuleParsing(t, "module.test", `
 		attr Meta { label }
