@@ -15,19 +15,21 @@ const (
 )
 
 type Frame struct {
-	ins   op.Instructions
-	ip    int
-	basep int
+	ins     op.Instructions
+	ip      int
+	basep   int
+	closure *runtime.Closure
 
 	locals []runtime.RuntimeValue
 }
 
 func newClosureFrame(closure *runtime.Closure, basep int) *Frame {
 	return &Frame{
-		ins:    closure.Fn.Instructions,
-		ip:     0,
-		basep:  basep,
-		locals: make([]runtime.RuntimeValue, closure.Fn.Locals),
+		ins:     closure.Fn.Instructions,
+		ip:      0,
+		basep:   basep,
+		closure: closure,
+		locals:  make([]runtime.RuntimeValue, closure.Fn.Locals),
 	}
 }
 func newGeneralFrame(ins op.Instructions, basep int, locals int) *Frame {

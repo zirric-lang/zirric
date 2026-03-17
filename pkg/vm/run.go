@@ -547,6 +547,20 @@ func (vm *VM) runTask(taskId TaskId) error {
 					frame.locals[argCount-1-i] = vm.stack[vm.sp+i]
 				}
 
+			case *runtime.Closure:
+				if argCount != callee.Arity() {
+					return fmt.Errorf("wrong number of arguments: want=%d, got=%d", callee.Arity(), argCount)
+				}
+
+				frame := newClosureFrame(callee, vm.sp-argCount)
+
+				vm.pushFrame(frame)
+				vm.sp = frame.basep
+
+				for i := 0; i < argCount; i++ {
+					frame.locals[argCount-1-i] = vm.stack[vm.sp+i]
+				}
+
 			case *runtime.DataType:
 				if argCount != callee.Arity() {
 					return fmt.Errorf("wrong number of arguments: want=%d, got=%d", callee.Arity(), argCount)
@@ -563,6 +577,108 @@ func (vm *VM) runTask(taskId TaskId) error {
 					return err
 				}
 			}
+
+		case op.MakeClosure:
+			constIdx := int(op.ReadUint16(ins[fr.ip:]))
+			fr.ip += 2
+			freeCount := int(op.ReadUint16(ins[fr.ip:]))
+			fr.ip += 2
+
+			fn, ok := vm.constants[constIdx].(*runtime.CompiledFunction)
+			if !ok {
+				return fmt.Errorf("MakeClosure: expected *CompiledFunction at constant %d, got %T", constIdx, vm.constants[constIdx])
+			}
+
+			free := make([]runtime.RuntimeValue, freeCount)
+			for i := freeCount - 1; i >= 0; i-- {
+				free[i] = vm.pop()
+			}
+
+			closure := runtime.MakeClosure(fn, free)
+			if err := vm.push(closure); err != nil {
+				return err
+			}
+
+		case op.GetFree:
+			idx := int(op.ReadUint16(ins[ip:]))
+			fr.ip += 2
+			if fr.closure == nil {
+				return fmt.Errorf("GetFree: no closure in current frame")
+			}
+			if idx >= len(fr.closure.Free) {
+				return fmt.Errorf("GetFree: index %d out of range (%d free values)", idx, len(fr.closure.Free))
+			}
+			if err := vm.push(fr.closure.Free[idx]); err != nil {
+				return err
+			}
+
+		case op.GetFreeCell:
+			idx := int(op.ReadUint16(ins[ip:]))
+			fr.ip += 2
+			if fr.closure == nil {
+				return fmt.Errorf("GetFreeCell: no closure in current frame")
+			}
+			if idx >= len(fr.closure.Free) {
+				return fmt.Errorf("GetFreeCell: index %d out of range (%d free values)", idx, len(fr.closure.Free))
+			}
+			cell, ok := fr.closure.Free[idx].(*runtime.UpvalueCell)
+			if !ok {
+				return fmt.Errorf("GetFreeCell: expected *UpvalueCell at Free[%d], got %T", idx, fr.closure.Free[idx])
+			}
+			if err := vm.push(cell.Value); err != nil {
+				return err
+			}
+
+		case op.SetFreeCell:
+			idx := int(op.ReadUint16(ins[ip:]))
+			fr.ip += 2
+			val := vm.pop()
+			if fr.closure == nil {
+				return fmt.Errorf("SetFreeCell: no closure in current frame")
+			}
+			if idx >= len(fr.closure.Free) {
+				return fmt.Errorf("SetFreeCell: index %d out of range (%d free values)", idx, len(fr.closure.Free))
+			}
+			cell, ok := fr.closure.Free[idx].(*runtime.UpvalueCell)
+			if !ok {
+				return fmt.Errorf("SetFreeCell: expected *UpvalueCell at Free[%d], got %T", idx, fr.closure.Free[idx])
+			}
+			cell.Value = val
+
+		case op.GetLocalCell:
+			idx := int(op.ReadUint16(ins[ip:]))
+			fr.ip += 2
+			if idx >= len(fr.locals) {
+				return fmt.Errorf("GetLocalCell: index %d out of range (%d locals)", idx, len(fr.locals))
+			}
+			cell, ok := fr.locals[idx].(*runtime.UpvalueCell)
+			if !ok {
+				return fmt.Errorf("GetLocalCell: expected *UpvalueCell at locals[%d], got %T", idx, fr.locals[idx])
+			}
+			if err := vm.push(cell.Value); err != nil {
+				return err
+			}
+
+		case op.SetLocalCell:
+			idx := int(op.ReadUint16(ins[ip:]))
+			fr.ip += 2
+			val := vm.pop()
+			if idx >= len(fr.locals) {
+				return fmt.Errorf("SetLocalCell: index %d out of range (%d locals)", idx, len(fr.locals))
+			}
+			cell, ok := fr.locals[idx].(*runtime.UpvalueCell)
+			if !ok {
+				return fmt.Errorf("SetLocalCell: expected *UpvalueCell at locals[%d], got %T", idx, fr.locals[idx])
+			}
+			cell.Value = val
+
+		case op.WrapLocal:
+			idx := int(op.ReadUint16(ins[ip:]))
+			fr.ip += 2
+			if idx >= len(fr.locals) {
+				return fmt.Errorf("WrapLocal: index %d out of range (%d locals)", idx, len(fr.locals))
+			}
+			fr.locals[idx] = &runtime.UpvalueCell{Value: fr.locals[idx]}
 
 		case op.Return:
 			ret := vm.pop()

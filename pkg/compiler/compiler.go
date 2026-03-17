@@ -163,6 +163,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 		c.emit(op.Const, idx)
 		return nil
 
+	case *ast.ExprFunc:
+		return c.compileExprFunc(node)
+
 	case *ast.ExprArray:
 		for _, el := range node.Elements {
 			err := c.Compile(el)
@@ -207,6 +210,21 @@ func (c *Compiler) Compile(node ast.Node) error {
 		switch symbol.Decl.(type) {
 		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclAttr:
 			sym := symbol.Original()
+			// A local DeclFunc with captures gets a LocalId pointing to
+			// its runtime Closure object. Check the direct symbol first
+			// (FreeScope copies receive LocalId from DeclFunc compilation)
+			// before the Original (which may be at module level).
+			if symbol.LocalId != nil {
+				c.emit(op.GetLocal, *symbol.LocalId)
+				return nil
+			}
+			if sym.LocalId != nil {
+				if symbol.Scope == ast.FreeScope {
+					return c.compileFreeIdentifier(symbol)
+				}
+				c.emit(op.GetLocal, *sym.LocalId)
+				return nil
+			}
 			if sym.ConstantId == nil {
 				return fmt.Errorf("identifier %q has no constant id", node.Name)
 			}
@@ -214,10 +232,32 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return nil
 
 		case *ast.DeclVariable, *ast.DeclConstant, *ast.DeclForBinding:
-			sym := symbol.Original()
+			// FreeScope symbols without a LocalId are actual cross-function
+			// captures (the variable lives in a different frame). FreeScope
+			// symbols WITH a LocalId are promoted locals that still live in
+			// the current frame.
+			if symbol.Scope == ast.FreeScope && symbol.LocalId == nil {
+				return c.compileFreeIdentifier(symbol)
+			}
 
+			// Use the symbol's own LocalId first (covers both LocalScope
+			// locals and FreeScope promoted locals).
+			if symbol.LocalId != nil {
+				if _, isVar := symbol.Decl.(*ast.DeclVariable); isVar && symbol.IsCaptured {
+					c.emit(op.GetLocalCell, *symbol.LocalId)
+				} else {
+					c.emit(op.GetLocal, *symbol.LocalId)
+				}
+				return nil
+			}
+
+			sym := symbol.Original()
 			if sym.LocalId != nil {
-				c.emit(op.GetLocal, *sym.LocalId)
+				if _, isVar := sym.Decl.(*ast.DeclVariable); isVar && sym.IsCaptured {
+					c.emit(op.GetLocalCell, *sym.LocalId)
+				} else {
+					c.emit(op.GetLocal, *sym.LocalId)
+				}
 				return nil
 			}
 			if sym.GlobalId != nil {
@@ -228,6 +268,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("variable %q has no local or global id", node.Name)
 
 		case *ast.DeclParameter:
+			if symbol.Scope == ast.FreeScope && symbol.LocalId == nil {
+				return c.compileFreeIdentifier(symbol)
+			}
 			c.emit(op.GetLocal, *symbol.LocalId)
 			return nil
 
@@ -1256,6 +1299,23 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		return nil
 
 	case *ast.DeclFunc:
+		// Skip promoted nested functions at file/module scope.
+		// DeclTable promotion causes inner DeclFuncs to appear at module
+		// level, but they must be compiled in their enclosing function's
+		// scope so that free variable captures work correctly.
+		if sym.Scope != ast.FreeScope && decl.Impl != nil && decl.Impl.Symbols != nil {
+			parentST := decl.Impl.Symbols.Parent
+			if parentST != nil {
+				if _, isFunc := parentST.OpenedBy.(*ast.ExprFunc); isFunc {
+					origSym := sym.Original()
+					if origSym.ConstantId != nil {
+						c.ensureConstantSlot(*origSym.ConstantId)
+					}
+					return nil
+				}
+			}
+		}
+
 		functionAttributes, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols())
 		if err != nil {
 			return err
@@ -1269,7 +1329,21 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return err
 		}
 
-		c.enterScope(decl.Impl.Symbols)
+		// Build free mapping for the function body.
+		symbols := decl.Impl.Symbols
+		freeMapping := map[int]int{}
+		freeCount := 0
+		if symbols != nil {
+			for i, parentSym := range symbols.FreeSymbols {
+				if needsCapture(parentSym) {
+					freeMapping[i] = freeCount
+					freeCount++
+				}
+			}
+		}
+
+		c.enterScope(symbols)
+		c.scopes[c.scopeIdx].freeMapping = freeMapping
 
 		for _, child := range decl.Impl.Symbols.Symbols {
 			if child.Decl == nil || child.Scope == ast.FreeScope {
@@ -1298,7 +1372,32 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		)
 		function.Attributes = functionAttributes
 		function.ParamAttributes = paramAttributes
-		c.constants[*sym.ConstantId] = function
+		// Use Original() to access ConstantId: FreeScope copies created by
+		// resolve_identifiers (before assignModuleIDs) have nil ConstantId.
+		origSym := sym.Original()
+		if origSym.ConstantId == nil {
+			return fmt.Errorf("internal: DeclFunc %q has no ConstantId", sym.Name)
+		}
+		c.ensureConstantSlot(*origSym.ConstantId)
+		c.constants[*origSym.ConstantId] = function
+
+		// If the function captures local variables, create a closure at
+		// runtime and store it in a temp local so references use GetLocal
+		// instead of Const.
+		if freeCount > 0 {
+			for i, parentSym := range symbols.FreeSymbols {
+				if _, ok := freeMapping[i]; !ok {
+					continue
+				}
+				if err := c.emitPushCapture(parentSym); err != nil {
+					return err
+				}
+			}
+			localId := c.allocateTempLocal()
+			sym.LocalId = &localId
+			c.emit(op.MakeClosure, *origSym.ConstantId, freeCount)
+			c.emit(op.SetLocal, localId)
+		}
 
 		return nil
 
@@ -1331,6 +1430,12 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			c.scopes[c.scopeIdx].locals[*sym.LocalId] = sym
 
 			c.emit(op.SetLocal, *sym.LocalId)
+
+			// If captured by a closure, wrap in an UpvalueCell so
+			// inner scopes share the same mutable slot.
+			if sym.IsCaptured {
+				c.emit(op.WrapLocal, *sym.LocalId)
+			}
 
 			return nil
 
@@ -1988,8 +2093,32 @@ func (c *Compiler) compileIdentAssign(target *ast.ExprIdentifier, augOp token.To
 	sym := symbol.Original()
 	switch symbol.Decl.(type) {
 	case *ast.DeclVariable, *ast.DeclForBinding:
+		// FreeScope without LocalId: actual closure capture or global.
+		if symbol.Scope == ast.FreeScope && symbol.LocalId == nil {
+			orig := symbol.Original()
+			if orig.GlobalId != nil {
+				c.emit(op.SetGlobal, *orig.GlobalId)
+				return nil
+			}
+			return c.compileFreeAssign(symbol)
+		}
+
+		// Use the symbol's own LocalId (covers promoted locals too).
+		if symbol.LocalId != nil {
+			if _, isVar := symbol.Decl.(*ast.DeclVariable); isVar && symbol.IsCaptured {
+				c.emit(op.SetLocalCell, *symbol.LocalId)
+			} else {
+				c.emit(op.SetLocal, *symbol.LocalId)
+			}
+			return nil
+		}
+
 		if sym.LocalId != nil {
-			c.emit(op.SetLocal, *sym.LocalId)
+			if _, isVar := sym.Decl.(*ast.DeclVariable); isVar && sym.IsCaptured {
+				c.emit(op.SetLocalCell, *sym.LocalId)
+			} else {
+				c.emit(op.SetLocal, *sym.LocalId)
+			}
 			return nil
 		}
 		if sym.GlobalId != nil {

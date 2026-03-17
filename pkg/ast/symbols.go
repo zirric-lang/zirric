@@ -36,6 +36,9 @@ type Symbol struct {
 	GlobalId   *int
 	LocalId    *int
 	TypeSymbol *Symbol
+	// IsCaptured is true when this symbol is referenced by an inner closure
+	// via a FreeScope symbol. Set during symbol resolution.
+	IsCaptured bool
 }
 
 func (sym *Symbol) Original() *Symbol {
@@ -215,6 +218,10 @@ func (st *SymbolTable) resolve(name string) (*Symbol, bool) {
 func (st *SymbolTable) defineFree(sym *Symbol) *Symbol {
 	idx := len(st.FreeSymbols)
 	st.FreeSymbols = append(st.FreeSymbols, sym)
+
+	// Mark the original symbol as captured so the compiler knows
+	// to wrap var bindings in UpvalueCells.
+	sym.IsCaptured = true
 
 	free := &Symbol{
 		Name:       sym.Name,

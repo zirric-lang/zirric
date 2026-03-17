@@ -53,6 +53,35 @@ const (
 	// Serves as instruction to optionally pause on breakpoints.
 	// Will not be compiled for non debugging sessions.
 	Debug
+
+	// Closure-related opcodes
+
+	// MakeClosure creates a *Closure from the CompiledFunction at
+	// constants[const_id]. It pops free_count values from the stack
+	// (pushed in declaration order) and stores them in the Closure.Free slice.
+	MakeClosure
+	// GetFree pushes closure.Free[index] onto the stack without unwrapping.
+	// Used to forward captured values when building nested closures, or to
+	// read const captures directly.
+	GetFree
+	// GetFreeCell pushes closure.Free[index].(*UpvalueCell).Value.
+	// Used to read a captured var binding inside a closure.
+	GetFreeCell
+	// SetFreeCell pops a value and stores it into
+	// closure.Free[index].(*UpvalueCell).Value.
+	// Used to write a captured var binding inside a closure.
+	SetFreeCell
+	// GetLocalCell pushes locals[index].(*UpvalueCell).Value.
+	// Used in the enclosing scope to read a var that is captured by a closure.
+	GetLocalCell
+	// SetLocalCell pops a value and stores it into
+	// locals[index].(*UpvalueCell).Value.
+	// Used in the enclosing scope to write a var that is captured by a closure.
+	SetLocalCell
+	// WrapLocal wraps locals[index] in an *UpvalueCell in place:
+	// locals[index] = &UpvalueCell{Value: locals[index]}.
+	// Emitted right after the initial SetLocal for a captured var.
+	WrapLocal
 )
 
 var definitions = map[Opcode]*Definition{
@@ -105,4 +134,12 @@ var definitions = map[Opcode]*Definition{
 	SetLocal:  {"setlocal", []int{2}},
 
 	Debug: {"debug", []int{}},
+
+	MakeClosure:  {"makeclosure", []int{2, 2}}, // const id, free count
+	GetFree:      {"getfree", []int{2}},        // free index
+	GetFreeCell:  {"getfreecell", []int{2}},    // free index
+	SetFreeCell:  {"setfreecell", []int{2}},    // free index
+	GetLocalCell: {"getlocalcell", []int{2}},   // local index
+	SetLocalCell: {"setlocalcell", []int{2}},   // local index
+	WrapLocal:    {"wraplocal", []int{2}},      // local index
 }

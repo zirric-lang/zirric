@@ -823,5 +823,6 @@ func (p *Parser) parseExprFunction() *ast.ExprFunc {
 	}
 	fun.SetImplBlock(p.parseStmtBlock(IN_FUNC))
 	p.expect(token.RBRACE)
+	p.popSymbolTable()
 	return fun
 }

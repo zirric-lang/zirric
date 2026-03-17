@@ -20,6 +20,11 @@ type CompilationScope struct {
 	Instructions op.Instructions
 	symbols      *ast.SymbolTable
 	locals       []*ast.Symbol
+	// freeMapping maps a FreeScope symbol's Index (position in
+	// SymbolTable.FreeSymbols) to its actual position in the Closure.Free
+	// array. Globals and constants are excluded from the Free array and
+	// therefore have no entry.
+	freeMapping map[int]int
 
 	lastInstruction     emittedInstruction
 	previousInstruction emittedInstruction

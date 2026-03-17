@@ -1567,3 +1567,279 @@ func TestReplRollbackAndReuse(t *testing.T) {
 		t.Fatalf("expected 42, got %q", val.Inspect())
 	}
 }
+
+func TestClosures(t *testing.T) {
+	tests := []vmTestCase{
+		// Basic lambda invocation
+		{
+			label: "lambda identity",
+			input: `
+			const id = { x -> return x }
+			id(42)
+			`,
+			expected: 42,
+		},
+		// Const capture (by value)
+		{
+			label: "const capture by value",
+			input: `
+			fn outer() {
+				const x = 10
+				const f = { -> return x }
+				return f()
+			}
+			outer()
+			`,
+			expected: 10,
+		},
+		// Parameter capture (by value)
+		{
+			label: "parameter capture",
+			input: `
+			fn adder(a) {
+				return { b -> return a + b }
+			}
+			const add5 = adder(5)
+			add5(3)
+			`,
+			expected: 8,
+		},
+		// Var capture (shared mutable cell)
+		{
+			label: "var capture read",
+			input: `
+			fn outer() {
+				var x = 1
+				const f = { -> return x }
+				return f()
+			}
+			outer()
+			`,
+			expected: 1,
+		},
+		{
+			label: "var capture mutation",
+			input: `
+			fn outer() {
+				var x = 0
+				const inc = { -> x = x + 1 }
+				inc()
+				inc()
+				return x
+			}
+			outer()
+			`,
+			expected: 2,
+		},
+		// Multiple closures sharing the same var cell
+		{
+			label: "shared var cell",
+			input: `
+			fn make() {
+				var count = 0
+				const inc = { -> count = count + 1 }
+				const get = { -> return count }
+				inc()
+				inc()
+				inc()
+				return get()
+			}
+			make()
+			`,
+			expected: 3,
+		},
+		// Nested closures (transitive capture)
+		{
+			label: "nested closure const capture",
+			input: `
+			fn outer() {
+				const x = 99
+				fn middle() {
+					const f = { -> return x }
+					return f()
+				}
+				return middle()
+			}
+			outer()
+			`,
+			expected: 99,
+		},
+		// Named function with captures
+		{
+			label: "named fn with param capture",
+			input: `
+			fn make(n) {
+				fn add(m) { return n + m }
+				return add(10)
+			}
+			make(5)
+			`,
+			expected: 15,
+		},
+		// Lambda with no captures (plain function)
+		{
+			label: "lambda no captures",
+			input: `
+			const double = { n -> return n * 2 }
+			double(7)
+			`,
+			expected: 14,
+		},
+		// Closure over a global variable (no UpvalueCell needed)
+		{
+			label: "closure over global var",
+			input: `
+			var g = 100
+			fn reader() { return g }
+			reader()
+			`,
+			expected: 100,
+		},
+		// Var capture with compound assignment
+		{
+			label: "var capture compound assign",
+			input: `
+			fn counter() {
+				var n = 0
+				const step = { -> n += 3 }
+				step()
+				step()
+				return n
+			}
+			counter()
+			`,
+			expected: 6,
+		},
+		// Closure returned and called later
+		{
+			label: "returned closure",
+			input: `
+			fn makeCounter() {
+				var n = 0
+				return { ->
+					n = n + 1
+					return n
+				}
+			}
+			const c = makeCounter()
+			c()
+			c()
+			c()
+			`,
+			expected: 3,
+		},
+		// Multiple captures in a single closure (const + var)
+		{
+			label: "multiple captures const and var",
+			input: `
+			fn combine() {
+				const base = 10
+				var offset = 5
+				const f = { -> return base + offset }
+				offset = 20
+				return f()
+			}
+			combine()
+			`,
+			expected: 30,
+		},
+		// Lambda with parameters and captures
+		{
+			label: "lambda with params and captures",
+			input: `
+			fn outer(x) {
+				return { y -> return x * y }
+			}
+			const mul3 = outer(3)
+			mul3(7)
+			`,
+			expected: 21,
+		},
+		// Two independent returned closures
+		{
+			label: "independent returned closures",
+			input: `
+			fn makeCounter() {
+				var n = 0
+				return { ->
+					n = n + 1
+					return n
+				}
+			}
+			const a = makeCounter()
+			const b = makeCounter()
+			a()
+			a()
+			a()
+			b()
+			`,
+			expected: 1,
+		},
+		// Nested var capture (transitive mutable cell through 3 levels)
+		{
+			label: "nested var capture transitive",
+			input: `
+			fn outer() {
+				var x = 0
+				fn middle() {
+					const inc = { -> x = x + 1 }
+					inc()
+					inc()
+				}
+				middle()
+				return x
+			}
+			outer()
+			`,
+			expected: 2,
+		},
+		// Closure capturing a named function
+		{
+			label: "capture named function",
+			input: `
+			fn outer() {
+				fn helper(n) { return n * 2 }
+				const f = { x -> return helper(x) + 1 }
+				return f(5)
+			}
+			outer()
+			`,
+			expected: 11,
+		},
+		// Deeply nested transitive const capture (3 levels: fn → fn → lambda)
+		{
+			label: "deep transitive const capture",
+			input: `
+			fn a() {
+				const val = 42
+				fn b() {
+					return { -> return val }
+				}
+				const f = b()
+				return f()
+			}
+			a()
+			`,
+			expected: 42,
+		},
+		// Closure in a conditional branch
+		{
+			label: "closure in conditional",
+			input: `
+			fn pick(flag) {
+				const x = 10
+				if flag {
+					return { -> return x + 1 }
+				} else {
+					return { -> return x - 1 }
+				}
+			}
+			const f = pick(true)
+			f()
+			`,
+			expected: 11,
+		},
+	}
+
+	runVmTests(t, tests)
+}
