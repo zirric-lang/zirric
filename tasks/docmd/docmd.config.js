@@ -250,6 +250,11 @@ module.exports = {
           icon: "circle",
           title: "ZE-15 Extern Type Constructors",
           path: "/proposals/ZE-015-extern-type-constructors"
+        },
+        {
+          icon: "circle",
+          title: "ZE-16 Closure Syntax",
+          path: "/proposals/ZE-016-closure-syntax"
         }
       ]
     },
