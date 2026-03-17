@@ -5,11 +5,11 @@ description: Add typed parameter and return signatures as sugar for @Type and @R
 
 # Type and Returns Sugar
 
-::: callout warning <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-dot-icon lucide-circle-dot"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg> In Progress
-This proposal has been accepted in principle.
-It is currently under active development.
-Parts might be incomplete or missing in Zirric.
+::: callout danger <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> Rejected
+This proposal has been rejected and will not be implemented.
 :::
+
+> **Note:** This proposal has been superseded by [ZE-017 Type Annotations and Type Matching](/proposals/ZE-017-type-annotations), which promotes type annotations from syntactic sugar to a first-class language feature and removes the underlying `@Type` and `@Returns` attributes entirely.
 
 ## Introduction
 

@@ -232,7 +232,7 @@ module.exports = {
           path: "/proposals/ZE-011-zirric-cli"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-x",
           title: "ZE-12 Type and Returns Sugar",
           path: "/proposals/ZE-012-type-and-returns-sugar"
         },
@@ -255,6 +255,11 @@ module.exports = {
           icon: "circle",
           title: "ZE-16 Closure Syntax",
           path: "/proposals/ZE-016-closure-syntax"
+        },
+        {
+          icon: "circle-dot",
+          title: "ZE-17 Type Annotations",
+          path: "/proposals/ZE-017-type-annotations"
         }
       ]
     },
