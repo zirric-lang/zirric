@@ -16,7 +16,11 @@ import (
 func newOrchestra(projectFS billy.Filesystem, packageName string) (*orchestra.Orchestra, error) {
 	zirricPath, _ := os.LookupEnv("ZIRRIC_PATH")
 	if zirricPath == "" {
-		zirricPath = "~/.zirric"
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return nil, fmt.Errorf("could not determine default ZIRRIC_PATH: %w", err)
+		}
+		zirricPath = filepath.Join(home, ".zirric")
 	}
 
 	registryRoot := filepath.Join(zirricPath, "registry")
