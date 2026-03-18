@@ -13,6 +13,7 @@ type DeclExternValue struct {
 	Token      token.Token
 	Name       Identifier
 	Attributes AttributeChain
+	TypeHint   TypeExpr
 
 	Docs *Docs
 }

@@ -15,6 +15,7 @@ type DeclFunc struct {
 	Name       Identifier
 	Impl       *ExprFunc
 	Attributes AttributeChain
+	ReturnType TypeExpr
 
 	Docs *Docs
 }
@@ -36,13 +37,13 @@ func (e DeclFunc) DeclName() Identifier {
 
 func (e DeclFunc) DeclOverview() string {
 	if len(e.Impl.Parameters) == 0 {
-		return fmt.Sprintf("fn %s { -> }", e.Name)
+		return fmt.Sprintf("fn %s()", e.Name)
 	}
 	paramNames := make([]string, len(e.Impl.Parameters))
 	for i, param := range e.Impl.Parameters {
 		paramNames[i] = string(param.Name.Value)
 	}
-	return fmt.Sprintf("fn %s { %s -> }", e.Name, strings.Join(paramNames, ", "))
+	return fmt.Sprintf("fn %s(%s)", e.Name, strings.Join(paramNames, ", "))
 }
 
 func (e DeclFunc) ExportScope() ExportScope {

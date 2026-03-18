@@ -8,5 +8,5 @@
 mod future
 
 attr Proposal {
-	@String link
+	link: String
 }

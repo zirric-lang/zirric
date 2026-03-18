@@ -6,7 +6,7 @@ description: Cavefile manifests, module layout, and registry resolution.
 # Cave Package Manager
 
 Zirric packages are described by a `Cavefile`, which is itself Zirric code. The
-Cavefile declares dependencies using annotations and is parsed by tooling based
+Cavefile declares dependencies using attributes and is parsed by tooling based
 on its type information rather than executed as a program.
 
 ::: callout warning In Progress
@@ -19,7 +19,7 @@ For the authoritative design, see the
 
 ## Cavefile at a glance
 
-A Cavefile is a Zirric module that declares dependencies through annotations.
+A Cavefile is a Zirric module that declares dependencies through attributes.
 The package manager reads it for types and metadata, not for runtime behavior.
 
 ```zirric

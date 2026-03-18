@@ -1605,7 +1605,7 @@ func TestExternValueCompilation(t *testing.T) {
 	}
 }
 
-func TestAttributeTypeAnnotations(t *testing.T) {
+func TestAttributeTypeHints(t *testing.T) {
 	module := prepareContextModuleParsing(t, "module.test", `
 		attr Meta { label }
 		@Meta("Primary")

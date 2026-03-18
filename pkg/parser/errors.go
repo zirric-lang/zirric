@@ -87,6 +87,6 @@ func (p *Parser) errStatementMisplaced(pos StatementPosition) {
 func (p *Parser) errCannotBeAnnotated() {
 	p.detectError(ParseError{
 		Token:   p.curToken,
-		Summary: fmt.Sprintf("%s cannot be annotated", strings.ToLower(string(p.curToken.Type))),
+		Summary: fmt.Sprintf("%s cannot have attributes", strings.ToLower(string(p.curToken.Type))),
 	})
 }

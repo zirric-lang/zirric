@@ -11,6 +11,15 @@ It is currently under active development.
 Parts might be incomplete or missing in Zirric.
 :::
 
+::: callout warning Outdated
+While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
+
+- [x] Reflect latest syntax changes
+- [x] Reflect latest stdlib changes
+- [ ] Attributes are no longer used for types
+- [ ] Supporting `?`-related syntax must be investigated
+      :::
+
 ## Introduction
 
 This proposal adds a standard `Option` union type to model values that may be
@@ -34,8 +43,7 @@ union Option {
   data None
 }
 
-@Returns(User?)
-fn findUser(id) {
+fn findUser(id: String) -> User? {
   // returns Some(User) or None
 }
 
@@ -46,7 +54,7 @@ let name = findUser(42)?.value.name ?? "Unknown"
 
 - `option?.value` maps to `Some(value)` or `None`.
 - `option ?? "default"` unwraps `Some.value` or returns the default for `None`.
-- `@String?` expands to `@Type(Option) @SomeType(String)`.
+- `String?` expands to `@Type(Option) @SomeType(String)`.
 
 ## Detailed Design
 
@@ -70,15 +78,11 @@ union Option {
 
 	data None
 }
-
-attr SomeType {
-	@Type(AnyType) type
-}
 ```
 
 ## Changes to the Standard Library
 
-- Add `@AnyOption`, `Option`, and `@SomeType` in `future/prelude`.
+- Add `@AnyOption`, `Option` in `future/prelude`.
 
 ## Alternatives Considered
 

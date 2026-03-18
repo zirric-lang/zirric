@@ -5,8 +5,7 @@ description: "Editors, generators, and developer tooling for Zirric."
 
 # Tooling
 
-Zirric tooling is focused on editor support, documentation, and experimenting
-with the language implementation. This section collects the available pieces.
+Zirric tooling is focused on editor support, documentation, and experimenting with the language implementation. This section collects the available pieces.
 
 ## Editor support
 
@@ -19,11 +18,8 @@ with the language implementation. This section collects the available pieces.
 
 ## Documentation pipeline
 
-The documentation site is generated with docmd, configured in
-`docs/docmd.config.js`. Markdown sources live under `docs/` and output to
-`site/`.
+The documentation site is generated with docmd, configured in `tasks/docs/docmd.config.js`. Markdown sources live under `docs/` and output to `site/`.
 
 ::: callout tip Contributing docs
-When adding a new page, also add it to `docs/docmd.config.js` so it appears in
-navigation.
+When adding a new page, also add it to `tasks/docs/docmd.config.js` so it appears in navigation.
 :::

@@ -18,7 +18,7 @@ func TestLookupIdent(t *testing.T) {
 		{"mod", token.MODULE},
 		{"import", token.IMPORT},
 		{"data", token.DATA},
-		{"attr", token.ANNOTATION},
+		{"attr", token.ATTRIBUTE},
 		{"extern", token.EXTERN},
 		{"fn", token.FUNCTION},
 		{"const", token.CONST},

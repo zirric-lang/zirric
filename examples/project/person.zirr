@@ -1,0 +1,21 @@
+mod example
+
+import future.prelude {
+	None
+}
+
+data Person {
+	name: String
+	age: Int
+}
+
+union SomePerson {
+	Person
+	None
+}
+
+const peter = Person("Peter", 42)
+
+fn greet(name: String) -> String {
+	return "Hello" + name
+}

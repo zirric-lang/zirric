@@ -55,11 +55,22 @@ func (c *Compiler) compileExprFunc(fn *ast.ExprFunc) error {
 
 	bodyScope := c.leaveScope()
 
+	// Create a symbol for the anonymous closure so TypeConstantId works.
+	anonSym := &ast.Symbol{
+		Name: fn.Name,
+		Decl: &ast.DeclFunc{
+			Name: ast.Identifier{Value: fn.Name},
+		},
+	}
+	if funcTypeSym := c.lookupTypeSymbol("Func"); funcTypeSym != nil {
+		anonSym.TypeSymbol = funcTypeSym
+	}
+
 	function := runtime.MakeCompiledFunction(
 		bodyScope.Instructions,
 		len(fn.Parameters),
 		len(bodyScope.locals),
-		nil, // anonymous function - no declaration symbol
+		anonSym,
 	)
 	constId := c.addConstant(function)
 

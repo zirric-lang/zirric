@@ -40,14 +40,13 @@ func NewSourceParser(lex *lexer.Lexer, parent *ast.DeclTable, path string) *Pars
 	p.registerPrefix(token.MINUS, p.parsePrattExprPrefix)
 	p.registerPrefix(token.PLUS, p.parsePrattExprPrefix)
 	p.registerPrefix(token.LPAREN, p.parsePrattExprGroup)
-	p.registerPrefix(token.IF, p.parsePrattExprIfElse) // only exactly one expr per if / else if / else, else mandatory, later we eventually want to allow assignments and local vars
-	p.registerPrefix(token.LBRACE, p.parsePrattExprFunc)
-	// p.registerPrefix(token.TYPE, p.parseExprType) // only exactly one expr per case
-	// p.registerPrefix(token.SWITCH / MATCH, p.parseExprSwitch) // only exactly one expr per case
+	p.registerPrefix(token.IF, p.parsePrattExprIfElse)
+	p.registerPrefix(token.FUNCTION, p.parsePrattExprFnClosure)
 	p.registerPrefix(token.LBRACKET, p.parseExprListOrDict)
 	p.registerPrefix(token.STRING, p.parsePrattExprString)
 	p.registerPrefix(token.CHAR, p.parsePrattExprChar)
 	p.registerPrefix(token.FOR, p.parsePrattExprFor)
+	p.registerPrefix(token.SWITCH, p.parsePrattExprSwitch)
 
 	p.infixParsers = make(map[token.TokenType]infixParser)
 	p.registerInfix(token.OR, p.parsePrattExprInfix)
@@ -66,6 +65,7 @@ func NewSourceParser(lex *lexer.Lexer, parent *ast.DeclTable, path string) *Pars
 	p.registerInfix(token.LPAREN, p.parsePrattExprCall)
 	p.registerInfix(token.DOT, p.parsePrattExprMember)
 	p.registerInfix(token.LBRACKET, p.parsePrattExprIndex)
+	p.registerInfix(token.IS, p.parsePrattExprIs)
 
 	return p
 }
@@ -131,13 +131,6 @@ func (p *Parser) expect(tokTypes ...token.TokenType) (token.Token, bool) {
 	cur := p.curToken
 	p.nextToken()
 	return cur, true
-}
-
-func (p *Parser) skip(tokTypes ...token.TokenType) {
-	if !p.curIs(tokTypes...) {
-		return
-	}
-	p.nextToken()
 }
 
 func (p *Parser) errorToken() token.Token {
@@ -285,22 +278,35 @@ func (p *Parser) parseDataDecl(_ StatementPosition, annos ast.AttributeChain) *a
 // parseDataDeclField parses a single data declaration field.
 //
 //	simple
+//	simple: Type
 //	method()
-//	@Annotation() field
-//	@Annotation() method()
+//	method() -> ReturnType
+//	@Attribute() field
+//	@Attribute() field: Type
+//	@Attribute() method()
 func (p *Parser) parseDataDeclField() *ast.DeclField {
 	attributes := p.parseAttributeChain()
 	identTok, _ := p.expect(token.IDENT, token.TYPE)
 	name := ast.MakeIdentifier(identTok)
 
-	if !p.curIs(token.LPAREN) {
-		return ast.MakeDeclField(name, nil, attributes)
+	if p.curIs(token.LPAREN) {
+		p.expect(token.LPAREN)
+		params := p.parseDeclParameterListWithInsert(false)
+		p.expect(token.RPAREN)
+		var returnType ast.TypeExpr
+		if p.curIs(token.RIGHT_ARROW) {
+			p.expect(token.RIGHT_ARROW)
+			returnType = p.parseTypeHintExpr()
+		}
+		return ast.MakeDeclField(name, params, attributes, returnType)
 	}
 
-	p.expect(token.LPAREN)
-	params := p.parseDeclParameterListWithInsert(false)
-	p.expect(token.RPAREN)
-	return ast.MakeDeclField(name, params, attributes)
+	var typeHint ast.TypeExpr
+	if p.curIs(token.COLON) {
+		p.expect(token.COLON)
+		typeHint = p.parseTypeHintExpr()
+	}
+	return ast.MakeDeclField(name, nil, attributes, typeHint)
 }
 
 // parseAttrDecl parses the declaration of an attribute type.
@@ -310,7 +316,7 @@ func (p *Parser) parseDataDeclField() *ast.DeclField {
 //	  // properties
 //	}
 func (p *Parser) parseAttrDecl(_ StatementPosition, annos ast.AttributeChain) *ast.DeclAttr {
-	declToken, _ := p.expect(token.ANNOTATION)
+	declToken, _ := p.expect(token.ATTRIBUTE)
 	identToken, _ := p.expect(token.IDENT)
 	ident := ast.MakeIdentifier(identToken)
 	declAnno := ast.MakeDeclAttr(declToken, ident)
@@ -434,6 +440,11 @@ func (p *Parser) parseExternValueDecl(externTok token.Token, annos ast.Attribute
 	extern := ast.MakeDeclExternValue(externTok, nameIdent)
 	extern.Attributes = annos
 
+	if p.curIs(token.COLON) {
+		p.expect(token.COLON)
+		extern.TypeHint = p.parseTypeHintExpr()
+	}
+
 	p.curSymbolTable.Insert(extern)
 	return extern
 }
@@ -443,29 +454,33 @@ func (p *Parser) parseFunctionDecl(_ StatementPosition, annos ast.AttributeChain
 	nameTok, _ := p.expect(token.IDENT)
 
 	var impl *ast.ExprFunc
+	var returnType ast.TypeExpr
 
-	if p.curIs(token.LPAREN) {
-		impl, p.curSymbolTable = ast.MakeExprFunc(funcTok, nameTok.Literal, p.curSymbolTable)
+	impl, p.curSymbolTable = ast.MakeExprFunc(funcTok, nameTok.Literal, p.curSymbolTable)
 
-		p.expect(token.LPAREN)
-		params := p.parseDeclParameterListWithInsert(false)
-		impl.SetParams(params)
-		p.expect(token.RPAREN)
+	p.expect(token.LPAREN)
+	params := p.parseDeclParameterListWithInsert(false)
+	impl.SetParams(params)
+	p.expect(token.RPAREN)
 
-		fexprTok, _ := p.expect(token.LBRACE)
-		block := p.parseStmtBlock(IN_FUNC)
-		p.expect(token.RBRACE)
-
-		impl.SetImplBlock(block)
-		impl.Token = fexprTok
-
-		p.popSymbolTable()
-	} else {
-		impl = p.parseExprFunction()
+	if p.curIs(token.RIGHT_ARROW) {
+		p.expect(token.RIGHT_ARROW)
+		returnType = p.parseTypeHintExpr()
+		impl.ReturnType = returnType
 	}
+
+	fexprTok, _ := p.expect(token.LBRACE)
+	block := p.parseStmtBlock(IN_FUNC)
+	p.expect(token.RBRACE)
+
+	impl.SetImplBlock(block)
+	impl.Token = fexprTok
+
+	p.popSymbolTable()
 
 	decl := ast.MakeDeclFunc(funcTok, ast.MakeIdentifier(nameTok), impl)
 	decl.Attributes = annos
+	decl.ReturnType = returnType
 	sym := p.curSymbolTable.Insert(decl)
 	sym.ChildTable = impl.Decls
 	return decl
@@ -512,6 +527,13 @@ func (p *Parser) parseVariableDecl(pos StatementPosition, annos ast.AttributeCha
 	declTok, _ := p.expect(token.CONST, token.VAR)
 	nameTok, _ := p.expect(token.IDENT, token.TRUE, token.FALSE, token.VOID)
 	name := ast.MakeIdentifier(nameTok)
+
+	var typeHint ast.TypeExpr
+	if p.curIs(token.COLON) {
+		p.expect(token.COLON)
+		typeHint = p.parseTypeHintExpr()
+	}
+
 	p.expect(token.ASSIGN)
 	expr := p.parseExpr()
 
@@ -520,11 +542,13 @@ func (p *Parser) parseVariableDecl(pos StatementPosition, annos ast.AttributeCha
 		c := ast.MakeDeclConstant(declTok, name, expr)
 		c.IsGlobal = pos < IN_FUNC
 		c.Attributes = annos
+		c.TypeHint = typeHint
 		decl = c
 	} else {
 		v := ast.MakeDeclVariable(declTok, name, expr)
 		v.IsGlobal = pos < IN_FUNC
 		v.Attributes = annos
+		v.TypeHint = typeHint
 		decl = v
 	}
 
@@ -552,49 +576,152 @@ func (p *Parser) parsePropertyDeclarationList() []ast.DeclField {
 }
 
 func (p *Parser) parseAttributeChain() ast.AttributeChain {
-	var annotationChain ast.AttributeChain
+	var attributeChain ast.AttributeChain
 	for p.curIs(token.AT) {
 		anno := p.parseAttributeInstance()
-		annotationChain = append(annotationChain, anno)
+		attributeChain = append(attributeChain, anno)
 	}
-	return annotationChain
+	return attributeChain
 }
 
 func (p *Parser) parseAttributeInstance() *ast.DeclAttrInstance {
 	atTok, _ := p.expect(token.AT)
 	ref := p.parseStaticIdentifierReference()
 
-	anno := ast.MakeAttributeInstance(atTok, ref)
-	// Annotation resolution is handled by the analyzer.
+	attr := ast.MakeAttributeInstance(atTok, ref)
+	// Attribute resolution is handled by the analyzer.
 
-	if !p.curIs(token.LPAREN) {
-		return anno
-	}
 	p.expect(token.LPAREN)
 	args := p.parseExprArgumentList()
 	for _, arg := range args {
-		anno.AddArgument(arg)
+		attr.AddArgument(arg)
 	}
 	p.expect(token.RPAREN)
-	return anno
+	return attr
 }
 
 func (p *Parser) parseDeclParameterListWithInsert(insert bool) []ast.DeclParameter {
 	params := make([]ast.DeclParameter, 0)
 
 	for {
-		annos := p.parseAttributeChain()
+		attrs := p.parseAttributeChain()
 		if !p.curIs(token.IDENT) {
 			// eventual errors will be triggered by parent
 			return params
 		}
 		identTok, _ := p.expect(token.IDENT)
 		ident := ast.MakeIdentifier(identTok)
-		decl := ast.MakeDeclParameter(ident, annos)
+
+		var typeHint ast.TypeExpr
+		if p.curIs(token.COLON) {
+			p.expect(token.COLON)
+			typeHint = p.parseTypeHintExpr()
+		}
+
+		decl := ast.MakeDeclParameter(ident, attrs, typeHint)
 		if insert {
 			p.curSymbolTable.Insert(decl)
 		}
 
+		params = append(params, *decl)
+
+		if !p.curIs(token.COMMA) {
+			return params
+		}
+		p.expect(token.COMMA)
+	}
+}
+
+// parseTypeHintExpr parses a type expression.
+// Supports:
+//   - Named types: String, prelude.String
+//   - Array types: [ElementType]
+//   - Dict types: {KeyType: ValueType}
+//   - Function types: fn(params) -> ReturnType
+//   - Attribute constraints: @Attr, @A @B @C
+func (p *Parser) parseTypeHintExpr() ast.TypeExpr {
+	// Attribute constraints: @Attr or @A @B @C
+	if p.curIs(token.AT) {
+		return p.parseTypeHintAttrs()
+	}
+
+	// Array type [T] or Dict type [K: V] — disambiguated after first type expr
+	if p.curIs(token.LBRACKET) {
+		return p.parseTypeHintArrayOrDict()
+	}
+
+	// Function type: fn(params) -> ReturnType
+	if p.curIs(token.FUNCTION) {
+		return p.parseTypeHintFunc()
+	}
+
+	// Named type: Ident or Ident.Ident.Ident...
+	ref := p.parseStaticIdentifierReference()
+	return ast.MakeTypeExprRef(ref)
+}
+
+// parseTypeHintAttrs parses one or more @Attr references as a type expression.
+func (p *Parser) parseTypeHintAttrs() ast.TypeExpr {
+	atTok := p.curToken
+	var attrs []ast.TypeExprRef
+	for p.curIs(token.AT) {
+		p.expect(token.AT)
+		ref := p.parseStaticIdentifierReference()
+		attrs = append(attrs, ast.MakeTypeExprRef(ref))
+	}
+	return ast.MakeTypeExprAttrs(atTok, attrs)
+}
+
+// parseTypeHintArrayOrDict parses [ElementType] or [KeyType: ValueType].
+// After consuming `[` and the first type expression, `:` indicates a dict type.
+func (p *Parser) parseTypeHintArrayOrDict() ast.TypeExpr {
+	lbracketTok, _ := p.expect(token.LBRACKET)
+	first := p.parseTypeHintExpr()
+	if p.curIs(token.COLON) {
+		// Dict type: [K: V]
+		p.expect(token.COLON)
+		value := p.parseTypeHintExpr()
+		p.expect(token.RBRACKET)
+		return ast.MakeTypeExprDict(lbracketTok, first, value)
+	}
+	// Array type: [T]
+	p.expect(token.RBRACKET)
+	return ast.MakeTypeExprArray(lbracketTok, first)
+}
+
+// parseTypeHintFunc parses fn(params) -> ReturnType.
+func (p *Parser) parseTypeHintFunc() ast.TypeExpr {
+	fnTok, _ := p.expect(token.FUNCTION)
+	p.expect(token.LPAREN)
+
+	var params []ast.DeclParameter
+	if !p.curIs(token.RPAREN) {
+		params = p.parseTypeHintFuncParams()
+	}
+	p.expect(token.RPAREN)
+
+	var returnType ast.TypeExpr
+	if p.curIs(token.RIGHT_ARROW) {
+		p.expect(token.RIGHT_ARROW)
+		returnType = p.parseTypeHintExpr()
+	}
+	return ast.MakeTypeExprFunc(fnTok, params, returnType)
+}
+
+// parseTypeHintFuncParams parses parameter list for fn type expressions.
+func (p *Parser) parseTypeHintFuncParams() []ast.DeclParameter {
+	var params []ast.DeclParameter
+	for {
+		identTok, _ := p.expect(token.IDENT)
+		ident := ast.MakeIdentifier(identTok)
+
+		var typeHint ast.TypeExpr
+		if p.curIs(token.COLON) {
+			p.expect(token.COLON)
+			typeHint = p.parseTypeHintExpr()
+		}
+
+		decl := ast.MakeDeclParameter(ident, nil, typeHint)
 		params = append(params, *decl)
 
 		if !p.curIs(token.COMMA) {
@@ -806,23 +933,4 @@ func (p *Parser) parseExprForBlock(symbols *ast.DeclTable) ast.ExprForBody {
 	}
 	p.curSymbolTable = prevSymbols
 	return ast.ExprForBody{Decls: decls, Stmts: stmts, DeclsTable: symbols}
-}
-
-func (p *Parser) parseExprFunction() *ast.ExprFunc {
-	tok, _ := p.expect(token.LBRACE)
-	var fun *ast.ExprFunc
-	fun, p.curSymbolTable = ast.MakeExprFunc(tok, p.curSymbolTable.NextAnonymousFunctionName(), p.curSymbolTable)
-
-	params := p.parseDeclParameterListWithInsert(false)
-	fun.SetParams(params)
-
-	if len(params) == 0 {
-		p.skip(token.RIGHT_ARROW)
-	} else {
-		p.expect(token.RIGHT_ARROW)
-	}
-	fun.SetImplBlock(p.parseStmtBlock(IN_FUNC))
-	p.expect(token.RBRACE)
-	p.popSymbolTable()
-	return fun
 }

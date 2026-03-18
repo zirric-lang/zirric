@@ -10,6 +10,15 @@ This proposal is still a draft and is subject to change. Please do not cite or r
 Features described here may not be implemented as described and cannot be used right now.
 :::
 
+::: callout warning Outdated
+While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
+
+- [ ] Reflect latest syntax changes
+- [ ] Reflect latest stdlib changes
+- [ ] Attributes are no longer used for types
+- [ ] Evaluate the use cases of this proposal
+      :::
+
 ## Introduction
 
 This proposal introduces **variadic attributes** to Zirric, enabling attributes and functions to accept a variable number of arguments. This feature addresses the need for multi-instance constraints (e.g., `@Requires(Countable, Iterable)`) while maintaining a clean and expressive syntax.

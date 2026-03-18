@@ -1,6 +1,6 @@
 ---
 title: "ZE-010 - Iterable"
-description: "Define Countable and Iterable annotations and iteration protocols."
+description: "Define Countable and Iterable attributes and iteration protocols."
 ---
 
 # Iterable
@@ -11,9 +11,19 @@ It is currently under active development.
 Parts might be incomplete or missing in Zirric.
 :::
 
+::: callout warning Outdated
+While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
+
+- [x] Reflect latest syntax changes
+- [ ] Reflect latest stdlib changes
+- [ ] Attributes are no longer used for types
+- [ ] Supporting `?`-related syntax must be investigated
+- [ ] Type for `yield` function must be determined
+      :::
+
 ## Introduction
 
-This proposal introduces standard `@Countable` and `@Iterable` annotations for
+This proposal introduces standard `@Countable` and `@Iterable` attributes for
 collection-like types, which is used by `for ... <- ...` loops.
 Also introduces `Range` and `ClosedRange` data types as examples of countable and iterable.
 
@@ -27,7 +37,7 @@ Currently only arrays can be used to iterate over.
 
 ## Proposed Solution
 
-Define two annotations in the prelude future module:
+Define two attributes in the prelude future module:
 
 - `@Countable` for types with a length.
 - `@Iterable` for types that can yield values in a `for` loop.
@@ -69,12 +79,10 @@ data ClosedRange { @Int start, @Int end }
 The internally used `yield` function has the signature:
 
 ```zirric
-@Func
-@Returns(Bool)
-yield(element)
+yield(element) -> Bool
 ```
 
-When starting the loop, the `iterate` function of the `@Iterable` annotation is extracted.
+When starting the loop, the `iterate` function of the `@Iterable` attribute is extracted.
 Then `iterate` is called. The `yield` function passed to `iterate` will execute the body of the loop.
 When leaving the loop early via `break` or `return`, `yield` will return `false`, causing `iterate` to stop iteration early.
 For arrays a more efficient implementation may be used that does not require function calls per element.
@@ -87,7 +95,7 @@ For arrays a more efficient implementation may be used that does not require fun
 
 ## Alternatives Considered
 
-- A single `Iterable` annotation with optional `length`, which makes
+- A single `Iterable` attribute with optional `length`, which makes
   length-dependent APIs harder to check.
 - Hardcoding iteration support per type, which limits extensibility.
 

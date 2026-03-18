@@ -13,51 +13,59 @@ attributes, and types.
 ### attr Name
 
 ```zirric
-attr Name
+attr Name {
+  name: String
+}
 ```
 
 No documentation.
 
 Fields:
 
-- `@String name`
+- `name: String`
 
 ## Data
 
 ### data Field
 
 ```zirric
-data Field
+data Field {
+  name: String
+  type: AnyType
+  attributes: [Attribute]
+}
 ```
 
 No documentation.
 
 Fields:
 
-- `@String name`
-- `@Type(AnyType) type`
-- `@Array @ItemType(Attribute) attributes`
+- `name: String`
+- `type: AnyType`
+- `attributes: [Attribute]`
 
 ### data Attribute
 
 ```zirric
-data Attribute
+data Attribute {
+  attributeType: AnyAttribute
+  args: Array
+}
 ```
 
 No documentation.
 
 Fields:
 
-- `@AnyAttribute attributeType`
-- `@Array args`
+- `attributeType: AnyAttribute`
+- `args: Array`
 
 ## Functions
 
 ### fn typeOf
 
 ```zirric
-@Returns(Type)
-fn typeOf(@Any value)
+fn typeOf(value: Any) -> AnyType
 ```
 
 No documentation.
@@ -65,8 +73,7 @@ No documentation.
 ### fn fieldsOf
 
 ```zirric
-@Returns(Array(Field))
-fn fieldsOf(@Type type)
+fn fieldsOf(typeValue: AnyType) -> [Field]
 ```
 
 No documentation.
@@ -74,9 +81,7 @@ No documentation.
 ### fn attribute
 
 ```zirric
-@Returns(Result)
-@OkType(AnyAttribute)
-fn attribute(@Field field, @AttributeType attributeType)
+fn attribute(field: Field, attributeType: AttributeType) -> Result
 ```
 
 No documentation.
@@ -84,8 +89,7 @@ No documentation.
 ### fn hasAttribute
 
 ```zirric
-@Returns(Bool)
-fn hasAttribute(@Field field, @AttributeType attributeType)
+fn hasAttribute(field: Field, attributeType: AttributeType) -> Bool
 ```
 
 No documentation.

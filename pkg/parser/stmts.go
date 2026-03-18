@@ -32,9 +32,16 @@ func (p *Parser) parseStatementInContext(pos StatementPosition, annos ast.Attrib
 		return p.parseUnionDecl(pos, annos)
 	case token.DATA:
 		return p.parseDataDecl(pos, annos), nil
-	case token.ANNOTATION:
+	case token.ATTRIBUTE:
 		return p.parseAttrDecl(pos, annos), nil
 	case token.FUNCTION:
+		if p.peekIs(token.LPAREN) {
+			// fn(...) { body } — anonymous closure expression
+			if annos != nil {
+				p.errCannotBeAnnotated()
+			}
+			return p.parseExprStmt(), nil
+		}
 		return p.parseFunctionDecl(pos, annos), nil
 	case token.CONST, token.VAR:
 		return p.parseVariableDecl(pos, annos), nil
@@ -52,6 +59,8 @@ func (p *Parser) parseStatementInContext(pos StatementPosition, annos ast.Attrib
 		return p.parseStatementContinue(pos), nil
 	case token.RETURN:
 		return p.parseStatementReturn(pos), nil
+	case token.SWITCH:
+		return p.parseStatementSwitch(pos), nil
 	default:
 		if _, ok := p.prefixParsers[p.curToken.Type]; ok {
 			if annos != nil {
@@ -61,7 +70,7 @@ func (p *Parser) parseStatementInContext(pos StatementPosition, annos ast.Attrib
 		}
 
 		prefixes := []token.TokenType{
-			token.UNION, token.DATA, token.MODULE, token.EXTERN, token.FUNCTION, token.IMPORT, token.AT, token.CONST, token.VAR, token.IF, token.FOR, token.BREAK, token.CONTINUE,
+			token.UNION, token.DATA, token.MODULE, token.EXTERN, token.FUNCTION, token.IMPORT, token.AT, token.CONST, token.VAR, token.IF, token.FOR, token.SWITCH, token.BREAK, token.CONTINUE,
 		}
 		for t := range p.prefixParsers {
 			prefixes = append(prefixes, t)

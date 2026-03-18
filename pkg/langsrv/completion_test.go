@@ -172,14 +172,14 @@ func TestAttributeContextCompletion(t *testing.T) {
 		labelSet[item.Label] = item
 	}
 
-	// Annotation should be present with '@' label and TextEdit snippet that includes '@'.
-	anno, ok := labelSet["@Numeric"]
+	// Attribute should be present with '@' label and TextEdit snippet that includes '@'.
+	attr, ok := labelSet["@Numeric"]
 	if !ok {
 		t.Fatalf("expected @Numeric attribute in completion, got: %v", labelKeys(labelSet))
 	}
-	textEdit, ok := anno.TextEdit.(protocol.TextEdit)
+	textEdit, ok := attr.TextEdit.(protocol.TextEdit)
 	if !ok {
-		t.Fatalf("@Numeric: expected TextEdit, got %T", anno.TextEdit)
+		t.Fatalf("@Numeric: expected TextEdit, got %T", attr.TextEdit)
 	}
 	wantNewText := "@Numeric(${1:toNumber})"
 	if textEdit.NewText != wantNewText {
@@ -189,12 +189,12 @@ func TestAttributeContextCompletion(t *testing.T) {
 	if textEdit.Range.Start.Character != 0 || textEdit.Range.End.Character != 2 {
 		t.Errorf("@Numeric TextEdit.Range = %+v, want start.char=0 end.char=2", textEdit.Range)
 	}
-	if anno.InsertTextFormat == nil || *anno.InsertTextFormat != protocol.InsertTextFormatSnippet {
+	if attr.InsertTextFormat == nil || *attr.InsertTextFormat != protocol.InsertTextFormatSnippet {
 		t.Errorf("@Numeric insertTextFormat should be Snippet")
 	}
 	// FilterText should be plain name so the user can type without '@'.
-	if anno.FilterText == nil || *anno.FilterText != "Numeric" {
-		t.Errorf("@Numeric filterText = %v, want %q", anno.FilterText, "Numeric")
+	if attr.FilterText == nil || *attr.FilterText != "Numeric" {
+		t.Errorf("@Numeric filterText = %v, want %q", attr.FilterText, "Numeric")
 	}
 
 	// Type declarations should be present with '@' prefix (data, union).
@@ -236,16 +236,16 @@ func TestAttributeNonContextCompletion(t *testing.T) {
 		labelSet[item.Label] = item
 	}
 
-	// Annotation should appear with '@' prefix and snippet insertText.
-	anno, ok := labelSet["@Numeric"]
+	// Attribute should appear with '@' prefix and snippet insertText.
+	attr, ok := labelSet["@Numeric"]
 	if !ok {
 		t.Fatalf("expected @Numeric in non-attribute completion, got: %v", labelKeys(labelSet))
 	}
 	wantInsert := "@Numeric(${1:toNumber})"
-	if anno.InsertText == nil || *anno.InsertText != wantInsert {
-		t.Errorf("@Numeric insertText = %v, want %q", anno.InsertText, wantInsert)
+	if attr.InsertText == nil || *attr.InsertText != wantInsert {
+		t.Errorf("@Numeric insertText = %v, want %q", attr.InsertText, wantInsert)
 	}
-	if anno.InsertTextFormat == nil || *anno.InsertTextFormat != protocol.InsertTextFormatSnippet {
+	if attr.InsertTextFormat == nil || *attr.InsertTextFormat != protocol.InsertTextFormatSnippet {
 		t.Errorf("@Numeric insertTextFormat should be Snippet")
 	}
 
@@ -419,7 +419,7 @@ func TestQualifiedContext(t *testing.T) {
 		},
 		{
 			name:         "attribute qualified",
-			text:         "@mymod.Annotation",
+			text:         "@mymod.Attribute",
 			pos:          protocol.Position{Line: 0, Character: 17},
 			wantAlias:    "mymod",
 			wantOk:       true,

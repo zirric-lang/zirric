@@ -9,49 +9,12 @@ The `prelude` module defines Zirric's core types, builtins, and foundational att
 
 ## Attributes
 
-### attr Type
-
-```zirric
-attr Type
-```
-
-Annotates a declaration to be of a given type. Instead of annotating declarations
-with `@Type(SomeType)`, the shorthand of `@SomeType` can be used.
-
-Fields:
-
-- `@Type(AnyType) type` — The type of the attribute.
-
-### attr Has
-
-```zirric
-attr Has
-```
-
-Has requests passed values to have the given attribute type present. For example,
-`@Has(Numeric)` requests that the passed value has the `@Numeric` attribute. Do
-not annotate types with `@Has`, as it does not make sense there.
-
-Fields:
-
-- `@Type(AttributeType) attributeType` — The required attribute type.
-
-### attr Returns
-
-```zirric
-attr Returns
-```
-
-Annotates a function declaration to return a value of the given type.
-
-Fields:
-
-- `@Type(AnyType) type`
-
 ### attr Default
 
 ```zirric
-attr Default
+attr Default {
+  value
+}
 ```
 
 Transparently indicates the assumed default value of a parameter or field. Can be
@@ -59,52 +22,58 @@ used by tooling and libraries.
 
 Fields:
 
-- `@Type(AnyType) value` — The default value for a parameter.
+- `value` — The default value for a parameter.
 
 ### attr Doc
 
 ```zirric
-attr Doc
+attr Doc {
+  description: String
+}
 ```
 
 Provides access to the documentation string of a declaration.
 
 Fields:
 
-- `@String description` — The documentation string without leading comment markers
+- `description: String` — The documentation string without leading comment markers
   and whitespace.
 
 ### attr Deprecated
 
 ```zirric
-attr Deprecated
+attr Deprecated {
+  @Default("without alternative") reason: String
+}
 ```
 
-Annotates a declaration as deprecated with a reason. IDEs and other tools can use
+Marks a declaration as deprecated with a reason. IDEs and other tools can use
 this information to warn users about deprecated declarations.
 
 Fields:
 
-- `@String @Default("without alternative") reason`
+- `@Default("without alternative") reason: String`
 
 ### attr Numeric
 
 ```zirric
-attr Numeric
+attr Numeric {
+  toNumber(value: @Numeric) -> Number
+}
 ```
 
-Annotates a declaration as numeric, providing a way to convert it to a number.
+Marks a declaration as numeric, providing a way to convert it to a number.
 
 Members:
 
-- `@Returns(Number) toNumber(@Has(Numeric) value)`
+- `toNumber(value: @Numeric) -> Number`
 
 ## Types
 
 ### extern type Any
 
 ```zirric
-extern type Any
+extern type Any {}
 ```
 
 Anything is a value of type `Any`.
@@ -112,7 +81,7 @@ Anything is a value of type `Any`.
 ### extern type AnyType
 
 ```zirric
-extern type AnyType
+extern type AnyType {}
 ```
 
 All types are of type `AnyType`.
@@ -120,7 +89,7 @@ All types are of type `AnyType`.
 ### extern type Attribute
 
 ```zirric
-extern type Attribute
+extern type Attribute {}
 ```
 
 All attributes are of type `Attribute`.
@@ -128,7 +97,7 @@ All attributes are of type `Attribute`.
 ### extern type AttributeType
 
 ```zirric
-extern type AttributeType
+extern type AttributeType {}
 ```
 
 All attribute types are of type `AttributeType`.
@@ -136,7 +105,7 @@ All attribute types are of type `AttributeType`.
 ### extern type Module
 
 ```zirric
-extern type Module
+extern type Module {}
 ```
 
 All modules are of type `Module`.
@@ -144,7 +113,7 @@ All modules are of type `Module`.
 ### extern type ModuleType
 
 ```zirric
-extern type ModuleType
+extern type ModuleType {}
 ```
 
 All module types are of type `ModuleType`.
@@ -152,32 +121,36 @@ All module types are of type `ModuleType`.
 ### extern type Array
 
 ```zirric
-extern type Array
+extern type Array {
+  length: Int
+}
 ```
 
 A finite list of values.
 
 Members:
 
-- `@Type(Int) length` — The length of the array.
+- `length: Int` — The length of the array.
 
 ### extern type Bool
 
 ```zirric
-extern type Bool
+extern type Bool {
+  toggle() -> Bool
+}
 ```
 
-Represents boolean values like `True` and `False`. Typically used for
+Represents boolean values like `true` and `false`. Typically used for
 conditionals and flags.
 
 Members:
 
-- `toggle()` — Negates a boolean value.
+- `toggle() -> Bool` — Negates a boolean value.
 
 ### extern type Char
 
 ```zirric
-extern type Char
+extern type Char {}
 ```
 
 A single character from a string.
@@ -185,32 +158,36 @@ A single character from a string.
 ### extern type Dict
 
 ```zirric
-extern type Dict
+extern type Dict {
+  length: Int
+}
 ```
 
 An associative array of keys and their values.
 
 Members:
 
-- `@Type(Int) length` — The length of the dictionary.
+- `length: Int` — The length of the dictionary.
 
 ### extern type Func
 
 ```zirric
-extern type Func
+extern type Func {
+  arity: Int
+}
 ```
 
 A callable function.
 
 Members:
 
-- `@Type(Int) arity` — The amount of function parameters to be passed.
+- `arity: Int` — The amount of function parameters to be passed.
 
 ### extern type Float
 
 ```zirric
-@Numeric({ f -> f })
-extern type Float
+@Numeric(fn(f: Float) -> Float { f })
+extern type Float {}
 ```
 
 A floating point number.
@@ -218,8 +195,8 @@ A floating point number.
 ### extern type Int
 
 ```zirric
-@Numeric({ i -> i })
-extern type Int
+@Numeric(fn(i: Int) -> Int { i })
+extern type Int {}
 ```
 
 A whole integer number.
@@ -227,19 +204,21 @@ A whole integer number.
 ### extern type String
 
 ```zirric
-extern type String
+extern type String {
+  length: Int
+}
 ```
 
-No documentation.
+A string of characters.
 
 Members:
 
-- `@Type(Int) length`
+- `length: Int` — The length of the string.
 
 ### extern type Void
 
 ```zirric
-extern type Void
+extern type Void {}
 ```
 
 The type of the `void` value.
@@ -249,41 +228,36 @@ The type of the `void` value.
 ### union Number
 
 ```zirric
-union Number
+union Number {
+  Float
+  Int
+}
 ```
 
-No documentation.
-
-Members:
-
-- `Float`
-- `Int`
+A union of `Float` and `Int`, representing any numeric value.
 
 ## Values
 
-### let true
+### const true
 
 ```zirric
-@Bool
-let true = 0 == 0
+const true = 0 == 0
 ```
 
-No documentation.
+The boolean true value.
 
-### let false
+### const false
 
 ```zirric
-@Bool
-let false = 0 != 0
+const false = 0 != 0
 ```
 
-No documentation.
+The boolean false value.
 
-### let void
+### extern const void
 
 ```zirric
-@Type(Void)
-extern let void
+extern const void: Void
 ```
 
 Represents the absence of a value.

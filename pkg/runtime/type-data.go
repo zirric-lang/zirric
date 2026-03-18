@@ -57,3 +57,7 @@ func (dt *DataType) Lookup(name string) RuntimeValue {
 func (dt *DataType) TypeConstantId() TypeId {
 	return TypeId(*dt.Symbol.TypeSymbol.ConstantId)
 }
+
+func (dt *DataType) TypeAttributes() map[TypeId]int {
+	return dt.Attributes
+}

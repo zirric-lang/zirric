@@ -157,12 +157,12 @@ func funcParamsFromModule(mod *ast.ContextModule, name string) ([]ast.DeclParame
 }
 
 // buildSignatureInfo constructs an LSP SignatureInformation for a Zirric function.
-// The label uses Zirric syntax: "fn name { p1, p2 -> }".
+// The label uses Zirric syntax: "fn name(p1, p2)".
 // Each parameter's label is its name string, allowing the editor to highlight it.
 func buildSignatureInfo(name string, params []ast.DeclParameter) protocol.SignatureInformation {
 	var (
-		prefix = "fn " + name + " { "
-		suffix = " -> }"
+		prefix = "fn " + name + "("
+		suffix = ")"
 
 		paramNames = make([]string, len(params))
 	)

@@ -31,7 +31,7 @@ As of now the package manager does not traverse transitive dependencies, leaving
 
 ### Cavefile Dependencies
 
-The data structure with the `@cave.Dependencies()` annotation will be used to declare dependencies in a `Cavefile`.
+The data structure with the `@cave.Dependencies()` attribute will be used to declare dependencies in a `Cavefile`.
 
 ```zirric
 import code.knabel.dev.zirric_lang.zirric.future.cave
@@ -90,8 +90,8 @@ The `pkgmanager` will use the `Cavefile`, search for the `@cave.Dependencies()` 
   allowing dot notation, e.g. `foo.bar` imports the `bar` submodule from the
   `foo` package.
 - **Source** - determined by the presence of `@cave.Git`, `@cave.Local`, or
-  `@cave.Stdlib` annotations on the field.
-- **Version predicate** – extracted from the `@cave.Version` annotation if
+  `@cave.Stdlib` attributes on the field.
+- **Version predicate** – extracted from the `@cave.Version` attribute if
   present. If omitted, any version is acceptable.
 
 ### Package manager workflow
@@ -145,7 +145,7 @@ published to the toolchain.
 
 ### Task execution and parsing
 
-The `cave.tasks` package provides annotations and helpers to declare and execute tasks.
+The `cave.tasks` package provides attributes and helpers to declare and execute tasks.
 Data structures may be tasks when annotated with `@tasks.Exec` to execute files, `@tasks.Call` to call functions or `@tasks.Import` to reuse existing tasks.
 
 They will be parsed by the CLI and registered as commands. By default the command name is the lowercased data name, but it may be overridden with `@tasks.Name`. A help text may be provided with `@tasks.Help`.
@@ -157,18 +157,18 @@ Tasks may declare flags and positional arguments by annotating fields with `@tas
 Introduces the `cave` and `cave.tasks` modules to the standard library.
 
 - `cave`:
-  - `Dependencies` annotation
+  - `Dependencies` attribute
   - a union for `Source` with values `Stdlib`, `Local`, and `Git`
-  - `Stdlib`, `Local`, `Git`, and `Version` annotations
+  - `Stdlib`, `Local`, `Git`, and `Version` attributes
 - `cave.tasks`:
   - a union for `Task` with values `Exec`, `Call`, and `Import`
-  - `Exec`, `Call`, and `Import` annotations for task declarations
-  - `Name`, `Alias`, `Help`, `Short`, `Flag`, and `Arg` annotations for tasks and their fields
+  - `Exec`, `Call`, and `Import` attributes for task declarations
+  - `Name`, `Alias`, `Help`, `Short`, `Flag`, and `Arg` attributes for tasks and their fields
 
 ## Alternatives Considered
 
 - Using a different manifest format such as JSON or YAML was considered, but
-  Zirric's strong typing and annotation system makes it straightforward to
+  Zirric's strong typing and attribute system makes it straightforward to
   declare dependencies and tasks directly in Zirric code.
 - Implementing transitive dependency resolution was considered, but deferred to a future enhancement to keep the initial implementation simpler and focused on
   direct dependencies only.

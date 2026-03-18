@@ -24,7 +24,7 @@ attr Version {
   //   - "< 1.0.0"
   //   - ">= 1.0.0"
   //   - ">= 1.0.0"
-  @String predicate
+  predicate: String
 }
 
 // The type of dependency: standard library, Git, or local.
@@ -39,7 +39,7 @@ union Source {
 @Proposal(ZE_002)
 attr Stdlib {
   // The name of the standard library dependency.
-  @String name
+  name: String
 }
 
 // Marks a field as a Git dependency with a URL and predicate.
@@ -47,12 +47,12 @@ attr Stdlib {
 @Proposal(ZE_002)
 attr Git {
   // The URL of the Git repository.
-  @String url
+  url: String
 }
 
 // Marks a field as a local dependency with a path.
 @Proposal(ZE_002)
 attr Local {
   // The local path to the dependency.
-  @String path
+  path: String
 }

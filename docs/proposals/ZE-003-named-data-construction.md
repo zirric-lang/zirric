@@ -42,15 +42,15 @@ NamedArg    ::= Identifier ':' Expression
 
 During type checking, each `NamedArg` is mapped to its corresponding field or parameter. The compiler determines which fields may be omitted by inspecting their declarations:
 
-- A field annotated with `@Default(expr)` is optional and uses the annotation's expression when absent. If no type is written, the type is inferred from `expr`.
+- A field annotated with `@Default(expr)` is optional and uses the attribute's expression when absent. If no type is written, the type is inferred from `expr`.
 
-Any field lacking a `@Default` annotation is required and must appear in the call. Missing required fields produce errors.
+Any field lacking a `@Default` attribute is required and must appear in the call. Missing required fields produce errors.
 
 When compiling, named arguments are reordered into positional form to reuse existing call conventions.
 
 ## Changes to the Standard Library
 
-Introduce a `@Default` annotation that accepts an expression providing a field's default value. Standard library types and functions may adopt named construction and use `@Default` where appropriate.
+Introduce a `@Default` attribute that accepts an expression providing a field's default value. Standard library types and functions may adopt named construction and use `@Default` where appropriate.
 
 ```zirric
 attr Default {

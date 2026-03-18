@@ -57,12 +57,7 @@ checksum:
   name_template: "checksums.txt"
 
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
-      - "^build:"
+  disable: true
 
 # Build an Arch Linux .pkg.tar.zst (via nfpm).
 nfpms:

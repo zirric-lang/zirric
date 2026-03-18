@@ -1,33 +1,24 @@
 mod xreflect
 
 data Field {
-    @String name
-
-    @Type(AnyType) type
-
-    @Array
-    @ItemType(Attribute)
-    attributes
+    name: String
+    type: AnyType
+    attributes: [Attribute]
 }
 
 data Attribute {
-    @AnyAttribute attributeType
-    @Array args
+    attributeType: AnyAttribute
+    args: Array
 }
 
 attr Name {
-    @String name
+    name: String
 }
 
-@Returns(Type)
-fn typeOf(@Any value) {}
+fn typeOf(value: Any) -> AnyType {}
 
-@Returns(Array(Field))
-fn fieldsOf(@Type typeValue) {}
+fn fieldsOf(typeValue: AnyType) -> [Field] {}
 
-@Returns(Result)
-@OkType(AnyAttribute)
-fn attribute(@Field field, @AttributeType attributeType) {}
+fn attribute(field: Field, attributeType: AttributeType) -> Result {}
 
-@Returns(Bool)
-fn hasAttribute(@Field field, @AttributeType attributeType) {}
+fn hasAttribute(field: Field, attributeType: AttributeType) -> Bool {}

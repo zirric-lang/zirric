@@ -5,7 +5,7 @@
 Zirric is an experimental programming language implemented in Go with a bytecode compiler and virtual machine. The repository contains:
 
 - **Language Type**: Programming language implementation (lexer, parser, compiler, VM)
-- **Primary Language**: Go 1.23+
+- **Primary Language**: Go 1.24+
 - **Size**: Medium-sized project (~18 test files, 17 Go packages)
 - **Target**: Educational/experimental programming language with modern features
 
@@ -22,17 +22,17 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 
 ### Where to look first (authoritative Zirric source)
 
-- **Language proposals**: `proposals/ZE-001-base-language.md` (core syntax/semantics) and `proposals/ZE-002-the-cavefile.md` (package manifest + tasks). For future-facing features, see `proposals/ZE-004-Variadic-Arguments.md`, `proposals/ZE-005-Mixin-Type-Declarations.md`, and `proposals/ZE-006-Annotation-Based-Parsing-System.md`.
+- **Language proposals**: `docs/proposals/ZE-001-base-language.md` (core syntax/semantics) and `docs/proposals/ZE-002-the-cavefile.md` (package manifest + tasks). Recent implemented proposals include `docs/proposals/ZE-013-mutability-and-constants.md` (const/var), `docs/proposals/ZE-016-closure-syntax.md` (fn closures), and `docs/proposals/ZE-017-type-hints.md` (type hints and is-matching). For future-facing features, see `docs/proposals/ZE-004-Variadic-Arguments.md` and `docs/proposals/ZE-005-Mixin-Type-Declarations.md`.
 - **Standard library Zirric sources**: `prelude/shim.zirr` (core types and values), `prelude/attributes.zirr` (attribute system), `prelude/countable.zirr` (protocol-like attributes), `prelude/result.zirr` (Result/Optional patterns), `future/reflect/stub.zirr` (reflection surface).
-- **Cavefile schema and tasks**: `future/cave/manifest.zirr` and `future/tasks/manifest.zirr` define the annotation-driven dependency/task model used by the package manager.
+- **Cavefile schema and tasks**: `future/cave/manifest.zirr` and `future/tasks/manifest.zirr` define the attribute-driven dependency/task model used by the package manager.
 - **Example manifest**: `examples/project/Cavefile` shows real-world dependency + task declarations.
 
 ### Core mental model (intuition)
 
 - **Declarations**: Zirric is declaration-driven (`var`, `const`, `fn`, `data`, `union`, `extern`, `attr`, `mod`, `import`), with attributes as the primary metadata mechanism.
-- **Dynamic but strict**: Values are dynamic, yet conversions are explicit; annotations like `@Type`, `@Has`, and `@Returns` communicate intent to tooling and runtime checks.
+- **Dynamic but strict**: Values are dynamic, yet conversions are explicit; there are optional type hints like `const x: Int` and `fn(p: @HasAttr) -> String`.
 - **Data and unions**: `data` defines record-like types with named fields; `union` are a declared nominal supertype consisting of a fixed set of existing types; values are implicitly usable as a union if their concrete type is a member (often with nested `data` members).
-- **Attributes are first-class**: Many behaviors (type hints, defaults, docs, protocols) are expressed via attributes in `prelude/attributes.zirr`.
+- **Attributes are first-class**: Behaviors (defaults, docs, protocols) are expressed via attributes in `prelude/attributes.zirr`. Type information uses type hints (`: T`, `-> T`) rather than attributes.
 - **Collection protocols**: `@Countable`/`@Iterable` in `prelude/countable.zirr` describe the “protocols” used by loops and helpers.
 - **Cavefile is just Zirric**: Dependency and task manifests are Zirric `data` declarations annotated with `@cave.Dependencies` and `@tasks.*` (see `future/cave/manifest.zirr` and `future/tasks/manifest.zirr`).
 
@@ -174,16 +174,18 @@ GitHub Actions workflow (`.github/workflows/go.yml`):
 ├── go.mod                      # Go module definition
 ├── grammar.ebnf                # Formal grammar specification
 ├── docs/                       # Language documentation
-│   ├── tooling/compiler.md # Bytecode & VM architecture
-│   └── syntax/                 # Language syntax docs
-├── proposals/                  # Language evolution proposals (ZE-*)
+│   ├── tooling/compiler.md     # Bytecode & VM architecture
+│   ├── specification/          # Language specification docs
+│   ├── proposals/              # Language evolution proposals (ZE-*)
+│   ├── changelog/              # Release history (index.md + per-release files)
+│   └── stdlib/                 # Standard library docs
 ├── examples/project/           # Example Zirric project
 ├── prelude/                     # Core standard library sources
 ├── future/                      # Future standard library modules
 │   ├── prelude/                 # Proposed prelude extensions (.zirr)
 │   ├── reflect/                 # Reflection surface (.zirr)
 │   ├── cave/                    # Cavefile manifest schema (.zirr)
-│   └── tasks/                   # Cavefile task annotations (.zirr)
+│   └── tasks/                   # Cavefile task attributes (.zirr)
 ├── cmd/                        # CLI entrypoints
 ├── pkg/                        # Core Go packages
 │   ├── ast/                    # Abstract Syntax Tree definitions
@@ -211,7 +213,7 @@ GitHub Actions workflow (`.github/workflows/go.yml`):
 - **`pkg/compiler/compiler.go`**: Add compilation logic for new features
 - **`pkg/vm/vm.go`**: Extend VM for new bytecode operations
 - **`pkg/runtime/prelude-*.go`**: Built-in type implementations
-- **`prelude/*.zirr`**: Core types and annotations
+- **`prelude/*.zirr`**: Core types and attributes
 - **`future/cave/manifest.zirr`**: Cavefile dependency schema
 - **`future/tasks/manifest.zirr`**: Cavefile task schema
 - **`pkg/op/defs.go`**: Define new bytecode operations
@@ -283,13 +285,74 @@ When changing a proposal's status, update **all three** locations:
 
 After marking a proposal as Implemented, perform these additional steps:
 
-1. **Update the specification**: Reflect the new feature in the relevant files under `docs/specification/` (expressions, declarations, control-flow, annotations, typesystem).
+1. **Update the specification**: Reflect the new feature in the relevant files under `docs/specification/` (syntax, declarations, expressions, typesystem). See [Keeping the Specification Up to Date](#keeping-the-specification-up-to-date) below.
 2. **Update the getting-started guide**: If the feature affects onboarding or common usage, update `docs/guides/getting-started.md`.
-3. **Search for outdated code and docs**: Look for old APIs, syntax, or descriptions that contradict the implemented proposal in:
+3. **Update the changelog**: Add the proposal to the current release notes file under `docs/changelog/` (see [Maintaining the Changelog](#maintaining-the-changelog) below).
+4. **Search for outdated code and docs**: Look for old APIs, syntax, or descriptions that contradict the implemented proposal in:
    - `*.zirr` source files (e.g., `prelude/`, `future/`, `examples/`)
    - `Cavefile` files (e.g., `examples/project/Cavefile`)
    - All documentation under `docs/` (excluding other proposals in `docs/proposals/`)
-4. **Do NOT update other proposals** in `docs/proposals/` — proposals are historical records of their time. Update all other outdated documentation under `docs/`.
+5. **Do NOT update other proposals** in `docs/proposals/` — proposals are historical records of their time. Update all other outdated documentation under `docs/`.
+
+## Keeping the Specification Up to Date
+
+The specification (`docs/specification/`) documents the **actual** state of the language as implemented in code. Proposals (`docs/proposals/`) document a **desired** state that may be incomplete, outdated, or not yet implemented. The specification is the authoritative reference — proposals are historical records.
+
+### When to update the specification
+
+Update the specification whenever a code change affects what the language accepts or how it behaves:
+
+- **New syntax or keywords**: Update `docs/specification/syntax.md` (grammar) and the relevant semantic page.
+- **Changed semantics** (scoping, evaluation, matching): Update the semantic page (declarations, expressions, or typesystem).
+- **New or changed type behavior**: Update `docs/specification/typesystem.md`.
+- **New or changed declarations**: Update `docs/specification/declarations.md`.
+- **Changed control flow or operators**: Update `docs/specification/expressions.md`.
+
+If a change only affects internal compiler implementation without changing observable language behavior, the specification does not need updating.
+
+### Specification files
+
+| File              | Covers                                                                     |
+| ----------------- | -------------------------------------------------------------------------- |
+| `syntax.md`       | Formal grammar (EBNF), tokens, keywords, operator precedence               |
+| `declarations.md` | All declaration forms, scoping, attribute application, type hint positions |
+| `expressions.md`  | Expressions, operators, control flow, closures, switch/is, assignment      |
+| `typesystem.md`   | Type categories, union membership, type hints, is-matching, protocols      |
+| `index.md`        | Navigation guide with quick-reference table                                |
+
+### Rules
+
+- **No proposal references** in the specification. The specification stands on its own.
+- **Cross-reference** between specification pages using relative links (e.g., `[Expressions § Switch](/specification/expressions#switch)`).
+- **Keep in sync with code.** If a PR changes parser, compiler, or runtime behavior, the specification must be updated in the same PR or a follow-up.
+
+## Maintaining the Changelog
+
+The changelog lives under `docs/changelog/`. It consists of:
+
+- **`index.md`** — Overview page using the [docmd changelog container syntax](https://docs.docmd.io/content/containers/changelogs/). Each release gets a one-line summary and a link to its full release notes page.
+- **One file per release** (e.g., `v0.1.0.md`, `v0.0.1.md`) — Full release notes with all details. Each file must include YAML frontmatter with `title` (the version, use a `-next` suffix while unreleased) and `description` (a one-line summary of the release). The file name always matches the final release tag (no `-next` suffix) so that the URL remains stable across prerelease and release.
+
+The current (unreleased) release uses its target version as file name (e.g., `v0.1.0.md`) but keeps a `-next` suffix in its `title` frontmatter and heading (e.g., `v0.1.0-next`). It also includes a prerelease callout. When the release is tagged, remove the `-next` suffix from the title, heading, and nav entry, remove the prerelease callout, and create a new file for the next cycle. Update `index.md` and the navigation in `tasks/docmd/docmd.config.js`.
+
+The GitHub Actions release workflow (`.github/workflows/goreleaser.yaml`) automatically derives the release notes file from the Git tag (e.g., tag `v0.1.0` → `docs/changelog/v0.1.0.md`) and passes it to GoReleaser via `--release-notes`. This is why the file name must match the tag exactly.
+
+### Headings in Release Notes
+
+Use the following headings within each release notes file. Only include a heading if there are items for it.
+
+- **`## Breaking Changes`** — Any change that breaks existing Zirric code or requires user migration (renamed keywords, changed syntax, removed features).
+- **`## Implemented Proposals`** — Proposals that have been marked as Implemented. Link to the proposal page using `[ZE-NNN Title](/proposals/ZE-NNN-slug)` and add a brief one-line summary.
+- **`## Notable Changes`** — Significant improvements, new capabilities, or behavioral changes that are not tied to a specific proposal.
+- **`## Bug Fixes`** — Fixed bugs that are not already covered by an implemented proposal entry. One line per fix with a brief description.
+- **`## Tooling`** — Changes to editor support, Tree-Sitter grammars, CLI tooling, or development infrastructure.
+
+### Rules
+
+- When a proposal is marked as Implemented, always add it under `## Implemented Proposals` in the current release notes file.
+- Breaking changes always get their own entry under `## Breaking Changes`, even if they are also part of a proposal.
+- Bug fixes that are part of an implemented proposal do not need a separate `## Bug Fixes` entry.
+- Bug fixes unrelated to any proposal should be listed under `## Bug Fixes`.
 
 ## Instructions for Coding Agents
 

@@ -41,6 +41,7 @@ var precedences = map[token.TokenType]Precedence{
 	token.GTE:      COMPARISON,
 	token.LT:       COMPARISON,
 	token.GT:       COMPARISON,
+	token.IS:       COMPARISON,
 	token.PLUS:     SUM,
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
@@ -333,8 +334,29 @@ func (p *Parser) parsePrattExprFor() ast.Expr {
 	return ast.MakeExprFor(forTok, cond, nil, nil, block)
 }
 
-func (p *Parser) parsePrattExprFunc() ast.Expr {
-	return p.parseExprFunction()
+// parsePrattExprFnClosure parses the new closure syntax: fn(params) { body }
+// or fn(params) -> ReturnType { body }.
+func (p *Parser) parsePrattExprFnClosure() ast.Expr {
+	fnTok, _ := p.expect(token.FUNCTION)
+	p.expect(token.LPAREN)
+
+	var fun *ast.ExprFunc
+	fun, p.curSymbolTable = ast.MakeExprFunc(fnTok, p.curSymbolTable.NextAnonymousFunctionName(), p.curSymbolTable)
+
+	params := p.parseDeclParameterListWithInsert(false)
+	fun.SetParams(params)
+	p.expect(token.RPAREN)
+
+	if p.curIs(token.RIGHT_ARROW) {
+		p.expect(token.RIGHT_ARROW)
+		fun.ReturnType = p.parseTypeHintExpr()
+	}
+
+	p.expect(token.LBRACE)
+	fun.SetImplBlock(p.parseStmtBlock(IN_FUNC))
+	p.expect(token.RBRACE)
+	p.popSymbolTable()
+	return fun
 }
 
 func (p *Parser) parsePrattExprCall(fn ast.Expr) ast.Expr {

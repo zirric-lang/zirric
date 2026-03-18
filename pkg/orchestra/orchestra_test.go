@@ -55,7 +55,7 @@ func TestRunFile(t *testing.T) {
 
 func TestParseFileUsesPreludeAttribute(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "main.zirr", "mod main\n@Type(String)\ndata Example { name }\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\n@Deprecated(\"use NewExample\")\ndata Example { name }\n")
 
 	orch := newTestOrchestra(t, projectFS, "project")
 	resolver, err := orch.NewResolver()
@@ -69,8 +69,8 @@ func TestParseFileUsesPreludeAttribute(t *testing.T) {
 	if module.Decls.Parent == nil {
 		t.Fatal("expected prelude decls to be parented")
 	}
-	if module.Decls.Parent.Symbols["Type"] == nil {
-		t.Fatal("expected prelude attribute Type to be present")
+	if module.Decls.Parent.Symbols["Deprecated"] == nil {
+		t.Fatal("expected prelude attribute Deprecated to be present")
 	}
 	if module.Decls.Parent.Symbols["String"] == nil {
 		t.Fatal("expected prelude type String to be present")
@@ -88,18 +88,11 @@ func TestParseFileUsesPreludeAttribute(t *testing.T) {
 		t.Fatalf("expected 1 attribute, got %d", len(decl.Attributes))
 	}
 	anno := decl.Attributes[0]
-	if len(anno.Reference) != 1 || anno.Reference[0].Value != "Type" {
-		t.Fatalf("expected @Type attribute, got %v", anno.Reference)
+	if len(anno.Reference) != 1 || anno.Reference[0].Value != "Deprecated" {
+		t.Fatalf("expected @Deprecated attribute, got %v", anno.Reference)
 	}
 	if len(anno.Arguments) != 1 {
 		t.Fatalf("expected 1 attribute argument, got %d", len(anno.Arguments))
-	}
-	arg, ok := anno.Arguments[0].(*ast.ExprIdentifier)
-	if !ok {
-		t.Fatalf("expected attribute argument to be identifier, got %T", anno.Arguments[0])
-	}
-	if arg.Name.Value != "String" {
-		t.Fatalf("expected attribute argument String, got %q", arg.Name.Value)
 	}
 }
 
@@ -374,10 +367,10 @@ func TestBarePreludeSymbol(t *testing.T) {
 }
 
 // TestBarePreludeSymbolInAttribute verifies that prelude types used inside
-// attribute arguments (e.g. @Type(String)) compile correctly.
+// attribute arguments (e.g. @Deprecated("reason")) compile correctly.
 func TestBarePreludeSymbolInAttribute(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "main.zirr", "mod main\n@Type(String)\ndata Example { name }\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\n@Deprecated(\"use NewExample\")\ndata Example { name }\n")
 
 	orch := newTestOrchestra(t, projectFS, "main")
 	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {

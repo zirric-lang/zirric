@@ -61,3 +61,7 @@ func (at *AttributeType) TypeConstantId() TypeId {
 func (at *AttributeType) MakeValue(values []RuntimeValue) *AttributeValue {
 	return MakeAttributeValue(at, values)
 }
+
+func (at *AttributeType) TypeAttributes() map[TypeId]int {
+	return at.Attributes
+}

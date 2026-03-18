@@ -22,6 +22,22 @@ const (
 	typeIdVoid
 )
 
+// BuiltinTypeIds maps prelude type names to their hardcoded TypeIds.
+// Used by the compiler to create SimpleType values that match the runtime
+// TypeConstantId of builtin literal values (Array, Dict, Int, etc.).
+var BuiltinTypeIds = map[string]TypeId{
+	"Array":  typeIdArray,
+	"Bool":   typeIdBool,
+	"Char":   typeIdChar,
+	"Dict":   typeIdDict,
+	"Float":  typeIdFloat,
+	"Func":   typeIdFunc,
+	"Int":    typeIdInt,
+	"Module": typeIdModule,
+	"String": typeIdString,
+	"Void":   typeIdVoid,
+}
+
 var _ ExternPlugin = &Prelude{}
 
 type Prelude struct{}
@@ -29,17 +45,26 @@ type Prelude struct{}
 // Bind implements runtime.ExternPlugin.
 func (*Prelude) Bind(module *ast.SymbolTable, decl *ast.Symbol) RuntimeValue {
 	switch decl.Name {
-	case "Array",
-		"Bool",
-		"Char",
-		"Dict",
-		"Float",
-		"Func",
-		"Int",
-		"Module",
-		"String",
-		"Void":
-		return SimpleType{Decl: decl}
+	case "Array":
+		return MakeBuiltinSimpleType(decl, typeIdArray)
+	case "Bool":
+		return MakeBuiltinSimpleType(decl, typeIdBool)
+	case "Char":
+		return MakeBuiltinSimpleType(decl, typeIdChar)
+	case "Dict":
+		return MakeBuiltinSimpleType(decl, typeIdDict)
+	case "Float":
+		return MakeBuiltinSimpleType(decl, typeIdFloat)
+	case "Func":
+		return MakeBuiltinSimpleType(decl, typeIdFunc)
+	case "Int":
+		return MakeBuiltinSimpleType(decl, typeIdInt)
+	case "Module":
+		return MakeBuiltinSimpleType(decl, typeIdModule)
+	case "String":
+		return MakeBuiltinSimpleType(decl, typeIdString)
+	case "Void":
+		return MakeBuiltinSimpleType(decl, typeIdVoid)
 	case "Any":
 		return MakeAnyType(decl)
 	case "void":

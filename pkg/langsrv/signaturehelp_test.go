@@ -110,7 +110,7 @@ func TestSignatureHelp(t *testing.T) {
 		return
 	}
 	sig := result.Signatures[0]
-	wantLabel := "fn greet { name -> }"
+	wantLabel := "fn greet(name)"
 	if sig.Label != wantLabel {
 		t.Errorf("signature label = %q, want %q", sig.Label, wantLabel)
 	}

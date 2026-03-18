@@ -13,6 +13,7 @@ var _ Overviewable = DeclField{}
 type DeclField struct {
 	Name       Identifier
 	Parameters []DeclParameter
+	TypeHint   TypeExpr
 
 	Attributes AttributeChain
 
@@ -51,11 +52,12 @@ func (e DeclField) ExportScope() ExportScope {
 	return ExportScopeInternal
 }
 
-func MakeDeclField(name Identifier, params []DeclParameter, attributes AttributeChain) *DeclField {
+func MakeDeclField(name Identifier, params []DeclParameter, attributes AttributeChain, typeHint TypeExpr) *DeclField {
 	return &DeclField{
 		Name:       name,
 		Parameters: params,
 		Attributes: attributes,
+		TypeHint:   typeHint,
 		Docs:       MakeDocs([]string{}),
 	}
 }

@@ -197,7 +197,7 @@ func isIdentByte(b byte) bool {
 }
 
 // attributeContextCompletionItem returns a completion item for use after '@'.
-// Annotation declarations get a snippet with their field names as placeholders.
+// Attribute declarations get a snippet with their field names as placeholders.
 // Type declarations (data, union, extern type) are included as plain names.
 // Value and function declarations are excluded.
 // The TextEdit replaces from the '@' character up to the cursor so that the

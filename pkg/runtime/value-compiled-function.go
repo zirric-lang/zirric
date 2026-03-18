@@ -39,7 +39,10 @@ func (c CompiledFunction) Arity() int {
 
 // Inspect implements CallableRuntimeValue.
 func (c CompiledFunction) Inspect() string {
-	return fmt.Sprintf("fn %s(#%d)", c.Symbol.Decl.DeclName(), c.Arity())
+	if c.Symbol != nil && c.Symbol.Decl != nil {
+		return fmt.Sprintf("fn %s(#%d)", c.Symbol.Decl.DeclName(), c.Arity())
+	}
+	return fmt.Sprintf("fn(#%d)", c.Arity())
 }
 
 // Lookup implements CallableRuntimeValue.
@@ -51,6 +54,11 @@ func (c CompiledFunction) Lookup(name string) RuntimeValue {
 }
 
 // TypeConstantId implements CallableRuntimeValue.
+// All compiled functions are of type Func.
 func (c CompiledFunction) TypeConstantId() TypeId {
-	return TypeId(*c.Symbol.TypeSymbol.ConstantId)
+	return BuiltinTypeIds["Func"]
+}
+
+func (c CompiledFunction) TypeAttributes() map[TypeId]int {
+	return c.Attributes
 }

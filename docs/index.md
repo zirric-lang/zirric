@@ -1,6 +1,6 @@
 ---
 title: Zirric
-description: A compact, expression-first language with annotations and a small runtime.
+description: A compact, expression-first language with attributes and a small runtime.
 noStyle: true
 components:
   meta: true
@@ -41,7 +41,7 @@ components:
     length(@Has(Countable) value)
 }
 
-@Countable({ v -> v.length })
+@Countable(fn(v) { return v.length })
 data Bag {
   items
   length
@@ -65,7 +65,7 @@ fn summarize(@Bag bag) {
 <section class="cards">
     <article class="card">
       <h3>Declarations first</h3>
-      <p>Small set of primitives: <code>let</code>, <code>fn</code>, <code>data</code>, <code>union</code>, <code>attr</code>, <code>mod</code>.</p>
+      <p>Small set of primitives: <code>const</code>, <code>var</code>, <code>fn</code>, <code>data</code>, <code>union</code>, <code>attr</code>, <code>mod</code>, <code>import</code>.</p>
     </article>
     <article class="card">
       <h3>Expression-oriented</h3>

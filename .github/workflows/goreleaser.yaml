@@ -45,12 +45,20 @@ jobs:
           username: ${{ secrets.FORGEJO_USER }}
           password: ${{ secrets.FORGEJO_TOKEN }}
 
+      - name: Determine release notes file
+        id: release-notes
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          # Strip any prerelease suffix (e.g. v0.1.0-beta.0 -> v0.1.0)
+          VERSION=$(echo "$TAG" | sed 's/^\(v[0-9]*\.[0-9]*\.[0-9]*\).*/\1/')
+          echo "file=docs/changelog/${VERSION}.md" >> "$GITHUB_OUTPUT"
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v7
         with:
           version: "~> v2"
           # Workaround for Debian registry race: serialize tasks/artifacts.
-          args: release --clean --parallelism 1
+          args: release --clean --parallelism 1 --release-notes=${{ steps.release-notes.outputs.file }}
         env:
           # Forgejo/Gitea release publishing
           GITEA_TOKEN: ${{ secrets.FORGEJO_TOKEN }}

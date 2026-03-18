@@ -60,7 +60,7 @@ if answer == 42 {
     print("no")
 }
 
-for item -> items {
+for item <- items {
     print(item)
 }
 ```
@@ -88,11 +88,10 @@ without a formal interface system:
 
 ```zirric
 attr Countable {
-    @Returns(Int)
-    length(@Has(Countable) value)
+    length(value: @Countable) -> Int
 }
 
-@Countable({ v -> v.length })
+@Countable(fn(v) { v.length })
 data Bag {
     items
     length
@@ -123,4 +122,4 @@ data GenerateTask {}
 
 ## License
 
-This project is licensed under the [Mozilla Public License 2.0](LICENSE).
+This project is licensed under the [Mozilla Public License 2.0](./LICENSE).

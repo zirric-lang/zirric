@@ -45,3 +45,7 @@ func (*UnionType) Lookup(name string) RuntimeValue {
 func (ut *UnionType) TypeConstantId() TypeId {
 	return TypeId(*ut.Symbol.TypeSymbol.ConstantId)
 }
+
+func (ut *UnionType) TypeAttributes() map[TypeId]int {
+	return ut.Attributes
+}

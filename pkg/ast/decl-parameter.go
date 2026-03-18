@@ -9,6 +9,7 @@ var _ Decl = DeclParameter{}
 type DeclParameter struct {
 	Name       Identifier
 	Attributes AttributeChain
+	TypeHint   TypeExpr
 
 	Docs *Docs
 }
@@ -29,10 +30,11 @@ func (e DeclParameter) ExportScope() ExportScope {
 	return ExportScopeLocal
 }
 
-func MakeDeclParameter(name Identifier, attributes AttributeChain) *DeclParameter {
+func MakeDeclParameter(name Identifier, attributes AttributeChain, typeHint TypeExpr) *DeclParameter {
 	return &DeclParameter{
 		Name:       name,
 		Attributes: attributes,
+		TypeHint:   typeHint,
 	}
 }
 

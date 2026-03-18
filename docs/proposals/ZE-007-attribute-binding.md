@@ -10,6 +10,16 @@ This proposal is still a draft and is subject to change. Please do not cite or r
 Features described here may not be implemented as described and cannot be used right now.
 :::
 
+::: callout warning Outdated
+While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
+
+- [ ] Reflect latest syntax changes
+- [ ] Reflect latest stdlib changes
+- [ ] Attributes are no longer used for types
+- [ ] Evaluate the syntax `x.@Attr`
+- [ ] Evaluate special Type like `Self`
+      :::
+
 ## Introduction
 
 The proposed attribute binding feature allows a simplified way to call functions of attributes on actual values.
@@ -33,13 +43,12 @@ when calling the function through the attribute instance accessor.
 ```zirric
 attr Error {
   @Bound()
-  @Returns(String)
-  debug(err)
+  debug(err) -> String
 }
 
-@Error({ err -> err.message })
+@Error(fn(err) { err.message })
 data MessageError {
-  @String message
+  message: String
 }
 
 MessageError("msg")[@Error].debug() // `err` is passed automatically

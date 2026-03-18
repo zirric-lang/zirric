@@ -25,13 +25,11 @@ data Dependencies {
 @tasks.Help("Generates something")
 @tasks.Exec("tasks/generate.zirr")
 data GenerateTask {
-	@Bool
 	@tasks.Flag()
 	@tasks.Name("dry")
 	@tasks.Help("If true, only simulates the generation")
-	isDryRun
+	isDryRun: Bool
 
-	@String
 	@tasks.Arg()
-	positional
+	positional: String
 }

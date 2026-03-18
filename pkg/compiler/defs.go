@@ -96,6 +96,17 @@ func (c *Compiler) currentSymbols() *ast.SymbolTable {
 	return nil
 }
 
+// lookupTypeSymbol traverses the symbol table chain without side effects
+// to find a declared type symbol by name. Returns nil if not found.
+func (c *Compiler) lookupTypeSymbol(name string) *ast.Symbol {
+	for st := c.currentSymbols(); st != nil; st = st.Parent {
+		if sym, ok := st.Symbols[name]; ok && sym.Decl != nil {
+			return sym.Original()
+		}
+	}
+	return nil
+}
+
 func (c *Compiler) Bytecode() *Bytecode {
 	return &Bytecode{
 		Instructions: c.currentInstructions(),

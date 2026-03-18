@@ -1,6 +1,6 @@
 ---
 title: Future
-description: Experimental proposal scaffolding and annotations.
+description: Experimental proposal scaffolding and attributes.
 ---
 
 # Future
@@ -22,4 +22,4 @@ No documentation.
 
 Fields:
 
-- `@String link`
+- `link: String`

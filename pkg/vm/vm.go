@@ -104,6 +104,21 @@ func (vm *VM) ExtendConstants(newConstants []runtime.RuntimeValue) {
 	vm.constants = append(vm.constants, newConstants...)
 }
 
+// hasAttribute checks whether a type (identified by typeId) has the given attribute.
+// Only the type's own declared attributes are checked — union attributes do NOT
+// propagate to member types.
+func (vm *VM) hasAttribute(typeId runtime.TypeId, attrConstId runtime.TypeId) bool {
+	idx := int(typeId)
+	if idx >= 0 && idx < len(vm.constants) {
+		if a, ok := vm.constants[idx].(runtime.Attributable); ok {
+			if _, found := a.TypeAttributes()[attrConstId]; found {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // CallFunction calls a zero-argument CompiledFunction in the VM and returns its result.
 func (vm *VM) CallFunction(fn runtime.RuntimeValue) (runtime.RuntimeValue, error) {
 	compiledFn, ok := fn.(*runtime.CompiledFunction)

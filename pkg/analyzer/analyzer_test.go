@@ -51,9 +51,9 @@ func TestAnalyzerResolvesIdentifierFreeSymbols(t *testing.T) {
 func TestAnalyzerResolvesAttributeReferences(t *testing.T) {
 	module := parseModule(t, "test", `
 		module test
-		attr Type { value }
+		attr Attr { value }
 		data String { value }
-		@Type(String)
+		@Attr(String)
 		data Example { name }
 	`)
 	a := analyzer.New(nil)
@@ -61,15 +61,15 @@ func TestAnalyzerResolvesAttributeReferences(t *testing.T) {
 		t.Fatalf("analysis errors: %v", errs)
 	}
 
-	sym := module.Symbols.Symbols["Type"]
+	sym := module.Symbols.Symbols["Attr"]
 	if sym == nil || sym.Decl == nil {
-		t.Fatal("expected Type attribute to be declared")
+		t.Fatal("expected Attr attribute to be declared")
 	}
 	if _, ok := sym.Decl.(*ast.DeclAttr); !ok {
-		t.Fatalf("expected Type to be attribute, got %T", sym.Decl)
+		t.Fatalf("expected Attr to be attribute, got %T", sym.Decl)
 	}
 	if len(sym.Usages) == 0 {
-		t.Fatal("expected attribute Type to be referenced at least once")
+		t.Fatal("expected attribute Attr to be referenced at least once")
 	}
 
 	id := findExprIdentifier(module, "String")
@@ -203,6 +203,52 @@ func walkNode(node ast.Node, visit func(ast.Node)) {
 	node.EnumerateChildNodes(func(child ast.Node) {
 		walkNode(child, visit)
 	})
+}
+
+func TestAnalyzerRejectsDefaultCaseNotLast(t *testing.T) {
+	module := parseModule(t, "test", `
+		module test
+		fn example() {
+			switch 1 {
+				case _: 0
+				case 1: 1
+			}
+		}
+	`)
+	a := analyzer.New(nil)
+	errs, _ := a.Analyze(module, false)
+	if len(errs) == 0 {
+		t.Fatal("expected an analysis error for default case not last")
+	}
+	found := false
+	for _, e := range errs {
+		if e.Summary == "default case must be last" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected 'default case must be last' error, got %v", errs)
+	}
+}
+
+func TestAnalyzerAcceptsDefaultCaseLast(t *testing.T) {
+	module := parseModule(t, "test", `
+		module test
+		fn example() {
+			switch 1 {
+				case 1: 1
+				case _: 0
+			}
+		}
+	`)
+	a := analyzer.New(nil)
+	errs, _ := a.Analyze(module, false)
+	for _, e := range errs {
+		if e.Summary == "default case must be last" {
+			t.Fatalf("unexpected 'default case must be last' error")
+		}
+	}
 }
 
 type stubResolver struct{}

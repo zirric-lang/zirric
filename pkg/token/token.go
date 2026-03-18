@@ -66,28 +66,29 @@ const (
 	AT          TokenType = "@"
 
 	// KEYWORDS
-	MODULE     TokenType = "MODULE"
-	IMPORT     TokenType = "IMPORT"
-	UNION      TokenType = "UNION"
-	DATA       TokenType = "DATA"
-	ANNOTATION TokenType = "ANNOTATION"
-	EXTERN     TokenType = "EXTERN"
-	FUNCTION   TokenType = "FUNCTION"
-	CONST      TokenType = "CONST"
-	VAR        TokenType = "VAR"
-	TYPE       TokenType = "TYPE"
-	SWITCH     TokenType = "SWITCH"
-	CASE       TokenType = "CASE"
-	BREAK      TokenType = "BREAK"
-	CONTINUE   TokenType = "CONTINUE"
-	RETURN     TokenType = "RETURN"
-	IF         TokenType = "IF"
-	ELSE       TokenType = "ELSE"
-	FOR        TokenType = "FOR"
-	BLANK      TokenType = "BLANK"
-	TRUE       TokenType = "TRUE"
-	FALSE      TokenType = "FALSE"
-	VOID       TokenType = "VOID"
+	MODULE    TokenType = "MODULE"
+	IMPORT    TokenType = "IMPORT"
+	UNION     TokenType = "UNION"
+	DATA      TokenType = "DATA"
+	ATTRIBUTE TokenType = "ATTRIBUTE"
+	EXTERN    TokenType = "EXTERN"
+	FUNCTION  TokenType = "FUNCTION"
+	CONST     TokenType = "CONST"
+	VAR       TokenType = "VAR"
+	TYPE      TokenType = "TYPE"
+	SWITCH    TokenType = "SWITCH"
+	CASE      TokenType = "CASE"
+	IS        TokenType = "IS"
+	BREAK     TokenType = "BREAK"
+	CONTINUE  TokenType = "CONTINUE"
+	RETURN    TokenType = "RETURN"
+	IF        TokenType = "IF"
+	ELSE      TokenType = "ELSE"
+	FOR       TokenType = "FOR"
+	BLANK     TokenType = "BLANK"
+	TRUE      TokenType = "TRUE"
+	FALSE     TokenType = "FALSE"
+	VOID      TokenType = "VOID"
 )
 
 var keywords = map[string]TokenType{
@@ -95,7 +96,7 @@ var keywords = map[string]TokenType{
 	"import":   IMPORT,
 	"union":    UNION,
 	"data":     DATA,
-	"attr":     ANNOTATION,
+	"attr":     ATTRIBUTE,
 	"extern":   EXTERN,
 	"fn":       FUNCTION,
 	"const":    CONST,
@@ -103,6 +104,7 @@ var keywords = map[string]TokenType{
 	"type":     TYPE,
 	"switch":   SWITCH,
 	"case":     CASE,
+	"is":       IS,
 	"break":    BREAK,
 	"continue": CONTINUE,
 	"return":   RETURN,

@@ -28,7 +28,7 @@ import big
 data None
 // <- ast.DeclData
 
-@json.Inline
+@json.Inline()
 data Some {
 // <- ast.DeclData
    value
@@ -65,7 +65,7 @@ extern type SomeEmptyType {}
 
 attr Type {
 // <- ast.DeclAttr
-	@AnyType
+	@AnyType()
 	value
 //  ^ ast.DeclField
 }
@@ -77,10 +77,10 @@ attr ValidationRule {
 //          ^ ast.DeclParameter
 }
 
-fn doNothingWithNothing {}
+fn doNothingWithNothing() {}
 // <- ast.DeclFunc
 // ^ ast.Identifier
-//                      ^ ast.ExprFunc
+//                        ^ ast.ExprFunc
 fn doNothingWithSomething(some, thing) {}
 // <- ast.DeclFunc
 //                        ^ ast.DeclParameter
@@ -90,11 +90,10 @@ fn doNothingWithSomething(some, thing) {}
 @Returns(None)
 // <- ast.DeclAttrInstance
 @big.O("constant")
-fn greet(@String name) {}
+fn greet(name: String) {}
 // <- ast.DeclFunc
-//       ^ ast.DeclAttrInstance
-//               ^ ast.DeclParameter
-//                     ^ ast.ExprFunc
+//       ^ ast.DeclParameter
+//                    ^ ast.ExprFunc
 
 fn example() {
     const x = 4

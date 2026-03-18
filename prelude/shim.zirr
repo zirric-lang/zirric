@@ -18,19 +18,17 @@ extern type ModuleType {}
 // A finite list of values.
 extern type Array {
   // The length of the array.
-  @Type(Int) length
+  length: Int
 }
 
-@Bool
 const true = 0 == 0
-@Bool
 const false = 0 != 0
 
 // Represents boolean values like `True` and `False`.
 // Typically used for conditionals and flags.
 extern type Bool {
   // Negates a boolean value.
-  toggle()
+  toggle() -> Bool
 }
 
 // A single character from a string.
@@ -39,21 +37,21 @@ extern type Char {}
 // An associative array of keys and their values.
 extern type Dict {
   // The length of the dictionary.
-  @Type(Int) length
+  length: Int
 }
 
 // A callable function.
 extern type Func {
   // The amount of function parameters to be passed.
-  @Type(Int) arity
+  arity: Int
 }
 
 // A floating point number.
-@Numeric({ f -> f })
+@Numeric(fn(f: Float) -> Float { f })
 extern type Float {}
 
 // A whole integer number.
-@Numeric({ i -> i })
+@Numeric(fn(i: Int) -> Int { i })
 extern type Int {}
 
 union Number {
@@ -62,11 +60,10 @@ union Number {
 }
 
 extern type String {
-  @Type(Int) length
+  length: Int
 }
 
 // Represents the absence of a value.
-@Type(Void)
-extern const void
+extern const void: Void
 // The type of the `void` value.
 extern type Void {}

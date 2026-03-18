@@ -36,7 +36,7 @@ func TestExprIdentifier(t *testing.T) {
 		{"[1, 2]", "[1, 2]"},
 		{"some()", "some(some)"},
 		{"call(1, 2)", "call(1, 2call)"},
-		{"{}", "{->/* 0 stmts */}"},
+		{"fn() {}", "fn() {/* 0 stmts */}"},
 	}
 
 	for i, tt := range tests {

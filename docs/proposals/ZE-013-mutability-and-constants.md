@@ -5,10 +5,9 @@ description: Replace `let` with `const` and `var` to make mutability explicit at
 
 # Mutability and Constants
 
-::: callout warning <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-dot-icon lucide-circle-dot"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg> In Progress
-This proposal has been accepted in principle.
-It is currently under active development.
-Parts might be incomplete or missing in Zirric.
+::: callout tip <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Implemented
+This proposal has been accepted and implemented.
+You can use this feature in the latest version of Zirric.
 :::
 
 ## Introduction
@@ -221,8 +220,8 @@ Multiple closures capturing the same `var` binding share the same upvalue cell, 
 
 ```zirric
 var x = 0
-const inc = { -> x = x + 1 }
-const get = { -> x }
+const inc = fn() { x = x + 1 }
+const get = fn() { return x }
 inc()
 inc()
 get()   // 2 — both closures operate on the same cell
@@ -232,7 +231,7 @@ get()   // 2 — both closures operate on the same cell
 
 ```zirric
 var total = 0
-const add = { n ->
+const add = fn(n) {
     total = total + n   // captures `total` via upvalue
 }
 add(1)

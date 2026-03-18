@@ -117,6 +117,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return c.compileStmtAssign(node)
 	case ast.StmtIf:
 		return c.compileStmtIf(node)
+	case ast.StmtSwitch:
+		return c.compileStmtSwitch(node)
 	case ast.StmtFor:
 		return c.compileStmtFor(node)
 	case ast.StmtBreak:
@@ -126,6 +128,10 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 	case ast.ExprIf:
 		return c.compileExprIf(node)
+	case ast.ExprIs:
+		return c.compileExprIs(node)
+	case *ast.ExprSwitch:
+		return c.compileExprSwitch(node)
 	case ast.ExprFor:
 		return c.compileExprFor(node)
 	case *ast.ExprOperatorUnary:
@@ -1257,6 +1263,10 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		}
 		dt.Attributes = attributes
 
+		if err := c.validateFieldAttributes(decl.Fields, c.currentSymbols()); err != nil {
+			return err
+		}
+
 		c.constants[*sym.ConstantId] = dt
 
 		return nil
@@ -1285,6 +1295,11 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return err
 		}
 		at.Attributes = attributes
+
+		if err := c.validateFieldAttributes(decl.Fields, c.currentSymbols()); err != nil {
+			return err
+		}
+
 		c.constants[*sym.ConstantId] = at
 		return nil
 
@@ -1293,10 +1308,32 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		if err != nil {
 			return err
 		}
-		c.constants[*sym.ConstantId] = runtime.SimpleType{Decl: sym, Attributes: attributes}
+
+		// Validate field attributes on extern types
+		fields := make([]ast.DeclField, 0, len(decl.Fields))
+		for _, f := range decl.Fields {
+			fields = append(fields, f)
+		}
+		if err := c.validateFieldAttributes(fields, c.currentSymbols()); err != nil {
+			return err
+		}
+
+		if tid, ok := runtime.BuiltinTypeIds[sym.Name]; ok {
+			st := runtime.MakeBuiltinSimpleType(sym, tid)
+			st.Attributes = attributes
+			c.constants[*sym.ConstantId] = st
+		} else {
+			c.constants[*sym.ConstantId] = runtime.SimpleType{Decl: sym, Attributes: attributes}
+		}
 		return nil
 
 	case *ast.DeclExternValue:
+		if len(decl.Attributes) > 0 {
+			if _, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols()); err != nil {
+				return err
+			}
+		}
+
 		val := c.plugins.Prelude().Bind(c.currentSymbols(), sym)
 		if val == nil {
 			return fmt.Errorf("extern value %q has no runtime binding", sym.Name)
@@ -1430,6 +1467,12 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		return nil
 
 	case *ast.DeclVariable:
+		if len(decl.Attributes) > 0 {
+			if _, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols()); err != nil {
+				return err
+			}
+		}
+
 		switch decl.ExportScope() {
 		case ast.ExportScopeInternal, ast.ExportScopePublic:
 			c.enterScope(sym.ChildTable)
@@ -1472,6 +1515,12 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		}
 
 	case *ast.DeclConstant:
+		if len(decl.Attributes) > 0 {
+			if _, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols()); err != nil {
+				return err
+			}
+		}
+
 		switch decl.ExportScope() {
 		case ast.ExportScopeInternal, ast.ExportScopePublic:
 			c.enterScope(sym.ChildTable)
@@ -1915,6 +1964,27 @@ func (c *Compiler) compileParamAttributes(params []ast.DeclParameter, symbols *a
 		return nil, nil
 	}
 	return result, nil
+}
+
+func (c *Compiler) validateFieldAttributes(fields []ast.DeclField, symbols *ast.SymbolTable) error {
+	for i := range fields {
+		field := fields[i]
+		if len(field.Attributes) == 0 {
+			continue
+		}
+		if _, err := c.compileAttributeChain(field.Attributes, symbols); err != nil {
+			return err
+		}
+		for _, param := range field.Parameters {
+			if len(param.Attributes) == 0 {
+				continue
+			}
+			if _, err := c.compileAttributeChain(param.Attributes, symbols); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (c *Compiler) compileAttributeInstance(inst *ast.DeclAttrInstance, sym *ast.Symbol, symbols *ast.SymbolTable) (int, error) {

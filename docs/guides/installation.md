@@ -5,8 +5,7 @@ description: How to install Zirric on your system
 
 # Installation
 
-This guide covers available distribution packages. Zirric releases are still
-experimental, so expect alpha versions and occasional packaging changes.
+This guide covers available distribution packages. Zirric releases are still experimental, so expect alpha versions and occasional packaging changes.
 
 ::: callout warning Experimental packages
 These packages may lag behind main and may change their version scheme.

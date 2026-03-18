@@ -36,10 +36,3 @@ union Option {
 	@Proposal(ZE_009)
 	data None
 }
-
-// Provides a type hint for the `Some` type of an `Option`.
-@Proposal(ZE_009)
-attr SomeType {
-	// The type of `Some.value`.
-	@Type(AnyType) type
-}

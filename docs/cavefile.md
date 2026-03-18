@@ -39,12 +39,11 @@ import code.knabel.dev.zirric_lang.zirric.future.tasks
 @tasks.Help("Generates something")
 @tasks.Exec("tasks/generate.zirr")
 data GenerateTask {
-    @Bool
     @tasks.Flag()
     @tasks.Name("dry")
-    isDryRun
+    isDryRun: Bool
 }
 ```
 
 Tasks are registered by attributes such as `@tasks.Exec` or `@tasks.Call`. Flags
-and positional arguments are expressed as annotated fields.
+and positional arguments are expressed as fields with type hints and task attributes.

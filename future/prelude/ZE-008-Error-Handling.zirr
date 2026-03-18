@@ -13,8 +13,7 @@ const ZE_008 = "https://zirric.knabel.dev/proposals/ZE-008-error-handling"
 attr Error {
 	// Returns a debug string representation of the error.
 	@Bound()
-	@Returns(String)
-	debug(err)
+	debug(err) -> String
 }
 
 // Marks a type as a result type.
@@ -46,24 +45,9 @@ union Result {
 
 	// The error result.
 	@Proposal(ZE_008)
-	@Error({ err -> err.error.debug(err.error) })
+	@Error(fn(err) { return err.error.debug(err.error) })
     data Err {
     	// The error of the result. Must a type annotated with `@Error`.
-		@Has(Error)
-		error
+		error: @Error
 	}
-}
-
-// Provides a type hint for the `Ok` type of a `Result`.
-@Proposal(ZE_008)
-attr OkType {
-	// The type of `Ok.value`.
-	@Type(AnyType) type
-}
-
-// Provides a type hint for the `Err` type of a `Result`.
-@Proposal(ZE_008)
-attr ErrType {
-	// The type of `Err.error`.
-	@Type(AnyType) type
 }

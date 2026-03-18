@@ -5,10 +5,9 @@ description: Defines the base language features of Zirric.
 
 # Base Language
 
-::: callout warning <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-dot-icon lucide-circle-dot"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg> In Progress
-This proposal has been accepted in principle.
-It is currently under active development.
-Parts might be incomplete or missing in Zirric.
+::: callout tip <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Implemented
+This proposal has been accepted and implemented.
+You can use this feature in the latest version of Zirric.
 :::
 
 ## Introduction
@@ -26,7 +25,7 @@ Zirric is created to address the flaws identified by the [Lithia programming lan
 - the hardly readable function call syntax
 - the bad combination of dynamically, strong typed languages especially with lazy evaluation
 - lack of control flow structures
-- no obvious way to build modern way of file parsing due to missing type hints or annotations
+- no obvious way to build modern way of file parsing due to missing type hints or attributes
 - performance issues due to the interpreter design, lazy evaluation and the lack of control flow structures
 - the `type` expression being limited to types only
 
@@ -149,13 +148,13 @@ x = 2
 
 _ = x // drops result
 
-@SomeAnnotation()
+@SomeAttribute()
 let y = true
 ```
 
 ```ebnf
 decl_let = "_", "=", expression ;
-decl_let = [annotation_chain],  "let", identifier, "=", expression ;
+decl_let = [attribute_chain],  "let", identifier, "=", expression ;
 ```
 
 ### Data types
@@ -190,14 +189,14 @@ In practice this serves just as documentation, as fields can store any value.
 ```zirric
 data Example {
   field1
-  @SomeAnnotation()
+  @SomeAttribute()
   field2
   functionField(param1, param2)
 }
 ```
 
 ```ebnf
-decl_field = [annotation_chain], identifier, [ "(", [ parameter_list ], ")" ] ;
+decl_field = [attribute_chain], identifier, [ "(", [ parameter_list ], ")" ] ;
 ```
 
 ### Union types
@@ -230,8 +229,8 @@ Instantiations of attribute types can only be created at compile time.
 As syntactic sugar non-attribute types can be used as attributes. In this case an attribute of type `Type` will be created with the type as argument. Attributes that are actual attribute types require parentheses.
 
 ```zirric
-@OtherAnnotation()
-attr SomeAnnotation {
+@OtherAttribute()
+attr SomeAttribute {
   field1
   @Int field2 // @Type(Int) field2
 }
@@ -281,7 +280,7 @@ import json
 
 let person = Person("John", 42)
 
-let nameAnnotation = reflect.typeOf(person).
+let nameAttribute = reflect.typeOf(person).
     field("name").
     attribute(json.HasKey)
 ```
@@ -431,7 +430,7 @@ case _:
 
 ```ebnf
 stmt_switch = "switch", expression, "{", { switch_case }, "}" ;
-switch_case = "case", ( expression | annotation | "_" ), ":", block ;
+switch_case = "case", ( expression | attribute | "_" ), ":", block ;
 ```
 
 ### For expressions and statements
@@ -551,7 +550,7 @@ This also requires the existence of a `reflect` module to be able to access attr
 - `Module` that represents modules
 - `ModuleType` that represents module types
 
-### Special Annotations
+### Special Attributes
 
 - `@Iterable(iter)` is used by the `for item <- items` syntax to indicate that a type is iterable. Used by compiler and tooling.
 - `@Type(type)` that indicates that a value must be of the given type. Used by tooling.

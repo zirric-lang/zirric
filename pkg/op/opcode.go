@@ -129,7 +129,7 @@ var definitions = map[Opcode]*Definition{
 	LessThan:           {"lt", []int{}},
 	LessThanOrEqual:    {"lte", []int{}},
 
-	MakeAttribute: {"makeannotation", []int{2}}, // arg count
+	MakeAttribute: {"makeattribute", []int{2}}, // arg count
 
 	Call:      {"call", []int{2}}, // arg count
 	Return:    {"return", []int{}},

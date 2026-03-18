@@ -10,6 +10,14 @@ This proposal is still a draft and is subject to change. Please do not cite or r
 Features described here may not be implemented as described and cannot be used right now.
 :::
 
+::: callout warning Outdated
+While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
+
+- [ ] Reflect latest syntax changes
+- [ ] Reflect latest stdlib changes
+- [ ] Attributes are no longer used for types
+      :::
+
 ## Introduction
 
 This proposal adds optional constructors to `extern type` declarations and introduces the constructor syntax:
@@ -68,7 +76,7 @@ extern_type        = EXTERN, TYPE, extern_type_name,
 extern_type_params = { parameter, [_list_separator] } ;
 ```
 
-Constructor parameters follow the same annotation-based syntax as regular function parameters. When a constructor is present, calling the type as a function invokes it. When no constructor is declared, the type is not callable.
+Constructor parameters follow the same attribute-based syntax as regular function parameters. When a constructor is present, calling the type as a function invokes it. When no constructor is declared, the type is not callable.
 
 ### Semantics per type
 
@@ -117,33 +125,33 @@ This might change in the future.
 
 ```zirric
 // A finite list of values.
-extern type Array(@Has(Iterable) iterable) {
-  @Type(Int) length
+extern type Array(iterable: @Iterable) {
+  length: Int
 }
 
 // Represents boolean values.
-extern type Bool(@Any value) {
-  toggle()
+extern type Bool(value) {
+  toggle() -> Bool
 }
 
 // A single Unicode character.
 extern type Char(@Type(Int) codePoint) {}
 
 // An associative array of keys and their values.
-extern type Dict(@Array keys, @Array values) {
-  @Type(Int) length
+extern type Dict(keys [String], values: Array) {
+  length: Int
 }
 
 // A floating point number.
-@Numeric({ f -> f })
+@Numeric(fn(f) { return f })
 extern type Float(@Has(Numeric) number) {}
 
 // A whole integer number.
-@Numeric({ i -> i })
-extern type Int(@Has(Numeric) number) {}
+@Numeric(fn(i) { return i })
+extern type Int(number: @Numeric) {}
 
-extern type String(@Array chars) {
-  @Type(Int) length
+extern type String(chars: [Char]) {
+  length: Int
 }
 ```
 

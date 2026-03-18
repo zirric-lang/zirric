@@ -50,6 +50,11 @@ func (ef ExternFunc) Lookup(name string) RuntimeValue {
 }
 
 // TypeConstantId implements CallableRuntimeValue.
+// All extern functions are of type Func.
 func (ef ExternFunc) TypeConstantId() TypeId {
-	return TypeId(*ef.symbol.TypeSymbol.ConstantId)
+	return BuiltinTypeIds["Func"]
+}
+
+func (ef ExternFunc) TypeAttributes() map[TypeId]int {
+	return ef.Attributes
 }

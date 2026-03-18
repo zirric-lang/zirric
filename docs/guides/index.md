@@ -15,6 +15,5 @@ If you are unsure where to begin, read the guides in order.
 - [Styleguide](/guides/styleguide): Conventions for clean, readable Zirric code.
 
 ::: callout tip Looking for specs?
-If you need precise syntax or semantics, jump to the [Syntax](/specification/expressions)
-reference section.
+If you need precise syntax or semantics, jump to the [Specification](/specification/syntax) section. To dig deeper into the evolution of Zirric, check out the [Proposals](/proposals).
 :::

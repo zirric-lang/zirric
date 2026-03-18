@@ -14,6 +14,7 @@ type DeclVariable struct {
 	Value      Expr
 	Token      token.Token
 	Attributes AttributeChain
+	TypeHint   TypeExpr
 	IsGlobal   bool
 
 	Docs *Docs

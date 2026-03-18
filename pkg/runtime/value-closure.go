@@ -25,7 +25,10 @@ func (c *Closure) Arity() int {
 
 // Inspect implements CallableRuntimeValue.
 func (c *Closure) Inspect() string {
-	return fmt.Sprintf("fn %s(#%d)", c.Fn.Symbol.Decl.DeclName(), c.Arity())
+	if c.Fn.Symbol != nil && c.Fn.Symbol.Decl != nil {
+		return fmt.Sprintf("fn %s(#%d)", c.Fn.Symbol.Decl.DeclName(), c.Arity())
+	}
+	return fmt.Sprintf("fn(#%d)", c.Arity())
 }
 
 // Lookup implements CallableRuntimeValue.
@@ -38,5 +41,5 @@ func (c *Closure) Lookup(name string) RuntimeValue {
 
 // TypeConstantId implements CallableRuntimeValue.
 func (c *Closure) TypeConstantId() TypeId {
-	return TypeId(*c.Fn.Symbol.TypeSymbol.ConstantId)
+	return c.Fn.TypeConstantId()
 }

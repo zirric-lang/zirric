@@ -21,18 +21,16 @@ ongoing proposals. Use the proposals as the authoritative roadmap.
 
 ```zirric
 attr Countable {
-    @Returns(Int)
-    length(@Has(Countable) value)
+    length(value: @Countable) -> Int
 }
 
-@Countable({ v -> v.length })
+@Countable(fn(v) { return v.length })
 data Bag {
     items
     length
 }
 
-@Returns(Result)
-fn summarize(@Bag bag) {
+fn summarize(bag: Bag) -> Result {
     let length = Countable(bag).length(bag)
 
     return if length > 0 {
@@ -49,15 +47,14 @@ fn summarize(@Bag bag) {
 - Need install instructions? Jump to the [Installation](/guides/installation) page.
 - Want conventions before writing code? Read the [Styleguide](/guides/styleguide).
 
-## Language references
+## Language specification
 
-The core language surface is documented in the syntax references:
+The language is formally specified in the specification section:
 
-- [Expressions](/specification/expressions)
-- [Declarations](/specification/declarations)
-- [Control flow](/specification/control-flow)
-- [Attributes](/specification/attributes)
-- [Typesystem](/specification/typesystem)
+- [Syntax](/specification/syntax) — formal grammar reference
+- [Declarations](/specification/declarations) — declaration forms, scoping, attributes
+- [Expressions](/specification/expressions) — expressions, control flow, closures
+- [Type System](/specification/typesystem) — types, type hints, type checking
 
 When you want more depth or future-facing design notes, read the
 [Zirric Evolution Proposals](/proposals).

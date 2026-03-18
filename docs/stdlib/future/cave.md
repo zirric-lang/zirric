@@ -10,10 +10,10 @@ The `cave` module defines attributes and types used by Cavefiles, moved under
 
 ## Values
 
-### let ZE_002
+### const ZE_002
 
 ```zirric
-let ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
+const ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
 ```
 
 ZE-002: The Cavefile.
@@ -24,7 +24,7 @@ ZE-002: The Cavefile.
 
 ```zirric
 @Proposal(ZE_002)
-attr Dependencies
+attr Dependencies {}
 ```
 
 Marks the current data structure as a dependencies manifest.
@@ -33,33 +33,39 @@ Marks the current data structure as a dependencies manifest.
 
 ```zirric
 @Proposal(ZE_002)
-attr Version
+attr Version {
+  predicate: String
+}
 ```
 
 The version predicate for the Git dependency.
 
 Fields:
 
-- `@String predicate` — The version predicate string.
+- `predicate: String` — The version predicate string.
 
 ### attr Stdlib
 
 ```zirric
 @Proposal(ZE_002)
-attr Stdlib
+attr Stdlib {
+  name: String
+}
 ```
 
 Marks the current data structure as a standard library dependency.
 
 Fields:
 
-- `@String name` — The name of the standard library dependency.
+- `name: String` — The name of the standard library dependency.
 
 ### attr Git
 
 ```zirric
 @Proposal(ZE_002)
-attr Git
+attr Git {
+  url: String
+}
 ```
 
 Marks a field as a Git dependency with a URL and predicate. The field name
@@ -67,20 +73,22 @@ represents the import name of the dependency in this package.
 
 Fields:
 
-- `@String url` — The URL of the Git repository.
+- `url: String` — The URL of the Git repository.
 
 ### attr Local
 
 ```zirric
 @Proposal(ZE_002)
-attr Local
+attr Local {
+  path: String
+}
 ```
 
 Marks a field as a local dependency with a path.
 
 Fields:
 
-- `@String path` — The local path to the dependency.
+- `path: String` — The local path to the dependency.
 
 ## Union
 
@@ -88,7 +96,11 @@ Fields:
 
 ```zirric
 @Proposal(ZE_002)
-union Source
+union Source {
+  Stdlib
+  Git
+  Local
+}
 ```
 
 The type of dependency: standard library, Git, or local.

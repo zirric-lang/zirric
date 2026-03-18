@@ -5,9 +5,9 @@ description: Unify the syntax of closures and named functions by using the fn ke
 
 # Unified Function and Closure Syntax
 
-::: callout draft <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-icon lucide-circle"><circle cx="12" cy="12" r="10"/></svg> Draft
-This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design.
-Features described here may not be implemented as described and cannot be used right now.
+::: callout tip <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Implemented
+This proposal has been accepted and implemented.
+You can use this feature in the latest version of Zirric.
 :::
 
 ## Introduction
@@ -44,7 +44,7 @@ fn add(a, b) {
 ### Named functions in literal syntax (removed)
 
 ```zirric
-fn add { a, b ->
+fn add (a,b) {
     return a + b
 }
 ```

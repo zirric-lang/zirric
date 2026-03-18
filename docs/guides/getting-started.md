@@ -5,23 +5,89 @@ description: A step-by-step guide to getting started with the Zirric programming
 
 # Getting Started
 
-Zirric is a declaration-driven language with an expression-first feel. It aims
-to stay small while keeping enough structure to build real programs. Values are
-dynamic, but conversions are explicit, and behavior is described through
-attributes rather than interfaces.
+Zirric is a declaration-driven language with an expression-first feel. It aims to stay small while keeping enough structure to build real programs. Values are dynamic, but conversions are explicit, and behavior is described through attributes rather than interfaces.
 
 ::: callout warning Experimental
-Zirric is still evolving. Some features are specified but not fully implemented
-yet. Use the proposals for authoritative intent.
+Zirric is still evolving. Some features are specified but not fully implemented yet. Use the proposals for authoritative intent.
+The Standard Library still lacks basic utilities and data structures. Especially I/O and general helpers are missing.
 :::
 
 ## What Zirric emphasizes
 
 - Data and union types for structured modeling
-- First-class functions with concise syntax
+- Attributes as the primary capability mechanism
+- Closed declarations for least surprise
 - Modules as the unit of organization and import
-- Annotations as the primary capability mechanism
+- First-class functions with concise syntax
 - Expression-first control flow (`if`, `for`)
+
+## The Zirric mindset
+
+Your development starts with a new module. You simply create a new folder and place your files there.
+Then you begin defining the shape of your data. Declare every `data` type you need and group them into `union`s. Try to make your data match your mental model of the relationship between the `data` types and the `union`s.
+
+If the `union` itself is the important thing and your `data` types are just an implementation detail, nest them. If the `union` is just supportive, make the `data` top level. This communicates how important these structures are.
+
+For example, let's model a simple binary tree, that highlights the relationship between `data` and `union`. The `union` is the important thing here, so we nest the `data` declarations inside it.
+
+```zirric
+union BinaryTree {
+    data Branch {
+        left
+        right
+    }
+
+    data Leaf { value }
+}
+```
+
+Now that we modeled our domain, we can start writing functions that operate on our `BinaryTree`. For example, a function to calculate the depth of the tree:
+
+```zirric
+fn depth(tree: BinaryTree) -> Int {
+    return switch tree {
+    case is Branch:
+        1 + max(depth(tree.left), depth(tree.right))
+    case is Leaf:
+        1
+    }
+}
+```
+
+Once we want to integrate our `BinaryTree` with other parts of our codebase, we can add attributes that describe its capabilities. For example, we could add a `Countable` attribute that allows us to count the number of leaves in the tree:
+
+```zirric
+// this could be defined in another module
+attr Countable {
+    count(value: @Countable) -> Int
+}
+
+fn count(val: @Countable) -> Int {
+    return val.@Countable.count(val)
+}
+
+// in your module
+
+@Countable(fn(tree) {
+    return tree.@Countable.count(tree)
+})
+union BinaryTree {
+    @Countable(fn(tree) {
+        return length(tree.left) + length(tree.right)
+    })
+    data Branch {
+        left
+        right
+    }
+
+    @Countable(fn(tree) {
+        return 1
+    })
+    data Leaf { value }
+}
+```
+
+In the same way we could also add attributes for JSON parsing. Then the JSON parsing library would lookup your attributes like `@Key` or `@Default` to figure out how to parse your data.
 
 ## Declarations at a glance
 
@@ -64,7 +130,7 @@ true               // Bool
 "Hello"            // String
 [1, 2, 3]          // Array
 { "key": "value" } // Dict
-{ a, b -> a + b }  // Function literal
+fn(a, b) { return a + b }  // Function literal
 ```
 
 ## Variables and functions
@@ -145,29 +211,25 @@ const oddNumbers = for item <- [1, 2, 3] {
 
 ## Attributes and capabilities
 
-Zirric does not use interfaces. Instead, attributes describe capabilities and
-attach metadata to declarations. They are a core part of the language and
-tooling story.
+Zirric does not use interfaces. Instead, attributes describe capabilities and attach metadata to declarations. They are a core part of the language and tooling story.
 
 ```zirric
 attr Countable {
-    @Returns(Int)
-    length(@Has(Countable) value)
+    length(value: @Countable) -> Int
 }
 
-@Countable({ v -> v.length })
+@Countable(fn(v) { return v.length })
 data Bag {
     items
     length
 }
 ```
 
-Annotations are central to tooling, defaults, and protocol-like behavior.
+Attributes are central to tooling, defaults, and protocol-like behavior.
 
 ## Modules and imports
 
-Zirric code is organized into modules. Use `mod` to declare the namespace
-and `import` to access other modules.
+Zirric code is organized into modules. Use `mod` to declare the namespace and `import` to access other modules.
 
 ```zirric
 mod http
@@ -180,13 +242,15 @@ fn statusLine(code) {
 
 ## What Zirric avoids
 
-- Interfaces or inheritance as a primary abstraction
-- Implicit conversions between types
+- Interfaces or inheritance as a primary abstraction.
+- Implicit conversions between types.
+- Generics. Types should be easy to reason about.
+- Scattering members and capabilities across multiple declarations.
 
 Zirric favors explicit declarations and attributes instead.
 
 ## Learn more
 
-- Explore the [Syntax references](/specification/expressions) for precise grammar.
+- Explore the [Specification](/specification/syntax) for precise grammar and semantics.
 - Read the [Zirric Evolution Proposals](/proposals) for future design notes.
 - Follow the [Styleguide](/guides/styleguide) to keep code consistent.

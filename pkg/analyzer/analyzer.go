@@ -85,6 +85,7 @@ func (a *Analyzer) Analyze(module *ast.ContextModule, reserveModule bool) ([]Ana
 	a.resolveIdentifiers(module)
 	a.assignLocalIDs(module)
 	a.assignModuleIDs(module, reserveModule)
+	a.assignTypeSymbols(module)
 	errs := a.validateStaticRefs(module)
 	errs = append(errs, collectSymbolErrors(module.Symbols)...)
 	return errs, module
@@ -245,6 +246,7 @@ func (a *Analyzer) AnalyzeSourceFile(module *ast.ContextModule, file *ast.Source
 	a.resolveIdentifiers(module)
 	a.assignLocalIDs(module)
 	a.assignModuleIDs(module, false)
+	a.assignTypeSymbols(module)
 
 	errs := a.validateStaticRefs(module)
 	errs = append(errs, collectSymbolErrors(module.Symbols)...)

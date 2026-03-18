@@ -15,25 +15,25 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 
 ## Proposals
 
-| Proposal                                                       | Title                              | Status      | Author                                      |
-| -------------------------------------------------------------- | ---------------------------------- | ----------- | ------------------------------------------- |
-| [ZE-001](/proposals/ZE-001-base-language)                      | Base Language                      | In Progress | [@vknabel](https://github.com/vknabel)      |
-| [ZE-002](/proposals/ZE-002-the-cavefile)                       | The Cavefile                       | In Progress | [@vknabel](https://github.com/vknabel)      |
-| [ZE-003](/proposals/ZE-003-named-data-construction)            | Named Data Construction            | Rejected    | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-004](/proposals/ZE-004-Variadic-Arguments)                 | Variadic Arguments                 | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)            | Mixin Type Declarations            | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-006](/proposals/ZE-006-Annotation-Based-Parsing-System)    | Attribute-Based Parsing System     | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-007](/proposals/ZE-007-attribute-binding)                  | Attribute Binding                  | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                     | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                      | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-010](/proposals/ZE-010-iterable)                           | Iterable                           | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                         | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-012](/proposals/ZE-012-type-and-returns-sugar)             | Type and Returns Sugar             | Rejected    | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-013](/proposals/ZE-013-mutability-and-constants)           | Mutability and Constants           | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-014](/proposals/ZE-014-attribute-and-declaration-keywords) | Attribute and Declaration Keywords | Implemented | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-015](/proposals/ZE-015-extern-type-constructors)           | Extern Type Constructors           | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-016](/proposals/ZE-016-closure-syntax)                     | Unified Function and Closure Syntax | Draft       | [@vknabel](https://code.knabel.dev/vknabel) |
-| [ZE-017](/proposals/ZE-017-type-annotations)                   | Type Annotations and Type Matching  | In Progress | [@vknabel](https://code.knabel.dev/vknabel) |
+| Proposal                                                       | Title                               | Status      | Info     |
+| -------------------------------------------------------------- | ----------------------------------- | ----------- | -------- |
+| [ZE-001](/proposals/ZE-001-base-language)                      | Base Language                       | Implemented |          |
+| [ZE-002](/proposals/ZE-002-the-cavefile)                       | The Cavefile                        | In Progress |          |
+| [ZE-003](/proposals/ZE-003-named-data-construction)            | Named Data Construction             | Rejected    |          |
+| [ZE-004](/proposals/ZE-004-Variadic-Arguments)                 | Variadic Arguments                  | Draft       | Outdated |
+| [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)            | Mixin Type Declarations             | Draft       | Outdated |
+| [ZE-006](/proposals/ZE-006-Attribute-Based-Parsing-System)     | Attribute-Based Parsing System      | Draft       | Outdated |
+| [ZE-007](/proposals/ZE-007-attribute-binding)                  | Attribute Binding                   | Draft       | Outdated |
+| [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                      | In Progress | Outdated |
+| [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                       | In Progress | Outdated |
+| [ZE-010](/proposals/ZE-010-iterable)                           | Iterable                            | In Progress | Outdated |
+| [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                          | Implemented |          |
+| [ZE-012](/proposals/ZE-012-type-and-returns-sugar)             | Type and Returns Sugar              | Rejected    |          |
+| [ZE-013](/proposals/ZE-013-mutability-and-constants)           | Mutability and Constants            | Implemented |          |
+| [ZE-014](/proposals/ZE-014-attribute-and-declaration-keywords) | Attribute and Declaration Keywords  | Implemented |          |
+| [ZE-015](/proposals/ZE-015-extern-type-constructors)           | Extern Type Constructors            | Draft       | Outdated |
+| [ZE-016](/proposals/ZE-016-closure-syntax)                     | Unified Function and Closure Syntax | Implemented |          |
+| [ZE-017](/proposals/ZE-017-type-hints)                         | Type Hints and Type Matching        | Implemented |          |
 
 ## Submitting Proposals
 

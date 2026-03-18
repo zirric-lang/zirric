@@ -21,6 +21,14 @@ func (a *Analyzer) validateStaticRefs(module *ast.ContextModule) []AnalysisError
 			if err := a.validateStaticRef(module, n.Member, n.TokenLiteral()); err != nil {
 				errs = append(errs, *err)
 			}
+		case *ast.ExprSwitch:
+			errs = append(errs, validateExprSwitchDefaultLast(n)...)
+		case ast.ExprSwitch:
+			errs = append(errs, validateExprSwitchDefaultLast(&n)...)
+		case *ast.StmtSwitch:
+			errs = append(errs, validateStmtSwitchDefaultLast(n)...)
+		case ast.StmtSwitch:
+			errs = append(errs, validateStmtSwitchDefaultLast(&n)...)
 		}
 	})
 	return errs
@@ -278,4 +286,32 @@ func walkNode(node ast.Node, visit func(ast.Node)) {
 	node.EnumerateChildNodes(func(child ast.Node) {
 		walkNode(child, visit)
 	})
+}
+
+func validateExprSwitchDefaultLast(n *ast.ExprSwitch) []AnalysisError {
+	var errs []AnalysisError
+	for i, c := range n.Cases {
+		if c.Kind == ast.SwitchCaseDefault && i < len(n.Cases)-1 {
+			errs = append(errs, AnalysisError{
+				Token:   c.Token,
+				Summary: "default case must be last",
+				Details: "the default case _ must be the last case in a switch",
+			})
+		}
+	}
+	return errs
+}
+
+func validateStmtSwitchDefaultLast(n *ast.StmtSwitch) []AnalysisError {
+	var errs []AnalysisError
+	for i, c := range n.Cases {
+		if c.Kind == ast.SwitchCaseDefault && i < len(n.Cases)-1 {
+			errs = append(errs, AnalysisError{
+				Token:   c.Token,
+				Summary: "default case must be last",
+				Details: "the default case _ must be the last case in a switch",
+			})
+		}
+	}
+	return errs
 }

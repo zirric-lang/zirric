@@ -11,6 +11,15 @@ It is currently under active development.
 Parts might be incomplete or missing in Zirric.
 :::
 
+::: callout warning Outdated
+While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
+
+- [ ] Reflect latest syntax changes
+- [ ] Reflect latest stdlib changes
+- [ ] Attributes are no longer used for types
+- [ ] Supporting `!`-related syntax must be investigated
+      :::
+
 ## Introduction
 
 This proposal introduces a standard error protocol and a `Result` union type for
@@ -69,8 +78,7 @@ The goal is to support strongly typed result types like `PersonResult`.
 ```zirric
 attr Error {
 	@Bound()
-	@Returns(String)
-	debug(err)
+	debug(err) -> String
 }
 
 attr AnyResult {}
@@ -81,10 +89,9 @@ union Result {
 		value
 	}
 
-	@Error({ err -> err.error.debug(err.error) })
+	@Error(fn(err) { err.error.debug(err.error) })
   data Err {
-		@Has(Error)
-		error
+		error: @Error
 	}
 }
 

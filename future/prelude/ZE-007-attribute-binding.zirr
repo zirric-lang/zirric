@@ -12,13 +12,12 @@ const ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-attribute-binding"
 //
 //   attr Error {
 //     @Bound()
-//     @Returns(String)
-//     debug(err)
+//     debug(err) -> String
 //   }
 //   
-//   @Error({ err -> err.message })
+//   @Error(fn(err) { return err.message })
 //   data MessageError {
-//     @String message
+//     message: String
 //   }
 //
 //   MessageError("msg")[@Error].debug() // err-receiver passed automatically

@@ -1,6 +1,6 @@
 ---
 title: ZE-012 - Type and Returns Sugar
-description: Add typed parameter and return signatures as sugar for @Type and @Returns annotations.
+description: Add typed parameter and return signatures as sugar for @Type and @Returns attributes.
 ---
 
 # Type and Returns Sugar
@@ -9,7 +9,7 @@ description: Add typed parameter and return signatures as sugar for @Type and @R
 This proposal has been rejected and will not be implemented.
 :::
 
-> **Note:** This proposal has been superseded by [ZE-017 Type Annotations and Type Matching](/proposals/ZE-017-type-annotations), which promotes type annotations from syntactic sugar to a first-class language feature and removes the underlying `@Type` and `@Returns` attributes entirely.
+> **Note:** This proposal has been superseded by [ZE-017 Type Hints and Type Matching](/proposals/ZE-017-type-hints), which promotes type hints from syntactic sugar to a first-class language feature and removes the underlying `@Type` and `@Returns` attributes entirely.
 
 ## Introduction
 
@@ -102,4 +102,4 @@ None. The feature only uses existing `@Type` and `@Returns` annotations.
 
 ## Acknowledgements
 
-- Inspired by type annotation syntax in languages like TypeScript and Swift.
+- Inspired by type decorator and property wrapper syntax in languages like TypeScript and Swift.

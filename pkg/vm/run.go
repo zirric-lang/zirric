@@ -86,11 +86,18 @@ func (vm *VM) runTask(taskId TaskId) error {
 			v := vm.pop()
 			typeVal := vm.constants[constId]
 			var result runtime.Bool
-			if ut, ok := typeVal.(*runtime.UnionType); ok {
-				result = runtime.Bool(ut.IsMember(v.TypeConstantId()))
-			} else {
-				// The constant index is the type's ConstantId, which is
-				// what DataValue.TypeConstantId() returns for its type.
+			switch tv := typeVal.(type) {
+			case *runtime.UnionType:
+				result = runtime.Bool(tv.IsMember(v.TypeConstantId()))
+			case *runtime.AttributeType:
+				// Attribute check: does the value's type carry this attribute?
+				result = runtime.Bool(vm.hasAttribute(v.TypeConstantId(), runtime.TypeId(constId)))
+			case runtime.SimpleType:
+				// Builtin extern types use hardcoded TypeIds that may differ
+				// from the constant slot index. Compare against the SimpleType's
+				// own TypeConstantId which accounts for builtin overrides.
+				result = runtime.Bool(v.TypeConstantId() == tv.TypeConstantId())
+			default:
 				result = runtime.Bool(v.TypeConstantId() == runtime.TypeId(constId))
 			}
 			if err := vm.push(result); err != nil {
@@ -561,7 +568,7 @@ func (vm *VM) runTask(taskId TaskId) error {
 				vm.sp = frame.basep
 
 				for i := 0; i < argCount; i++ {
-					frame.locals[argCount-1-i] = vm.stack[vm.sp+i]
+					frame.locals[i] = vm.stack[vm.sp+i]
 				}
 
 			case *runtime.Closure:
@@ -575,7 +582,7 @@ func (vm *VM) runTask(taskId TaskId) error {
 				vm.sp = frame.basep
 
 				for i := 0; i < argCount; i++ {
-					frame.locals[argCount-1-i] = vm.stack[vm.sp+i]
+					frame.locals[i] = vm.stack[vm.sp+i]
 				}
 
 			case *runtime.DataType:

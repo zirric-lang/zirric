@@ -171,13 +171,31 @@ module.exports = {
       ]
     },
     {
+      title: "Changelog",
+      path: "/changelog",
+      icon: "history",
+      collapsible: true,
+      children: [
+        {
+          title: "v0.1.0-next",
+          path: "/changelog/v0.1.0",
+          icon: "git-branch"
+        },
+        {
+          title: "v0.0.1",
+          path: "/changelog/v0.0.1",
+          icon: "tag"
+        }
+      ]
+    },
+    {
       title: "Proposals",
       path: "/proposals",
       icon: "circle",
       collapsible: true,
       children: [
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-01 Language",
           path: "/proposals/ZE-001-base-language"
         },
@@ -204,7 +222,7 @@ module.exports = {
         {
           icon: "circle",
           title: "ZE-06 Parsing",
-          path: "/proposals/ZE-006-Annotation-Based-Parsing-System"
+          path: "/proposals/ZE-006-Attribute-Based-Parsing-System"
         },
         {
           icon: "circle",
@@ -227,7 +245,7 @@ module.exports = {
           path: "/proposals/ZE-010-iterable"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-11 Zirric CLI",
           path: "/proposals/ZE-011-zirric-cli"
         },
@@ -237,7 +255,7 @@ module.exports = {
           path: "/proposals/ZE-012-type-and-returns-sugar"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-13 Mutability and Constants",
           path: "/proposals/ZE-013-mutability-and-constants"
         },
@@ -252,41 +270,42 @@ module.exports = {
           path: "/proposals/ZE-015-extern-type-constructors"
         },
         {
-          icon: "circle",
+          icon: "circle-check",
           title: "ZE-16 Closure Syntax",
           path: "/proposals/ZE-016-closure-syntax"
         },
         {
-          icon: "circle-dot",
-          title: "ZE-17 Type Annotations",
-          path: "/proposals/ZE-017-type-annotations"
+          icon: "circle-check",
+          title: "ZE-17 Type Hints",
+          path: "/proposals/ZE-017-type-hints"
         }
       ]
     },
     {
       title: "Specification",
+      path: "/specification",
       icon: "pencil-ruler",
       collapsible: true,
       children: [
         {
-          title: "Expressions",
-          path: "/specification/expressions"
+          title: "Syntax",
+          path: "/specification/syntax",
+          icon: "code"
         },
         {
           title: "Declarations",
-          path: "/specification/declarations"
+          path: "/specification/declarations",
+          icon: "file-text"
         },
         {
-          title: "Control Flow",
-          path: "/specification/control-flow"
+          title: "Expressions",
+          path: "/specification/expressions",
+          icon: "braces"
         },
         {
-          title: "Annotations",
-          path: "/specification/annotations"
-        },
-        {
-          title: "Typesystem",
-          path: "/specification/typesystem"
+          title: "Type System",
+          path: "/specification/typesystem",
+          icon: "shapes"
         }
       ]
     },

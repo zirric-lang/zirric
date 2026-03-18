@@ -83,9 +83,7 @@ reflect.reflectType
 
 ## Variables and Constants
 
-Variable names use `camelCase`. Names should be as long as their scope: short
-names for tight scopes, longer names for shared or public values. Reuse common
-names in well-known patterns.
+Variable names use `camelCase`. Names should be as long as their scope: short names for tight scopes, longer names for shared or public values. Reuse common names in well-known patterns.
 
 Prefer constants if possible.
 
@@ -111,7 +109,7 @@ fn printName(n) {
 
 ## Attributes
 
-Annotations use `PascalCase` and should describe the property they declare.
+Attributes use `PascalCase` and should describe the property they declare.
 
 ```zirric
 // good
@@ -127,9 +125,7 @@ attr Optional
 
 ## Unions
 
-Union names use `PascalCase`. Choose singular nouns unless the union itself is a
-collection. For witness unions, describe the capability, optionally with a
-`Witness` suffix.
+Union names use `PascalCase`. Choose singular nouns unless the union itself is a collection. For witness unions, describe the capability, optionally with a `Witness` suffix.
 
 ```zirric
 // good
@@ -143,8 +139,7 @@ union JuristicPersons
 union Functor
 ```
 
-If the members inside the union are more relevant than the union name itself, define
-them at top level instead of nesting.
+If the members inside the union are more relevant than the union name itself, define them at top level instead of nesting.
 
 ```zirric
 // good

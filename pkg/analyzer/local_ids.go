@@ -113,6 +113,14 @@ func assignLocalIDsInStmt(symbols *ast.SymbolTable, counter *int, stmt ast.State
 			assignLocalIDsInExpr(symbols, counter, s.CollectionExpr, seen)
 		}
 		assignLocalIDsInBlock(symbols, counter, s.Body, seen)
+	case ast.StmtSwitch:
+		assignLocalIDsInExpr(symbols, counter, s.Value, seen)
+		for _, c := range s.Cases {
+			if c.Pattern != nil {
+				assignLocalIDsInExpr(symbols, counter, c.Pattern, seen)
+			}
+			assignLocalIDsInBlock(symbols, counter, c.Body, seen)
+		}
 	case *ast.StmtReturn:
 		if s.Expr != nil {
 			assignLocalIDsInExpr(symbols, counter, s.Expr, seen)

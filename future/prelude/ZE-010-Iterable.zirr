@@ -11,30 +11,29 @@ const ZE_010 = "https://zirric.knabel.dev/proposals/ZE-010-iterable"
 // Denotes that a type is countable and has a length.
 @Proposal(ZE_010)
 attr Countable {
-  @Returns(Int)
-  length(@Has(Countable) value)
+  length(value: @Countable) -> Int
 }
 
 // Marks a type as iterable.
 // This allows using `for ... <- ...` on the type.
 @Proposal(ZE_010)
 attr Iterable {
-  iterate(@Has(Iterable) value, @Func yield)
+  iterate(value: @Iterable, yield: Func)
 }
 
 // @Proposal(ZE_010)
-// @Countable({ v -> v.length })
+// @Countable(fn(v) { return v.length })
 // @Iterable(_arrayIterate)
 // extern type Array {
-//   @Int length
+//   length: Int
 // }
 
 // @Proposal(ZE_010)
-// @Countable({ v -> v.length })
+// @Countable(fn(v) { return v.length })
 // @Iterable(_dictIterate)
 // extern type Dict {
-//   @Int length
-//   @Array keys
+//   length: Int
+//   keys: Array
 // }
 
 // Represents an open range of integers from start (inclusive) to end (exclusive).
@@ -43,8 +42,8 @@ attr Iterable {
 @Countable(_rangeCount)
 @Iterable(_rangeIterate)
 data Range {
-  @Int start
-  @Int end
+  start: Int
+  end: Int
 }
 
 // Represents a closed range of integers from start (inclusive) to end (inclusive).
@@ -53,16 +52,15 @@ data Range {
 @Countable(_rangeCount)
 @Iterable(_rangeIterate)
 data ClosedRange {
-  @Int start
-  @Int end
+  start: Int
+  end: Int
 }
 
 // @Proposal(ZE_010)
-// @Countable({ v -> v.length })
+// @Countable(fn(v) { v.length })
 // @Iterable(_stringIterate)
 // extern type String {
-//   @Int
-//   length
+//   length: Int
 // }
 fn _arrayIterate(v, yield) {
   const i = 0

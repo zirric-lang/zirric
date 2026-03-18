@@ -13,6 +13,7 @@ type ExprFunc struct {
 	Token      token.Token
 	Name       string
 	Parameters []DeclParameter
+	ReturnType TypeExpr
 	Impl       Block
 	Decls      *DeclTable
 	Symbols    *SymbolTable
@@ -40,6 +41,10 @@ func (n ExprFunc) EnumerateChildNodes(action func(child Node)) {
 		action(node)
 		node.EnumerateChildNodes(action)
 	}
+	if n.ReturnType != nil {
+		action(n.ReturnType)
+		n.ReturnType.EnumerateChildNodes(action)
+	}
 	for _, node := range n.Impl {
 		action(node)
 		node.EnumerateChildNodes(action)
@@ -55,15 +60,14 @@ func (e ExprFunc) TokenLiteral() token.Token {
 func (e ExprFunc) Expression() string {
 	var out bytes.Buffer
 
-	out.WriteString("{")
+	out.WriteString("fn(")
 	for i, p := range e.Parameters {
-		out.WriteString(p.Name.String())
-
-		if i+1 < len(e.Parameters) {
+		if i > 0 {
 			out.WriteString(", ")
 		}
+		out.WriteString(p.Name.String())
 	}
-	out.WriteString("->")
+	out.WriteString(") {")
 	fmt.Fprintf(&out, "/* %d stmts */", len(e.Impl))
 	out.WriteString("}")
 
