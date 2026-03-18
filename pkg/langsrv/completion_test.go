@@ -30,7 +30,7 @@ func TestCompletionItemsForFile(t *testing.T) {
 			name:       "union declaration",
 			src:        "data Foo {}\ndata Bar {}\nunion Shape {\n\tFoo\n\tBar\n}",
 			wantLabels: []string{"Foo", "Bar", "Shape"},
-			wantKinds:  map[string]protocol.CompletionItemKind{"Shape": protocol.CompletionItemKindClass},
+			wantKinds:  map[string]protocol.CompletionItemKind{"Shape": protocol.CompletionItemKindEnum},
 		},
 		{
 			name:       "multiple globals",

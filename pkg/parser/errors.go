@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
@@ -20,7 +21,12 @@ func (e ParseError) Error() string {
 }
 
 func (p *Parser) errUnexpectedToken(want ...token.TokenType) {
+	slices.SortFunc(want, func(a, b token.TokenType) int {
+		return strings.Compare(string(a), string(b))
+	})
+
 	var wanted bytes.Buffer
+
 	for i, t := range want {
 		wanted.WriteString(strings.ToLower(string(t)))
 		if i < len(want)-1 {

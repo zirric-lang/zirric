@@ -322,23 +322,32 @@ func completionKindForDecl(decl ast.Decl) protocol.CompletionItemKind {
 	case *ast.DeclFunc, ast.DeclFunc, *ast.DeclExternFunc, ast.DeclExternFunc:
 		return protocol.CompletionItemKindFunction
 
-	case *ast.DeclVariable, ast.DeclVariable, *ast.DeclConstant, ast.DeclConstant, *ast.DeclExternValue, ast.DeclExternValue:
+	case *ast.DeclVariable, ast.DeclVariable:
 		return protocol.CompletionItemKindVariable
 
-	case *ast.DeclData, ast.DeclData, *ast.DeclExternType, ast.DeclExternType:
+	case *ast.DeclConstant, ast.DeclConstant, *ast.DeclExternValue, ast.DeclExternValue:
+		return protocol.CompletionItemKindConstant
+
+	case *ast.DeclData, ast.DeclData:
 		return protocol.CompletionItemKindStruct
 
-	case *ast.DeclUnion, ast.DeclUnion:
+	case *ast.DeclExternType, ast.DeclExternType:
 		return protocol.CompletionItemKindClass
+
+	case *ast.DeclUnion, ast.DeclUnion:
+		return protocol.CompletionItemKindEnum
 
 	case *ast.DeclAttr, ast.DeclAttr:
 		return protocol.CompletionItemKindInterface
 
-	case *ast.DeclImport, ast.DeclImport, *ast.DeclModule, ast.DeclModule:
+	case *ast.DeclModule, ast.DeclModule:
 		return protocol.CompletionItemKindModule
 
+	case *ast.DeclImport, ast.DeclImport:
+		return protocol.CompletionItemKindFolder
+
 	case *ast.DeclImportMember, ast.DeclImportMember:
-		return protocol.CompletionItemKindModule
+		return protocol.CompletionItemKindReference
 
 	default:
 		return protocol.CompletionItemKindText

@@ -88,6 +88,9 @@ func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParser) {
 func (p *Parser) parseExprStmt() ast.Statement {
 	stmtTok := p.curToken
 	expr := p.parsePrattExpr(LOWEST)
+	if expr == nil {
+		return nil
+	}
 
 	if augOp, assignTok, isAssign := p.tryConsumeAssignOp(); isAssign {
 		return p.parseAssignStmt(assignTok, expr, augOp)
