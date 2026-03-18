@@ -75,17 +75,16 @@ Block comments may nest.
 
 Operators are listed from lowest to highest precedence.
 
-| Precedence  | Operators                        | Associativity |
-| ----------- | -------------------------------- | ------------- |
-| Logical OR  | `\|\|`                           | Left          |
-| Logical AND | `&&`                             | Left          |
-| Comparison  | `==`, `!=`, `<`, `<=`, `>`, `>=` | None          |
-| Sum         | `+`, `-`                         | Left          |
-| Product     | `*`, `/`, `%`                    | Left          |
-| Prefix      | `-x`, `!x`                       | Right         |
-| Is          | `expr is Type`                   | Left          |
-| Call        | `f(args)`                        | Left          |
-| Member      | `expr.field`                     | Left          |
+| Precedence  | Operators                                   | Associativity |
+| ----------- | ------------------------------------------- | ------------- |
+| Logical OR  | `\|\|`                                      | Left          |
+| Logical AND | `&&`                                        | Left          |
+| Comparison  | `==`, `!=`, `<`, `<=`, `>`, `>=`, `is Type` | Left          |
+| Sum         | `+`, `-`                                    | Left          |
+| Product     | `*`, `/`, `%`                               | Left          |
+| Prefix      | `-x`, `!x`                                  | Right         |
+| Call        | `f(args)`                                   | Left          |
+| Member      | `expr.field`                                | Left          |
 
 See [Expressions § Operators](/specification/expressions#operators) for semantic details.
 
@@ -108,14 +107,14 @@ See [Declarations](/specification/declarations) for semantic rules.
 ### Variable and Constant Declarations
 
 ```ebnf
-Const = "const", Identifier, [":", TypeHint], "=", Expression;
-Var   = "var",   Identifier, [":", TypeHint], "=", Expression;
+Const = "const", Identifier, [":", TypeExpr], "=", Expression;
+Var   = "var",   Identifier, [":", TypeExpr], "=", Expression;
 ```
 
 ### Function Declaration
 
 ```ebnf
-Function = "fn", Identifier, "(", [Parameters], ")", ["->", TypeHint], "{", Block, "}";
+Function = "fn", Identifier, "(", [Parameters], ")", ["->", TypeExpr], "{", Block, "}";
 ```
 
 ### Data Declaration
@@ -123,10 +122,10 @@ Function = "fn", Identifier, "(", [Parameters], ")", ["->", TypeHint], "{", Bloc
 ```ebnf
 Data = "data", Identifier, ["{", {DataField}, "}"];
 
-DataField = {Attribute}, Identifier, [":", TypeHint], [","];
+DataField = {Attribute}, Identifier, ([":", TypeExpr] | "(", [Parameters], ")", ["->", TypeExpr]), [","];
 ```
 
-A `data` declaration without a body (no braces) declares a zero-field type.
+A `data` declaration without a body (no braces) declares a zero-field type. Fields are either simple values with an optional type annotation, or function-style fields with parameters and an optional return type.
 
 ### Union Declaration
 
@@ -150,8 +149,8 @@ Attribute declarations follow the same field syntax as `data`. See [Declarations
 
 ```ebnf
 ExternType  = "extern", "type", Identifier, ["{", {DataField}, "}"];
-ExternFunc  = "extern", "fn",   Identifier, "(", [Parameters], ")";
-ExternConst = "extern", "const", Identifier, [":", TypeHint];
+ExternFunc  = "extern", "fn",   Identifier, "(", [Parameters], ")", ["->", TypeExpr];
+ExternConst = "extern", "const", Identifier, [":", TypeExpr];
 ```
 
 ### Import Declaration
@@ -180,26 +179,29 @@ TopLevelDeclaration = Import
 
 ```ebnf
 Parameters = Parameter, {",", Parameter};
-Parameter  = Identifier, [":", TypeHint];
+Parameter  = {Attribute}, (Identifier | "_"), [":", TypeExpr];
 ```
 
 Parameters appear in `fn` declarations, closures, `extern fn`, and function-style data fields. See [Declarations § Parameters](/specification/declarations#parameters-and-type-hints).
 
-## Type Hints
+## Type Expressions
 
-Type hints annotate declarations and parameters with type information. They appear after `:` on fields, parameters, and variables, and after `->` on function return types.
+Type expressions annotate declarations and parameters with type information. They appear after `:` on fields, parameters, and variables, and after `->` on function return types.
 
 ```ebnf
-TypeHint     = TypeHintRef | TypeHintArray | TypeHintDict | TypeHintFunc | TypeHintAttrs;
+TypeExpr      = TypeExprRef | TypeExprArray | TypeExprDict | TypeExprFunc | TypeExprAttrs;
 
-TypeHintRef  = StaticReference;
-TypeHintArray = "[", TypeHint, "]";
-TypeHintDict = "[", TypeHint, ":", TypeHint, "]";
-TypeHintFunc = "fn", "(", [TypeHintParams], ")", ["->", TypeHint];
-TypeHintAttrs = "@", StaticReference, {"@", StaticReference};
+TypeExprRef   = StaticReference;
+TypeExprArray = "[", TypeExpr, "]";
+TypeExprDict  = "[", TypeExpr, ":", TypeExpr, "]";
+TypeExprFunc  = "fn", "(", [TypeExprParams], ")", ["->", TypeExpr];
+TypeExprAttrs = "@", StaticReference, {"@", StaticReference};
+
+TypeExprParams = TypeExprParam, {",", TypeExprParam};
+TypeExprParam  = [{Attribute}, Identifier, ":"], TypeExpr;
 ```
 
-See [Type System § Type Hints](/specification/typesystem#type-hints) for what type hints express and how they interact with type checking.
+See [Type System § Type Hints](/specification/typesystem#type-hints) for what type expressions express and how they interact with type checking.
 
 ## Expressions
 
@@ -232,7 +234,7 @@ A `StaticReference` is a dot-separated path used for qualified names in imports,
 ```ebnf
 InfixExpr  = Expression, operator, Expression;
 PrefixExpr = ("-" | "!"), Expression;
-IsExpr     = Expression, "is", TypeHint;
+IsExpr     = Expression, "is", TypeExpr;
 ```
 
 ### Calls and Member Access
@@ -248,7 +250,7 @@ Arguments = Expression, {",", Expression};
 ### Closures
 
 ```ebnf
-Closure = "fn", "(", [Parameters], ")", ["->", TypeHint], "{", Block, "}";
+Closure = "fn", "(", [Parameters], ")", ["->", TypeExpr], "{", Block, "}";
 ```
 
 Closures are anonymous functions. They share syntax with `fn` declarations but omit the name. See [Expressions § Closures](/specification/expressions#closures).
@@ -257,12 +259,10 @@ Closures are anonymous functions. They share syntax with `fn` declarations but o
 
 ```ebnf
 SwitchExpr = "switch", Expression, "{", {SwitchCase}, "}";
-SwitchCase = "case", (["is"], CasePattern), ":", Expression;
-
-CasePattern = TypeHint | Expression | "_";
+SwitchCase = "case", ("is", TypeExpr | "_" | Expression), ":", Expression;
 ```
 
-Switch expressions require a `_` fallback case. See [Expressions § Switch](/specification/expressions#switch).
+Type matching requires the `is` keyword (`case is Type:`). Value matching uses a plain expression (`case value:`). The default case uses `_`. Switch expressions require a `_` fallback case. See [Expressions § Switch](/specification/expressions#switch).
 
 ### Assignment
 
@@ -315,7 +315,7 @@ When the binding and expression are both omitted, the loop runs indefinitely. Se
 
 ```ebnf
 SwitchStmt     = "switch", Expression, "{", {StmtSwitchCase}, "}";
-StmtSwitchCase = "case", (["is"], CasePattern), ":", Block;
+StmtSwitchCase = "case", ("is", TypeExpr | "_" | Expression), ":", Block;
 ```
 
 Switch statements do not require a `_` fallback.
