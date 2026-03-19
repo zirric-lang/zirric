@@ -278,6 +278,16 @@ module.exports = {
           icon: "circle-check",
           title: "ZE-17 Type Hints",
           path: "/proposals/ZE-017-type-hints"
+        },
+        {
+          icon: "circle",
+          title: "ZE-18 I/O, Fmt, OS",
+          path: "/proposals/ZE-018-io-fmt-os"
+        },
+        {
+          icon: "circle",
+          title: "ZE-19 Result & Option Sugar",
+          path: "/proposals/ZE-019-result-and-option-sugar"
         }
       ]
     },

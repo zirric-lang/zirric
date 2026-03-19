@@ -1,6 +1,6 @@
 ---
 title: "ZE-008 - Error Handling"
-description: "Standardize error types and result values with ergonomic syntax."
+description: "Standardize error types and result values for failure-aware APIs."
 ---
 
 # Error Handling
@@ -11,110 +11,125 @@ It is currently under active development.
 Parts might be incomplete or missing in Zirric.
 :::
 
-::: callout warning Outdated
-While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
-
-- [ ] Reflect latest syntax changes
-- [ ] Reflect latest stdlib changes
-- [ ] Attributes are no longer used for types
-- [ ] Supporting `!`-related syntax must be investigated
-      :::
-
 ## Introduction
 
-This proposal introduces a standard error protocol and a `Result` union type for
-failure-aware APIs. It also defines syntactic sugar for extracting values or
-fallbacks from results.
+This proposal introduces a standard error protocol and a `Result` union type for failure-aware APIs. It defines the `@Error` attribute for marking error types and the `@AnyResult` attribute for marking result unions.
+
+Syntax sugar for working with result values (`!.`, `!!`, `T!`) is covered separately in [ZE-019 Result and Option Sugar](/proposals/ZE-019-result-and-option-sugar).
 
 ## Motivation
 
-Zirric currently lacks a canonical way to represent failures. A shared `Result` model makes error flows explicit and composable.
-
-The usage of results should be ergonomic, minimizing boilerplate when extracting values or providing fallbacks.
+Zirric currently lacks a canonical way to represent failures. A shared `Result` model makes error flows explicit and composable. By separating the type definitions from the syntax sugar, this proposal focuses on the foundational types that other proposals and modules can build upon.
 
 ## Proposed Solution
 
-First of all there will be a `@Error` attribute. This attribute can be enforced.
-Introduce an `@AnyResult` attribute to be defined on unions.
-Then there will be a standard `Result` union with `Ok` and `Err` variants.
+Introduce three declarations:
 
-```zirric
-@Returns(String!) // Syntactic sugar for @Type(Result) @OkType(String)
-fn readFile(path) {
-  // returns Ok(String) or Err(Error)
-}
-
-let text = "Contents:\n" + readFile("notes.txt")!.value // @Type(Result) @OkType(String)
-switch text {
-case Ok(value):
-  // use value
-case Err(error):
-  panic(error.debug(error))
-}
-```
-
-### Syntactic Sugar
-
-- `result!.value` unwraps `Result` into `Ok(value)` or `Err(error)`.
-- `result !! "default"` unwraps to `Ok.value` or returns the default for `Err`.
-- `@String!` expands to `@Type(Result) @OkType(String)`.
-
-## Detailed Design
-
-- `@Error` marks types that represent errors and must provide a bound `debug`
-  function returning a string.
-- `Result` is a union with `Ok` and `Err` data variants.
-- `@AnyResult` semantic documentation.
-- `@OkType` and `@ErrType` provide type hints for `Result` payloads.
-- `Err.error` must satisfy `@Has(Error)`.
-- `panic` to immediately terminate execution with an error message.
-
-For the `!!`, `!.` operators, the VM needs to look at the presence of the `@prelude.Error` attribute. This should be doable with a deref of the underlying type and checking for the attribute presence using a Type ID.
-If present, the value is treated as an error. Otherwise it is treated as a normal value.
-If these values are not nested in `Ok` or `Err`, they will be wrapped accordingly.
-
-The goal is to support strongly typed result types like `PersonResult`.
+1. `@Error` — an attribute marking types that represent errors, requiring a `debug` function.
+2. `@AnyResult` — a marker attribute for union types that represent success-or-failure results.
+3. `Result` — the standard result union with `Ok` and `Err` variants.
 
 ```zirric
 attr Error {
-	@Bound()
-	debug(err) -> String
+    debug(err) -> String
 }
 
 attr AnyResult {}
 
 @AnyResult()
 union Result {
-  data Ok {
-		value
-	}
+    data Ok {
+        value
+    }
 
-	@Error(fn(err) { err.error.debug(err.error) })
-  data Err {
-		error: @Error
-	}
-}
-
-attr OkType {
-	@Type(AnyType) type
-}
-
-attr ErrType {
-	@Type(AnyType) type
+    @Error(fn(err) { return err.error.debug(err.error) })
+    data Err {
+        error: @Error
+    }
 }
 ```
 
+### Usage
+
+```zirric
+fn readFile(path: String) -> Result {
+    // returns Ok("contents") or Err(someError)
+}
+
+const result = readFile("notes.txt")
+switch result {
+case Ok(text):
+    // use text.value
+case Err(error):
+    panic(Error(error).debug(error))
+}
+```
+
+Custom error types implement the `@Error` attribute:
+
+```zirric
+@Error(fn(err) { return "file not found: " + err.path })
+data FileNotFound {
+    path: String
+}
+```
+
+Custom result types can be defined for specific domains:
+
+```zirric
+@AnyResult()
+union FileResult {
+    String
+    FileNotFound
+}
+```
+
+## Detailed Design
+
+### `@Error`
+
+The `@Error` attribute marks a type as an error. It requires a `debug` function that returns a string representation of the error for diagnostics.
+
+### `@AnyResult`
+
+The `@AnyResult` attribute is a marker applied to union types. It signals that the union represents a result — one variant for success and one (or more) for failure. This attribute is used by [ZE-019](/proposals/ZE-019-result-and-option-sugar) to enable syntactic sugar.
+
+### `Result`
+
+The standard `Result` union has two variants:
+
+- `Ok { value }` — the successful result, wrapping the success value.
+- `Err { error: @Error }` — the error result. The `error` field must satisfy the `@Error` attribute.
+
+`Err` itself is annotated with `@Error`, delegating its `debug` to the inner error's `debug` function. This means `Err` values are composable as errors.
+
+### `panic`
+
+A `panic` function is added for unrecoverable errors:
+
+```zirric
+extern fn panic(message: String) -> Void
+```
+
+`panic` immediately terminates execution with the given message. It should be used sparingly — `Result` is preferred for recoverable errors.
+
 ## Changes to the Standard Library
 
-- Add `@Error`, `@AnyResult`, `Result`, `Ok`, `Err`, `@OkType`, and `@ErrType` in
-  `prelude`.
-- `panic(@String str)` to immediately terminate execution with an error message.
+| Declaration | Kind        | Description                                        |
+| ----------- | ----------- | -------------------------------------------------- |
+| `Error`     | `attr`      | Marks error types, requires `debug(err) -> String` |
+| `AnyResult` | `attr`      | Marker for result union types                      |
+| `Result`    | `union`     | Standard `Ok \| Err` result type                   |
+| `Ok`        | `data`      | Success variant with `value` field                 |
+| `Err`       | `data`      | Error variant with `error: @Error` field           |
+| `panic`     | `extern fn` | Terminate execution with error message             |
 
 ## Alternatives Considered
 
-- Exceptions or panics, which do not fit the explicit, attribute-driven model.
-- Returning `Option`, which loses error context and diagnostics.
+- **Exceptions or panics only** — do not fit Zirric's explicit, attribute-driven model.
+- **Returning `Option`** — loses error context and diagnostics. `Option` ([ZE-009](/proposals/ZE-009-option-values)) is for absence, not failure.
 
 ## Acknowledgements
 
 - Influenced by Rust's `Result<T, E>` and Swift's `Result` type.
+- Syntax sugar for result values is defined in [ZE-019 Result and Option Sugar](/proposals/ZE-019-result-and-option-sugar).
