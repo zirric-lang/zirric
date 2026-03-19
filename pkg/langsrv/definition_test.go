@@ -42,6 +42,56 @@ func TestTextDocumentDefinition(t *testing.T) {
 			pos:     protocol.Position{Line: 0, Character: 2},
 			wantNil: true,
 		},
+		{
+			name:     "definition of type ref in parameter",
+			src:      "data Point { x }\nfn move(p: Point) {}",
+			pos:      protocol.Position{Line: 1, Character: 12},
+			wantLine: 0,
+			wantChar: 5, // 'P' in 'data Point'
+		},
+		{
+			name:     "definition of type ref in return type",
+			src:      "data Point { x }\nfn origin() -> Point {}",
+			pos:      protocol.Position{Line: 1, Character: 16},
+			wantLine: 0,
+			wantChar: 5, // 'P' in 'data Point'
+		},
+		{
+			name:     "definition of type ref in const type hint",
+			src:      "data Point { x }\nconst p: Point = Point",
+			pos:      protocol.Position{Line: 1, Character: 10},
+			wantLine: 0,
+			wantChar: 5,
+		},
+		// Local variable/parameter/constant definition tests
+		{
+			name:     "definition of parameter from function body",
+			src:      "fn greet(name) {\n  name\n}",
+			pos:      protocol.Position{Line: 1, Character: 3},
+			wantLine: 0,
+			wantChar: 9, // 'n' in 'name' parameter
+		},
+		{
+			name:     "definition of local var from function body",
+			src:      "fn test() {\n  var x = 1\n  x\n}",
+			pos:      protocol.Position{Line: 2, Character: 2},
+			wantLine: 1,
+			wantChar: 6, // 'x' in 'var x'
+		},
+		{
+			name:     "definition of local const from function body",
+			src:      "fn test() {\n  const y = 2\n  y\n}",
+			pos:      protocol.Position{Line: 2, Character: 2},
+			wantLine: 1,
+			wantChar: 8, // 'y' in 'const y'
+		},
+		{
+			name:     "definition of for-loop binding",
+			src:      "fn test() {\n  for item <- [1] {\n    item\n  }\n}",
+			pos:      protocol.Position{Line: 2, Character: 5},
+			wantLine: 1,
+			wantChar: 6, // 'i' in 'item' after 'for '
+		},
 	}
 
 	for _, tt := range tests {
@@ -172,5 +222,39 @@ func TestDefinitionQualifiedModule(t *testing.T) {
 	}
 	if loc.URI != "file:///mymod/types.zirr" {
 		t.Errorf("definition URI = %q, want file:///mymod/types.zirr", loc.URI)
+	}
+}
+
+func TestDefinitionModNameQualified(t *testing.T) {
+	// "mymod.helper" where mymod is the current module's mod declaration.
+	base := memfs.New()
+	writeFile(t, base, "mymod/main.zirr", "mod mymod\nfn helper() {}\nmymod.helper")
+
+	ls := &zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	params := &protocol.DefinitionParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///mymod/main.zirr"},
+			Position:     protocol.Position{Line: 2, Character: 8},
+		},
+	}
+	result, err := ls.textDocumentDefinition(nil, params)
+	if err != nil {
+		t.Fatalf("textDocumentDefinition: %v", err)
+	}
+	if result == nil {
+		t.Fatal("expected definition for modname.helper, got nil")
+	}
+	loc, ok := result.(*protocol.Location)
+	if !ok {
+		t.Fatalf("expected *protocol.Location, got %T", result)
+	}
+	if loc.URI != "file:///mymod/main.zirr" {
+		t.Errorf("definition URI = %q, want file:///mymod/main.zirr", loc.URI)
 	}
 }

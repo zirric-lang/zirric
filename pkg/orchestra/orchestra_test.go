@@ -3,12 +3,14 @@ package orchestra_test
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/orchestra"
+	"code.knabel.dev/zirric-lang/zirric/pkg/parser"
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 )
@@ -414,5 +416,93 @@ func TestCavefileExample(t *testing.T) {
 	orch := newTestOrchestra(t, projectFS, "examples.project")
 	if err := orch.RunFile(context.Background(), "Cavefile"); err != nil {
 		t.Fatalf("run Cavefile: %v", err)
+	}
+}
+
+// TestParseModuleWithErrors verifies that ParseModule returns a non-nil module
+// alongside a parser.ParseErrors error when the source has syntax errors.
+func TestParseModuleWithErrors(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", "mod main\nconst = \n")
+
+	orch := newTestOrchestra(t, projectFS, "main")
+	resolver, err := orch.NewResolver()
+	if err != nil {
+		t.Fatalf("new resolver: %v", err)
+	}
+
+	module, err := orch.ParseFile(context.Background(), "main.zirr", resolver)
+	if err == nil {
+		t.Fatal("expected parse error")
+	}
+	var parseErrs parser.ParseErrors
+	if !errors.As(err, &parseErrs) {
+		t.Fatalf("expected parser.ParseErrors, got %T: %v", err, err)
+	}
+	if len(parseErrs) == 0 {
+		t.Fatal("expected at least one parse error")
+	}
+	if module == nil {
+		t.Fatal("expected non-nil partial module alongside errors")
+	} else if module.Decls.Parent == nil {
+		t.Fatal("expected partial module to have prelude parent")
+	}
+}
+
+// TestInvalidateModules verifies that InvalidateModules clears cached modules
+// but preserves the prelude.
+func TestInvalidateModules(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", "mod main\nconst x = 1\n")
+
+	orch := newTestOrchestra(t, projectFS, "main")
+	resolver, err := orch.NewResolver()
+	if err != nil {
+		t.Fatalf("new resolver: %v", err)
+	}
+
+	_, err = orch.ParseFile(context.Background(), "main.zirr", resolver)
+	if err != nil {
+		t.Fatalf("parse file: %v", err)
+	}
+	if resolver.MainModule() == nil {
+		t.Fatal("expected MainModule before invalidation")
+	}
+
+	resolver.InvalidateModules()
+	if resolver.MainModule() != nil {
+		t.Fatal("expected MainModule to be nil after invalidation")
+	}
+
+	// Re-parse should work
+	_, err = orch.ParseFile(context.Background(), "main.zirr", resolver)
+	if err != nil {
+		t.Fatalf("re-parse after invalidation: %v", err)
+	}
+	if resolver.MainModule() == nil {
+		t.Fatal("expected MainModule after re-parse")
+	}
+}
+
+// TestReadOnlyResolver verifies that a read-only resolver can parse modules
+// using only locally-available packages.
+func TestReadOnlyResolver(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", "mod main\nconst x = 1\n")
+
+	orch := newTestOrchestra(t, projectFS, "main")
+	resolver, err := orch.NewResolver(orchestra.ReadOnly())
+	if err != nil {
+		t.Fatalf("new resolver: %v", err)
+	}
+
+	module, err := orch.ParseFile(context.Background(), "main.zirr", resolver)
+	if err != nil {
+		t.Fatalf("parse file: %v", err)
+	}
+	if module == nil {
+		t.Fatal("expected non-nil module")
+	} else if module.Decls.Parent == nil {
+		t.Fatal("expected prelude parent in read-only mode")
 	}
 }

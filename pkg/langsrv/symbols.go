@@ -82,11 +82,12 @@ func (ls *zirricLangserver) workspaceSymbol(
 		query   = strings.ToLower(params.Query)
 		results []protocol.SymbolInformation
 	)
-	for _, dir := range ls.collectModuleDirs(ls.rootPath) {
+	for _, dir := range ls.collectModuleDirs(".") {
 		module, _, sourceURIToPath, err := ls.parseModuleFiles(dir)
 		if err != nil {
 			continue
 		}
+		containerName := moduleContainerName(dir)
 		for _, sym := range module.Decls.Symbols {
 			if sym == nil || sym.Decl == nil {
 				continue
@@ -119,8 +120,9 @@ func (ls *zirricLangserver) workspaceSymbol(
 			}
 
 			results = append(results, protocol.SymbolInformation{
-				Name: name,
-				Kind: symbolKindForDecl(sym.Decl),
+				Name:          name,
+				Kind:          symbolKindForDecl(sym.Decl),
+				ContainerName: &containerName,
 				Location: protocol.Location{
 					URI:   ls.fileURI(defFilePath),
 					Range: rangeForOffsets(defText, offset, offset+nameLen),
@@ -131,8 +133,12 @@ func (ls *zirricLangserver) workspaceSymbol(
 	return results, nil
 }
 
-// collectModuleDirs returns all directories (including root) that contain .zirr files,
-// found by recursively walking from the given root via the overlay filesystem.
+// collectModuleDirs returns all directories (including root) that contain .zirr
+// files, found by recursively walking from the given root via the overlay
+// filesystem. The root should be a relative path (e.g. ".") since the overlay
+// filesystem is chrooted to the project root. Only directories with valid
+// module names (identifier characters) are traversed, matching the convention
+// used by fsmodule.DiscoverModules.
 func (ls *zirricLangserver) collectModuleDirs(root string) []string {
 	entries, err := ls.fs.ReadDir(root)
 	if err != nil {
@@ -143,6 +149,10 @@ func (ls *zirricLangserver) collectModuleDirs(root string) []string {
 	hasZirr := false
 	for _, e := range entries {
 		if e.IsDir() {
+			// Only descend into directories with valid module names.
+			if !isValidModuleDirName(e.Name()) {
+				continue
+			}
 			sub := filepath.Join(root, e.Name())
 			dirs = append(dirs, ls.collectModuleDirs(sub)...)
 		} else if strings.HasSuffix(e.Name(), ".zirr") {
@@ -153,6 +163,38 @@ func (ls *zirricLangserver) collectModuleDirs(root string) []string {
 		dirs = append([]string{root}, dirs...)
 	}
 	return dirs
+}
+
+// isValidModuleDirName returns true if the directory name is a valid module
+// identifier: starts with a letter or underscore, followed by letters, digits,
+// underscores, or hyphens. This matches fsmodule's recursive discovery rules.
+func isValidModuleDirName(name string) bool {
+	if name == "" {
+		return false
+	}
+	for i, c := range name {
+		if i == 0 {
+			if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && c != '_' {
+				return false
+			}
+		} else {
+			if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '_' && c != '-' {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// moduleContainerName returns a human-readable module identifier for use as
+// ContainerName in workspace symbol results. It converts the relative directory
+// path to a dot-separated module path (e.g. "examples/project" → "examples.project").
+// The root module (dir ".") returns an empty string.
+func moduleContainerName(dir string) string {
+	if dir == "." || dir == "" {
+		return ""
+	}
+	return strings.ReplaceAll(filepath.ToSlash(dir), "/", ".")
 }
 
 // documentSymbolForDecl builds a DocumentSymbol from a declaration using the given file text.

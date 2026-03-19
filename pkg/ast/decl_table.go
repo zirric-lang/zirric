@@ -135,6 +135,11 @@ func (dt *DeclTable) resolve(name string) (*DeclSymbol, bool) {
 	return dt.Parent.resolve(name)
 }
 
+// Resolve looks up a symbol by name, walking the parent chain.
+func (dt *DeclTable) Resolve(name string) (*DeclSymbol, bool) {
+	return dt.resolve(name)
+}
+
 func (dt *DeclTable) NextAnonymousFunctionName() string {
 	dt.mu.Lock()
 	defer dt.mu.Unlock()

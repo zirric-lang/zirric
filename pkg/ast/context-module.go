@@ -11,6 +11,10 @@ func (m ModuleName) URI() registry.LogicalURI {
 	return registry.LogicalURI(StaticReference(m).String())
 }
 
+func (m ModuleName) String() string {
+	return StaticReference(m).String()
+}
+
 type ContextModule struct {
 	Name    registry.LogicalURI
 	Decls   *DeclTable

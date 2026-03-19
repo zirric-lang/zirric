@@ -22,6 +22,7 @@ func (e TypeExprArray) TokenLiteral() token.Token { return e.Token }
 
 func (e TypeExprArray) EnumerateChildNodes(action func(Node)) {
 	action(e.Element)
+	e.Element.EnumerateChildNodes(action)
 }
 
 func (e TypeExprArray) TypeExpression() string {

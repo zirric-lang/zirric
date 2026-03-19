@@ -8,7 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"code.knabel.dev/zirric-lang/zirric/pkg/orchestra"
 	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -41,7 +43,7 @@ func (ls *zirricLangserver) initialize(ctx *glsp.Context, params *protocol.Initi
 				Save:      &save,
 			},
 			CompletionProvider: &protocol.CompletionOptions{
-				TriggerCharacters: []string{"@"},
+				TriggerCharacters: []string{"@", "."},
 			},
 			HoverProvider:           true,
 			DefinitionProvider:      &protocol.DefinitionOptions{},
@@ -137,6 +139,21 @@ func (ls *zirricLangserver) setFilesystem(base billy.Filesystem, rootPath string
 	ls.rootPath = rootPath
 	ls.fs = newOverlayFS(base, ls.docs)
 	ls.moduleCache = make(map[string]*moduleCacheEntry)
+
+	pkgName := filepath.Base(rootPath)
+	orch, err := orchestra.New(orchestra.Config{
+		ProjectFS:   ls.fs,
+		RegistryFS:  memfs.New(),
+		PackageName: pkgName,
+	})
+	if err != nil {
+		// Fall back to no-orchestra mode; parseModuleFiles will use manual parsing.
+		ls.orch = nil
+		ls.resolver = nil
+		return
+	}
+	ls.orch = orch
+	ls.resolver, _ = orch.NewResolver(orchestra.ReadOnly())
 }
 
 func (ls *zirricLangserver) pathForURI(uri protocol.DocumentUri) (string, bool) {

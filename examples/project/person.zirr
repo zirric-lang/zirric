@@ -1,7 +1,8 @@
 mod example
 
-import future.prelude {
+import xprelude = future.prelude {
 	None
+	AnyOption
 }
 
 data Person {
@@ -9,13 +10,22 @@ data Person {
 	age: Int
 }
 
+@AnyOption()
 union SomePerson {
 	Person
 	None
 }
 
-const peter = Person("Peter", 42)
+@AnyOption()
+const peter: Person = Person("Peter", 42)
 
-fn greet(name: String) -> String {
+fn greet(person: SomePerson) -> String {
+	var name = switch person {
+	case is Person:
+		person
+	case _:
+		"World"
+	}
+	
 	return "Hello" + name
 }

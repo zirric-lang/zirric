@@ -25,9 +25,11 @@ func (e TypeExprFunc) TokenLiteral() token.Token { return e.Token }
 func (e TypeExprFunc) EnumerateChildNodes(action func(Node)) {
 	for i := range e.Parameters {
 		action(&e.Parameters[i])
+		e.Parameters[i].EnumerateChildNodes(action)
 	}
 	if e.ReturnType != nil {
 		action(e.ReturnType)
+		e.ReturnType.EnumerateChildNodes(action)
 	}
 }
 

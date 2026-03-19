@@ -55,6 +55,50 @@ func (ls *zirricLangserver) textDocumentReferences(
 	if currentSF != nil {
 		targetSym = symbolAtOffset(currentSF, cursorOffset)
 	}
+
+	// If the cursor is on a qualified member (alias.Member, modname.Member,
+	// or a type-aware dot chain like person.name), resolve via the appropriate scope.
+	if targetSym == nil {
+		if segments, _, isDotChain := dotChainContext(text, params.Position); isDotChain {
+			// Single-segment: try module/import alias.
+			if len(segments) == 1 {
+				alias := segments[0]
+				if imp, ok := findImportDecl(currentSF, alias); ok {
+					if importedMod, _, ok := ls.loadImportedModule(imp); ok {
+						if importedMod.Symbols != nil {
+							targetSym = importedMod.Symbols.Symbols[word]
+						}
+					}
+				}
+				if targetSym == nil && isModuleDecl(module, alias) {
+					if module.Symbols != nil {
+						targetSym = module.Symbols.Symbols[word]
+					}
+				}
+			}
+			// Multi-segment chains: module-then-member or fully typed chains.
+			// For now, try to resolve through modules for multi-segment chains
+			// that start with a module/import alias.
+			if targetSym == nil && len(segments) > 1 {
+				alias := segments[0]
+				memberName := segments[len(segments)-1]
+				_ = memberName
+				if imp, ok := findImportDecl(currentSF, alias); ok {
+					if importedMod, _, ok := ls.loadImportedModule(imp); ok {
+						if importedMod.Symbols != nil {
+							targetSym = importedMod.Symbols.Symbols[word]
+						}
+					}
+				}
+				if targetSym == nil && isModuleDecl(module, alias) {
+					if module.Symbols != nil {
+						targetSym = module.Symbols.Symbols[word]
+					}
+				}
+			}
+		}
+	}
+
 	if targetSym == nil && module.Symbols != nil {
 		targetSym = module.Symbols.Symbols[word]
 	}
@@ -92,16 +136,94 @@ func (ls *zirricLangserver) textDocumentReferences(
 		}
 
 		walkASTNode(sf, func(node ast.Node) {
-			expr, ok := node.(*ast.ExprIdentifier)
-			if !ok || expr.Symbol == nil {
+			// Value expression references (ExprIdentifier with resolved Symbol).
+			if expr, ok := node.(*ast.ExprIdentifier); ok && expr.Symbol != nil {
+				if expr.Symbol.Original() != original {
+					return
+				}
+
+				tok := expr.Name.Token
+				if tok.Source == nil {
+					return
+				}
+
+				key := refKey{tok.Source.File, tok.Source.Offset}
+				if _, dup := seen[key]; dup {
+					return
+				}
+
+				seen[key] = struct{}{}
+				filePath := sourceURIToPath[tok.Source.File]
+				if filePath == "" {
+					filePath = sfFilePath
+				}
+
+				refText, terr := readFileText(ls.fs, filePath)
+				if terr != nil {
+					return
+				}
+
+				end := tok.Source.Offset + len(tok.Literal)
+				locations = append(locations, protocol.Location{
+					URI:   ls.fileURI(filePath),
+					Range: rangeForOffsets(refText, tok.Source.Offset, end),
+				})
 				return
 			}
 
-			if expr.Symbol.Original() != original {
+			// Qualified member access references (alias.Member, modname.Member).
+			if ma, ok := node.(*ast.ExprMemberAccess); ok {
+				propName := ma.Property.Value
+				var memberSym *ast.Symbol
+				if module.Symbols != nil {
+					memberSym = module.Symbols.Symbols[propName]
+				}
+				if memberSym != nil && memberSym.Original() == original {
+					tok := ma.Property.Token
+					if tok.Source != nil {
+						key := refKey{tok.Source.File, tok.Source.Offset}
+						if _, dup := seen[key]; !dup {
+							seen[key] = struct{}{}
+							filePath := sourceURIToPath[tok.Source.File]
+							if filePath == "" {
+								filePath = sfFilePath
+							}
+							if refText, terr := readFileText(ls.fs, filePath); terr == nil {
+								end := tok.Source.Offset + len(tok.Literal)
+								locations = append(locations, protocol.Location{
+									URI:   ls.fileURI(filePath),
+									Range: rangeForOffsets(refText, tok.Source.Offset, end),
+								})
+							}
+						}
+					}
+				}
 				return
 			}
 
-			tok := expr.Name.Token
+			// Type expression references (TypeExprRef containing named type refs).
+			typeRef, ok := node.(ast.TypeExprRef)
+			if !ok || len(typeRef.Reference) == 0 {
+				return
+			}
+
+			// For simple refs like "String", look up in module symbols.
+			// For qualified refs like "prelude.String", the last part is the name.
+			lastIdent := typeRef.Reference[len(typeRef.Reference)-1]
+			refName := lastIdent.Value
+
+			var sym *ast.Symbol
+			if module.Symbols != nil {
+				sym = module.Symbols.Symbols[refName]
+			}
+			if sym == nil {
+				return
+			}
+			if sym.Original() != original {
+				return
+			}
+
+			tok := lastIdent.Token
 			if tok.Source == nil {
 				return
 			}

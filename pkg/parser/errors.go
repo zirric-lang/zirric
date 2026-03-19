@@ -20,6 +20,18 @@ func (e ParseError) Error() string {
 	return fmt.Sprintf("syntax error: %s, %s", e.Summary, e.Details)
 }
 
+// ParseErrors is a collection of parse errors that implements the error
+// interface. Callers can unwrap it via errors.As to access individual errors.
+type ParseErrors []ParseError
+
+func (e ParseErrors) Error() string {
+	msgs := make([]string, len(e))
+	for i, pe := range e {
+		msgs[i] = pe.Error()
+	}
+	return strings.Join(msgs, "\n")
+}
+
 func (p *Parser) errUnexpectedToken(want ...token.TokenType) {
 	slices.SortFunc(want, func(a, b token.TokenType) int {
 		return strings.Compare(string(a), string(b))

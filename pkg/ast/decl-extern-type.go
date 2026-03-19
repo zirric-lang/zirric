@@ -77,5 +77,6 @@ func (n DeclExternType) EnumerateChildNodes(action func(child Node)) {
 	}
 	for _, node := range n.Fields {
 		action(node)
+		node.EnumerateChildNodes(action)
 	}
 }

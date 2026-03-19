@@ -23,7 +23,9 @@ func (e TypeExprDict) TokenLiteral() token.Token { return e.Token }
 
 func (e TypeExprDict) EnumerateChildNodes(action func(Node)) {
 	action(e.Key)
+	e.Key.EnumerateChildNodes(action)
 	action(e.Value)
+	e.Value.EnumerateChildNodes(action)
 }
 
 func (e TypeExprDict) TypeExpression() string {

@@ -22,7 +22,17 @@ tasks:
       - go.mod
       - go.sum
     cmds:
-      - go test ./...
+      - go test ./... -race
+
+  bench:
+    desc: Run all Benchmarks
+    sources:
+      - "**/*.go"
+      - "**/*.zirr"
+      - go.mod
+      - go.sum
+    cmds:
+      - go test ./... -count=1 -bench=.
 
   fmt:
     desc: Format

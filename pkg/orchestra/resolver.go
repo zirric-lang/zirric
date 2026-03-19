@@ -3,6 +3,7 @@ package orchestra
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
@@ -14,15 +15,27 @@ import (
 )
 
 type ModuleResolver struct {
+	mu        sync.Mutex
 	pm        *pkgmanager.PackageManager
 	cave      cavefile.Cavefile
 	installed []registry.ResolvedPackage
 	modules   map[registry.LogicalURI]*ast.ContextModule
 	prelude   *ast.ContextModule
 	ready     bool
+	readOnly  bool
 }
 
-func NewModuleResolver(pm *pkgmanager.PackageManager, cave cavefile.Cavefile) (*ModuleResolver, error) {
+// ResolverOption configures a ModuleResolver.
+type ResolverOption func(*ModuleResolver)
+
+// ReadOnly returns a ResolverOption that puts the resolver in read-only mode.
+// In this mode, dependencies are only resolved from locally-installed packages.
+// Missing dependencies produce errors rather than triggering remote installation.
+func ReadOnly() ResolverOption {
+	return func(r *ModuleResolver) { r.readOnly = true }
+}
+
+func NewModuleResolver(pm *pkgmanager.PackageManager, cave cavefile.Cavefile, opts ...ResolverOption) (*ModuleResolver, error) {
 	if cave.Name == "" && cave.Source == "" {
 		return nil, fmt.Errorf("cavefile must have a name or source to resolve modules")
 	}
@@ -30,21 +43,38 @@ func NewModuleResolver(pm *pkgmanager.PackageManager, cave cavefile.Cavefile) (*
 		cave.Name = string(registry.CanonicalizeModuleSource(cave.Source))
 	}
 
-	return &ModuleResolver{
+	r := &ModuleResolver{
 		pm:      pm,
 		cave:    cave,
 		modules: map[registry.LogicalURI]*ast.ContextModule{},
-	}, nil
+	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r, nil
 }
 
 var _ resolver.ModuleResolver = (*ModuleResolver)(nil)
 
 func (r *ModuleResolver) RegisterModule(uri registry.LogicalURI, module *ast.ContextModule) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.modules[uri] = module
 }
 
 func (r *ModuleResolver) MainModule() *ast.ContextModule {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	return r.modules[registry.LogicalURI(r.cave.Name)]
+}
+
+// InvalidateModules clears cached project modules so they will be re-parsed
+// on next access. Prelude and installed packages are preserved.
+func (r *ModuleResolver) InvalidateModules() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.modules = make(map[registry.LogicalURI]*ast.ContextModule)
+	// Keep: r.installed, r.prelude, r.ready, r.pm, r.cave
 }
 
 func (r *ModuleResolver) ensureDependencies(ctx context.Context) ([]registry.ResolvedPackage, error) {
@@ -56,6 +86,7 @@ func (r *ModuleResolver) ensureDependencies(ctx context.Context) ([]registry.Res
 	// in r.installed, regardless of whether any declared dependencies are missing.
 	caveOnly := cavefile.Cavefile{Package: r.cave.Package}
 	projectTask := r.pm.Install(caveOnly)
+	projectTask.ReadOnly = r.readOnly
 	projectPkgs, err := projectTask.Run(ctx)
 	if err != nil {
 		return nil, err
@@ -68,8 +99,14 @@ func (r *ModuleResolver) ensureDependencies(ctx context.Context) ([]registry.Res
 		return r.installed, nil
 	}
 	depTask := r.pm.Install(cavefile.Cavefile{Dependencies: missing})
+	depTask.ReadOnly = r.readOnly
 	depPkgs, err := depTask.Run(ctx)
 	if err != nil {
+		// In read-only mode, still use whatever was found
+		if r.readOnly && len(depPkgs) > 0 {
+			r.installed = append(r.installed, depPkgs...)
+			return r.installed, err
+		}
 		return nil, err
 	}
 	r.installed = append(r.installed, depPkgs...)
@@ -77,19 +114,21 @@ func (r *ModuleResolver) ensureDependencies(ctx context.Context) ([]registry.Res
 }
 
 func (r *ModuleResolver) ResolveModule(ctx context.Context, uri registry.LogicalURI) (*ast.ContextModule, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	if err := r.ensureInstalled(ctx); err != nil {
+	if err := r.ensureInstalledLocked(ctx); err != nil {
 		return nil, err
 	}
 	if mod, ok := r.modules[uri]; ok {
 		return mod, nil
 	}
 	if uri == preludeModuleURI {
-		return r.Prelude(ctx)
+		return r.preludeLocked(ctx)
 	}
-	prelude, err := r.Prelude(ctx)
+	prelude, err := r.preludeLocked(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -101,36 +140,48 @@ func (r *ModuleResolver) ResolveModule(ctx context.Context, uri registry.Logical
 			return expMod, nil
 		}
 		if expanded == preludeModuleURI {
-			return r.Prelude(ctx)
+			return r.preludeLocked(ctx)
 		}
 		if stdMod, stdErr := r.findResolvedModule(expanded); stdErr == nil {
 			ctxMod, err := parseResolvedModule(stdMod, prelude)
-			if err != nil {
-				return nil, err
+			// Cache even partial results
+			if ctxMod != nil {
+				r.modules[expanded] = ctxMod
+				r.modules[uri] = ctxMod
 			}
-			r.modules[expanded] = ctxMod
-			r.modules[uri] = ctxMod
+			if err != nil {
+				return ctxMod, err
+			}
 			return ctxMod, nil
 		}
 		// Report error using the original short module name.
 		return nil, fmt.Errorf("module %q not found", uri)
 	}
 	ctxMod, err := parseResolvedModule(mod, prelude)
-	if err != nil {
-		return nil, err
+	// Cache even partial results
+	if ctxMod != nil {
+		r.modules[uri] = ctxMod
 	}
-	r.modules[uri] = ctxMod
+	if err != nil {
+		return ctxMod, err
+	}
 	return ctxMod, nil
 }
 
 func (r *ModuleResolver) Prelude(ctx context.Context) (*ast.ContextModule, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.preludeLocked(ctx)
+}
+
+func (r *ModuleResolver) preludeLocked(ctx context.Context) (*ast.ContextModule, error) {
 	if r.prelude != nil {
 		return r.prelude, nil
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	if err := r.ensureInstalled(ctx); err != nil {
+	if err := r.ensureInstalledLocked(ctx); err != nil {
 		return nil, err
 	}
 	mod, err := r.findResolvedModule(preludeModuleURI)
@@ -138,11 +189,14 @@ func (r *ModuleResolver) Prelude(ctx context.Context) (*ast.ContextModule, error
 		return nil, err
 	}
 	ctxMod, err := parseResolvedModule(mod, nil)
-	if err != nil {
-		return nil, err
+	// Cache even partial results
+	if ctxMod != nil {
+		r.prelude = ctxMod
+		r.modules[preludeModuleURI] = ctxMod
 	}
-	r.prelude = ctxMod
-	r.modules[preludeModuleURI] = ctxMod
+	if err != nil {
+		return ctxMod, err
+	}
 	return ctxMod, nil
 }
 
@@ -162,7 +216,7 @@ func (r *ModuleResolver) findResolvedModule(uri registry.LogicalURI) (registry.R
 	return nil, fmt.Errorf("module %q not found", uri)
 }
 
-func (r *ModuleResolver) ensureInstalled(ctx context.Context) error {
+func (r *ModuleResolver) ensureInstalledLocked(ctx context.Context) error {
 	if r.ready {
 		return nil
 	}
@@ -210,10 +264,10 @@ func parseResolvedModule(mod registry.ResolvedModule, parent *ast.ContextModule)
 	}
 	module, err := mp.Parse(mod)
 	if err != nil {
-		return nil, err
+		return module, err
 	}
-	if err := joinParseErrors(mp.Errors()); err != nil {
-		return nil, err
+	if errs := mp.Errors(); len(errs) > 0 {
+		return module, parser.ParseErrors(errs)
 	}
 	return module, nil
 }

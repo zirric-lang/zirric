@@ -7,6 +7,7 @@ import (
 )
 
 var _ Decl = DeclVariable{}
+var _ Overviewable = DeclVariable{}
 
 // DeclVariable represents a mutable binding declared with the `var` keyword.
 type DeclVariable struct {
@@ -36,6 +37,9 @@ func (e DeclVariable) DeclName() Identifier {
 }
 
 func (e DeclVariable) DeclOverview() string {
+	if e.TypeHint != nil {
+		return fmt.Sprintf("var %s: %s", e.Name, e.TypeHint.TypeExpression())
+	}
 	return fmt.Sprintf("var %s", e.Name)
 }
 
@@ -66,6 +70,10 @@ func (n DeclVariable) EnumerateChildNodes(action func(child Node)) {
 	action(n.Name)
 	if len(n.Attributes) > 0 {
 		action(n.Attributes)
+	}
+	if n.TypeHint != nil {
+		action(n.TypeHint)
+		n.TypeHint.EnumerateChildNodes(action)
 	}
 	action(n.Value)
 }

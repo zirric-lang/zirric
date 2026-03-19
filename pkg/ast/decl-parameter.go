@@ -1,10 +1,13 @@
 package ast
 
 import (
+	"strings"
+
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
 )
 
 var _ Decl = DeclParameter{}
+var _ Overviewable = DeclParameter{}
 
 type DeclParameter struct {
 	Name       Identifier
@@ -12,6 +15,20 @@ type DeclParameter struct {
 	TypeHint   TypeExpr
 
 	Docs *Docs
+}
+
+// formatParamList formats a slice of DeclParameter for display, including
+// type hints where present. E.g. "name: String, age: Int" or "a, b".
+func formatParamList(params []DeclParameter) string {
+	parts := make([]string, len(params))
+	for i, p := range params {
+		s := string(p.Name.Value)
+		if p.TypeHint != nil {
+			s += ": " + p.TypeHint.TypeExpression()
+		}
+		parts[i] = s
+	}
+	return strings.Join(parts, ", ")
 }
 
 // TokenLiteral implements Decl.
@@ -24,6 +41,14 @@ func (DeclParameter) declarationNode() {}
 
 func (e DeclParameter) DeclName() Identifier {
 	return e.Name
+}
+
+func (e DeclParameter) DeclOverview() string {
+	s := e.Name.Value
+	if e.TypeHint != nil {
+		s += ": " + e.TypeHint.TypeExpression()
+	}
+	return s
 }
 
 func (e DeclParameter) ExportScope() ExportScope {
@@ -48,4 +73,8 @@ func (n DeclParameter) EnumerateChildNodes(action func(child Node)) {
 		n.Attributes.EnumerateChildNodes(action)
 	}
 	action(n.Name)
+	if n.TypeHint != nil {
+		action(n.TypeHint)
+		n.TypeHint.EnumerateChildNodes(action)
+	}
 }

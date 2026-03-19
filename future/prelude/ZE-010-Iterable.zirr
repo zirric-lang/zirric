@@ -18,7 +18,7 @@ attr Countable {
 // This allows using `for ... <- ...` on the type.
 @Proposal(ZE_010)
 attr Iterable {
-  iterate(value: @Iterable, yield: Func)
+  iterate(value: @Iterable, yield: fn(Any) -> Bool)
 }
 
 // @Proposal(ZE_010)

@@ -124,10 +124,8 @@ func (o *Orchestra) ParseModule(ctx context.Context, mod registry.ResolvedModule
 	mp.Decls().Parent = prelude.Decls
 	module, err := mp.Parse(mod)
 	if err != nil {
-		return nil, err
-	}
-	if err := joinParseErrors(mp.Errors()); err != nil {
-		return nil, err
+		// Sources() failed — return whatever partial module we have
+		return module, err
 	}
 	// Auto-import prelude so that `prelude.X` references work in all modules
 	// except the prelude itself.
@@ -135,6 +133,10 @@ func (o *Orchestra) ParseModule(ctx context.Context, mod registry.ResolvedModule
 		injectPreludeImport(module, prelude)
 	}
 	resolver.RegisterModule(mod.URI(), module)
+
+	if errs := mp.Errors(); len(errs) > 0 {
+		return module, parser.ParseErrors(errs)
+	}
 	return module, nil
 }
 
@@ -187,8 +189,8 @@ func (o *Orchestra) RunFile(ctx context.Context, filePath string) error {
 	return o.runBytecode(bytecode)
 }
 
-func (o *Orchestra) NewResolver() (*ModuleResolver, error) {
-	return NewModuleResolver(o.pkgmanager, o.cave)
+func (o *Orchestra) NewResolver(opts ...ResolverOption) (*ModuleResolver, error) {
+	return NewModuleResolver(o.pkgmanager, o.cave, opts...)
 }
 
 func (o *Orchestra) runBytecode(bytecode *compiler.Bytecode) error {
@@ -232,17 +234,6 @@ func (o *Orchestra) readSourceFile(filePath string) (registry.Source, error) {
 	}
 	logicalURI := o.projectBaseURI.Join(filepath.ToSlash(filePath))
 	return staticmodule.NewSource(logicalURI, data), nil
-}
-
-func joinParseErrors(errs []parser.ParseError) error {
-	if len(errs) == 0 {
-		return nil
-	}
-	joined := make([]error, 0, len(errs))
-	for _, err := range errs {
-		joined = append(joined, err)
-	}
-	return errors.Join(joined...)
 }
 
 // injectPreludeImport adds a synthetic `import prelude = <preludeURI>` into

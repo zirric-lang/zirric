@@ -71,5 +71,6 @@ func (d DeclData) EnumerateChildNodes(action func(child Node)) {
 	action(d.Name)
 	for _, node := range d.Fields {
 		action(node)
+		node.EnumerateChildNodes(action)
 	}
 }

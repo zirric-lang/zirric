@@ -10,7 +10,8 @@ type ModuleParser struct {
 	module        registry.ResolvedModule
 	contextModule *ast.ContextModule
 
-	srcp []*Parser
+	srcp         []*Parser
+	sourceErrors []ParseError
 }
 
 func NewModuleParse(module registry.ResolvedModule) *ModuleParser {
@@ -24,13 +25,17 @@ func NewModuleParse(module registry.ResolvedModule) *ModuleParser {
 func (mp *ModuleParser) Parse(module registry.ResolvedModule) (*ast.ContextModule, error) {
 	sources, err := module.Sources()
 	if err != nil {
-		return nil, err
+		return mp.contextModule, err
 	}
 
 	for _, src := range sources {
 		lex, err := lexer.New(src)
 		if err != nil {
-			return nil, err
+			mp.sourceErrors = append(mp.sourceErrors, ParseError{
+				Summary: "failed to read source",
+				Details: err.Error(),
+			})
+			continue
 		}
 		prs := NewSourceParser(lex, mp.contextModule.Decls, string(src.URI()))
 		mp.srcp = append(mp.srcp, prs)
@@ -44,7 +49,7 @@ func (mp *ModuleParser) Parse(module registry.ResolvedModule) (*ast.ContextModul
 }
 
 func (mp *ModuleParser) Errors() []ParseError {
-	var errs []ParseError
+	errs := append([]ParseError{}, mp.sourceErrors...)
 	for _, prs := range mp.srcp {
 		errs = append(errs, prs.Errors()...)
 	}

@@ -1,10 +1,12 @@
 package langsrv
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
+	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
@@ -142,9 +144,81 @@ func (ls *zirricLangserver) loadImportMemberModule(dim ast.DeclImportMember) (*a
 	return ls.loadImportedModule(synthImp)
 }
 
+// resolveImportMemberDecl resolves a DeclImportMember to its actual declaration.
+// First tries filesystem-based loading, then falls back to the Orchestra resolver
+// (needed for embedded modules like the prelude).
+func (ls *zirricLangserver) resolveImportMemberDecl(dim ast.DeclImportMember) ast.Decl {
+	name := dim.Name.Value
+	if mod, _, ok := ls.loadImportMemberModule(dim); ok {
+		if sym, ok := mod.Decls.Resolve(name); ok && sym.Decl != nil {
+			return sym.Decl
+		}
+	}
+	// Fallback: resolve via Orchestra resolver (covers embedded/installed packages).
+	if ls.resolver != nil {
+		uri := registry.LogicalURI(ast.StaticReference(dim.ModuleName).String())
+		if mod, err := ls.resolver.ResolveModule(context.Background(), uri); err == nil && mod != nil {
+			if sym, ok := mod.Decls.Resolve(name); ok && sym.Decl != nil {
+				return sym.Decl
+			}
+		}
+	}
+	return nil
+}
+
+// resolveImportMemberLocation resolves a DeclImportMember to the LSP Location of
+// the actual declaration. Tries filesystem, then Orchestra resolver.
+func (ls *zirricLangserver) resolveImportMemberLocation(dim ast.DeclImportMember, name string) *protocol.Location {
+	if importedMod, srcToPath, ok := ls.loadImportMemberModule(dim); ok {
+		if loc, ok := ls.symbolLocation(importedMod, name, srcToPath); ok {
+			return loc
+		}
+	}
+	// Fallback: resolve via Orchestra resolver.
+	resolved := ls.resolveImportMemberDecl(dim)
+	if resolved == nil {
+		return nil
+	}
+	return ls.locationForDecl(resolved)
+}
+
+// locationForDecl returns the LSP Location of a declaration's name token,
+// reading the source file to compute line/column positions.
+func (ls *zirricLangserver) locationForDecl(decl ast.Decl) *protocol.Location {
+	return ls.locationForDeclWithPaths(decl, nil)
+}
+
+// locationForDeclWithPaths returns the LSP Location of a declaration's name token,
+// using srcToPath to translate source URIs to filesystem paths when available.
+func (ls *zirricLangserver) locationForDeclWithPaths(decl ast.Decl, srcToPath map[string]string) *protocol.Location {
+	nameToken := decl.DeclName().Token
+	if nameToken.Source == nil {
+		return nil
+	}
+	filePath := nameToken.Source.File
+	if srcToPath != nil {
+		if mapped, ok := srcToPath[filePath]; ok {
+			filePath = mapped
+		}
+	}
+	text, err := readFileText(ls.fs, filePath)
+	if err != nil {
+		return nil
+	}
+	offset := nameToken.Source.Offset
+	nameLen := len(nameToken.Literal)
+	if nameLen <= 0 {
+		nameLen = 1
+	}
+	return &protocol.Location{
+		URI:   ls.fileURI(filePath),
+		Range: rangeForOffsets(text, offset, offset+nameLen),
+	}
+}
+
 // symbolLocation resolves a symbol name in a module and returns its LSP Location.
 func (ls *zirricLangserver) symbolLocation(mod *ast.ContextModule, name string, srcToPath map[string]string) (*protocol.Location, bool) {
-	sym := mod.Decls.Symbols[name]
+	sym, _ := mod.Decls.Resolve(name)
 	if sym == nil || sym.Decl == nil {
 		return nil, false
 	}
@@ -178,7 +252,7 @@ func (ls *zirricLangserver) symbolLocation(mod *ast.ContextModule, name string, 
 
 // hoverDeclInModule looks up a symbol in an imported module and returns its hover content.
 func hoverDeclInModule(mod *ast.ContextModule, name string) string {
-	sym := mod.Decls.Symbols[name]
+	sym, _ := mod.Decls.Resolve(name)
 	if sym == nil || sym.Decl == nil {
 		return ""
 	}

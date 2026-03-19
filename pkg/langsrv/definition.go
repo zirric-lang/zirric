@@ -40,24 +40,42 @@ func (ls *zirricLangserver) textDocumentDefinition(
 		return nil, nil
 	}
 
-	// Check qualified context first: "alias.member"
-	if alias, _, isQualified := qualifiedContext(text, params.Position); isQualified {
-		if imp, ok := findImportDecl(currentSF, alias); ok {
-			if importedMod, srcToPath, ok := ls.loadImportedModule(imp); ok {
-				if loc, ok := ls.symbolLocation(importedMod, word, srcToPath); ok {
+	// Check qualified/dot-chain context: "alias.member" or "expr.field.subfield"
+	if segments, _, isDotChain := dotChainContext(text, params.Position); isDotChain {
+		// Try module/import alias first (single-segment).
+		if len(segments) == 1 {
+			alias := segments[0]
+			if imp, ok := findImportDecl(currentSF, alias); ok {
+				if importedMod, srcToPath, ok := ls.loadImportedModule(imp); ok {
+					if loc, ok := ls.symbolLocation(importedMod, word, srcToPath); ok {
+						return loc, nil
+					}
+				}
+			}
+			if isModuleDecl(module, alias) {
+				if loc, ok := ls.symbolLocation(module, word, sourceURIToPath); ok {
 					return loc, nil
+				}
+			}
+		}
+
+		// Multi-segment or non-module single segment: type-aware resolution.
+		cursorOffset := offsetForPosition(text, params.Position)
+		result := ls.resolveDotChain(module, currentSF, path, cursorOffset, segments)
+		if result != nil && len(result.fields) > 0 {
+			for _, f := range result.fields {
+				if f.Name.Value == word {
+					if loc := ls.locationForDeclWithPaths(f, sourceURIToPath); loc != nil {
+						return loc, nil
+					}
 				}
 			}
 		}
 		return nil, nil
 	}
 
-	// Try global symbols first.
-	sym := module.Decls.Symbols[word]
-	// Also check current file's local scope (for imports with ExportScopeLocal).
-	if (sym == nil || sym.Decl == nil) && currentSF != nil {
-		sym = currentSF.Decls.Symbols[word]
-	}
+	cursorOffset := offsetForPosition(text, params.Position)
+	sym := ls.resolveWordDecl(module, currentSF, path, cursorOffset, word)
 	if sym == nil || sym.Decl == nil {
 		return nil, nil
 	}
@@ -65,17 +83,13 @@ func (ls *zirricLangserver) textDocumentDefinition(
 	// DeclImportMember: navigate to its actual definition in the imported module.
 	switch dim := sym.Decl.(type) {
 	case ast.DeclImportMember:
-		if importedMod, srcToPath, ok := ls.loadImportMemberModule(dim); ok {
-			if loc, ok := ls.symbolLocation(importedMod, word, srcToPath); ok {
-				return loc, nil
-			}
+		if loc := ls.resolveImportMemberLocation(dim, word); loc != nil {
+			return loc, nil
 		}
 		return nil, nil
 	case *ast.DeclImportMember:
-		if importedMod, srcToPath, ok := ls.loadImportMemberModule(*dim); ok {
-			if loc, ok := ls.symbolLocation(importedMod, word, srcToPath); ok {
-				return loc, nil
-			}
+		if loc := ls.resolveImportMemberLocation(*dim, word); loc != nil {
+			return loc, nil
 		}
 		return nil, nil
 	}
@@ -87,6 +101,11 @@ func (ls *zirricLangserver) textDocumentDefinition(
 
 	defFilePath, ok := sourceURIToPath[nameToken.Source.File]
 	if !ok {
+		// Local declarations may have source files not in sourceURIToPath;
+		// fall back to reading the file directly.
+		if loc := ls.locationForDecl(sym.Decl); loc != nil {
+			return loc, nil
+		}
 		return nil, nil
 	}
 

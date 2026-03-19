@@ -2,7 +2,6 @@ package ast
 
 import (
 	"fmt"
-	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
 )
@@ -36,14 +35,11 @@ func (e DeclFunc) DeclName() Identifier {
 }
 
 func (e DeclFunc) DeclOverview() string {
-	if len(e.Impl.Parameters) == 0 {
-		return fmt.Sprintf("fn %s()", e.Name)
+	result := fmt.Sprintf("fn %s(%s)", e.Name, formatParamList(e.Impl.Parameters))
+	if e.ReturnType != nil {
+		result += " -> " + e.ReturnType.TypeExpression()
 	}
-	paramNames := make([]string, len(e.Impl.Parameters))
-	for i, param := range e.Impl.Parameters {
-		paramNames[i] = string(param.Name.Value)
-	}
-	return fmt.Sprintf("fn %s(%s)", e.Name, strings.Join(paramNames, ", "))
+	return result
 }
 
 func (e DeclFunc) ExportScope() ExportScope {
@@ -72,6 +68,10 @@ func (n DeclFunc) EnumerateChildNodes(action func(child Node)) {
 		n.Attributes.EnumerateChildNodes(action)
 	}
 	action(n.Name)
+	if n.ReturnType != nil {
+		action(n.ReturnType)
+		n.ReturnType.EnumerateChildNodes(action)
+	}
 	action(n.Impl)
 	n.Impl.EnumerateChildNodes(action)
 }

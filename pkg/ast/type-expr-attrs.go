@@ -25,6 +25,7 @@ func (e TypeExprAttrs) TokenLiteral() token.Token { return e.Token }
 func (e TypeExprAttrs) EnumerateChildNodes(action func(Node)) {
 	for _, a := range e.Attrs {
 		action(a)
+		a.EnumerateChildNodes(action)
 	}
 }
 

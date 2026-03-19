@@ -196,6 +196,78 @@ func TestWorkspaceSymbolLocation(t *testing.T) {
 	}
 }
 
+func TestWorkspaceSymbolAcrossModules(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "main.zirr", "fn greet() {}")
+	if err := base.MkdirAll("mymod", 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, base, "mymod/types.zirr", "data Point { x }\nfn helper() {}")
+
+	ls := zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	results, err := ls.workspaceSymbol(nil, &protocol.WorkspaceSymbolParams{Query: ""})
+	if err != nil {
+		t.Fatalf("workspaceSymbol: %v", err)
+	}
+	nameSet := make(map[string]bool)
+	containerByName := make(map[string]string)
+	for _, s := range results {
+		nameSet[s.Name] = true
+		if s.ContainerName != nil {
+			containerByName[s.Name] = *s.ContainerName
+		}
+	}
+	for _, want := range []string{"greet", "Point", "helper"} {
+		if !nameSet[want] {
+			names := make([]string, 0, len(results))
+			for _, s := range results {
+				names = append(names, s.Name)
+			}
+			t.Errorf("missing symbol %q across modules; got %v", want, names)
+		}
+	}
+	// Root module symbols should have empty container; submodule symbols get "mymod".
+	if c := containerByName["greet"]; c != "" {
+		t.Errorf("greet container = %q, want empty", c)
+	}
+	if c := containerByName["Point"]; c != "mymod" {
+		t.Errorf("Point container = %q, want %q", c, "mymod")
+	}
+}
+
+func TestWorkspaceSymbolSkipsInvalidDirs(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "main.zirr", "fn greet() {}")
+	// ".hidden" and "node_modules" style dirs should be skipped.
+	if err := base.MkdirAll(".hidden", 0755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, base, ".hidden/secret.zirr", "fn secret() {}")
+
+	ls := zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	results, err := ls.workspaceSymbol(nil, &protocol.WorkspaceSymbolParams{Query: ""})
+	if err != nil {
+		t.Fatalf("workspaceSymbol: %v", err)
+	}
+	for _, s := range results {
+		if s.Name == "secret" {
+			t.Error("workspace symbols should not include files from invalid module dirs like .hidden")
+		}
+	}
+}
+
 func symbolNames(syms []protocol.DocumentSymbol) []string {
 	names := make([]string, len(syms))
 	for i, s := range syms {

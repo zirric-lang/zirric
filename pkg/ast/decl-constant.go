@@ -7,6 +7,7 @@ import (
 )
 
 var _ Decl = DeclConstant{}
+var _ Overviewable = DeclConstant{}
 
 // DeclConstant represents an immutable binding declared with the `const` keyword.
 type DeclConstant struct {
@@ -36,6 +37,9 @@ func (e DeclConstant) DeclName() Identifier {
 }
 
 func (e DeclConstant) DeclOverview() string {
+	if e.TypeHint != nil {
+		return fmt.Sprintf("const %s: %s", e.Name, e.TypeHint.TypeExpression())
+	}
 	return fmt.Sprintf("const %s", e.Name)
 }
 
@@ -66,6 +70,10 @@ func (n DeclConstant) EnumerateChildNodes(action func(child Node)) {
 	action(n.Name)
 	if len(n.Attributes) > 0 {
 		action(n.Attributes)
+	}
+	if n.TypeHint != nil {
+		action(n.TypeHint)
+		n.TypeHint.EnumerateChildNodes(action)
 	}
 	action(n.Value)
 }

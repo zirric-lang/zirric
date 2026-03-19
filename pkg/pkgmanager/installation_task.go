@@ -3,6 +3,7 @@ package pkgmanager
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
@@ -12,6 +13,7 @@ import (
 type InstallationTask struct {
 	cave       cavefile.Cavefile
 	pkgmanager *PackageManager
+	ReadOnly   bool
 
 	queue []cavefile.Dependency
 }
@@ -43,11 +45,21 @@ func (t *InstallationTask) Run(ctx context.Context) ([]registry.ResolvedPackage,
 	}
 
 	var completed []registry.ResolvedPackage
+	var missing []string
 
 	for _, dependency := range t.queue {
 		pkg, ok := t.tryResolveAvailable(dependency, availables)
 		if ok {
 			completed = append(completed, pkg)
+			continue
+		}
+
+		if t.ReadOnly {
+			name := dependency.Source
+			if name == "" {
+				name = dependency.Name
+			}
+			missing = append(missing, name)
 			continue
 		}
 
@@ -59,6 +71,9 @@ func (t *InstallationTask) Run(ctx context.Context) ([]registry.ResolvedPackage,
 			return nil, fmt.Errorf("no registry can provide package %s", dependency.Source)
 		}
 		completed = append(completed, localPkg)
+	}
+	if len(missing) > 0 {
+		return completed, fmt.Errorf("dependencies not installed locally: %s; run 'zirric install'", strings.Join(missing, ", "))
 	}
 	return completed, nil
 }

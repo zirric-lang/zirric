@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
+	"code.knabel.dev/zirric-lang/zirric/pkg/orchestra"
 	"code.knabel.dev/zirric-lang/zirric/pkg/parser"
 	"github.com/go-git/go-billy/v5"
 	"github.com/tliron/commonlog"
@@ -39,6 +40,12 @@ type zirricLangserver struct {
 	// It is invalidated (cleared) whenever documents change.
 	moduleCache   map[string]*moduleCacheEntry
 	moduleCacheMu sync.Mutex
+
+	// orch and resolver provide the Orchestra parsing pipeline.
+	// The LSP must NEVER call orch.RunFile, RunModulePath, Compile, or runBytecode.
+	// Only ParseModule/ParseFile/ParseModulePath and analyzer are permitted.
+	orch     *orchestra.Orchestra
+	resolver *orchestra.ModuleResolver
 }
 
 var ls zirricLangserver = zirricLangserver{}

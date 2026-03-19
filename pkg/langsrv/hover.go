@@ -44,36 +44,58 @@ func (ls *zirricLangserver) textDocumentHover(
 	sourceURI := string(registry.JoinModuleURI("", path))
 	currentSF := findSourceFile(module, sourceURI)
 
-	// Check qualified context: "alias.member"
-	if alias, _, isQualified := qualifiedContext(text, params.Position); isQualified {
-		imp, ok := findImportDecl(currentSF, alias)
-		if !ok {
-			return nil, nil
+	// Check qualified/dot-chain context: "alias.member" or "expr.field.subfield"
+	if segments, _, isDotChain := dotChainContext(text, params.Position); isDotChain {
+		// Try module/import alias first (single-segment).
+		if len(segments) == 1 {
+			alias := segments[0]
+			if imp, ok := findImportDecl(currentSF, alias); ok {
+				if importedMod, _, ok := ls.loadImportedModule(imp); ok {
+					content := hoverDeclInModule(importedMod, word)
+					if content != "" {
+						kind := protocol.MarkupKindMarkdown
+						return &protocol.Hover{
+							Contents: protocol.MarkupContent{Kind: kind, Value: content},
+							Range:    &wordRange,
+						}, nil
+					}
+				}
+			}
+			if isModuleDecl(module, alias) {
+				content := hoverDeclInModule(module, word)
+				if content != "" {
+					kind := protocol.MarkupKindMarkdown
+					return &protocol.Hover{
+						Contents: protocol.MarkupContent{Kind: kind, Value: content},
+						Range:    &wordRange,
+					}, nil
+				}
+			}
 		}
 
-		importedMod, _, ok := ls.loadImportedModule(imp)
-		if !ok {
-			return nil, nil
+		// Multi-segment or non-module single segment: type-aware resolution.
+		// Resolve the chain to get available fields, then find the word among them.
+		cursorOffset := offsetForPosition(text, params.Position)
+		result := ls.resolveDotChain(module, currentSF, path, cursorOffset, segments)
+		if result != nil && len(result.fields) > 0 {
+			for _, f := range result.fields {
+				if f.Name.Value == word {
+					content := hoverContentForDecl(f)
+					if content != "" {
+						kind := protocol.MarkupKindMarkdown
+						return &protocol.Hover{
+							Contents: protocol.MarkupContent{Kind: kind, Value: content},
+							Range:    &wordRange,
+						}, nil
+					}
+				}
+			}
 		}
-
-		content := hoverDeclInModule(importedMod, word)
-		if content == "" {
-			return nil, nil
-		}
-
-		kind := protocol.MarkupKindMarkdown
-		return &protocol.Hover{
-			Contents: protocol.MarkupContent{Kind: kind, Value: content},
-			Range:    &wordRange,
-		}, nil
+		return nil, nil
 	}
 
-	// Try global symbols.
-	sym := module.Decls.Symbols[word]
-	// Also check current file's local scope for import-scoped symbols.
-	if (sym == nil || sym.Decl == nil) && currentSF != nil {
-		sym = currentSF.Decls.Symbols[word]
-	}
+	cursorOffset := offsetForPosition(text, params.Position)
+	sym := ls.resolveWordDecl(module, currentSF, path, cursorOffset, word)
 	if sym == nil || sym.Decl == nil {
 		return nil, nil
 	}
@@ -82,13 +104,13 @@ func (ls *zirricLangserver) textDocumentHover(
 	var content string
 	switch dim := sym.Decl.(type) {
 	case ast.DeclImportMember:
-		if importedMod, _, ok := ls.loadImportMemberModule(dim); ok {
-			content = hoverDeclInModule(importedMod, word)
+		if resolved := ls.resolveImportMemberDecl(dim); resolved != nil {
+			content = hoverContentForDecl(resolved)
 		}
 
 	case *ast.DeclImportMember:
-		if importedMod, _, ok := ls.loadImportMemberModule(*dim); ok {
-			content = hoverDeclInModule(importedMod, word)
+		if resolved := ls.resolveImportMemberDecl(*dim); resolved != nil {
+			content = hoverContentForDecl(resolved)
 		}
 
 	default:

@@ -23,7 +23,6 @@ func (vm *VM) runTask(taskId TaskId) error {
 			ins  = fr.Instructions()
 			code = op.Opcode(ins[ip-1])
 		)
-
 		switch code {
 		case op.Pop:
 			vm.pop()

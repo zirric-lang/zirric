@@ -41,6 +41,9 @@ func (e DeclExternValue) ExportScope() ExportScope {
 }
 
 func (e DeclExternValue) DeclOverview() string {
+	if e.TypeHint != nil {
+		return fmt.Sprintf("extern const %s: %s", e.Name, e.TypeHint.TypeExpression())
+	}
 	return fmt.Sprintf("extern const %s", e.Name)
 }
 
@@ -60,5 +63,9 @@ func (n DeclExternValue) EnumerateChildNodes(action func(child Node)) {
 	action(n.Name)
 	if len(n.Attributes) > 0 {
 		action(n.Attributes)
+	}
+	if n.TypeHint != nil {
+		action(n.TypeHint)
+		n.TypeHint.EnumerateChildNodes(action)
 	}
 }

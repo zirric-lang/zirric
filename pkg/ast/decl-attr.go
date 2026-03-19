@@ -36,7 +36,7 @@ func (e DeclAttr) DeclName() Identifier {
 
 func (e DeclAttr) DeclOverview() string {
 	if len(e.Fields) == 0 {
-		return fmt.Sprintf("data %s", e.Name)
+		return fmt.Sprintf("attr %s", e.Name)
 	}
 	fieldLines := make([]string, 0)
 	for _, field := range e.Fields {

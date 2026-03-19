@@ -2,6 +2,7 @@ package langsrv
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -13,6 +14,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/lexer"
 	"code.knabel.dev/zirric-lang/zirric/pkg/parser"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
+	"code.knabel.dev/zirric-lang/zirric/pkg/registry/staticmodule"
 	"github.com/go-git/go-billy/v5"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -57,6 +59,10 @@ func (ls *zirricLangserver) refreshDiagnostics(ctx *glsp.Context) error {
 	ls.moduleCache = make(map[string]*moduleCacheEntry)
 	ls.moduleCacheMu.Unlock()
 
+	if ls.resolver != nil {
+		ls.resolver.InvalidateModules()
+	}
+
 	// Run the slow parse/analyze work in the background so that other LSP
 	// requests (hover, completion, …) are not blocked while diagnostics compute.
 	go ls.runDiagnosticsPass(diagCtx, ctx, openDocs, prevDiagURIs, current)
@@ -89,6 +95,10 @@ func (ls *zirricLangserver) refreshDiagnosticsSync(ctx *glsp.Context) error {
 	ls.moduleCacheMu.Lock()
 	ls.moduleCache = make(map[string]*moduleCacheEntry)
 	ls.moduleCacheMu.Unlock()
+
+	if ls.resolver != nil {
+		ls.resolver.InvalidateModules()
+	}
 
 	ls.runDiagnosticsPass(context.Background(), ctx, openDocs, prevDiagURIs, current)
 	return nil
@@ -160,7 +170,7 @@ func (ls *zirricLangserver) parseDiagnosticsForFileInner(path string) ([]protoco
 	}
 
 	if len(errs) == 0 {
-		an := analyzer.New(nil)
+		an := analyzer.New(ls.resolver)
 		analysisErrs, _ := an.Analyze(module, false)
 
 		for _, analysisErr := range analysisErrs {
@@ -182,26 +192,31 @@ func (ls *zirricLangserver) parseDiagnosticsForFileInner(path string) ([]protoco
 // a map from source URI string to that file's parse errors, and a map from
 // source URI string to the relative file path (for go-to-definition).
 // Results are cached by directory and invalidated whenever documents change.
+//
+// When an Orchestra is available, the module gets prelude injection and the
+// resolver is used for proper symbol resolution.
 func (ls *zirricLangserver) parseModuleFiles(moduleDir string) (*ast.ContextModule, map[string][]parser.ParseError, map[string]string, error) {
 	ls.moduleCacheMu.Lock()
+	defer ls.moduleCacheMu.Unlock()
+
 	if entry, ok := ls.moduleCache[moduleDir]; ok {
-		ls.moduleCacheMu.Unlock()
 		return entry.module, entry.parseErrsByFile, entry.sourceURIToPath, nil
 	}
-	ls.moduleCacheMu.Unlock()
 
 	var (
 		moduleURI       = registry.JoinModuleURI("", moduleDir)
-		module          = ast.MakeContextModule(moduleURI)
 		parseErrsByFile = make(map[string][]parser.ParseError)
 		sourceURIToPath = make(map[string]string)
 	)
 
 	entries, err := ls.fs.ReadDir(moduleDir)
 	if err != nil {
+		module := ast.MakeContextModule(moduleURI)
 		return module, parseErrsByFile, sourceURIToPath, err
 	}
 
+	// Build sources from directory
+	var sources []registry.Source
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".zirr") {
 			continue
@@ -213,31 +228,58 @@ func (ls *zirricLangserver) parseModuleFiles(moduleDir string) (*ast.ContextModu
 			continue
 		}
 
-		var (
-			sourceURI = registry.JoinModuleURI("", filePath)
-			src       = overlaySource{uri: sourceURI, text: []byte(fileText)}
-		)
-
-		lex, err := lexer.New(src)
-		if err != nil {
-			continue
-		}
-
-		prs := parser.NewSourceParser(lex, module.Decls, string(src.URI()))
-		tree := prs.ParseSourceFile()
-
-		module.AddSourceFile(tree)
-		parseErrsByFile[string(sourceURI)] = prs.Errors()
+		sourceURI := registry.JoinModuleURI("", filePath)
+		sources = append(sources, overlaySource{uri: sourceURI, text: []byte(fileText)})
 		sourceURIToPath[string(sourceURI)] = filePath
 	}
 
-	ls.moduleCacheMu.Lock()
+	var module *ast.ContextModule
+
+	if ls.orch != nil && ls.resolver != nil {
+		// Use Orchestra for prelude injection and proper symbol resolution.
+		mod := staticmodule.NewModule(moduleURI, sources)
+		module, err = ls.orch.ParseModule(context.Background(), mod, ls.resolver)
+
+		var parseErrs parser.ParseErrors
+		if errors.As(err, &parseErrs) {
+			for _, pe := range parseErrs {
+				file := ""
+				if pe.Token.Source != nil {
+					file = pe.Token.Source.File
+				}
+				parseErrsByFile[file] = append(parseErrsByFile[file], pe)
+			}
+		} else if err != nil {
+			// Truly fatal error (not parse errors)
+			if module == nil {
+				module = ast.MakeContextModule(moduleURI)
+			}
+			return module, parseErrsByFile, sourceURIToPath, err
+		}
+	} else {
+		// Fallback: manual parsing without Orchestra.
+		module = ast.MakeContextModule(moduleURI)
+		for _, src := range sources {
+			lex, err := lexer.New(src)
+			if err != nil {
+				continue
+			}
+			prs := parser.NewSourceParser(lex, module.Decls, string(src.URI()))
+			tree := prs.ParseSourceFile()
+			module.AddSourceFile(tree)
+			parseErrsByFile[string(src.URI())] = prs.Errors()
+		}
+	}
+
+	if module == nil {
+		module = ast.MakeContextModule(moduleURI)
+	}
+
 	ls.moduleCache[moduleDir] = &moduleCacheEntry{
 		module:          module,
 		parseErrsByFile: parseErrsByFile,
 		sourceURIToPath: sourceURIToPath,
 	}
-	ls.moduleCacheMu.Unlock()
 
 	return module, parseErrsByFile, sourceURIToPath, nil
 }

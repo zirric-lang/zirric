@@ -3,6 +3,7 @@ package ast
 import "code.knabel.dev/zirric-lang/zirric/pkg/token"
 
 var _ Decl = DeclForBinding{}
+var _ Overviewable = DeclForBinding{}
 
 type DeclForBinding struct {
 	Name  Identifier
@@ -21,6 +22,10 @@ func (DeclForBinding) declarationNode() {}
 
 func (e DeclForBinding) DeclName() Identifier {
 	return e.Name
+}
+
+func (e DeclForBinding) DeclOverview() string {
+	return "for " + e.Name.Value
 }
 
 func (DeclForBinding) ExportScope() ExportScope {

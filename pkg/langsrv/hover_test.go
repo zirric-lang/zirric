@@ -20,7 +20,7 @@ func TestTextDocumentHover(t *testing.T) {
 			name:        "hover over func name",
 			src:         "fn greet() {}",
 			pos:         protocol.Position{Line: 0, Character: 6},
-			wantContain: "fn greet",
+			wantContain: "fn greet()",
 		},
 		{
 			name:        "hover over data name",
@@ -45,6 +45,98 @@ func TestTextDocumentHover(t *testing.T) {
 			src:     "fn greet() {}",
 			pos:     protocol.Position{Line: 0, Character: 14},
 			wantNil: true,
+		},
+		// Type hint tests
+		{
+			name:        "func with param type hint",
+			src:         "fn greet(name: String) {}",
+			pos:         protocol.Position{Line: 0, Character: 5},
+			wantContain: "fn greet(name: String)",
+		},
+		{
+			name:        "func with return type",
+			src:         "fn greet() -> String {}",
+			pos:         protocol.Position{Line: 0, Character: 5},
+			wantContain: "fn greet() -> String",
+		},
+		{
+			name:        "func with params and return type",
+			src:         "fn add(a: Int, b: Int) -> Int {}",
+			pos:         protocol.Position{Line: 0, Character: 5},
+			wantContain: "fn add(a: Int, b: Int) -> Int",
+		},
+		{
+			name:        "const with type hint",
+			src:         "const x: Int = 42",
+			pos:         protocol.Position{Line: 0, Character: 7},
+			wantContain: "const x: Int",
+		},
+		{
+			name:        "var with type hint",
+			src:         "var x: String = 42",
+			pos:         protocol.Position{Line: 0, Character: 5},
+			wantContain: "var x: String",
+		},
+		{
+			name:        "data field with type hint",
+			src:         "data Person {\n    name: String\n}",
+			pos:         protocol.Position{Line: 0, Character: 6},
+			wantContain: "name: String",
+		},
+		{
+			name:        "func with array type hint",
+			src:         "fn items(xs: [Int]) -> [String] {}",
+			pos:         protocol.Position{Line: 0, Character: 5},
+			wantContain: "fn items(xs: [Int]) -> [String]",
+		},
+		{
+			name:        "hover over type ref in parameter",
+			src:         "data Point { x }\nfn move(p: Point) {}",
+			pos:         protocol.Position{Line: 1, Character: 12},
+			wantContain: "data Point",
+		},
+		{
+			name:        "hover over type ref in return type",
+			src:         "data Point { x }\nfn origin() -> Point {}",
+			pos:         protocol.Position{Line: 1, Character: 16},
+			wantContain: "data Point",
+		},
+		// Local variable/parameter/constant hover tests
+		{
+			name:        "hover over parameter name in function body",
+			src:         "fn greet(name) {\n  name\n}",
+			pos:         protocol.Position{Line: 1, Character: 3},
+			wantContain: "name",
+		},
+		{
+			name:        "hover over typed parameter",
+			src:         "extern type String\nfn greet(name: String) {\n  name\n}",
+			pos:         protocol.Position{Line: 2, Character: 3},
+			wantContain: "name: String",
+		},
+		{
+			name:        "hover over local var",
+			src:         "fn test() {\n  var x = 1\n  x\n}",
+			pos:         protocol.Position{Line: 2, Character: 2},
+			wantContain: "var x",
+		},
+		{
+			name:        "hover over local const",
+			src:         "fn test() {\n  const y = 2\n  y\n}",
+			pos:         protocol.Position{Line: 2, Character: 2},
+			wantContain: "const y",
+		},
+		{
+			name:        "hover over for-loop binding",
+			src:         "fn test() {\n  for item <- [1] {\n    item\n  }\n}",
+			pos:         protocol.Position{Line: 2, Character: 5},
+			wantContain: "for item",
+		},
+		{
+			name:        "hover over local var inside if",
+			src:         "fn test() {\n  if true {\n    var z = 3\n    z\n  }\n}",
+			pos:         protocol.Position{Line: 3, Character: 5},
+			wantContain: "var z",
 		},
 	}
 
@@ -130,6 +222,41 @@ func TestHoverAcrossFiles(t *testing.T) {
 	}
 	if !strings.Contains(mc.Value, "Point") {
 		t.Errorf("hover content %q does not contain 'Point'", mc.Value)
+	}
+}
+
+func TestHoverModNameQualified(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "mymod/main.zirr", "mod mymod\nfn helper() {}\nmymod.helper")
+
+	ls := zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	params := &protocol.HoverParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///mymod/main.zirr"},
+			Position:     protocol.Position{Line: 2, Character: 8},
+		},
+	}
+	result, err := ls.textDocumentHover(nil, params)
+	if err != nil {
+		t.Fatalf("textDocumentHover: %v", err)
+	}
+	if result == nil {
+		t.Fatal("expected hover for modname.helper, got nil")
+		return
+	}
+	mc, ok := result.Contents.(protocol.MarkupContent)
+	if !ok {
+		t.Fatalf("expected MarkupContent, got %T", result.Contents)
+		return
+	}
+	if !strings.Contains(mc.Value, "helper") {
+		t.Errorf("hover content %q does not contain 'helper'", mc.Value)
 	}
 }
 
