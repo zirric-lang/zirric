@@ -1,4 +1,4 @@
-# [![Zirric](./docs/assets/images/zirric.svg)](https://zirric.knabel.dev)
+# [![Zirric](./tasks/docmd/assets/images/zirric.svg)](https://zirric.knabel.dev)
 
 Zirric is an experimental programming language with a reference implementation in Go. The project is in an early stage and offers the essential building blocks of a modern language:
 
