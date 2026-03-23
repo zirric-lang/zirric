@@ -46,15 +46,19 @@ func (StmtSwitch) statementNode() {}
 
 func (s StmtSwitch) EnumerateChildNodes(action func(Node)) {
 	action(s.Value)
+	s.Value.EnumerateChildNodes(action)
 	for _, c := range s.Cases {
 		if c.TypeRef != nil {
 			action(c.TypeRef)
+			c.TypeRef.EnumerateChildNodes(action)
 		}
 		if c.Pattern != nil {
 			action(c.Pattern)
+			c.Pattern.EnumerateChildNodes(action)
 		}
 		for _, stmt := range c.Body {
 			action(stmt)
+			stmt.EnumerateChildNodes(action)
 		}
 	}
 }

@@ -21,7 +21,9 @@ func (ExprDict) TokenLiteral() token.Token {
 // EnumerateChildNodes implements Expr.
 func (e ExprDict) EnumerateChildNodes(enumerate func(Node)) {
 	for _, entry := range e.Entries {
+		enumerate(entry.Key)
 		entry.Key.EnumerateChildNodes(enumerate)
+		enumerate(entry.Value)
 		entry.Value.EnumerateChildNodes(enumerate)
 	}
 }

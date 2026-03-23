@@ -18,5 +18,6 @@ func (n AttributeChain) TokenLiteral() token.Token {
 func (n AttributeChain) EnumerateChildNodes(action func(child Node)) {
 	for _, c := range n {
 		action(c)
+		c.EnumerateChildNodes(action)
 	}
 }

@@ -70,5 +70,6 @@ func (n DeclImport) EnumerateChildNodes(action func(child Node)) {
 	action(n.Alias)
 	for _, node := range n.Members {
 		action(node)
+		node.EnumerateChildNodes(action)
 	}
 }

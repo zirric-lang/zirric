@@ -128,20 +128,6 @@ func (vm *VM) runTask(taskId TaskId) error {
 		case op.Add, op.Sub, op.Mul, op.Div,
 			op.GreaterThan, op.GreaterThanOrEqual,
 			op.LessThan, op.LessThanOrEqual:
-			if code == op.Add {
-				// Peek at the top two stack values to check for string concatenation
-				rhs := vm.stack[vm.sp-1]
-				lhs := vm.stack[vm.sp-2]
-				if lhsStr, ok := lhs.(runtime.String); ok {
-					if rhsStr, ok := rhs.(runtime.String); ok {
-						vm.sp -= 2
-						if err := vm.push(lhsStr + rhsStr); err != nil {
-							return err
-						}
-						break
-					}
-				}
-			}
 			err := vm.numericBinaryOperation(code)
 			if err != nil {
 				return err
@@ -673,8 +659,21 @@ func (vm *VM) numericBinaryOperation(operator op.Opcode) error {
 			return vm.numericBinaryOperationInt(operator, lhs, rhs)
 		case runtime.Float:
 			return vm.numericBinaryOperationFloat(operator, lhs, runtime.Float(rhs))
+		case runtime.String:
+			if operator != op.Add {
+				def, err := op.LookupDefinition(byte(operator))
+				if err != nil {
+					panic(fmt.Sprintf("unknown operator %x", operator))
+				}
+				return fmt.Errorf("unsupported operator %q for Float and String", def.Name)
+			}
+			return vm.push(runtime.String(lhs) + runtime.String(rune(rhs)))
 		default:
-			return fmt.Errorf("unsupported %T", lhs)
+			def, err := op.LookupDefinition(byte(operator))
+			if err != nil {
+				panic(fmt.Sprintf("unknown operator %x", operator))
+			}
+			return fmt.Errorf("unsupported operator %q for Int and %T", def.Name, lhs)
 		}
 	case runtime.Float:
 		switch lhs := vm.pop().(type) {
@@ -683,10 +682,42 @@ func (vm *VM) numericBinaryOperation(operator op.Opcode) error {
 		case runtime.Float:
 			return vm.numericBinaryOperationFloat(operator, lhs, rhs)
 		default:
-			return fmt.Errorf("unsupported %T", lhs)
+			def, err := op.LookupDefinition(byte(operator))
+			if err != nil {
+				panic(fmt.Sprintf("unknown operator %x", operator))
+			}
+			return fmt.Errorf("unsupported operator %q for Float and %T", def.Name, lhs)
+		}
+	case runtime.String:
+		switch lhs := vm.pop().(type) {
+		case runtime.String:
+			if operator != op.Add {
+				return fmt.Errorf("unsupported operator %x for String", operator)
+			}
+			return vm.push(lhs + rhs)
+		case runtime.Char:
+			if operator != op.Add {
+				return fmt.Errorf("unsupported operator %x for String and Char", operator)
+			}
+			return vm.push(runtime.String(lhs) + runtime.String(rhs))
+		case runtime.Int:
+			if operator != op.Add {
+				return fmt.Errorf("unsupported operator %x for String and Int", operator)
+			}
+			return vm.push(runtime.String(rune(lhs)) + runtime.String(rhs))
+		default:
+			def, err := op.LookupDefinition(byte(operator))
+			if err != nil {
+				panic(fmt.Sprintf("unknown operator %x", operator))
+			}
+			return fmt.Errorf("unsupported operator %q for String and %T", def.Name, lhs)
 		}
 	default:
-		return fmt.Errorf("unsupported %T", rhs)
+		def, err := op.LookupDefinition(byte(operator))
+		if err != nil {
+			panic(fmt.Sprintf("unknown operator %x", operator))
+		}
+		return fmt.Errorf("unsupported operator %q for types %T and %T", def.Name, rhs, vm.pop())
 	}
 }
 

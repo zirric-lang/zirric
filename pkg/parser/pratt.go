@@ -356,7 +356,19 @@ func (p *Parser) parsePrattExprFnClosure() ast.Expr {
 	}
 
 	p.expect(token.LBRACE)
-	fun.SetImplBlock(p.parseStmtBlock(IN_FUNC))
+
+	stmts := p.parseStmtBlock(IN_FUNC)
+	if len(stmts) == 1 {
+		// If the body is a single expression statement, convert it to a return statement implicitly.
+		exprStmt, ok := stmts[0].(*ast.StmtExpr)
+		if ok {
+			returnStmt := ast.MakeStmtReturn(exprStmt.Token, exprStmt.Expr)
+			stmts[0] = returnStmt
+		}
+	}
+
+	fun.SetImplBlock(stmts)
+
 	p.expect(token.RBRACE)
 	p.popSymbolTable()
 	return fun

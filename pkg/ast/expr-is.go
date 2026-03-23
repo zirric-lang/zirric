@@ -31,8 +31,10 @@ func (e ExprIs) TokenLiteral() token.Token {
 
 func (e ExprIs) EnumerateChildNodes(action func(Node)) {
 	action(e.Value)
+	e.Value.EnumerateChildNodes(action)
 	if e.TypeRef != nil {
 		action(e.TypeRef)
+		e.TypeRef.EnumerateChildNodes(action)
 	}
 }
 

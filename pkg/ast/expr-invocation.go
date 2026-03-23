@@ -26,8 +26,10 @@ func (e *ExprInvocation) AddArgument(argument Expr) {
 // EnumerateChildNodes implements Expr.
 func (n ExprInvocation) EnumerateChildNodes(action func(child Node)) {
 	action(n.Function)
+	n.Function.EnumerateChildNodes(action)
 	for _, argument := range n.Arguments {
 		action(argument)
+		argument.EnumerateChildNodes(action)
 	}
 }
 

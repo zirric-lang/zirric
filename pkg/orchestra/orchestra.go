@@ -101,11 +101,7 @@ func (o *Orchestra) ParseFile(ctx context.Context, filePath string, resolver *Mo
 	if err != nil {
 		return nil, err
 	}
-	moduleURI := o.projectBaseURI
-	if dir := filepath.Dir(filePath); dir != "." {
-		moduleURI = registry.JoinModuleURI(moduleURI, filepath.ToSlash(dir))
-	}
-	mod := staticmodule.NewModule(moduleURI, []registry.Source{source})
+	mod := staticmodule.NewModule(o.projectBaseURI, []registry.Source{source})
 	return o.ParseModule(ctx, mod, resolver)
 }
 

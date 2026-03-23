@@ -53,14 +53,18 @@ func (e ExprSwitch) TokenLiteral() token.Token {
 
 func (e ExprSwitch) EnumerateChildNodes(action func(Node)) {
 	action(e.Value)
+	e.Value.EnumerateChildNodes(action)
 	for _, c := range e.Cases {
 		if c.TypeRef != nil {
 			action(c.TypeRef)
+			c.TypeRef.EnumerateChildNodes(action)
 		}
 		if c.Pattern != nil {
 			action(c.Pattern)
+			c.Pattern.EnumerateChildNodes(action)
 		}
 		action(c.Body)
+		c.Body.EnumerateChildNodes(action)
 	}
 }
 

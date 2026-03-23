@@ -20,6 +20,7 @@ func MakeStmtReturn(t token.Token, expr Expr) *StmtReturn {
 func (s *StmtReturn) EnumerateChildNodes(action func(child Node)) {
 	if s.Expr != nil {
 		action(s.Expr)
+		s.Expr.EnumerateChildNodes(action)
 	}
 }
 

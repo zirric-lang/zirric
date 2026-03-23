@@ -1570,6 +1570,9 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 	case *ast.DeclParameter:
 		return nil
 
+	case *ast.DeclForBinding:
+		return nil
+
 	case *ast.DeclModule:
 		return nil
 
@@ -1700,12 +1703,11 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 		}
 	}
 
-	var allStatements []ast.Statement
 	for _, src := range module.Files {
-		allStatements = append(allStatements, src.Statements...)
-	}
-	if len(allStatements) > 0 {
-		if err := c.compileInitFunction(allStatements, module.Symbols, ModuleSymbol(module)); err != nil {
+		if len(src.Statements) == 0 {
+			continue
+		}
+		if err := c.compileInitFunction(src.Statements, src.Symbols, ModuleSymbol(module)); err != nil {
 			c.leaveScope()
 			return err
 		}
@@ -2208,12 +2210,41 @@ func (c *Compiler) resolveUnionMemberTypeIds(decl *ast.DeclUnion) ([]runtime.Typ
 			return nil, fmt.Errorf("unresolved union member %q", member.Member.String())
 		}
 		memberSym = memberSym.Original()
+		// If the symbol is a DeclImportMember, resolve the actual type from the imported module.
+		if importMember, ok := memberSym.Decl.(ast.DeclImportMember); ok {
+			resolved, err := c.resolveTypeSymbolFromImport(importMember)
+			if err != nil {
+				return nil, fmt.Errorf("union member %q: %w", member.Member.String(), err)
+			}
+			memberSym = resolved
+		}
 		if memberSym.ConstantId == nil {
 			return nil, fmt.Errorf("union member %q has no constant id", member.Member.String())
 		}
 		memberTypeIds = append(memberTypeIds, runtime.TypeId(*memberSym.ConstantId))
 	}
 	return memberTypeIds, nil
+}
+
+// resolveTypeSymbolFromImport follows a DeclImportMember to the actual symbol in the imported
+// module and returns it. The module is analyzed if not yet analyzed.
+func (c *Compiler) resolveTypeSymbolFromImport(importMember ast.DeclImportMember) (*ast.Symbol, error) {
+	if c.resolver == nil {
+		return nil, fmt.Errorf("module resolver required")
+	}
+	module, err := c.resolver.ResolveModule(context.Background(), importMember.ModuleName.URI())
+	if err != nil || module == nil {
+		return nil, fmt.Errorf("cannot resolve module %q", importMember.ModuleName)
+	}
+	if err := c.ensureAnalyzed(module, true); err != nil {
+		return nil, err
+	}
+	ref := ast.StaticReference{importMember.Name}
+	sym, err := resolveStaticRefInTable(module.Symbols, ref, true)
+	if err != nil {
+		return nil, fmt.Errorf("cannot resolve %q: %w", importMember.Name.Value, err)
+	}
+	return sym, nil
 }
 
 func (c *Compiler) findImportedModuleByPrefix(module *ast.ContextModule, ref ast.StaticReference) ast.ModuleName {

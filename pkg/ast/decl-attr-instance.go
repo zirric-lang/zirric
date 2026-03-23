@@ -25,7 +25,9 @@ func (n *DeclAttrInstance) AddArgument(arg Expr) {
 
 func (n DeclAttrInstance) EnumerateChildNodes(action func(child Node)) {
 	action(n.Reference)
+	n.Reference.EnumerateChildNodes(action)
 	for _, argument := range n.Arguments {
 		action(argument)
+		argument.EnumerateChildNodes(action)
 	}
 }

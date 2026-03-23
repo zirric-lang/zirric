@@ -76,4 +76,5 @@ func (n DeclConstant) EnumerateChildNodes(action func(child Node)) {
 		n.TypeHint.EnumerateChildNodes(action)
 	}
 	action(n.Value)
+	n.Value.EnumerateChildNodes(action)
 }

@@ -30,5 +30,7 @@ func (s *StmtAssign) TokenLiteral() token.Token { return s.Token }
 
 func (s *StmtAssign) EnumerateChildNodes(cb func(Node)) {
 	cb(s.Target)
+	s.Target.EnumerateChildNodes(cb)
 	cb(s.Value)
+	s.Value.EnumerateChildNodes(cb)
 }

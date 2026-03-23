@@ -28,6 +28,7 @@ func MakeExprArray(elements []Expr, token token.Token) *ExprArray {
 func (e ExprArray) EnumerateChildNodes(enumerate func(Node)) {
 	for _, el := range e.Elements {
 		enumerate(el)
+		el.EnumerateChildNodes(enumerate)
 	}
 }
 

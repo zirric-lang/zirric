@@ -25,8 +25,10 @@ func MakeExprOperatorBinary(operator OperatorBinary, left, right Expr) *ExprOper
 // EnumerateChildNodes implements Expr.
 func (n ExprOperatorBinary) EnumerateChildNodes(action func(child Node)) {
 	action(n.Left)
+	n.Left.EnumerateChildNodes(action)
 	action(n.Operator)
 	action(n.Right)
+	n.Right.EnumerateChildNodes(action)
 }
 
 // TokenLiteral implements Expr.

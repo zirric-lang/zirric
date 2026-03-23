@@ -90,5 +90,6 @@ func (n DeclUnion) EnumerateChildNodes(action func(child Node)) {
 	action(n.Name)
 	for _, node := range n.Members {
 		action(node)
+		node.EnumerateChildNodes(action)
 	}
 }

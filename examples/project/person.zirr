@@ -1,5 +1,8 @@
 mod example
 
+import fmt
+
+@Printable(fn(p) { p.name })
 data Person {
 	name: String
 	age: Int
@@ -11,16 +14,17 @@ union SomePerson {
 	None
 }
 
-@AnyOption()
-const peter: Person = Person("Peter", 42)
+const peter: SomePerson = Person("Peter", 42)
 
 fn greet(person: SomePerson) -> String {
 	var name = switch person {
 	case is Person:
-		person
+		person.name
 	case _:
 		"World"
 	}
 	
-	return "Hello" + name
+	return "Hello " + name
 }
+
+fmt.println(greet(peter))

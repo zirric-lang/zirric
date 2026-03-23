@@ -24,6 +24,7 @@ func MakeExprOperatorUnary(operator OperatorUnary, expr Expr) *ExprOperatorUnary
 func (n ExprOperatorUnary) EnumerateChildNodes(action func(child Node)) {
 	action(n.Operator)
 	action(n.Expr)
+	n.Expr.EnumerateChildNodes(action)
 }
 
 // TokenLiteral implements Expr.

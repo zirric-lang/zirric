@@ -475,10 +475,20 @@ func (p *Parser) parseFunctionDecl(_ StatementPosition, annos ast.AttributeChain
 	}
 
 	fexprTok, _ := p.expect(token.LBRACE)
-	block := p.parseStmtBlock(IN_FUNC)
+
+	stmts := p.parseStmtBlock(IN_FUNC)
+	if len(stmts) == 1 {
+		// If the body is a single expression statement, convert it to a return statement implicitly.
+		exprStmt, ok := stmts[0].(*ast.StmtExpr)
+		if ok {
+			returnStmt := ast.MakeStmtReturn(exprStmt.Token, exprStmt.Expr)
+			stmts[0] = returnStmt
+		}
+	}
+
 	p.expect(token.RBRACE)
 
-	impl.SetImplBlock(block)
+	impl.SetImplBlock(stmts)
 	impl.Token = fexprTok
 
 	p.popSymbolTable()

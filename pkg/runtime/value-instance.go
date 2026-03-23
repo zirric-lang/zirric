@@ -4,6 +4,7 @@ import "fmt"
 
 type DataValue struct {
 	TypeId TypeId
+	Attrs  map[TypeId]int
 	Values []RuntimeValue
 	Fields map[string]int
 }
@@ -15,6 +16,7 @@ func MakeDataValue(dt *DataType, values []RuntimeValue) *DataValue {
 	}
 	return &DataValue{
 		TypeId: TypeId(*dt.Symbol.ConstantId),
+		Attrs:  dt.Attributes,
 		Fields: fields,
 		Values: values,
 	}
@@ -37,4 +39,11 @@ func (dv *DataValue) Lookup(name string) RuntimeValue {
 // TypeConstantId implements RuntimeValue.
 func (dv *DataValue) TypeConstantId() TypeId {
 	return dv.TypeId
+}
+
+// TypeAttributes implements Attributable.
+// Returns the attribute map from the DataType that created this value,
+// allowing attribute lookups (e.g. @Printable) to work without a TypeId table lookup.
+func (dv *DataValue) TypeAttributes() map[TypeId]int {
+	return dv.Attrs
 }
