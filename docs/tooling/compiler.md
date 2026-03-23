@@ -42,52 +42,52 @@ against data types, extern types, union membership, and attribute constraints.
 
 ## Core opcodes
 
-| Mnemonic      | Widths | Description                                     | Comments                          |
-| ------------- | ------ | ----------------------------------------------- | --------------------------------- |
-| const         | 2      | Push constant from constant pool                |                                   |
-| constvoid     | 0      | Push `void`                                     |                                   |
-| consttrue     | 0      | Push boolean `true`                             |                                   |
-| constfalse    | 0      | Push boolean `false`                            |                                   |
-| pop           | 0      | Discard top of stack                            |                                   |
-| array         | 0      | Build array from preceding values               | length on stack                   |
-| dict          | 0      | Build dictionary from preceding key/value pairs | length on stack                   |
-| module        | 2      | Push module value                               |                                   |
-| getindex      | 0      | Index into array or dict                        | key/index and collection on stack |
-| getfield      | 2      | Access field by name                            |                                   |
-| setfield      | 2      | Set field by name                               |                                   |
-| setindex      | 0      | Set value at index/key                          | value, key, collection on stack   |
-| len           | 0      | Push length of collection                       |                                   |
-| arrayappend   | 0      | Append value to array                           |                                   |
-| asserttype    | 2      | Assert top value has given type ID              |                                   |
-| istype        | 2      | Check if value is of type; push Bool            | union membership supported        |
-| jump          | 2      | Unconditional jump to address                   |                                   |
-| jumptrue      | 2      | Jump if top value is truthy                     |                                   |
-| jumpfalse     | 2      | Jump if top value is `false`                    |                                   |
-| negate        | 0      | Numeric negation                                |                                   |
-| invert        | 0      | Boolean NOT                                     |                                   |
-| add           | 0      | Add two numbers                                 |                                   |
-| sub           | 0      | Subtract two numbers                            |                                   |
-| mul           | 0      | Multiply two numbers                            |                                   |
-| div           | 0      | Divide two numbers                              |                                   |
-| mod           | 0      | Remainder of integer division                   |                                   |
-| eq            | 0      | Compare for equality                            |                                   |
-| neq           | 0      | Compare for inequality                          |                                   |
-| gt            | 0      | Compare greater-than                            |                                   |
-| gte           | 0      | Compare greater-than-or-equal                   |                                   |
-| lt            | 0      | Compare less-than                               |                                   |
-| lte           | 0      | Compare less-than-or-equal                      |                                   |
-| makeattribute | 2      | Create attribute instance                       |                                   |
-| call          | 0      | Call function or closure                        | arg count on stack                |
-| return        | 0      | Return from function                            |                                   |
-| getglobal     | 2      | Push global variable                            |                                   |
-| setglobal     | 2      | Set global variable                             |                                   |
-| getlocal      | 1      | Push local variable                             |                                   |
-| setlocal      | 1      | Set local variable                              |                                   |
-| makeclosure   | 2, 1   | Create closure from compiled function           | const ID + free count             |
-| getfree       | 1      | Push captured value (const capture)             |                                   |
-| getfreecell   | 1      | Read captured var via upvalue cell              |                                   |
-| setfreecell   | 1      | Write captured var via upvalue cell             |                                   |
-| getlocalcell  | 1      | Read local var through upvalue cell             |                                   |
-| setlocalcell  | 1      | Write local var through upvalue cell            |                                   |
-| wraplocal     | 1      | Wrap local in upvalue cell                      | emitted for captured vars         |
-| debug         | 0      | Optional breakpoint instruction                 | omitted in release builds         |
+| Mnemonic        | Widths | Description                                     | Comments                          |
+| --------------- | ------ | ----------------------------------------------- | --------------------------------- |
+| `const`         | 2      | Push constant from constant pool                |                                   |
+| `constvoid`     | 0      | Push `void`                                     |                                   |
+| `consttrue`     | 0      | Push boolean `true`                             |                                   |
+| `constfalse`    | 0      | Push boolean `false`                            |                                   |
+| `pop`           | 0      | Discard top of stack                            |                                   |
+| `array`         | 0      | Build array from preceding values               | length on stack                   |
+| `dict`          | 0      | Build dictionary from preceding key/value pairs | length on stack                   |
+| `module`        | 2      | Push module value                               |                                   |
+| `getindex`      | 0      | Index into array or dict                        | key/index and collection on stack |
+| `getfield`      | 2      | Access field by name                            |                                   |
+| `setfield`      | 2      | Set field by name                               |                                   |
+| `setindex`      | 0      | Set value at index/key                          | value, key, collection on stack   |
+| `len`           | 0      | Push length of collection                       |                                   |
+| `arrayappend`   | 0      | Append value to array                           |                                   |
+| `asserttype`    | 2      | Assert top value has given type ID              |                                   |
+| `istype`        | 2      | Check if value is of type; push Bool            | union membership supported        |
+| `jump`          | 2      | Unconditional jump to address                   |                                   |
+| `jumptrue`      | 2      | Jump if top value is truthy                     |                                   |
+| `jumpfalse`     | 2      | Jump if top value is `false`                    |                                   |
+| `negate`        | 0      | Numeric negation                                |                                   |
+| `invert`        | 0      | Boolean NOT                                     |                                   |
+| `add`           | 0      | Add two numbers                                 |                                   |
+| `sub`           | 0      | Subtract two numbers                            |                                   |
+| `mul`           | 0      | Multiply two numbers                            |                                   |
+| `div`           | 0      | Divide two numbers                              |                                   |
+| `mod`           | 0      | Remainder of integer division                   |                                   |
+| `eq`            | 0      | Compare for equality                            |                                   |
+| `neq`           | 0      | Compare for inequality                          |                                   |
+| `gt`            | 0      | Compare greater-than                            |                                   |
+| `gte`           | 0      | Compare greater-than-or-equal                   |                                   |
+| `lt`            | 0      | Compare less-than                               |                                   |
+| `lte`           | 0      | Compare less-than-or-equal                      |                                   |
+| `makeattribute` | 2      | Create attribute instance                       |                                   |
+| `call`          | 0      | Call function or closure                        | arg count on stack                |
+| `return`        | 0      | Return from function                            |                                   |
+| `getglobal`     | 2      | Push global variable                            |                                   |
+| `setglobal`     | 2      | Set global variable                             |                                   |
+| `getlocal`      | 1      | Push local variable                             |                                   |
+| `setlocal`      | 1      | Set local variable                              |                                   |
+| `makeclosure`   | 2, 1   | Create closure from compiled function           | const ID + free count             |
+| `getfree`       | 1      | Push captured value (const capture)             |                                   |
+| `getfreecell`   | 1      | Read captured var via upvalue cell              |                                   |
+| `setfreecell`   | 1      | Write captured var via upvalue cell             |                                   |
+| `getlocalcell`  | 1      | Read local var through upvalue cell             |                                   |
+| `setlocalcell`  | 1      | Write local var through upvalue cell            |                                   |
+| `wraplocal`     | 1      | Wrap local in upvalue cell                      | emitted for captured vars         |
+| `debug`         | 0      | Optional breakpoint instruction                 | omitted in release builds         |

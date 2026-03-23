@@ -36,24 +36,25 @@ components:
       <p class="note">Experimental: features and syntax may change.</p>
     </div>
     <div class="hero-code">
-      <pre><code class="language-zirric">attr Countable {
-    @Returns(Int)
-    length(@Has(Countable) value)
+      <!-- example snippet taken from /overview -->
+      <pre class="hljs"><code class="language-zirric"><span class="hljs-keyword declaration_">attr</span> Countable {
+    <span class="hljs-meta">@Returns</span>(Int)
+    <span class="hljs-title function_">length</span>(<span class="hljs-meta">@Has</span>(Countable) value)
 }
 
-@Countable(fn(v) { return v.length })
-data Bag {
+<span class="hljs-meta">@Countable</span>(<span class="hljs-keyword">fn</span>(v) { <span class="hljs-keyword">return</span> v.length })
+<span class="hljs-keyword declaration_">data</span> Bag {
   items
   length
 }
 
-@Returns(Result)
-fn summarize(@Bag bag) {
-  let length = Countable(bag).length(bag)
-  return if length > 0 {
-    Ok(length)
-  } else {
-    Err("empty")
+<span class="hljs-meta">@Returns</span>(Result)
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">summarize</span>(<span class="hljs-meta">@Bag</span> bag) {
+  let length = <span class="hljs-title function_">Countable</span>(bag).<span class="hljs-title function_">length</span>(bag)
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">if</span> length &gt; <span class="hljs-number">0</span> {
+    <span class="hljs-title function_">Ok</span>(length)
+  } <span class="hljs-keyword">else</span> {
+    <span class="hljs-title function_">Err</span>(<span class="hljs-string">&quot;empty&quot;</span>)
   }
 }
 </code></pre>

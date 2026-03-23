@@ -107,8 +107,12 @@ Assigning to a `const` binding is a compile error. The discard pattern `_ = expr
 Closures are anonymous functions written with `fn(params) { body }`. They share syntax with `fn` declarations but have no name.
 
 ```zirric
-const add = fn(a, b) { a + b }
-const double = fn(x) { x * 2 }
+const add = fn(a, b) {
+    return a + b
+}
+const double = fn(x) {
+    return x * 2
+}
 ```
 
 ### Capture semantics
@@ -126,7 +130,8 @@ fn makeCounter() {
         count = count + 1
         count
     }
-    increment
+
+    return increment
 }
 
 const counter = makeCounter()
@@ -139,7 +144,9 @@ counter()  // 2
 Closures may declare a return type hint with `->`:
 
 ```zirric
-const toStr = fn(x: Int) -> String { "" + x }
+const toStr = fn(x: Bool) -> String {
+    return if x { "true" } else { "false" }
+}
 ```
 
 ## If
@@ -151,7 +158,11 @@ const toStr = fn(x: Int) -> String { "" + x }
 An `if` expression produces a value. Each branch contains exactly one expression. An `else` branch is required.
 
 ```zirric
-const label = if answer == 42 { "yes" } else { "no" }
+const label = if answer == 42 {
+    "yes"
+} else {
+    "no"
+}
 ```
 
 `if` expressions cannot contain `return` statements.
@@ -175,12 +186,19 @@ if answer == 42 {
 Both forms support chaining with `else if`:
 
 ```zirric
-const tier = if score > 90 { "A" } else if score > 80 { "B" } else { "C" }
+const tier = if score > 90 {
+    "A"
+} else if score > 80 {
+    "B"
+} else {
+    "C"
+}
 ```
 
 ## For
 
 `for` loops come in three variants and two forms (expression and statement).
+Statements can be used for side effects, while expressions collect values into an array.
 
 ### Collection iteration
 
@@ -192,7 +210,7 @@ for item <- [1, 2, 3] {
 }
 ```
 
-How iteration works depends on the value's `@Iterable` attribute. See [Type System § Protocol Attributes](/specification/typesystem#protocol-attributes).
+See [Type System § Protocol Attributes](/specification/typesystem#protocol-attributes) for values that can be iterated.
 
 ### Boolean loop
 
@@ -210,7 +228,9 @@ A `for` with no binding and no condition runs indefinitely until a `break` is re
 
 ```zirric
 for {
-    if shouldStop { break }
+    if shouldStop {
+        break
+    }
 }
 ```
 
@@ -219,18 +239,24 @@ for {
 A `for` expression collects the values produced by its body into an `Array`. The body is a single expression. `continue` skips a value (does not add to the result). `break` ends collection early. `return` is not allowed.
 
 ```zirric
-const doubled = for n <- [1, 2, 3] { n * 2 }
+const doubled = for n <- [1, 2, 3] {
+    n * 2
+}
 // doubled is [2, 4, 6]
 
 const odds = for n <- [1, 2, 3, 4] {
-    if n % 2 != 0 { n } else { continue }
+    if n % 2 != 0 {
+        n
+    } else {
+        continue
+    }
 }
 // odds is [1, 3]
 ```
 
 ### For statement
 
-A `for` statement executes for side effects and produces no value. The body may contain multiple statements, including `return`.
+A `for` statement executes for side effects and produces no value. The body may contain multiple statements, including `return` if inside a function.
 
 ## Switch
 
@@ -300,7 +326,9 @@ Exits the enclosing function immediately, optionally with a value. If no value i
 ```zirric
 fn find(items, target) {
     for item <- items {
-        if item == target { return item }
+        if item == target {
+            return item
+        }
     }
     return void
 }

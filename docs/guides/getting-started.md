@@ -63,13 +63,13 @@ attr Countable {
 }
 
 fn count(val: @Countable) -> Int {
-    return val.@Countable.count(val)
+    return Countable(val).count(val)
 }
 
 // in your module
 
 @Countable(fn(tree) {
-    return tree.@Countable.count(tree)
+    return Countable(tree).count(tree)
 })
 union BinaryTree {
     @Countable(fn(tree) {
@@ -129,7 +129,7 @@ Zirric supports basic literals you should be familiar with:
 true               // Bool
 "Hello"            // String
 [1, 2, 3]          // Array
-{ "key": "value" } // Dict
+["key": "value"]   // Dict
 fn(a, b) { return a + b }  // Function literal
 ```
 

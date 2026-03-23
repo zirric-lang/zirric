@@ -34,7 +34,7 @@ module.exports = {
   },
   theme: {
     name: "ruby",
-    appearance: "system",
+    appearance: "dark",
     codeHighlight: true,
     customCss: []
   },
@@ -60,6 +60,7 @@ module.exports = {
       defaultPriority: 0.8
     },
     llms: {},
+    "zirric-highlight": {},
     "custom-header": {
       header: [
         "<script defer src=\"https://uma.knabel.dev/umami\" data-website-id=\"cb95e6bc-e06f-4398-9dad-bf39ccdb99b9\" data-domains=\"zirric.knabel.dev\"></script>",

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@docmd/core": "^0.6.1",
-    "custom-header": "./custom-header.js"
+    "custom-header": "./custom-header.js",
+    "zirric-highlight": "./zirric-highlight.js"
   }
 }

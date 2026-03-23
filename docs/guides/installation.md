@@ -28,7 +28,7 @@ sudo pacman-key --lsign-key 'zirric-lang@noreply.code.knabel.dev'
 
 2. Add the repository to `/etc/pacman.conf`:
 
-```
+```toml
 [zirric-lang.code.knabel.dev]
 SigLevel = Required
 Server = https://code.knabel.dev/api/packages/zirric-lang/arch/extras/$arch

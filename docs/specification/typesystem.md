@@ -221,7 +221,9 @@ Beyond simple type references, type hints support composite forms:
 
 ```zirric
 fn transform(items: [Int], f: fn(Int) -> String) -> [String] {
-    for item <- items { f(item) }
+    return for item <- items {
+        f(item)
+    }
 }
 
 fn process(value: @Countable @Iterable) {
