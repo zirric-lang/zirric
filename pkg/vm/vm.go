@@ -46,12 +46,13 @@ func (f *Frame) Instructions() op.Instructions {
 }
 
 type VM struct {
-	constants []runtime.RuntimeValue
-	globals   []*Global
-	stack     []runtime.RuntimeValue
-	sp        int
-	frames    []*Frame
-	framesIdx int
+	constants    []runtime.RuntimeValue
+	globals      []*Global
+	builtinTypes map[runtime.TypeId]runtime.Attributable
+	stack        []runtime.RuntimeValue
+	sp           int
+	frames       []*Frame
+	framesIdx    int
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
@@ -59,12 +60,25 @@ func New(bytecode *compiler.Bytecode) *VM {
 	frames[0] = newGeneralFrame(bytecode.Instructions, 0, bytecode.MainLocals)
 
 	vm := &VM{
-		stack:     make([]runtime.RuntimeValue, stackSize),
-		sp:        0,
-		constants: bytecode.Constants,
-		globals:   make([]*Global, len(bytecode.Globals)),
-		frames:    frames,
-		framesIdx: 1,
+		stack:        make([]runtime.RuntimeValue, stackSize),
+		sp:           0,
+		constants:    bytecode.Constants,
+		globals:      make([]*Global, len(bytecode.Globals)),
+		builtinTypes: make(map[runtime.TypeId]runtime.Attributable),
+		frames:       frames,
+		framesIdx:    1,
+	}
+
+	// Build a lookup table for builtin types whose TypeConstantId differs
+	// from their position in the constants array (e.g. String at index 31
+	// but with hardcoded typeIdString=8).
+	for i, c := range bytecode.Constants {
+		if a, ok := c.(runtime.Attributable); ok {
+			tid := a.TypeConstantId()
+			if int(tid) != i {
+				vm.builtinTypes[tid] = a
+			}
+		}
 	}
 
 	for i := range bytecode.Globals { // TODO: what is going on here?

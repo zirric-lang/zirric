@@ -266,6 +266,9 @@ func parseResolvedModule(mod registry.ResolvedModule, parent *ast.ContextModule)
 	if err != nil {
 		return module, err
 	}
+	if parent != nil && mod.URI() != preludeModuleURI {
+		injectPreludeImport(module, parent)
+	}
 	if errs := mp.Errors(); len(errs) > 0 {
 		return module, parser.ParseErrors(errs)
 	}

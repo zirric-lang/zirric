@@ -59,11 +59,25 @@ union Number {
   Int
 }
 
+@Printable(fn(s: String) -> String { return s })
 extern type String {
   length: Int
 }
+
+// A sequence of raw bytes.
+extern type Bytes {
+  // The number of bytes in the sequence.
+  length: Int
+}
+
+// Converts a String to Bytes.
+@Deprecated("Bytes will receive a constructor via ZE-015")
+extern fn bytesFromString(str: String) -> Bytes
 
 // Represents the absence of a value.
 extern const void: Void
 // The type of the `void` value.
 extern type Void {}
+
+// Terminates execution with the given message.
+extern fn panic(message: String) -> Void

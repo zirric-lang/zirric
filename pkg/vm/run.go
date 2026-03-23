@@ -128,6 +128,20 @@ func (vm *VM) runTask(taskId TaskId) error {
 		case op.Add, op.Sub, op.Mul, op.Div,
 			op.GreaterThan, op.GreaterThanOrEqual,
 			op.LessThan, op.LessThanOrEqual:
+			if code == op.Add {
+				// Peek at the top two stack values to check for string concatenation
+				rhs := vm.stack[vm.sp-1]
+				lhs := vm.stack[vm.sp-2]
+				if lhsStr, ok := lhs.(runtime.String); ok {
+					if rhsStr, ok := rhs.(runtime.String); ok {
+						vm.sp -= 2
+						if err := vm.push(lhsStr + rhsStr); err != nil {
+							return err
+						}
+						break
+					}
+				}
+			}
 			err := vm.numericBinaryOperation(code)
 			if err != nil {
 				return err
@@ -408,21 +422,36 @@ func (vm *VM) runTask(taskId TaskId) error {
 					return fmt.Errorf("wrong number of arguments: want=%d, got=%d", callee.Arity(), argCount)
 				}
 				val := vm.pop()
-				switch val := val.(type) {
-				case *runtime.CompiledFunction:
-					if val.Attributes == nil {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
+
+				var attrs map[runtime.TypeId]int
+				if a, ok := val.(runtime.Attributable); ok {
+					attrs = a.TypeAttributes()
+				} else {
+					tid := val.TypeConstantId()
+					if a, ok := vm.builtinTypes[tid]; ok {
+						attrs = a.TypeAttributes()
+					} else {
+						typeIdx := int(tid)
+						if typeIdx < 0 || typeIdx >= len(vm.constants) {
+							return fmt.Errorf("attribute lookup failed for type id %d", tid)
 						}
-						break
-					}
-					annoId, ok := val.Attributes[callee.TypeConstantId()]
-					if !ok {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
+						a, ok := vm.constants[typeIdx].(runtime.Attributable)
+						if !ok {
+							return fmt.Errorf("attribute lookup requires attributable type, got=%T", vm.constants[typeIdx])
 						}
-						break
+						attrs = a.TypeAttributes()
 					}
+				}
+
+				if attrs == nil {
+					if err := vm.push(runtime.Void{}); err != nil {
+						return err
+					}
+				} else if annoId, ok := attrs[callee.TypeConstantId()]; !ok {
+					if err := vm.push(runtime.Void{}); err != nil {
+						return err
+					}
+				} else {
 					annoVal, err := vm.globals[annoId].Get(taskId)
 					if err != nil {
 						return err
@@ -430,129 +459,25 @@ func (vm *VM) runTask(taskId TaskId) error {
 					if err := vm.push(annoVal); err != nil {
 						return err
 					}
-				case runtime.ExternFunc:
-					if val.Attributes == nil {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
-						}
-						break
-					}
-					annoId, ok := val.Attributes[callee.TypeConstantId()]
-					if !ok {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
-						}
-						break
-					}
-					annoVal, err := vm.globals[annoId].Get(taskId)
-					if err != nil {
-						return err
-					}
-					if err := vm.push(annoVal); err != nil {
-						return err
-					}
-				case runtime.SimpleType:
-					if val.Attributes == nil {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
-						}
-						break
-					}
-					annoId, ok := val.Attributes[callee.TypeConstantId()]
-					if !ok {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
-						}
-						break
-					}
-					annoVal, err := vm.globals[annoId].Get(taskId)
-					if err != nil {
-						return err
-					}
-					if err := vm.push(annoVal); err != nil {
-						return err
-					}
-				case *runtime.AttributeType:
-					if val.Attributes == nil {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
-						}
-						break
-					}
-					annoId, ok := val.Attributes[callee.TypeConstantId()]
-					if !ok {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
-						}
-						break
-					}
-					annoVal, err := vm.globals[annoId].Get(taskId)
-					if err != nil {
-						return err
-					}
-					if err := vm.push(annoVal); err != nil {
-						return err
-					}
-				case *runtime.AttributeValue:
-					typeId := val.TypeConstantId()
-					typeIdx := int(typeId)
-					if typeIdx < 0 || typeIdx >= len(vm.constants) {
-						return fmt.Errorf("attribute lookup failed for type id %d", typeId)
-					}
-					at, ok := vm.constants[typeIdx].(*runtime.AttributeType)
-					if !ok {
-						return fmt.Errorf("attribute lookup requires attribute type, got=%T", vm.constants[typeIdx])
-					}
-					if at.Attributes == nil {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
-						}
-						break
-					}
-					annoId, ok := at.Attributes[callee.TypeConstantId()]
-					if !ok {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
-						}
-						break
-					}
-					annoVal, err := vm.globals[annoId].Get(taskId)
-					if err != nil {
-						return err
-					}
-					if err := vm.push(annoVal); err != nil {
-						return err
-					}
-				default:
-					typeId := val.TypeConstantId()
-					typeIdx := int(typeId)
-					if typeIdx < 0 || typeIdx >= len(vm.constants) {
-						return fmt.Errorf("attribute lookup failed for type id %d", typeId)
-					}
-					dt, ok := vm.constants[typeIdx].(*runtime.DataType)
-					if !ok {
-						return fmt.Errorf("attribute lookup requires data type, got=%T", vm.constants[typeIdx])
-					}
-					if dt.Attributes == nil {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
-						}
-						break
-					}
-					annoId, ok := dt.Attributes[callee.TypeConstantId()]
-					if !ok {
-						if err := vm.push(runtime.Void{}); err != nil {
-							return err
-						}
-						break
-					}
-					annoVal, err := vm.globals[annoId].Get(taskId)
-					if err != nil {
-						return err
-					}
-					if err := vm.push(annoVal); err != nil {
-						return err
-					}
+				}
+
+			case *runtime.ExternFunc:
+				if argCount != callee.Arity() {
+					return fmt.Errorf("wrong number of arguments: want=%d, got=%d", callee.Arity(), argCount)
+				}
+
+				args := make([]runtime.RuntimeValue, argCount)
+				for i := argCount - 1; i >= 0; i-- {
+					args[i] = vm.pop()
+				}
+
+				result, err := callee.Impl(args)
+				if err != nil {
+					return fmt.Errorf("error calling extern function: %w", err)
+				}
+
+				if err := vm.push(result); err != nil {
+					return err
 				}
 
 			case *runtime.CompiledFunction:

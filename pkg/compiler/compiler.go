@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
@@ -1334,7 +1335,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			}
 		}
 
-		val := c.plugins.Prelude().Bind(c.currentSymbols(), sym)
+		val := c.plugins.Bind(c, c.currentSymbols(), sym)
 		if val == nil {
 			return fmt.Errorf("extern value %q has no runtime binding", sym.Name)
 		}
@@ -1346,21 +1347,31 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		if err != nil {
 			return err
 		}
+
 		paramSymbols := sym.ChildTable
 		if paramSymbols == nil {
 			paramSymbols = c.currentSymbols()
 		}
+
 		paramAttributes, err := c.compileParamAttributes(decl.Parameters, paramSymbols)
 		if err != nil {
 			return err
 		}
-		extern, err := runtime.MakeExternFunc(sym, nil)
-		if err != nil {
-			return err
+
+		fn := c.plugins.Bind(c, c.currentSymbols(), sym)
+		if fn == nil {
+			return fmt.Errorf("extern fn %q has no runtime binding", sym.Name)
 		}
-		extern.Attributes = attributes
-		extern.ParamAttributes = paramAttributes
-		c.constants[*sym.ConstantId] = extern
+
+		extfn, ok := fn.(*runtime.ExternFunc)
+		if !ok {
+			return fmt.Errorf("extern fn %s is %T, not a function", sym.Name, fn)
+		}
+
+		extfn.Attributes = attributes
+		extfn.ParamAttributes = paramAttributes
+
+		c.constants[*sym.ConstantId] = fn
 		return nil
 
 	case *ast.DeclFunc:
@@ -1608,6 +1619,13 @@ func (c *Compiler) compileModuleIfNeeded(moduleName registry.LogicalURI, id int)
 	if err != nil {
 		return err
 	}
+	// The import may use a short name (e.g. "fmt") while the resolved module
+	// has a fully qualified name (e.g. "code.knabel.dev.zirric_lang.zirric.fmt").
+	// Alias the short name's global to the full name so the analyzer reuses the
+	// same global ID for both.
+	if module.Name != moduleName && c.analyzer != nil {
+		c.analyzer.AliasModuleGlobal(moduleName, module.Name)
+	}
 	if err := c.ensureAnalyzed(module, true); err != nil {
 		return err
 	}
@@ -1618,6 +1636,13 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 	if scope := c.globals[id]; scope != nil {
 		return nil
 	}
+	// Prevent double compilation when the same module is imported under
+	// different global IDs (e.g. prelude imported by both fmt and main).
+	if firstId, ok := c.compiledModules[module]; ok {
+		c.globals[id] = c.globals[firstId]
+		return nil
+	}
+	c.compiledModules[module] = id
 	c.enterScope(module.Symbols)
 
 	for _, sym := range module.Symbols.Symbols {
@@ -1640,6 +1665,12 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 		}
 		for _, sym := range src.Symbols.Symbols {
 			if sym.Decl == nil {
+				continue
+			}
+			// Skip FreeScope symbols — these are captures from parent scopes
+			// (e.g. prelude imports resolved during identifier resolution),
+			// not actual file-level declarations.
+			if sym.Scope == ast.FreeScope {
 				continue
 			}
 			switch sym.Decl.(type) {
@@ -2016,8 +2047,14 @@ func (c *Compiler) addGlobalScope(scope *CompilationScope) int {
 	if scope == nil {
 		return -1
 	}
-	id := len(c.globals)
-	c.globals = append(c.globals, scope)
+	var id int
+	if c.analyzer != nil {
+		id = c.analyzer.AllocateGlobalId()
+	} else {
+		id = len(c.globals)
+	}
+	c.ensureGlobalSlot(id)
+	c.globals[id] = scope
 	return id
 }
 
@@ -2422,6 +2459,29 @@ func (c *Compiler) emitBinaryOp(op_ token.TokenType) error {
 		c.emit(op.Mod)
 	default:
 		return fmt.Errorf("unsupported augmented assignment operator %q", op_)
+	}
+	return nil
+}
+
+// ResolveModuleSymbol implements runtime.BindContext.
+// It resolves a symbol by name from a module identified by its suffix.
+func (c *Compiler) ResolveModuleSymbol(moduleName string, symbolName string) *ast.Symbol {
+	if c.resolver == nil {
+		return nil
+	}
+	// Find the module URI that ends with the given suffix.
+	for uri := range c.moduleGlobals {
+		uriStr := string(uri)
+		if uriStr != moduleName && !strings.HasSuffix(uriStr, "."+moduleName) {
+			continue
+		}
+		mod, err := c.resolver.ResolveModule(context.Background(), uri)
+		if err != nil || mod == nil || mod.Symbols == nil {
+			continue
+		}
+		if sym, ok := mod.Symbols.Symbols[symbolName]; ok && sym != nil {
+			return sym.Original()
+		}
 	}
 	return nil
 }

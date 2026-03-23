@@ -1,0 +1,30 @@
+mod prelude
+
+// Marks a type as an error type.
+attr Error {
+	// Returns a debug string representation of the error.
+	debug(err) -> String
+}
+
+// Marks a union as a result type.
+// Types annotated with `@AnyResult` are expected to be unions
+// that follow the Ok/Err pattern.
+attr AnyResult {}
+
+// A result type that can be either Ok or Err.
+// Used for functions that can fail.
+@AnyResult()
+union Result {
+	// The successful result.
+    data Ok {
+    	// The value of the successful result.
+		value
+	}
+
+	// The error result.
+	@Error(fn(err) { return err.error.debug(err.error) })
+    data Err {
+    	// The error of the result. Must be a type annotated with `@Error`.
+		error: @Error
+	}
+}

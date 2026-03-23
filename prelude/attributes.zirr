@@ -24,3 +24,9 @@ attr Numeric {
   // A function to convert the value to a number.
   toNumber(value: @Numeric) -> Number
 }
+
+// Marks a type as printable, providing a way to convert it to a string.
+attr Printable {
+  // A function to convert the value to a string.
+  toString(self: @Printable) -> String
+}

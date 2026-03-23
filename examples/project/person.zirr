@@ -1,10 +1,5 @@
 mod example
 
-import xprelude = future.prelude {
-	None
-	AnyOption
-}
-
 data Person {
 	name: String
 	age: Int

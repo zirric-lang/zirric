@@ -1,0 +1,21 @@
+mod os
+
+import io { Writer, Reader }
+
+// Returns a Writer for the standard output stream.
+extern fn stdout() -> Writer
+
+// Returns a Reader for the standard input stream.
+extern fn stdin() -> Reader
+
+// Returns a Writer for the standard error stream.
+extern fn stderr() -> Writer
+
+// Terminates the process with the given exit code.
+extern fn exit(code: Int) -> Void
+
+// Returns the value of the environment variable with the given key.
+extern fn env(key: String) -> String
+
+// Returns the command line arguments as an array of strings.
+extern fn args() -> [String]

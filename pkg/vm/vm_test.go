@@ -225,31 +225,65 @@ func TestFunctionAttributes(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+// testExternPlugin provides bindings for extern declarations used in tests.
+type testExternPlugin struct{}
+
+func (p *testExternPlugin) Module() string { return "" }
+
+func (p *testExternPlugin) Bind(ctx runtime.BindContext, module *ast.SymbolTable, decl *ast.Symbol) runtime.RuntimeValue {
+	switch decl.Name {
+	case "greet":
+		return runtime.MakeExternFunc(decl, func(args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
+			return runtime.String("hello"), nil
+		})
+	case "Void":
+		return runtime.MakeBuiltinSimpleType(decl, runtime.BuiltinTypeIds["Void"])
+	case "void":
+		return runtime.Void{}
+	}
+	return nil
+}
+
 func TestExternAttributes(t *testing.T) {
-	tests := []vmTestCase{
-		{
-			label: "extern fn attribute lookup",
-			input: `
+	t.Run("extern fn attribute lookup", func(t *testing.T) {
+		module, program := prepareSourceFileParsing(t, `
 			attr Job { jobName }
 			@Job("Singer")
 			extern fn greet(name)
 			Job(greet).jobName
-			`,
-			expected: "Singer",
-		},
-		{
-			label: "extern type attribute lookup",
-			input: `
-			attr Job { jobName }
-			@Job("Actor")
-			extern type Person {}
-			Job(Person).jobName
-			`,
-			expected: "Actor",
-		},
-	}
+		`)
+		resolver := newTestModuleResolver(module)
 
-	runVmTests(t, tests)
+		comp := compiler.New(resolver)
+		comp.RegisterPlugin(&testExternPlugin{})
+		err := comp.Compile(program)
+		if err != nil {
+			t.Fatalf("compiler error: %s", err)
+		}
+
+		machine := vm.New(comp.Bytecode())
+		err = machine.Run()
+		if err != nil {
+			t.Fatalf("vm error: %s", err)
+		}
+
+		testExpectedValue(t, "Singer", machine.LastPoppedStackElem())
+	})
+
+	t.Run("extern type attribute lookup", func(t *testing.T) {
+		runVmTests(t, []vmTestCase{
+			{
+				label: "extern type attribute lookup",
+				input: `
+				attr Job { jobName }
+				@Job("Actor")
+				extern type Person {}
+				Job(Person).jobName
+				`,
+				expected: "Actor",
+			},
+		})
+	})
 }
 
 func TestExternValueImport(t *testing.T) {
@@ -270,6 +304,7 @@ func TestExternValueImport(t *testing.T) {
 	})
 
 	comp := compiler.New(resolver)
+	comp.RegisterPlugin(&testExternPlugin{})
 	if err := comp.Compile(program); err != nil {
 		t.Fatalf("compiler error: %s", err)
 	}
@@ -2118,4 +2153,133 @@ func TestUnionDeclaration(t *testing.T) {
 	}
 
 	runVmTests(t, tests)
+}
+
+func TestStringConcatenation(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			label:    "simple string concat",
+			input:    `"hello" + " world"`,
+			expected: "hello world",
+		},
+		{
+			label:    "empty string concat",
+			input:    `"" + ""`,
+			expected: "",
+		},
+		{
+			label:    "multi concat",
+			input:    `"a" + "b" + "c"`,
+			expected: "abc",
+		},
+		{
+			label:    "concat in function",
+			input:    "fn greet(name) { return \"Hello, \" + name + \"!\" }\ngreet(\"World\")",
+			expected: "Hello, World!",
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestDataAttributeLookup(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			label: "attribute on data type",
+			input: `
+			attr Label { text }
+			@Label("MyStruct")
+			data Foo { x }
+			Label(Foo).text
+			`,
+			expected: "MyStruct",
+		},
+		{
+			label: "attribute on data instance",
+			input: `
+			attr Label { text }
+			@Label("MyStruct")
+			data Foo { x }
+			Label(Foo(42)).text
+			`,
+			expected: "MyStruct",
+		},
+		{
+			label: "missing attribute returns void",
+			input: `
+			attr Label { text }
+			attr Other { value }
+			@Label("MyStruct")
+			data Foo { x }
+			Other(Foo)
+			`,
+			expected: runtime.Void{},
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestCrossModuleExternFnWithDataTypes(t *testing.T) {
+	// The io module defines data types; the "mylib" module imports them
+	// and uses extern fn to return instances constructed in Go.
+	ioModule := prepareContextModuleParsing(t, "test.io", `
+		mod io
+		data Wrapper { value }
+	`)
+
+	mylibModule := prepareContextModuleParsing(t, "test.mylib", `
+		mod mylib
+		import io = test.io { Wrapper }
+		extern fn wrap(x) -> Wrapper
+	`)
+
+	mainModule, program := prepareSourceFileParsing(t, `
+		import mylib = test.mylib
+		mylib.wrap(42).value
+	`)
+
+	modules := map[registry.LogicalURI]*ast.ContextModule{
+		ioModule.Name:    ioModule,
+		mylibModule.Name: mylibModule,
+	}
+	resolver := newTestModuleResolverWithModules(mainModule, modules)
+
+	comp := compiler.New(resolver)
+	comp.RegisterPlugin(&crossModuleTestPlugin{resolver: resolver})
+	if err := comp.Compile(program); err != nil {
+		t.Fatalf("compiler error: %s", err)
+	}
+
+	machine := vm.New(comp.Bytecode())
+	if err := machine.Run(); err != nil {
+		t.Fatalf("vm error: %s", err)
+	}
+
+	testExpectedValue(t, 42, machine.LastPoppedStackElem())
+}
+
+// crossModuleTestPlugin demonstrates cross-module symbol resolution via BindContext.
+type crossModuleTestPlugin struct {
+	resolver testModuleResolver
+}
+
+func (p *crossModuleTestPlugin) Module() string { return "mylib" }
+
+func (p *crossModuleTestPlugin) Bind(ctx runtime.BindContext, module *ast.SymbolTable, decl *ast.Symbol) runtime.RuntimeValue {
+	switch decl.Name {
+	case "wrap":
+		wrapperSym := ctx.ResolveModuleSymbol("io", "Wrapper")
+		return runtime.MakeExternFunc(decl, func(args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
+			if wrapperSym == nil || wrapperSym.ConstantId == nil {
+				return nil, fmt.Errorf("Wrapper type not resolved")
+			}
+			return &runtime.DataValue{
+				TypeId: runtime.TypeId(*wrapperSym.ConstantId),
+				Fields: map[string]int{"value": 0},
+				Values: []runtime.RuntimeValue{args[0]},
+			}, nil
+		})
+	}
+	return nil
 }

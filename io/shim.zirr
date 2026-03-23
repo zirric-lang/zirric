@@ -1,0 +1,13 @@
+mod io
+
+// A readable stream of bytes.
+data Reader {
+	// Reads up to the given number of bytes and returns the result.
+	read(length: Int) -> Bytes
+}
+
+// A writable stream of bytes.
+data Writer {
+	// Writes the given buffer and returns the number of bytes written.
+	write(buf: Bytes) -> Int
+}

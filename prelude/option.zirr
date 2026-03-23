@@ -1,0 +1,20 @@
+mod prelude
+
+// Marks a union as an option type.
+// Types annotated with `@AnyOption` are expected to be unions
+// that follow the Some/None pattern.
+attr AnyOption {}
+
+// An option type that can be either Some or None.
+// Used for values that may or may not be present.
+@AnyOption()
+union Option {
+	// The present value.
+	data Some {
+		// The value that is present.
+		value
+	}
+
+	// The absent value.
+	data None
+}

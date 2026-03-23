@@ -1,7 +1,10 @@
 package orchestra
 
 import (
+	fmtfs "code.knabel.dev/zirric-lang/zirric/fmt"
 	futurefs "code.knabel.dev/zirric-lang/zirric/future"
+	iofs "code.knabel.dev/zirric-lang/zirric/io"
+	osfs "code.knabel.dev/zirric-lang/zirric/os"
 	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/pkgmanager"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/embedreg"
@@ -35,6 +38,9 @@ func DefaultStdlibProvider() (*embedreg.EmbedRegistry, error) {
 		version.Parse("latest"),
 		embedreg.FSConfig{Name: "prelude", FS: preludefs.FS},
 		embedreg.FSConfig{Name: "future", FS: futurefs.FS},
+		embedreg.FSConfig{Name: "io", FS: iofs.FS},
+		embedreg.FSConfig{Name: "fmt", FS: fmtfs.FS},
+		embedreg.FSConfig{Name: "os", FS: osfs.FS},
 	)
 }
 

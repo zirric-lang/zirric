@@ -6,11 +6,12 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 )
 
-var _ CallableRuntimeValue = ExternFunc{}
+var _ CallableRuntimeValue = &ExternFunc{}
 
-type ExternFuncImpl func(args []RuntimeValue) RuntimeValue
+type ExternFuncImpl func(args []RuntimeValue) (RuntimeValue, error)
 
 type ExternFunc struct {
+	name            string
 	symbol          *ast.Symbol
 	arity           int
 	Impl            ExternFuncImpl
@@ -18,16 +19,27 @@ type ExternFunc struct {
 	ParamAttributes []map[TypeId]int
 }
 
-func MakeExternFunc(symbol *ast.Symbol, impl ExternFuncImpl) (ExternFunc, error) {
+func MakeExternFunc(symbol *ast.Symbol, impl ExternFuncImpl) *ExternFunc {
 	decl, ok := symbol.Decl.(*ast.DeclExternFunc)
 	if !ok {
-		return ExternFunc{}, fmt.Errorf("declaration is not a DeclExternFunc, got %T", symbol.Decl)
+		panic(fmt.Errorf("declaration is not a DeclExternFunc, got %T", symbol.Decl))
 	}
-	return ExternFunc{
+	return &ExternFunc{
+		name:   symbol.Name,
 		symbol: symbol,
 		arity:  len(decl.Parameters),
 		Impl:   impl,
-	}, nil
+	}
+}
+
+// MakeNativeFunc creates a callable ExternFunc without an ast.Symbol.
+// Use this for anonymous native closures (e.g. Writer.write implementations).
+func MakeNativeFunc(name string, arity int, impl ExternFuncImpl) *ExternFunc {
+	return &ExternFunc{
+		name:  name,
+		arity: arity,
+		Impl:  impl,
+	}
 }
 
 // Arity implements CallableRuntimeValue.
@@ -37,7 +49,7 @@ func (ef ExternFunc) Arity() int {
 
 // Inspect implements CallableRuntimeValue.
 func (ef ExternFunc) Inspect() string {
-	return fmt.Sprintf("extern %s(#%d)", ef.symbol.Decl.DeclName(), ef.arity)
+	return fmt.Sprintf("extern %s(#%d)", ef.name, ef.arity)
 }
 
 // Lookup implements CallableRuntimeValue.

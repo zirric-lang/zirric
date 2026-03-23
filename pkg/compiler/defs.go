@@ -44,13 +44,14 @@ type Bytecode struct {
 }
 
 type Compiler struct {
-	constants     []runtime.RuntimeValue
-	globals       []*CompilationScope
-	moduleGlobals map[registry.LogicalURI]int
-	plugins       *runtime.ExternPluginRegistry
-	resolver      resolver.ModuleResolver
-	analyzer      *analyzer.Analyzer
-	analyzed      map[*ast.ContextModule]struct{}
+	constants       []runtime.RuntimeValue
+	globals         []*CompilationScope
+	moduleGlobals   map[registry.LogicalURI]int
+	compiledModules map[*ast.ContextModule]int
+	plugins         *runtime.ExternPluginRegistry
+	resolver        resolver.ModuleResolver
+	analyzer        *analyzer.Analyzer
+	analyzed        map[*ast.ContextModule]struct{}
 
 	scopes   []*CompilationScope
 	scopeIdx int
@@ -70,20 +71,25 @@ func NewWithAnalyzer(moduleResolver resolver.ModuleResolver, analysis *analyzer.
 		symbols:      symbols,
 	}
 	return &Compiler{
-		constants:     []runtime.RuntimeValue{},
-		globals:       []*CompilationScope{},
-		moduleGlobals: map[registry.LogicalURI]int{},
-		plugins:       &runtime.ExternPluginRegistry{},
-		resolver:      moduleResolver,
-		analyzer:      analysis,
-		analyzed:      map[*ast.ContextModule]struct{}{},
-		scopes:        []*CompilationScope{mainScope},
-		scopeIdx:      0,
+		constants:       []runtime.RuntimeValue{},
+		globals:         []*CompilationScope{},
+		moduleGlobals:   map[registry.LogicalURI]int{},
+		compiledModules: map[*ast.ContextModule]int{},
+		plugins:         runtime.NewExternPluginRegistry(&runtime.Prelude{}, &runtime.OSPlugin{}),
+		resolver:        moduleResolver,
+		analyzer:        analysis,
+		analyzed:        map[*ast.ContextModule]struct{}{},
+		scopes:          []*CompilationScope{mainScope},
+		scopeIdx:        0,
 	}
 }
 
 func (c *Compiler) currentInstructions() op.Instructions {
 	return c.scopes[c.scopeIdx].Instructions
+}
+
+func (c *Compiler) RegisterPlugin(plugin runtime.ExternPlugin) {
+	c.plugins.Register(plugin)
 }
 
 func (c *Compiler) currentSymbols() *ast.SymbolTable {

@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"fmt"
+
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 )
 
@@ -19,6 +21,7 @@ const (
 	typeIdInt
 	typeIdModule
 	typeIdString
+	typeIdBytes
 	typeIdVoid
 )
 
@@ -35,6 +38,7 @@ var BuiltinTypeIds = map[string]TypeId{
 	"Int":    typeIdInt,
 	"Module": typeIdModule,
 	"String": typeIdString,
+	"Bytes":  typeIdBytes,
 	"Void":   typeIdVoid,
 }
 
@@ -42,8 +46,10 @@ var _ ExternPlugin = &Prelude{}
 
 type Prelude struct{}
 
+func (*Prelude) Module() string { return "prelude" }
+
 // Bind implements runtime.ExternPlugin.
-func (*Prelude) Bind(module *ast.SymbolTable, decl *ast.Symbol) RuntimeValue {
+func (*Prelude) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol) RuntimeValue {
 	switch decl.Name {
 	case "Array":
 		return MakeBuiltinSimpleType(decl, typeIdArray)
@@ -63,12 +69,43 @@ func (*Prelude) Bind(module *ast.SymbolTable, decl *ast.Symbol) RuntimeValue {
 		return MakeBuiltinSimpleType(decl, typeIdModule)
 	case "String":
 		return MakeBuiltinSimpleType(decl, typeIdString)
+	case "Bytes":
+		return MakeBuiltinSimpleType(decl, typeIdBytes)
 	case "Void":
 		return MakeBuiltinSimpleType(decl, typeIdVoid)
 	case "Any":
 		return MakeAnyType(decl)
 	case "void":
 		return Void{}
+
+	case "bytesFromString": // TODO: remove this once there are extern constructors
+		return MakeExternFunc(decl, func(args []RuntimeValue) (RuntimeValue, error) {
+			if len(args) != 1 {
+				panic("expected exactly 1 argument")
+			}
+
+			switch v := args[0].(type) {
+			case String:
+				return Bytes(v), nil
+			case Bytes:
+				return v, nil
+			case Char:
+				return Bytes([]byte(string(v))), nil
+			default:
+				return nil, fmt.Errorf("expected argument of type String, got %T", args[0])
+			}
+		})
+	case "panic":
+		return MakeExternFunc(decl, func(args []RuntimeValue) (RuntimeValue, error) {
+			if len(args) != 1 {
+				return nil, fmt.Errorf("panic expects exactly 1 argument, got %d", len(args))
+			}
+			msg, ok := args[0].(String)
+			if !ok {
+				return nil, fmt.Errorf("panic expects a String argument, got %T", args[0])
+			}
+			return nil, fmt.Errorf("panic: %s", string(msg))
+		})
 	}
 	return nil
 }
@@ -80,4 +117,5 @@ func (p *Prelude) Dict(val map[RuntimeValue]RuntimeValue) Dict { return Dict(val
 func (p *Prelude) Float(val float64) Float                     { return Float(val) }
 func (p *Prelude) Int(val int64) Int                           { return Int(val) }
 func (p *Prelude) String(val string) String                    { return String(val) }
+func (p *Prelude) Bytes(val []byte) Bytes                      { return Bytes(val) }
 func (p *Prelude) Void() Void                                  { return Void{} }

@@ -230,12 +230,12 @@ module.exports = {
           path: "/proposals/ZE-007-attribute-binding"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-08 Errors",
           path: "/proposals/ZE-008-error-handling"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-09 Option",
           path: "/proposals/ZE-009-option-values"
         },
@@ -280,7 +280,7 @@ module.exports = {
           path: "/proposals/ZE-017-type-hints"
         },
         {
-          icon: "circle",
+          icon: "circle-check",
           title: "ZE-18 I/O, Fmt, OS",
           path: "/proposals/ZE-018-io-fmt-os"
         },

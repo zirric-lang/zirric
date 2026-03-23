@@ -68,6 +68,16 @@ func (a *Analyzer) AllocateConstantId() int {
 	return id
 }
 
+// AllocateGlobalId returns the next available global ID and advances the counter.
+// Both the analyzer (for module-level symbols) and the compiler (for attribute
+// instances and other dynamic globals) must allocate through this single counter
+// to avoid collisions.
+func (a *Analyzer) AllocateGlobalId() int {
+	id := a.nextGlobal
+	a.nextGlobal++
+	return id
+}
+
 func (a *Analyzer) Analyze(module *ast.ContextModule, reserveModule bool) ([]AnalysisError, *ast.ContextModule) {
 	if module == nil {
 		return []AnalysisError{{
@@ -193,6 +203,17 @@ func (a *Analyzer) reserveModuleGlobal(name registry.LogicalURI) int {
 	a.nextGlobal++
 	a.moduleGlobals[name] = id
 	return id
+}
+
+// AliasModuleGlobal registers canonical as an alias for an existing module
+// global allocated under alias. If alias has a reserved global but canonical
+// does not, the canonical URI will share the same global ID.
+func (a *Analyzer) AliasModuleGlobal(alias, canonical registry.LogicalURI) {
+	if id, ok := a.moduleGlobals[alias]; ok {
+		if _, exists := a.moduleGlobals[canonical]; !exists {
+			a.moduleGlobals[canonical] = id
+		}
+	}
 }
 
 // AnalyzeSourceFile incrementally analyzes a single source file against an existing module.

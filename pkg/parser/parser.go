@@ -427,6 +427,11 @@ func (p *Parser) parseExternFuncDecl(externTok token.Token, annos ast.AttributeC
 	}
 	p.expect(token.RPAREN)
 
+	if p.curIs(token.RIGHT_ARROW) {
+		p.expect(token.RIGHT_ARROW)
+		extern.ReturnType = p.parseTypeHintExpr()
+	}
+
 	p.popSymbolTable()
 	return extern
 }

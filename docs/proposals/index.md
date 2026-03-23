@@ -24,8 +24,8 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 | [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)            | Mixin Type Declarations             | Draft       | Outdated |
 | [ZE-006](/proposals/ZE-006-Attribute-Based-Parsing-System)     | Attribute-Based Parsing System      | Draft       | Outdated |
 | [ZE-007](/proposals/ZE-007-attribute-binding)                  | Attribute Binding                   | Draft       | Outdated |
-| [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                      | In Progress |          |
-| [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                       | In Progress |          |
+| [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                      | Implemented |          |
+| [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                       | Implemented |          |
 | [ZE-010](/proposals/ZE-010-iterable)                           | Iterable                            | In Progress | Outdated |
 | [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                          | Implemented |          |
 | [ZE-012](/proposals/ZE-012-type-and-returns-sugar)             | Type and Returns Sugar              | Rejected    |          |
@@ -34,7 +34,7 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 | [ZE-015](/proposals/ZE-015-extern-type-constructors)           | Extern Type Constructors            | Draft       | Outdated |
 | [ZE-016](/proposals/ZE-016-closure-syntax)                     | Unified Function and Closure Syntax | Implemented |          |
 | [ZE-017](/proposals/ZE-017-type-hints)                         | Type Hints and Type Matching        | Implemented |          |
-| [ZE-018](/proposals/ZE-018-io-fmt-os)                          | I/O, Formatting, and OS             | Draft       |          |
+| [ZE-018](/proposals/ZE-018-io-fmt-os)                          | I/O, Formatting, and OS             | Implemented |          |
 | [ZE-019](/proposals/ZE-019-result-and-option-sugar)            | Result and Option Sugar             | Draft       | Outdated |
 
 ## Submitting Proposals

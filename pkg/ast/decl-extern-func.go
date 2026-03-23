@@ -14,6 +14,7 @@ type DeclExternFunc struct {
 	Name       Identifier
 	Parameters []DeclParameter
 	Attributes AttributeChain
+	ReturnType TypeExpr
 
 	Docs *Docs
 }
@@ -41,7 +42,11 @@ func (e DeclExternFunc) ExportScope() ExportScope {
 }
 
 func (e DeclExternFunc) DeclOverview() string {
-	return fmt.Sprintf("extern fn %s(%s)", e.Name, formatParamList(e.Parameters))
+	result := fmt.Sprintf("extern fn %s(%s)", e.Name, formatParamList(e.Parameters))
+	if e.ReturnType != nil {
+		result += " -> " + e.ReturnType.TypeExpression()
+	}
+	return result
 }
 
 func MakeDeclExternFunc(tok token.Token, name Identifier) *DeclExternFunc {
@@ -68,5 +73,9 @@ func (n DeclExternFunc) EnumerateChildNodes(action func(child Node)) {
 	for _, node := range n.Parameters {
 		action(node)
 		node.EnumerateChildNodes(action)
+	}
+	if n.ReturnType != nil {
+		action(n.ReturnType)
+		n.ReturnType.EnumerateChildNodes(action)
 	}
 }

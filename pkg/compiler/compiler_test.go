@@ -1494,6 +1494,25 @@ func TestFunctionAttributes(t *testing.T) {
 	}
 }
 
+// testExternPlugin provides bindings for extern declarations used in tests.
+type testExternPlugin struct{}
+
+func (p *testExternPlugin) Module() string { return "" }
+
+func (p *testExternPlugin) Bind(ctx runtime.BindContext, module *ast.SymbolTable, decl *ast.Symbol) runtime.RuntimeValue {
+	switch decl.Name {
+	case "greet":
+		return runtime.MakeExternFunc(decl, func(args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
+			return runtime.String("hello"), nil
+		})
+	case "Void":
+		return runtime.MakeBuiltinSimpleType(decl, runtime.BuiltinTypeIds["Void"])
+	case "void":
+		return runtime.Void{}
+	}
+	return nil
+}
+
 func TestExternAttributes(t *testing.T) {
 	module := prepareContextModuleParsing(t, "module.test", `
 		attr Job { jobName }
@@ -1505,18 +1524,19 @@ func TestExternAttributes(t *testing.T) {
 	resolver := newTestModuleResolver(module, nil)
 
 	comp := compiler.New(resolver)
+	comp.RegisterPlugin(&testExternPlugin{})
 	if err := comp.Compile(module); err != nil {
 		t.Fatalf("compile: %s", err)
 	}
 
 	bytecode := comp.Bytecode()
 
-	var externFunc runtime.ExternFunc
+	var externFunc *runtime.ExternFunc
 	var externType runtime.SimpleType
 	var annoType *runtime.AttributeType
 	for _, constant := range bytecode.Constants {
 		switch constant := constant.(type) {
-		case runtime.ExternFunc:
+		case *runtime.ExternFunc:
 			if constant.Inspect() == "extern greet(#1)" {
 				externFunc = constant
 			}
@@ -1536,6 +1556,10 @@ func TestExternAttributes(t *testing.T) {
 		return
 	}
 	typeId := runtime.TypeId(*annoType.Symbol.ConstantId)
+	if externFunc == nil {
+		t.Fatal("missing extern fn constant for greet")
+		return
+	}
 	if externFunc.Attributes == nil {
 		t.Fatal("missing extern fn attributes map")
 	}
@@ -1587,6 +1611,7 @@ func TestExternValueCompilation(t *testing.T) {
 
 	// Verify the module can be fully compiled (including extern const).
 	comp := compiler.NewWithAnalyzer(resolver, analysis)
+	comp.RegisterPlugin(&testExternPlugin{})
 	if err := comp.Compile(module); err != nil {
 		t.Fatalf("compile: %s", err)
 	}
@@ -2241,4 +2266,67 @@ func (r testModuleResolver) ResolveModule(ctx context.Context, name registry.Log
 		return nil, fmt.Errorf("module %q not found", name)
 	}
 	return module, nil
+}
+
+func TestResolveModuleSymbol(t *testing.T) {
+	// Set up a "types" module with a data type "Wrapper".
+	typesModule := prepareContextModuleParsing(t, "test.types", `
+		mod types
+		data Wrapper { value }
+	`)
+	// Set up a "mylib" module that imports Wrapper from types and has an extern fn.
+	mylibModule := prepareContextModuleParsing(t, "test.mylib", `
+		mod mylib
+		import types = test.types { Wrapper }
+		extern fn wrap(x) -> Wrapper
+	`)
+	// Main module imports mylib.
+	mainModule, program := prepareSourceFileParsing(t, `
+		import mylib = test.mylib
+		mylib.wrap(42)
+	`)
+
+	modules := map[registry.LogicalURI]*ast.ContextModule{
+		typesModule.Name: typesModule,
+		mylibModule.Name: mylibModule,
+	}
+	resolver := newTestModuleResolver(mainModule, modules)
+
+	// Create a plugin that uses ResolveModuleSymbol to look up Wrapper.
+	testPlugin := &resolverTestPlugin{}
+
+	comp := compiler.New(resolver)
+	comp.RegisterPlugin(testPlugin)
+	if err := comp.Compile(program); err != nil {
+		t.Fatalf("compiler error: %s", err)
+	}
+
+	// The plugin should have resolved the Wrapper symbol during Bind.
+	if testPlugin.resolvedWrapper == nil {
+		t.Fatal("ResolveModuleSymbol did not find Wrapper")
+	}
+	if testPlugin.resolvedWrapper.ConstantId == nil {
+		t.Fatal("resolved Wrapper symbol has nil ConstantId")
+	}
+	if testPlugin.resolvedWrapper.Name != "Wrapper" {
+		t.Errorf("resolved symbol name: got %q, want %q", testPlugin.resolvedWrapper.Name, "Wrapper")
+	}
+}
+
+// resolverTestPlugin captures the result of ResolveModuleSymbol for assertions.
+type resolverTestPlugin struct {
+	resolvedWrapper *ast.Symbol
+}
+
+func (p *resolverTestPlugin) Module() string { return "mylib" }
+
+func (p *resolverTestPlugin) Bind(ctx runtime.BindContext, module *ast.SymbolTable, decl *ast.Symbol) runtime.RuntimeValue {
+	switch decl.Name {
+	case "wrap":
+		p.resolvedWrapper = ctx.ResolveModuleSymbol("types", "Wrapper")
+		return runtime.MakeExternFunc(decl, func(args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
+			return runtime.Void{}, nil
+		})
+	}
+	return nil
 }
