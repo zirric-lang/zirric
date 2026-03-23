@@ -31,7 +31,7 @@ data Bag {
 }
 
 fn summarize(bag: Bag) -> Result {
-    let length = Countable(bag).length(bag)
+    const length = Countable(bag).length(bag)
 
     return if length > 0 {
         Ok(length)

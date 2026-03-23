@@ -43,6 +43,12 @@ module.exports = function (hljs) {
     ],
   };
 
+  // `->` must come before `-` and `>` are matched individually as operators
+  const ARROW = {
+    scope: "punctuation",
+    begin: /->/,
+  };
+
   // @Attribute or @namespace.Attribute
   const ATTRIBUTE = {
     scope: "meta",
@@ -71,6 +77,7 @@ module.exports = function (hljs) {
       BLOCK_COMMENT,
       STRING,
       NUMBER,
+      ARROW,
       ATTRIBUTE,
       TYPE_HINT,
       OPERATOR,

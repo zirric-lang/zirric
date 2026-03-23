@@ -10,34 +10,34 @@ iterable helpers, option/result types, and attribute binding.
 
 ## Values
 
-### let ZE_007
+### const ZE_007
 
 ```zirric
-let ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-attribute-binding"
+const ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-attribute-binding"
 ```
 
 ZE-007: Attribute Binding.
 
-### let ZE_008
+### const ZE_008
 
 ```zirric
-let ZE_008 = "https://zirric.knabel.dev/proposals/ZE-008-error-handling"
+const ZE_008 = "https://zirric.knabel.dev/proposals/ZE-008-error-handling"
 ```
 
 ZE-008: Error Handling.
 
-### let ZE_009
+### const ZE_009
 
 ```zirric
-let ZE_009 = "https://zirric.knabel.dev/proposals/ZE-009-option-values"
+const ZE_009 = "https://zirric.knabel.dev/proposals/ZE-009-option-values"
 ```
 
 ZE-009: Option Values.
 
-### let ZE_010
+### const ZE_010
 
 ```zirric
-let ZE_010 = "https://zirric.knabel.dev/proposals/ZE-010-iterable"
+const ZE_010 = "https://zirric.knabel.dev/proposals/ZE-010-iterable"
 ```
 
 ZE-010: Iterable.
