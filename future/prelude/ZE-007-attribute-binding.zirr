@@ -1,6 +1,6 @@
 mod xprelude
 
-import code.knabel.dev.zirric_lang.zirric.future {
+import future {
 	Proposal
 }
 

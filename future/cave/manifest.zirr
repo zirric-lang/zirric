@@ -1,6 +1,6 @@
 mod cave
 
-import code.knabel.dev.zirric_lang.zirric.future {
+import future {
   Proposal
 }
 

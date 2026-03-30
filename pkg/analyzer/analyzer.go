@@ -205,17 +205,6 @@ func (a *Analyzer) reserveModuleGlobal(name registry.LogicalURI) int {
 	return id
 }
 
-// AliasModuleGlobal registers canonical as an alias for an existing module
-// global allocated under alias. If alias has a reserved global but canonical
-// does not, the canonical URI will share the same global ID.
-func (a *Analyzer) AliasModuleGlobal(alias, canonical registry.LogicalURI) {
-	if id, ok := a.moduleGlobals[alias]; ok {
-		if _, exists := a.moduleGlobals[canonical]; !exists {
-			a.moduleGlobals[canonical] = id
-		}
-	}
-}
-
 // AnalyzeSourceFile incrementally analyzes a single source file against an existing module.
 // The module must already be analyzed. New declarations from the file are merged into
 // module.Symbols, and new IDs are assigned continuing from the analyzer's current counters.

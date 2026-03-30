@@ -1,5 +1,5 @@
-import code.knabel.dev.zirric_lang.zirric.future.cave
-import code.knabel.dev.zirric_lang.zirric.future.tasks
+import future.cave
+import future.tasks
 
 @cave.Dependencies()
 data Dependencies {

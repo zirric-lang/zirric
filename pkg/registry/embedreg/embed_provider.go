@@ -134,7 +134,7 @@ func (r *EmbedRegistry) discoverModules() ([]registry.ResolvedModule, error) {
 			if dir == "." {
 				dir = ""
 			}
-			moduleURI := registry.JoinModuleURI(registry.LogicalURI(r.pkg.Name), filepath.Join(moduleBase, dir))
+			moduleURI := registry.JoinModuleURI("", filepath.Join(moduleBase, dir))
 			mod := modules[moduleURI]
 			if mod == nil {
 				mod = &embedModule{uri: moduleURI}
@@ -142,7 +142,7 @@ func (r *EmbedRegistry) discoverModules() ([]registry.ResolvedModule, error) {
 			}
 
 			sourcePath := filepath.ToSlash(filepath.Join(cfg.Name, path))
-			sourceURI := registry.LogicalURI(r.pkg.Name).Join(sourcePath)
+			sourceURI := registry.LogicalURI(sourcePath)
 			mod.sources = append(mod.sources, &embedSource{
 				fs:   cfg.FS,
 				path: path,

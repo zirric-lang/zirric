@@ -50,9 +50,6 @@ func (a *Analyzer) validateImport(module *ast.ContextModule, decl *ast.DeclImpor
 			Details: fmt.Sprintf("module %q could not be resolved", decl.ModuleName),
 		}}
 	}
-	// The import may use a short name (e.g. "fmt") while the resolved module
-	// has a fully qualified name. Alias them so they share the same global ID.
-	a.AliasModuleGlobal(decl.ModuleName.URI(), resolved.Name)
 	_, _ = a.Analyze(resolved, true)
 
 	if len(decl.Members) == 0 {
@@ -117,7 +114,6 @@ func (a *Analyzer) validateStaticRef(module *ast.ContextModule, ref ast.StaticRe
 					Details: fmt.Sprintf("reference %q could not be resolved", ref.String()),
 				}
 			}
-			a.AliasModuleGlobal(decl.ModuleName.URI(), resolved.Name)
 			_, _ = a.Analyze(resolved, true)
 			return resolveStaticRefInTable(resolved.Symbols, ref[1:], ref, true)
 		}
@@ -146,7 +142,6 @@ func (a *Analyzer) validateStaticRef(module *ast.ContextModule, ref ast.StaticRe
 				Details: fmt.Sprintf("reference %q could not be resolved", ref.String()),
 			}
 		}
-		a.AliasModuleGlobal(imported.URI(), resolved.Name)
 		_, _ = a.Analyze(resolved, true)
 		rest := ref[len(imported):]
 		if len(rest) == 0 {

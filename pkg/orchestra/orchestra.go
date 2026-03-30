@@ -23,7 +23,7 @@ import (
 	"github.com/go-git/go-billy/v5"
 )
 
-const preludeModuleURI registry.LogicalURI = defaultStandardLibraryName + ".prelude"
+const preludeModuleURI registry.LogicalURI = "prelude"
 
 type Config struct {
 	ProjectFS   billy.Filesystem

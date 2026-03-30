@@ -279,11 +279,11 @@ The declared name becomes an identifier bound to the module object. This is usef
 
 ```zirric
 import prelude
-import code.knabel.dev.zirric_lang.zirric.future.tasks { Call }
-import xprelude = code.knabel.dev.zirric_lang.zirric.future.prelude
+import future.tasks { Call }
+import xprelude = future.prelude
 ```
 
-**Module path.** The import path is a dot-separated sequence of identifiers. Standard library modules like `prelude` can use a short form that resolves to the full path.
+**Module path.** The import path is a dot-separated sequence of identifiers.
 
 **Alias.** The last segment of the path is the default alias. An explicit alias can be provided with `alias = path`.
 

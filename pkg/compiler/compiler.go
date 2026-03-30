@@ -1622,13 +1622,6 @@ func (c *Compiler) compileModuleIfNeeded(moduleName registry.LogicalURI, id int)
 	if err != nil {
 		return err
 	}
-	// The import may use a short name (e.g. "fmt") while the resolved module
-	// has a fully qualified name (e.g. "code.knabel.dev.zirric_lang.zirric.fmt").
-	// Alias the short name's global to the full name so the analyzer reuses the
-	// same global ID for both.
-	if module.Name != moduleName && c.analyzer != nil {
-		c.analyzer.AliasModuleGlobal(moduleName, module.Name)
-	}
 	if err := c.ensureAnalyzed(module, true); err != nil {
 		return err
 	}

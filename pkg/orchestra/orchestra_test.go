@@ -242,7 +242,7 @@ func writeFile(t *testing.T, fs billy.Filesystem, path string, contents string) 
 // without "unknown declaration *ast.DeclExternValue" errors.
 func TestRunFileImportPrelude(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "main.zirr", "mod main\nimport prelude = code.knabel.dev.zirric_lang.zirric.prelude\n")
+	writeFile(t, projectFS, "main.zirr", "mod main\nimport prelude = prelude\n")
 
 	orch := newTestOrchestra(t, projectFS, "main")
 	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {

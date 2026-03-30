@@ -33,11 +33,11 @@ func TestDefaultStdlibProvider(t *testing.T) {
 	}
 
 	moduleURIs := collectModuleURIs(mods)
-	expectModule(t, moduleURIs, "code.knabel.dev.zirric_lang.zirric.prelude")
-	expectModule(t, moduleURIs, "code.knabel.dev.zirric_lang.zirric.future")
-	expectModule(t, moduleURIs, "code.knabel.dev.zirric_lang.zirric.future.cave")
-	expectModule(t, moduleURIs, "code.knabel.dev.zirric_lang.zirric.future.reflect")
-	expectModule(t, moduleURIs, "code.knabel.dev.zirric_lang.zirric.future.tasks")
+	expectModule(t, moduleURIs, "prelude")
+	expectModule(t, moduleURIs, "future")
+	expectModule(t, moduleURIs, "future.cave")
+	expectModule(t, moduleURIs, "future.reflect")
+	expectModule(t, moduleURIs, "future.tasks")
 }
 
 func collectModuleURIs(mods []registry.ResolvedModule) map[string]struct{} {
