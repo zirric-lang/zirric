@@ -8,7 +8,7 @@
     "preview": "npx serve site"
   },
   "dependencies": {
-    "@docmd/core": "^0.6.1",
+    "@docmd/core": "^0.8.0",
     "custom-header": "./custom-header.js",
     "zirric-highlight": "./zirric-highlight.js"
   }
