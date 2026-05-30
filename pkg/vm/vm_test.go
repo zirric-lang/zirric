@@ -119,7 +119,7 @@ func TestData(t *testing.T) {
 			data Example
 			Example()
 			`,
-			expected: data{typeId: 0, values: []any{}},
+			expected: data{typeId: runtime.TypeId(runtime.NumBuiltinTypeIds), values: []any{}},
 		},
 		{
 			label: "data with values",
@@ -130,7 +130,7 @@ func TestData(t *testing.T) {
 			}
 			Person("Max", 42)
 			`,
-			expected: data{typeId: 0, values: []any{
+			expected: data{typeId: runtime.TypeId(runtime.NumBuiltinTypeIds), values: []any{
 				"Max", 42,
 			}},
 		},
@@ -1932,14 +1932,18 @@ func TestIsTypeOpcode(t *testing.T) {
 
 	t.Run("IsType with exact DataType match", func(t *testing.T) {
 		// Constants:
-		//   0 = DataType "A" (ConstantId=0)
-		//   1 = DataValue with TypeId=0
-		symA := makeSymbol("A", 0, 100)
+		//   0 = DataType "A" (slot 0 in this manual bytecode; TypeId=11 via TypeSymbol)
+		//   1 = DataValue with TypeId=11 (matching the DataType's TypeConstantId)
+		// typeConstId=11 simulates a user-defined type that received an ID above the
+		// builtin range (0-10), as assignModuleIDs now guarantees. The slot index (0)
+		// intentionally differs from the TypeId (11) to verify that IsType uses
+		// tv.TypeConstantId() rather than the raw slot index.
+		symA := makeSymbol("A", 0, 11)
 		dtA := &runtime.DataType{
 			Symbol:       symA,
 			FieldSymbols: nil,
 		}
-		dvA := &runtime.DataValue{TypeId: 0, Values: nil, Fields: nil}
+		dvA := &runtime.DataValue{TypeId: 11, Values: nil, Fields: nil}
 
 		instructions := flatten(
 			op.Make(op.Const, 1),  // push DataValue

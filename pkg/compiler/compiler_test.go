@@ -571,7 +571,7 @@ func TestDeclFunction(t *testing.T) {
 					name:   "example",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 1),
+						code.Make(code.Const, 12),
 						code.Make(code.Return),
 					},
 				},
@@ -587,14 +587,14 @@ func TestDeclFunction(t *testing.T) {
 					name:   "example",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 1),
+						code.Make(code.Const, 12),
 						code.Make(code.Return),
 					},
 				},
 				42,
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.Const, 0),
+				code.Make(code.Const, 11),
 				code.Make(code.Call, 0),
 				code.Make(code.Pop),
 			},
@@ -628,7 +628,7 @@ func TestDeclFunction(t *testing.T) {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.Const, 0),
+				code.Make(code.Const, 11),
 				code.Make(code.Call, 0),
 				code.Make(code.Pop),
 			},
@@ -653,7 +653,7 @@ func TestDeclFunction(t *testing.T) {
 				42,
 			},
 			expectedGlobals: [][]code.Instructions{
-				{code.Make(code.Const, 1)},
+				{code.Make(code.Const, 12)},
 			},
 			expectedInstructions: []code.Instructions{},
 		},
@@ -677,7 +677,7 @@ func TestDeclFunction(t *testing.T) {
 				42,
 			},
 			expectedGlobals: [][]code.Instructions{
-				{code.Make(code.Const, 1)},
+				{code.Make(code.Const, 12)},
 			},
 			expectedInstructions: []code.Instructions{},
 		},
@@ -694,7 +694,7 @@ func TestDeclFunction(t *testing.T) {
 					name:   "example",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 1),
+						code.Make(code.Const, 12),
 						code.Make(code.SetLocal, 0),
 						code.Make(code.GetLocal, 0),
 						code.Make(code.GetLocal, 0),
@@ -756,7 +756,7 @@ func TestLocalConstAndVar(t *testing.T) {
 					name:   "f",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 1),
+						code.Make(code.Const, 12),
 						code.Make(code.SetLocal, 0),
 						code.Make(code.GetLocal, 0),
 						code.Make(code.Return),
@@ -773,7 +773,7 @@ func TestLocalConstAndVar(t *testing.T) {
 					name:   "f",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 1),
+						code.Make(code.Const, 12),
 						code.Make(code.SetLocal, 0),
 						code.Make(code.GetLocal, 0),
 						code.Make(code.Return),
@@ -828,10 +828,10 @@ func TestDeclData(t *testing.T) {
 				"name",
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.Const, 1),
-				code.Make(code.Const, 0),
+				code.Make(code.Const, 12),
+				code.Make(code.Const, 11),
 				code.Make(code.Call, 1),
-				code.Make(code.GetField, 2),
+				code.Make(code.GetField, 13),
 				code.Make(code.Pop),
 			},
 		},
@@ -857,11 +857,11 @@ func TestDeclData(t *testing.T) {
 				"name",
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.Const, 1),
-				code.Make(code.Const, 2),
-				code.Make(code.Const, 0),
+				code.Make(code.Const, 12),
+				code.Make(code.Const, 13),
+				code.Make(code.Const, 11),
 				code.Make(code.Call, 2),
-				code.Make(code.GetField, 3),
+				code.Make(code.GetField, 14),
 				code.Make(code.Pop),
 			},
 		},
@@ -2061,6 +2061,15 @@ func testConstants(
 	actual []runtime.RuntimeValue,
 ) error {
 	t.Helper()
+
+	// Filter out nil slots (reserved builtin type ID range) before comparing.
+	var filtered []runtime.RuntimeValue
+	for _, v := range actual {
+		if v != nil {
+			filtered = append(filtered, v)
+		}
+	}
+	actual = filtered
 
 	if len(actual) != len(expected) {
 		return fmt.Errorf("wrong amount of constants.\nwant=%q\ngot=%q", expected, actual)

@@ -4,6 +4,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/resolver"
+	"code.knabel.dev/zirric-lang/zirric/pkg/runtime"
 )
 
 type Analyzer struct {
@@ -68,6 +69,18 @@ func (a *Analyzer) AllocateConstantId() int {
 	return id
 }
 
+// allocateTypeConstantId allocates a constant ID for a type declaration,
+// ensuring the ID is >= runtime.NumBuiltinTypeIds. This prevents user-defined
+// types from receiving an ID that collides with a hardcoded builtin TypeId
+// (e.g. typeIdArray = 0), which would cause IsType checks to incorrectly
+// match values of the builtin type against the user-defined type.
+func (a *Analyzer) allocateTypeConstantId() int {
+	if a.nextConstant < runtime.NumBuiltinTypeIds {
+		a.nextConstant = runtime.NumBuiltinTypeIds
+	}
+	return a.AllocateConstantId()
+}
+
 // AllocateGlobalId returns the next available global ID and advances the counter.
 // Both the analyzer (for module-level symbols) and the compiler (for attribute
 // instances and other dynamic globals) must allocate through this single counter
@@ -88,6 +101,7 @@ func (a *Analyzer) Analyze(module *ast.ContextModule, reserveModule bool) ([]Ana
 	if _, ok := a.analyzed[module]; ok {
 		return collectSymbolErrors(module.Symbols), module
 	}
+
 	a.analyzed[module] = struct{}{}
 	a.populateFieldDecls(module)
 	a.populateFunctionParams(module)
@@ -96,6 +110,7 @@ func (a *Analyzer) Analyze(module *ast.ContextModule, reserveModule bool) ([]Ana
 	a.assignLocalIDs(module)
 	a.assignModuleIDs(module, reserveModule)
 	a.assignTypeSymbols(module)
+
 	errs := a.validateStaticRefs(module)
 	errs = append(errs, collectSymbolErrors(module.Symbols)...)
 	return errs, module
@@ -116,9 +131,23 @@ func (a *Analyzer) assignModuleIDs(module *ast.ContextModule, reserveModule bool
 			continue
 		}
 		switch decl := sym.Decl.(type) {
-		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclExternValue, *ast.DeclAttr:
+		case *ast.DeclExternType:
 			if sym.ConstantId == nil {
-				id := a.AllocateConstantId()
+				// Some builtin types have hard-coded IDs
+				if tid, ok := runtime.BuiltinTypeIds[sym.Name]; ok {
+					id := int(tid)
+					sym.ConstantId = &id
+					if a.nextConstant <= id {
+						a.nextConstant = id + 1
+					}
+				} else {
+					id := a.allocateTypeConstantId()
+					sym.ConstantId = &id
+				}
+			}
+		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternValue, *ast.DeclAttr:
+			if sym.ConstantId == nil {
+				id := a.allocateTypeConstantId()
 				sym.ConstantId = &id
 			}
 		case *ast.DeclVariable:

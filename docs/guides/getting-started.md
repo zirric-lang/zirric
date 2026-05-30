@@ -135,8 +135,7 @@ fn(a, b) { return a + b }  // Function literal
 
 ## Variables and functions
 
-Declare variables with `let` and functions with `fn`. Functions can return
-any value.
+Declare constants with `const`, variables with `var` and functions with `fn`.
 
 ```zirric
 const answer = 42

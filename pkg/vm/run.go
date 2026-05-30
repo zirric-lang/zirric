@@ -90,11 +90,10 @@ func (vm *VM) runTask(taskId TaskId) error {
 				result = runtime.Bool(tv.IsMember(v.TypeConstantId()))
 			case *runtime.AttributeType:
 				// Attribute check: does the value's type carry this attribute?
-				result = runtime.Bool(vm.hasAttribute(v.TypeConstantId(), runtime.TypeId(constId)))
+				result = runtime.Bool(vm.hasAttribute(v.TypeConstantId(), tv.TypeConstantId()))
 			case runtime.SimpleType:
-				// Builtin extern types use hardcoded TypeIds that may differ
-				// from the constant slot index. Compare against the SimpleType's
-				// own TypeConstantId which accounts for builtin overrides.
+				result = runtime.Bool(v.TypeConstantId() == tv.TypeConstantId())
+			case *runtime.DataType:
 				result = runtime.Bool(v.TypeConstantId() == tv.TypeConstantId())
 			default:
 				result = runtime.Bool(v.TypeConstantId() == runtime.TypeId(constId))
