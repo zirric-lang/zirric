@@ -36,7 +36,7 @@ module.exports = {
     name: "ruby",
     appearance: "dark",
     codeHighlight: true,
-    customCss: []
+    customCss: ['/assets/styles/overrides.css']
   },
   minify: true,
   autoTitleFromH1: true,
@@ -60,17 +60,19 @@ module.exports = {
       defaultPriority: 0.8
     },
     llms: {},
-    "zirric-highlight": {},
-    "custom-header": {
-      header: [
-        "<script defer src=\"https://uma.knabel.dev/umami\" data-website-id=\"cb95e6bc-e06f-4398-9dad-bf39ccdb99b9\" data-domains=\"zirric.knabel.dev\"></script>",
+    ai: false,
+    "./plugins/custom-header-plugin.js": {
+      headScriptsHtml: [
+        "<script defer src=\"https://uma.knabel.dev/umami\" data-website-id=\"773650f2-09b3-4afa-bdcb-06e9e2957fd4\" data-domains=\"zirric.knabel.dev\"></script>",
+      ],
+      metaTags: [
         "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/assets/images/favicon/favicon.svg\">",
         "<link rel=\"icon\" type=\"image/png\" sizes=\"96x96\" href=\"/assets/images/favicon/favicon-96x96.png\">",
         "<link rel=\"apple-touch-icon\" href=\"/assets/images/favicon/apple-touch-icon.png\">",
         "<link rel=\"manifest\" href=\"/assets/images/favicon/site.webmanifest\">",
         "<link rel=\"icon\" type=\"image/png\" sizes=\"192x192\" href=\"/assets/images/favicon/web-app-manifest-192x192.png\">",
         "<link rel=\"icon\" type=\"image/png\" sizes=\"512x512\" href=\"/assets/images/favicon/web-app-manifest-512x512.png\">"
-      ]
+      ],
     }
   },
   redirects: [],

@@ -3,13 +3,11 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "docmd dev",
-    "build": "docmd build",
+    "dev": "npx @docmd/core dev",
+    "build": "npx @docmd/core build",
     "preview": "npx serve site"
   },
   "dependencies": {
-    "@docmd/core": "^0.8.0",
-    "custom-header": "./custom-header.js",
-    "zirric-highlight": "./zirric-highlight.js"
+    "@docmd/core": "^0.9.5"
   }
 }
