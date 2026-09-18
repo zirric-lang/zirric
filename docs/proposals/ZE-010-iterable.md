@@ -11,27 +11,14 @@ It is currently under active development.
 Parts might be incomplete or missing in Zirric.
 :::
 
-::: callout warning Outdated
-While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
-
-- [x] Reflect latest syntax changes
-- [ ] Reflect latest stdlib changes
-- [ ] Attributes are no longer used for types
-- [ ] Supporting `?`-related syntax must be investigated
-- [ ] Type for `yield` function must be determined
-      :::
-
 ## Introduction
 
-This proposal introduces standard `@Countable` and `@Iterable` attributes for
-collection-like types, which is used by `for ... <- ...` loops.
+This proposal introduces standard `@Countable` and `@Iterable` attributes for collection-like types, which is used by `for ... <- ...` loops.
 Also introduces `Range` and `ClosedRange` data types as examples of countable and iterable.
 
 ## Motivation
 
-Zirric needs a consistent way to describe collection behavior. Without a shared
-protocol, each type defines bespoke iteration helpers, and tooling cannot
-recognize which values support iteration or have lengths.
+Zirric needs a consistent way to describe collection behavior. Without a shared protocol, each type defines bespoke iteration helpers, and tooling cannot recognize which values support iteration or have lengths.
 
 Currently only arrays can be used to iterate over.
 
@@ -45,13 +32,12 @@ Define two attributes in the prelude future module:
 ```zirric
 @Proposal(ZE_010)
 attr Countable {
-  @Returns(Int)
-  length(@Has(Countable) value)
+  length(value: @Countable) -> Int
 }
 
 @Proposal(ZE_010)
 attr Iterable {
-  iterate(@Has(Iterable) value, @Func yield)
+  iterate(value: @Iterable, yield: fn(Any) -> Bool)
 }
 ```
 
@@ -62,11 +48,17 @@ Add `Range` and `ClosedRange` as iterable, countable data types.
 ```zirric
 @Countable(_rangeCount)
 @Iterable(_rangeIterate)
-data Range { @Int start, @Int end }
+data Range {
+  start: Int
+  end: Int
+}
 
 @Countable(_rangeCount)
 @Iterable(_rangeIterate)
-data ClosedRange { @Int start, @Int end }
+data ClosedRange {
+  start: Int
+  end: Int
+}
 ```
 
 ## Detailed Design
@@ -76,10 +68,10 @@ data ClosedRange { @Int start, @Int end }
   iteration completes or `yield` returns false.
 - The `for element <- value` syntax invokes `iterate` under the hood.
 
-The internally used `yield` function has the signature:
+The internally used `yield` function has the type:
 
 ```zirric
-yield(element) -> Bool
+yield: fn(Any) -> Bool
 ```
 
 When starting the loop, the `iterate` function of the `@Iterable` attribute is extracted.
@@ -89,16 +81,14 @@ For arrays a more efficient implementation may be used that does not require fun
 
 ## Changes to the Standard Library
 
-- Add `@Countable`, `@Iterable`, `Range`, and `ClosedRange` in
-  `prelude`.
+- Add `@Countable`, `@Iterable`, `Range`, and `ClosedRange` in `prelude`.
 - `prelude.Dict`, `prelude.String` and `prelude.Array` should all be annotated with `@Countable` and `@Iterable`.
 
 ## Alternatives Considered
 
-- A single `Iterable` attribute with optional `length`, which makes
-  length-dependent APIs harder to check.
+- A single `Iterable` attribute with optional `length`, which makes length-dependent APIs harder to check.
 - Hardcoding iteration support per type, which limits extensibility.
 
 ## Acknowledgements
 
-- Inspired by iterator protocols in Swift and Python.
+- Inspired by iterator protocols in Go, Swift and Python.

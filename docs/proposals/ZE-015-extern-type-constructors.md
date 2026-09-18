@@ -10,14 +10,6 @@ This proposal is still a draft and is subject to change. Please do not cite or r
 Features described here may not be implemented as described and cannot be used right now.
 :::
 
-::: callout warning Outdated
-While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
-
-- [ ] Reflect latest syntax changes
-- [ ] Reflect latest stdlib changes
-- [ ] Attributes are no longer used for types
-      :::
-
 ## Introduction
 
 This proposal adds optional constructors to `extern type` declarations and introduces the constructor syntax:
@@ -36,27 +28,31 @@ This proposal introduces and defines constructors for the extern types in `prelu
 
 Several core extern types in `prelude/shim.zirr` cannot be created from Zirric code at all. Creating an `Array`, a `Dict`, or a `String` is possible through literals, but more complex future types would not. There is no direct, uniform way to construct them. Adding constructors closes this gap and makes the type system feel more complete.
 
+`Bytes` in particular is currently only reachable via the deprecated `bytesFromString` bridge function ([ZE-018](/proposals/ZE-018-io-fmt-os)), which exists only as an interim solution until this proposal lands.
+
 Constructors also serve as the natural place to define conversion semantics between related types, such as converting a `Float` to an `Int` or building a `String` from an `Array` of `Char` values.
 
 ## Proposed Solution
 
 The following extern types in `prelude/shim.zirr` gain constructors:
 
-| Type     | Constructor                        | Behaviour                                         |
-| -------- | ---------------------------------- | ------------------------------------------------- |
-| `Array`  | `Array(@Has(Iterable) iterable)`   | Collect any iterable into a new array             |
-| `Bool`   | `Bool(@Any value)`                 | Test a value for truthiness                       |
-| `Char`   | `Char(@Type(Int) codePoint)`       | Create a character from a Unicode code point      |
-| `Dict`   | `Dict(@Array keys, @Array values)` | Build a dictionary from parallel key/value arrays |
-| `Float`  | `Float(@Type(Number) number)`      | Convert a `Number` to a floating-point value      |
-| `Int`    | `Int(@Type(Number) number)`        | Convert a `Number` to an integer, truncating      |
-| `String` | `String(@Array chars)`             | Build a string from an array of `Char` values     |
+| Type     | Constructor                           | Behaviour                                         |
+| -------- | -------------------------------------- | ------------------------------------------------- |
+| `Array`  | `Array(iterable: @Iterable)`          | Collect any iterable into a new array             |
+| `Bool`   | `Bool(value: Any)`                    | Test a value for truthiness                       |
+| `Bytes`  | `Bytes(str: String)`                  | Convert a string to its byte representation       |
+| `Char`   | `Char(codePoint: Int)`                | Create a character from a Unicode code point      |
+| `Dict`   | `Dict(keys: [String], values: Array)` | Build a dictionary from parallel key/value arrays |
+| `Float`  | `Float(number: @Numeric)`             | Convert a `Number` to a floating-point value      |
+| `Int`    | `Int(number: @Numeric)`               | Convert a `Number` to an integer, truncating      |
+| `String` | `String(chars: [Char])`               | Build a string from an array of `Char` values     |
 
 The meta-level types — `Any`, `AnyType`, `Attribute`, `AttributeType`, `Module`, `ModuleType`, and `Func` — do not receive constructors. Narrowing to these types from a broader type is expressed with `switch`; see _Alternatives Considered_.
 
 ```zirric
 let digits  = Array(someIterable)
 let lookup  = Dict(keys, values)
+let raw     = Bytes("hello")       // interim `bytesFromString` is removed
 let letter  = Char(65)             // 'A'
 let pi      = Float(3)             // 3.0
 let rounded = Int(3.9)             // 3
@@ -76,15 +72,15 @@ extern_type        = EXTERN, TYPE, extern_type_name,
 extern_type_params = { parameter, [_list_separator] } ;
 ```
 
-Constructor parameters follow the same attribute-based syntax as regular function parameters. When a constructor is present, calling the type as a function invokes it. When no constructor is declared, the type is not callable.
+Constructor parameters follow the same type-hint syntax as regular function parameters. When a constructor is present, calling the type as a function invokes it. When no constructor is declared, the type is not callable.
 
 ### Semantics per type
 
-#### `Array(@Has(Iterable) iterable)`
+#### `Array(iterable: @Iterable)`
 
 Evaluates `iterable` using the protocol defined in [ZE-010](/proposals/ZE-010-iterable) and collects all produced values into a new, fully-realised `Array`. The order of elements matches the iteration order.
 
-#### `Bool(@Any value)`
+#### `Bool(value: Any)`
 
 Returns `false` if `value` is one of the following _falsy_ values; returns `true` otherwise:
 
@@ -93,27 +89,31 @@ Returns `false` if `value` is one of the following _falsy_ values; returns `true
 
 All other values are truthy. This might change in the future.
 
-#### `Char(@Int codePoint)`
+#### `Bytes(str: String)`
+
+Returns the UTF-8 byte representation of `str`. Supersedes the interim `bytesFromString` function introduced in [ZE-018](/proposals/ZE-018-io-fmt-os), which is removed once this proposal lands.
+
+#### `Char(codePoint: Int)`
 
 Returns the Unicode character whose code point equals `codePoint`. Behaviour is undefined for values outside the valid Unicode scalar value range.
 
-#### `Dict(@Array keys, @Array values)`
+#### `Dict(keys: [String], values: Array)`
 
 Returns a new `Dict` mapping `keys[i]` to `values[i]` for each index. Both arrays must have the same length; passing arrays of unequal length is a runtime error. If `keys` contains duplicate entries the last mapping for a given key wins.
 
-#### `Float(@Has(Numeric) number)`
+#### `Float(number: @Numeric)`
 
 - If `number` is already a `Float`, returns it unchanged.
 - If `number` is an `Int`, promotes it to the nearest representable `Float`.
 - If the type of the passed value has the `Numeric` attribute, its `toNumber` function will be used.
 
-#### `Int(@Has(Numeric) number)`
+#### `Int(number: @Numeric)`
 
 - If `number` is already an `Int`, returns it unchanged.
 - If `number` is a `Float`, truncates toward zero (i.e. the fractional part is discarded).
 - If the type of the passed value has the `Numeric` attribute, its `toNumber` function will be used.
 
-#### `String(@Array chars)`
+#### `String(chars: [Char])`
 
 Returns a new `String` whose contents are the `Char` values in `chars`, in order. Each element of `chars` must be a `Char`; passing other value types is a runtime error.
 
@@ -130,21 +130,26 @@ extern type Array(iterable: @Iterable) {
 }
 
 // Represents boolean values.
-extern type Bool(value) {
+extern type Bool(value: Any) {
   toggle() -> Bool
 }
 
+// A sequence of raw bytes.
+extern type Bytes(str: String) {
+  length: Int
+}
+
 // A single Unicode character.
-extern type Char(@Type(Int) codePoint) {}
+extern type Char(codePoint: Int) {}
 
 // An associative array of keys and their values.
-extern type Dict(keys [String], values: Array) {
+extern type Dict(keys: [String], values: Array) {
   length: Int
 }
 
 // A floating point number.
 @Numeric(fn(f) { return f })
-extern type Float(@Has(Numeric) number) {}
+extern type Float(number: @Numeric) {}
 
 // A whole integer number.
 @Numeric(fn(i) { return i })
@@ -157,11 +162,13 @@ extern type String(chars: [Char]) {
 
 The declarations for `Any`, `AnyType`, `Attribute`, `AttributeType`, `Module`, `ModuleType`, `Func`, and `Void` are unchanged — they remain opaque and non-callable.
 
+The deprecated `bytesFromString` function ([ZE-018](/proposals/ZE-018-io-fmt-os)) is removed from `prelude/shim.zirr`, superseded by the `Bytes` constructor.
+
 ## Alternatives Considered
 
 ### Panicking assertion constructors for meta-level types
 
-Constructors such as `AnyType(@Any value)` that assert the incoming value is of the correct type and panic otherwise were considered for `Any`, `AnyType`, `Module`, `ModuleType`, `Attribute`, `AttributeType`, and `Func`. This was rejected because Zirric already has a principled mechanism for type narrowing: `switch` statements. `switch` enforces that all relevant cases are handled, making type narrowing safe and exhaustive. A panicking constructor would bypass this safety guarantee, introducing an implicit failure mode inconsistent with the language's approach to type safety.
+Constructors such as `AnyType(value: Any)` that assert the incoming value is of the correct type and panic otherwise were considered for `Any`, `AnyType`, `Module`, `ModuleType`, `Attribute`, `AttributeType`, and `Func`. This was rejected because Zirric already has a principled mechanism for type narrowing: `switch` statements. `switch` enforces that all relevant cases are handled, making type narrowing safe and exhaustive. A panicking constructor would bypass this safety guarantee, introducing an implicit failure mode inconsistent with the language's approach to type safety.
 
 ### A language-level cast syntax
 
@@ -173,11 +180,11 @@ Requiring a constructor on every `extern type` was considered, with the intent o
 
 ### Variadic `Array` constructor: `Array(item1, item2, ...)`
 
-A variadic constructor — `Array(1, 2, 3)` — is the most ergonomic form and is referenced in [ZE-004](/proposals/ZE-004-Variadic-Arguments). However, ZE-004 is still a draft. `Array(@Has(Iterable) iterable)` achieves the same goal without a dependency on unaccepted proposals. If ZE-004 is accepted, a variadic form could be added alongside.
+A variadic constructor — `Array(1, 2, 3)` — is the most ergonomic form and is referenced in [ZE-004](/proposals/ZE-004-Variadic-Arguments). However, ZE-004 is still a draft. `Array(iterable: @Iterable)` achieves the same goal without a dependency on unaccepted proposals. If ZE-004 is accepted, a variadic form could be added alongside.
 
 ### Truthy/falsy rules for `Bool`
 
-An alternative is to require an explicit type — e.g. `Bool(@Type(Int) int)` — so that only integers can be tested for zero. The current proposal prefers the flexible `@Any` form because it mirrors the way Zirric conditions already work in `if`/`while` expressions, keeping `Bool(value)` a reliable way to reify a condition as a named value.
+An alternative is to require an explicit type — e.g. `Bool(value: Int)` — so that only integers can be tested for zero. The current proposal prefers the flexible `Any` form because it mirrors the way Zirric conditions already work in `if`/`while` expressions, keeping `Bool(value)` a reliable way to reify a condition as a named value.
 
 ### `Dict` with a single array of key-value pairs
 
@@ -185,8 +192,9 @@ Instead of two parallel arrays, a single array of alternating keys and values (`
 
 ### `String` from a single `Char`
 
-`String(@Type(Char) char)` would allow creating a one-character string. This is a common enough operation, but it can be expressed with an array literal once array literal syntax is available. A dedicated single-character form can be added in a later proposal if it proves necessary.
+`String(char: Char)` would allow creating a one-character string. This is a common enough operation, but it can be expressed with an array literal once array literal syntax is available. A dedicated single-character form can be added in a later proposal if it proves necessary.
 
 ## Acknowledgements
 
-- `Array(@Has(Iterable) iterable)` builds on the iterable protocol defined in [ZE-010](/proposals/ZE-010-iterable).
+- `Array(iterable: @Iterable)` builds on the iterable protocol defined in [ZE-010](/proposals/ZE-010-iterable).
+- `Bytes(str: String)` replaces the interim `bytesFromString` bridge function introduced by [ZE-018](/proposals/ZE-018-io-fmt-os).

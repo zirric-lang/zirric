@@ -13,9 +13,8 @@ Features described here may not be implemented as described and cannot be used r
 ::: callout warning Outdated
 While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
 
-- [ ] Reflect latest syntax changes
-- [ ] Reflect latest stdlib changes
-- [ ] Attributes are no longer used for types
+- [x] Reflect latest syntax changes
+- [x] Reflect latest stdlib changes
 - [ ] Plan everything out
       :::
 
@@ -37,17 +36,13 @@ Zirric currently lacks a unified mechanism for encoding/decoding data types to/f
 
 #### `prelude` Module
 
-Core attributes and types used across the codebase.
+Core attributes used across the codebase. Binary payloads reuse the `Bytes` type already provided by `prelude` (added via [ZE-018](/proposals/ZE-018-io-fmt-os)); this proposal does not need to introduce a separate binary type.
 
 ```zirric
 mod prelude
 
-extern type Binary {
-    @Int length
-}
-
 attr ItemType {
-    @AnyType type
+    type: AnyType
 }
 ```
 
@@ -61,30 +56,28 @@ mod coding
 attr Inline {}
 
 attr Default {
-    @Any value
+    value: Any
 }
 
 attr RawType {
-    @AnyType type
+    type: AnyType
 }
 
 attr Encodable {
-    @Returns(Result) encode(value)
+    encode(value) -> Result
 }
 
 attr Decodable {
-    @Returns(Result) decode(value)
+    decode(value) -> Result
 }
 
 attr Key {
-    @String name
+    name: String
 }
 
-@Returns(Result)
-fn encode(value, encoder)
+fn encode(value, encoder) -> Result
 
-@Returns(Result)
-fn decode(@AnyType type, decoder)
+fn decode(type: AnyType, decoder) -> Result
 ```
 
 #### `coding.json` Module
@@ -129,7 +122,7 @@ mod coding.yaml
 ## Changes to the Standard Library
 
 - **New Modules**: `coding`, `coding.json`, `coding.yaml`
-- **New Types**: `coding.Error`, `prelude.Binary`
+- **New Types**: `coding.Error`
 - **New Attributes**: `coding.Encodable`, `coding.Decodable`, `coding.Key`, `json.Inline`, etc.
 
 ## Behavior and Rules

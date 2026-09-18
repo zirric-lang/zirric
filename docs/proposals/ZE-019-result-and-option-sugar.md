@@ -10,15 +10,6 @@ This proposal is still a draft and is subject to change. Please do not cite or r
 Features described here may not be implemented as described and cannot be used right now.
 :::
 
-::: callout warning Outdated
-While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
-
-- [ ] Reflect latest syntax changes
-- [ ] Attributes are no longer used for types
-- [ ] Supporting `!`-related syntax must be investigated
-- [ ] Supporting `?`-related syntax must be investigated
-      :::
-
 ## Introduction
 
 This proposal introduces syntax sugar for working with `Result` ([ZE-008](/proposals/ZE-008-error-handling)) and `Option` ([ZE-009](/proposals/ZE-009-option-values)) values. It defines operators for unwrapping, chaining, providing fallbacks, and type shorthands in signatures.
