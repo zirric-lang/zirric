@@ -1,4 +1,4 @@
-import future.tasks
+import tasks
 
 @tasks.Name("dup")
 @tasks.Exec("a.zirr")

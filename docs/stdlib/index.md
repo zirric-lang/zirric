@@ -13,10 +13,10 @@ available modules and their declarations as they appear in the source files.
 - [Prelude](/stdlib/prelude) - Core types, attributes, and language primitives.
 - [Cave](/stdlib/cave) - Cavefile schema, dependency attributes, and package
   metadata for ZE-002.
+- [Tasks](/stdlib/tasks) - Task declaration attributes and unions for
+  Cavefile automation.
 - [Future](/stdlib/future) - Experimental proposal scaffolding and attributes.
 - [Future.Prelude](/stdlib/future/prelude) - Proposed prelude extensions such
   as iterables, option/result types, and attribute binding.
 - [Future.Reflect](/stdlib/future/reflect) - Reflection stubs for future-facing
   metadata access.
-- [Future.Tasks](/stdlib/future/tasks) - Task declaration attributes and
-  unions for Cavefile automation.

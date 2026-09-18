@@ -1,4 +1,4 @@
-import future.tasks
+import tasks
 
 @tasks.Name("alt-task")
 @tasks.Exec("alt.zirr")

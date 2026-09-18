@@ -2,7 +2,7 @@
 
 Zirric packages declare dependencies and tasks in a `Cavefile`. A Cavefile is
 regular Zirric source code that uses attributes from the
-`cave` and `future.tasks` standard library modules.
+`cave` and `tasks` standard library modules.
 For
 implementation details, see `proposals/ZE-002-the-cavefile.md` and
 `cave/manifest.zirr`.
@@ -32,7 +32,7 @@ dependency resolution.
 ## Tasks
 
 ```zirric
-import future.tasks
+import tasks
 
 @tasks.Name("generate")
 @tasks.Help("Generates something")

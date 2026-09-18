@@ -15,7 +15,7 @@ import (
 
 // testdataCavefile is the content written into the in-memory projectFS as "Cavefile".
 const testdataCavefile = `import cave
-import future.tasks
+import tasks
 
 @cave.Dependencies()
 data Dependencies {
@@ -191,7 +191,7 @@ data Dependencies {
 func TestParseNoNameCollision(t *testing.T) {
 	// An import with a coincidentally-named attribute should NOT be treated as cave.Dependencies
 	// because the alias maps to a different module URI
-	src := `import notcave = future.tasks
+	src := `import notcave = tasks
 import cave
 
 @notcave.Dependencies()

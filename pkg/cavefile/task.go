@@ -52,7 +52,7 @@ const (
 )
 
 // extractTasks finds every data declaration carrying @tasks.Exec or @tasks.Call and converts it into a Task.
-func extractTasks(cavefileMod *ast.ContextModule, futureTasksMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) []Task {
+func extractTasks(cavefileMod *ast.ContextModule, tasksMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) []Task {
 	var tasks []Task
 	for _, sym := range cavefileMod.Decls.Symbols {
 		if sym == nil || sym.Decl == nil {
@@ -62,7 +62,7 @@ func extractTasks(cavefileMod *ast.ContextModule, futureTasksMod *ast.ContextMod
 		if !ok {
 			continue
 		}
-		task, ok := dataToTask(data, futureTasksMod, aliasMap)
+		task, ok := dataToTask(data, tasksMod, aliasMap)
 		if !ok {
 			continue
 		}
@@ -71,51 +71,51 @@ func extractTasks(cavefileMod *ast.ContextModule, futureTasksMod *ast.ContextMod
 	return tasks
 }
 
-func dataToTask(data *ast.DeclData, futureTasksMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) (Task, bool) {
+func dataToTask(data *ast.DeclData, tasksMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) (Task, bool) {
 	task := Task{Name: strings.ToLower(data.Name.Value), DeclName: data.Name.Value}
 	found := false
 	for _, attr := range data.Attributes {
 		switch {
-		case isFutureCaveAttr(attr, "Exec", futureTasksMod, aliasMap):
+		case isFutureCaveAttr(attr, "Exec", tasksMod, aliasMap):
 			task.Kind = TaskKindExec
 			task.Exec = firstStringArg(attr)
 			found = true
-		case isFutureCaveAttr(attr, "Call", futureTasksMod, aliasMap):
+		case isFutureCaveAttr(attr, "Call", tasksMod, aliasMap):
 			task.Kind = TaskKindCall
 			found = true
-		case isFutureCaveAttr(attr, "Name", futureTasksMod, aliasMap):
+		case isFutureCaveAttr(attr, "Name", tasksMod, aliasMap):
 			task.Name = firstStringArg(attr)
-		case isFutureCaveAttr(attr, "Alias", futureTasksMod, aliasMap):
+		case isFutureCaveAttr(attr, "Alias", tasksMod, aliasMap):
 			task.Aliases = append(task.Aliases, stringArrayArgs(attr)...)
-		case isFutureCaveAttr(attr, "Help", futureTasksMod, aliasMap):
+		case isFutureCaveAttr(attr, "Help", tasksMod, aliasMap):
 			task.Help = firstStringArg(attr)
 		}
 	}
 	if !found {
 		return Task{}, false
 	}
-	task.Flags, task.Args = fieldsToTaskParams(data.Fields, futureTasksMod, aliasMap)
+	task.Flags, task.Args = fieldsToTaskParams(data.Fields, tasksMod, aliasMap)
 	return task, true
 }
 
-func fieldsToTaskParams(fields []ast.DeclField, futureTasksMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) (flags []TaskParam, args []TaskParam) {
+func fieldsToTaskParams(fields []ast.DeclField, tasksMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) (flags []TaskParam, args []TaskParam) {
 	for _, field := range fields {
 		param := TaskParam{Name: field.Name.Value, DeclName: field.Name.Value, Type: taskParamType(field.TypeHint)}
 		isFlag := false
 		isArg := false
 		for _, attr := range field.Attributes {
 			switch {
-			case isFutureCaveAttr(attr, "Flag", futureTasksMod, aliasMap):
+			case isFutureCaveAttr(attr, "Flag", tasksMod, aliasMap):
 				isFlag = true
-			case isFutureCaveAttr(attr, "Arg", futureTasksMod, aliasMap):
+			case isFutureCaveAttr(attr, "Arg", tasksMod, aliasMap):
 				isArg = true
-			case isFutureCaveAttr(attr, "Name", futureTasksMod, aliasMap):
+			case isFutureCaveAttr(attr, "Name", tasksMod, aliasMap):
 				param.Name = firstStringArg(attr)
-			case isFutureCaveAttr(attr, "Alias", futureTasksMod, aliasMap):
+			case isFutureCaveAttr(attr, "Alias", tasksMod, aliasMap):
 				param.Aliases = append(param.Aliases, stringArrayArgs(attr)...)
-			case isFutureCaveAttr(attr, "Short", futureTasksMod, aliasMap):
+			case isFutureCaveAttr(attr, "Short", tasksMod, aliasMap):
 				param.Short = firstCharArg(attr)
-			case isFutureCaveAttr(attr, "Help", futureTasksMod, aliasMap):
+			case isFutureCaveAttr(attr, "Help", tasksMod, aliasMap):
 				param.Help = firstStringArg(attr)
 			}
 		}

@@ -279,7 +279,7 @@ The declared name becomes an identifier bound to the module object. This is usef
 
 ```zirric
 import prelude
-import future.tasks { Call }
+import tasks { Call }
 import xprelude = future.prelude
 ```
 

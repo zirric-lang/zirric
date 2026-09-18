@@ -37,7 +37,7 @@ func TestDefaultStdlibProvider(t *testing.T) {
 	expectModule(t, moduleURIs, "cave")
 	expectModule(t, moduleURIs, "future")
 	expectModule(t, moduleURIs, "future.reflect")
-	expectModule(t, moduleURIs, "future.tasks")
+	expectModule(t, moduleURIs, "tasks")
 }
 
 func collectModuleURIs(mods []registry.ResolvedModule) map[string]struct{} {

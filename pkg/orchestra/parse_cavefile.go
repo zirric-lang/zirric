@@ -63,12 +63,12 @@ func ParseCavefile(ctx context.Context, projectFS billy.Filesystem, registryFS b
 	// parseResolvedModule handles parse errors gracefully (returns partial results)
 	cavefileMod, _ := parseResolvedModule(mod, prelude)
 
-	// Resolve cave and future.tasks so attribute declarations are available for type checking
+	// Resolve cave and tasks so attribute declarations are available for type checking
 	caveMod, err := resolver.ResolveModule(ctx, "cave")
 	if err != nil {
 		return cavefile.Cavefile{}, err
 	}
-	futureTasksMod, err := resolver.ResolveModule(ctx, "future.tasks")
+	tasksMod, err := resolver.ResolveModule(ctx, "tasks")
 	if err != nil {
 		return cavefile.Cavefile{}, err
 	}
@@ -77,11 +77,11 @@ func ParseCavefile(ctx context.Context, projectFS billy.Filesystem, registryFS b
 	// be fully type-correct at parse time, but attribute references are resolved)
 	analysis := analyzer.New(resolver)
 	analysis.Analyze(caveMod, false)
-	analysis.Analyze(futureTasksMod, false)
+	analysis.Analyze(tasksMod, false)
 	analysis.Analyze(cavefileMod, false)
 
 	fallbackName := filepath.Base(projectFS.Root())
-	result := cavefile.Parse(cavefileMod, caveMod, futureTasksMod, fallbackName, projectFS.Root())
+	result := cavefile.Parse(cavefileMod, caveMod, tasksMod, fallbackName, projectFS.Root())
 	return result, nil
 }
 

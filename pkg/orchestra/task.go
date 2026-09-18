@@ -9,7 +9,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/vm"
 )
 
-const futureTasksModuleURI = "future.tasks"
+const tasksModuleURI = "tasks"
 
 // FindTask looks up a declared task by name or alias.
 func (o *Orchestra) FindTask(name string) (cavefile.Task, bool) {
@@ -78,13 +78,13 @@ func (o *Orchestra) resolveCallFunction(ctx context.Context, task cavefile.Task)
 		return nil, nil, nil, fmt.Errorf("task %q: declaration %q is not a data type", task.Name, task.DeclName)
 	}
 
-	futureTasksMod, err := resolver.ResolveModule(ctx, futureTasksModuleURI)
+	tasksMod, err := resolver.ResolveModule(ctx, tasksModuleURI)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	callSym, ok := futureTasksMod.Symbols.Symbols["Call"]
+	callSym, ok := tasksMod.Symbols.Symbols["Call"]
 	if !ok || callSym.ConstantId == nil {
-		return nil, nil, nil, fmt.Errorf("future.tasks: Call attribute not found")
+		return nil, nil, nil, fmt.Errorf("tasks: Call attribute not found")
 	}
 
 	globalId, ok := dt.Attributes[runtime.TypeId(*callSym.ConstantId)]

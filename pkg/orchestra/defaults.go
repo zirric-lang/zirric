@@ -11,6 +11,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/embedreg"
 	"code.knabel.dev/zirric-lang/zirric/pkg/version"
 	preludefs "code.knabel.dev/zirric-lang/zirric/prelude"
+	tasksfs "code.knabel.dev/zirric-lang/zirric/tasks"
 	"github.com/go-git/go-billy/v5"
 )
 
@@ -39,6 +40,7 @@ func DefaultStdlibProvider() (*embedreg.EmbedRegistry, error) {
 		embedreg.FSConfig{Name: "prelude", FS: preludefs.FS},
 		embedreg.FSConfig{Name: "cave", FS: cavefs.FS},
 		embedreg.FSConfig{Name: "future", FS: futurefs.FS},
+		embedreg.FSConfig{Name: "tasks", FS: tasksfs.FS},
 		embedreg.FSConfig{Name: "io", FS: iofs.FS},
 		embedreg.FSConfig{Name: "fmt", FS: fmtfs.FS},
 		embedreg.FSConfig{Name: "os", FS: osfs.FS},

@@ -7,7 +7,7 @@ import (
 )
 
 func TestParseExecTask(t *testing.T) {
-	src := `import future.tasks
+	src := `import tasks
 
 @tasks.Name("generate")
 @tasks.Help("Generates something")
@@ -71,7 +71,7 @@ data GenerateTask {
 }
 
 func TestParseTaskParamTypes(t *testing.T) {
-	src := `import future.tasks
+	src := `import tasks
 
 @tasks.Call(fn(opts: BuildTask) {})
 data BuildTask {
@@ -115,7 +115,7 @@ data BuildTask {
 }
 
 func TestParseTaskDefaultNameAndAliases(t *testing.T) {
-	src := `import future.tasks
+	src := `import tasks
 
 @tasks.Alias(["b", "compile"])
 @tasks.Exec("build.zirr")

@@ -1,4 +1,4 @@
-import future.tasks
+import tasks
 
 @tasks.Name("build")
 @tasks.Call(fn(opts: BuildTask) {

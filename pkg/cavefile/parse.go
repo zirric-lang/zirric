@@ -11,12 +11,12 @@ import (
 // Parse extracts Cavefile information from a parsed (and analyzed) Zirric module.
 //
 // cavefileMod is the Cavefile parsed as a ContextModule (already run through the analyzer).
-// caveMod and futureTasksMod are the parsed cave and future.tasks stdlib modules,
+// caveMod and tasksMod are the parsed cave and tasks stdlib modules,
 // used to verify attribute types against actual DeclAttr declarations — preventing false
 // matches from name collisions or unrelated imports.
 // fallbackName is used as Package.Name if no mod declaration is found.
 // projectDir is used to resolve @cave.Local("../rel") paths to absolute paths.
-func Parse(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, futureTasksMod *ast.ContextModule, fallbackName string, projectDir string) Cavefile {
+func Parse(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, tasksMod *ast.ContextModule, fallbackName string, projectDir string) Cavefile {
 	if cavefileMod == nil || caveMod == nil {
 		return Cavefile{Package: Package{Name: fallbackName}}
 	}
@@ -34,8 +34,8 @@ func Parse(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, futureTas
 	deps := extractDependencies(cavefileMod, caveMod, aliasMap, projectDir)
 
 	var tasks []Task
-	if futureTasksMod != nil {
-		tasks = extractTasks(cavefileMod, futureTasksMod, aliasMap)
+	if tasksMod != nil {
+		tasks = extractTasks(cavefileMod, tasksMod, aliasMap)
 	}
 
 	return Cavefile{

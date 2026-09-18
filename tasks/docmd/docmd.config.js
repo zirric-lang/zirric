@@ -149,6 +149,11 @@ module.exports = {
           icon: "package"
         },
         {
+          title: "Tasks",
+          path: "/stdlib/tasks",
+          icon: "check-square"
+        },
+        {
           title: "Future",
           path: "/stdlib/future",
           icon: "flask-conical",
@@ -163,11 +168,6 @@ module.exports = {
               title: "Reflect",
               path: "/stdlib/future/reflect",
               icon: "scan"
-            },
-            {
-              title: "Tasks",
-              path: "/stdlib/future/tasks",
-              icon: "check-square"
             }
           ]
         }

@@ -24,7 +24,7 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 
 - **Language proposals**: `docs/proposals/ZE-001-base-language.md` (core syntax/semantics) and `docs/proposals/ZE-002-the-cavefile.md` (package manifest + tasks). Recent implemented proposals include `docs/proposals/ZE-002-the-cavefile.md` (Cavefile dependencies and tasks), `docs/proposals/ZE-013-mutability-and-constants.md` (const/var), `docs/proposals/ZE-016-closure-syntax.md` (fn closures), and `docs/proposals/ZE-017-type-hints.md` (type hints and is-matching). ZE-011 (`docs/proposals/ZE-011-zirric-cli.md`, the CLI) is still In Progress. For future-facing features, see `docs/proposals/ZE-004-Variadic-Arguments.md` and `docs/proposals/ZE-005-Mixin-Type-Declarations.md`.
 - **Standard library Zirric sources**: `prelude/shim.zirr` (core types and values), `prelude/attributes.zirr` (attribute system), `prelude/countable.zirr` (protocol-like attributes), `prelude/result.zirr` (Result/Optional patterns), `future/reflect/stub.zirr` (reflection surface).
-- **Cavefile schema and tasks**: `cave/manifest.zirr` and `future/tasks/manifest.zirr` define the attribute-driven dependency/task model used by the package manager.
+- **Cavefile schema and tasks**: `cave/manifest.zirr` and `tasks/manifest.zirr` define the attribute-driven dependency/task model used by the package manager.
 - **Example manifest**: `examples/project/Cavefile` shows real-world dependency + task declarations.
 
 ### Core mental model (intuition)
@@ -34,7 +34,7 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 - **Data and unions**: `data` defines record-like types with named fields; `union` are a declared nominal supertype consisting of a fixed set of existing types; values are implicitly usable as a union if their concrete type is a member (often with nested `data` members).
 - **Attributes are first-class**: Behaviors (defaults, docs, protocols) are expressed via attributes in `prelude/attributes.zirr`. Type information uses type hints (`: T`, `-> T`) rather than attributes.
 - **Collection protocols**: `@Countable`/`@Iterable` in `prelude/countable.zirr` describe the “protocols” used by loops and helpers.
-- **Cavefile is just Zirric**: Dependency and task manifests are Zirric `data` declarations annotated with `@cave.Dependencies` and `@tasks.*` (see `cave/manifest.zirr` and `future/tasks/manifest.zirr`).
+- **Cavefile is just Zirric**: Dependency and task manifests are Zirric `data` declarations annotated with `@cave.Dependencies` and `@tasks.*` (see `cave/manifest.zirr` and `tasks/manifest.zirr`).
 
 ## Build & Validation Instructions
 
@@ -215,7 +215,7 @@ GitHub Actions workflow (`.github/workflows/go.yml`):
 - **`pkg/runtime/prelude-*.go`**: Built-in type implementations
 - **`prelude/*.zirr`**: Core types and attributes
 - **`cave/manifest.zirr`**: Cavefile dependency schema
-- **`future/tasks/manifest.zirr`**: Cavefile task schema
+- **`tasks/manifest.zirr`**: Cavefile task schema
 - **`pkg/op/defs.go`**: Define new bytecode operations
 
 ### Testing Patterns

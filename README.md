@@ -107,7 +107,7 @@ Cavefiles are Zirric sources that declare dependencies and tasks via attributes:
 
 ```zirric
 import cave
-import future.tasks
+import tasks
 
 @cave.Dependencies()
 data Dependencies {

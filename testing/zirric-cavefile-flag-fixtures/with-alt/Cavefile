@@ -1,4 +1,4 @@
-import future.tasks
+import tasks
 
 @tasks.Name("default-task")
 @tasks.Exec("default.zirr")
