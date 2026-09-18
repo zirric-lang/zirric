@@ -9,13 +9,8 @@ Zirric packages are described by a `Cavefile`, which is itself Zirric code. The
 Cavefile declares dependencies using attributes and is parsed by tooling based
 on its type information rather than executed as a program.
 
-::: callout warning In Progress
-The package manager is still evolving. The CLI and UX are not implemented yet
-and will be covered in future proposals.
-
 For the authoritative design, see the
 [ZE-002 Cavefile proposal](/proposals/ZE-002-the-cavefile#cavefile).
-:::
 
 ## Cavefile at a glance
 
@@ -23,7 +18,7 @@ A Cavefile is a Zirric module that declares dependencies through attributes.
 The package manager reads it for types and metadata, not for runtime behavior.
 
 ```zirric
-import future.cave
+import cave
 
 @cave.Dependencies()
 data Dependencies {

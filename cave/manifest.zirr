@@ -12,6 +12,16 @@ const ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
 @Proposal(ZE_002)
 attr Dependencies {}
 
+// Declares the canonical URL of the current package.
+// Placed on the Cavefile's `mod` declaration, e.g. `@cave.Package("https://...") mod mymodule`.
+// Used to derive the package's name and source instead of falling back to
+// the project directory name.
+@Proposal(ZE_002)
+attr Package {
+  // The canonical URL of the package.
+  url: String
+}
+
 @Proposal(ZE_002)
 attr Version {
   // The version predicate for the Git dependency.

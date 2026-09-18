@@ -1,6 +1,11 @@
 version: '3'
 
 tasks:
+  bats:
+    desc: Run CLI (bats) workflow via act
+    cmds:
+      - act -W .github/workflows/bats.yml
+
   docs-netlify:
     desc: Run docs-netlify workflow via act
     cmds:

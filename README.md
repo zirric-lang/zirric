@@ -106,7 +106,7 @@ Here `Countable` supplies a `length` implementation, allowing tools to treat
 Cavefiles are Zirric sources that declare dependencies and tasks via attributes:
 
 ```zirric
-import future.cave
+import cave
 import future.tasks
 
 @cave.Dependencies()

@@ -1,0 +1,3 @@
+mod greet
+
+const greeting = "hi from a task"

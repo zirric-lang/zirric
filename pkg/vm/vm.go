@@ -2,6 +2,7 @@ package vm
 
 import (
 	"fmt"
+	"math/rand"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/compiler"
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
@@ -133,19 +134,38 @@ func (vm *VM) hasAttribute(typeId runtime.TypeId, attrConstId runtime.TypeId) bo
 	return false
 }
 
-// CallFunction calls a zero-argument CompiledFunction in the VM and returns its result.
-func (vm *VM) CallFunction(fn runtime.RuntimeValue) (runtime.RuntimeValue, error) {
-	compiledFn, ok := fn.(*runtime.CompiledFunction)
-	if !ok {
-		return nil, fmt.Errorf("CallFunction: expected *runtime.CompiledFunction, got %T", fn)
+// CallFunction calls a CompiledFunction or Closure in the VM with the given arguments and returns its result.
+func (vm *VM) CallFunction(fn runtime.RuntimeValue, args ...runtime.RuntimeValue) (runtime.RuntimeValue, error) {
+	var closure *runtime.Closure
+	switch callee := fn.(type) {
+	case *runtime.CompiledFunction:
+		closure = runtime.MakeClosure(callee, nil)
+	case *runtime.Closure:
+		closure = callee
+	default:
+		return nil, fmt.Errorf("CallFunction: expected *runtime.CompiledFunction or *runtime.Closure, got %T", fn)
 	}
-	closure := runtime.MakeClosure(compiledFn, nil)
+	if len(args) != closure.Arity() {
+		return nil, fmt.Errorf("CallFunction: wrong number of arguments: want=%d, got=%d", closure.Arity(), len(args))
+	}
+
 	frame := newClosureFrame(closure, vm.sp)
+	for i, arg := range args {
+		frame.locals[i] = arg
+	}
 	vm.pushFrame(frame)
 	if err := vm.Run(); err != nil {
 		return nil, err
 	}
 	return vm.pop(), nil
+}
+
+// ResolveGlobal forces evaluation of the global at index id, for use outside normal bytecode execution.
+func (vm *VM) ResolveGlobal(id int) (runtime.RuntimeValue, error) {
+	if id < 0 || id >= len(vm.globals) {
+		return nil, fmt.Errorf("ResolveGlobal: index %d out of range (have %d globals)", id, len(vm.globals))
+	}
+	return vm.globals[id].Get(TaskId(rand.Uint64()))
 }
 
 func (vm *VM) currentFrame() *Frame {

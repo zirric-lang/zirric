@@ -15,14 +15,15 @@ import (
 )
 
 type ModuleResolver struct {
-	mu        sync.Mutex
-	pm        *pkgmanager.PackageManager
-	cave      cavefile.Cavefile
-	installed []registry.ResolvedPackage
-	modules   map[registry.LogicalURI]*ast.ContextModule
-	prelude   *ast.ContextModule
-	ready     bool
-	readOnly  bool
+	mu          sync.Mutex
+	pm          *pkgmanager.PackageManager
+	cave        cavefile.Cavefile
+	installed   []registry.ResolvedPackage
+	modules     map[registry.LogicalURI]*ast.ContextModule
+	prelude     *ast.ContextModule
+	ready       bool
+	readOnly    bool
+	onInstalled pkgmanager.InstallProgress
 }
 
 // ResolverOption configures a ModuleResolver.
@@ -33,6 +34,11 @@ type ResolverOption func(*ModuleResolver)
 // Missing dependencies produce errors rather than triggering remote installation.
 func ReadOnly() ResolverOption {
 	return func(r *ModuleResolver) { r.readOnly = true }
+}
+
+// WithInstallProgress returns a ResolverOption that reports each dependency as it finishes installing.
+func WithInstallProgress(fn pkgmanager.InstallProgress) ResolverOption {
+	return func(r *ModuleResolver) { r.onInstalled = fn }
 }
 
 func NewModuleResolver(pm *pkgmanager.PackageManager, cave cavefile.Cavefile, opts ...ResolverOption) (*ModuleResolver, error) {
@@ -82,35 +88,43 @@ func (r *ModuleResolver) ensureDependencies(ctx context.Context) ([]registry.Res
 		return nil, err
 	}
 
-	// Always install the project package itself so its modules are discoverable
-	// in r.installed, regardless of whether any declared dependencies are missing.
+	depErr := r.installMissingDependencies(ctx)
+
+	// Install the project itself even if a dependency failed, so its modules stay discoverable in r.installed.
 	caveOnly := cavefile.Cavefile{Package: r.cave.Package}
 	projectTask := r.pm.Install(caveOnly)
 	projectTask.ReadOnly = r.readOnly
+	projectTask.OnInstalled = r.onInstalled
 	projectPkgs, err := projectTask.Run(ctx)
 	if err != nil {
 		return nil, err
 	}
 	r.installed = append(r.installed, projectPkgs...)
 
-	// Install any declared dependencies that are not yet satisfied.
+	if depErr != nil {
+		return r.installed, depErr
+	}
+	return r.installed, nil
+}
+
+func (r *ModuleResolver) installMissingDependencies(ctx context.Context) error {
 	missing := r.filterMissingDependencies(r.cave.Dependencies)
 	if len(missing) == 0 {
-		return r.installed, nil
+		return nil
 	}
 	depTask := r.pm.Install(cavefile.Cavefile{Dependencies: missing})
 	depTask.ReadOnly = r.readOnly
+	depTask.OnInstalled = r.onInstalled
 	depPkgs, err := depTask.Run(ctx)
 	if err != nil {
 		// In read-only mode, still use whatever was found
 		if r.readOnly && len(depPkgs) > 0 {
 			r.installed = append(r.installed, depPkgs...)
-			return r.installed, err
 		}
-		return nil, err
+		return err
 	}
 	r.installed = append(r.installed, depPkgs...)
-	return r.installed, nil
+	return nil
 }
 
 func (r *ModuleResolver) ResolveModule(ctx context.Context, uri registry.LogicalURI) (*ast.ContextModule, error) {
@@ -193,6 +207,16 @@ func (r *ModuleResolver) findResolvedModule(uri registry.LogicalURI) (registry.R
 		}
 	}
 	return nil, fmt.Errorf("module %q not found", uri)
+}
+
+// EnsureInstalled installs the project and its declared dependencies, returning the resolved packages.
+func (r *ModuleResolver) EnsureInstalled(ctx context.Context) ([]registry.ResolvedPackage, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if err := r.ensureInstalledLocked(ctx); err != nil {
+		return nil, err
+	}
+	return r.installed, nil
 }
 
 func (r *ModuleResolver) ensureInstalledLocked(ctx context.Context) error {

@@ -70,6 +70,20 @@ func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {
 	}
 }
 
+func TestDiscoverPackageVersionsNoMatchForNonGitLocalPath(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reg := gitreg.New(memfs.New())
+	pkgs, err := reg.DiscoverPackageVersions(ctx, "file://"+t.TempDir())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(pkgs) != 0 {
+		t.Fatalf("expected no packages, got %+v", pkgs)
+	}
+}
+
 // func TestIntegrationGitRegistryResolveSecondLatestZirric(t *testing.T) {
 // 	ctx, cancel := context.WithCancel(context.Background())
 // 	defer cancel()

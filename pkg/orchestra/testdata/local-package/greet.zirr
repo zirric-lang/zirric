@@ -1,0 +1,3 @@
+mod local_package
+
+const greeting = "hi from a local package"

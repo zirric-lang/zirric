@@ -34,8 +34,8 @@ func TestDefaultStdlibProvider(t *testing.T) {
 
 	moduleURIs := collectModuleURIs(mods)
 	expectModule(t, moduleURIs, "prelude")
+	expectModule(t, moduleURIs, "cave")
 	expectModule(t, moduleURIs, "future")
-	expectModule(t, moduleURIs, "future.cave")
 	expectModule(t, moduleURIs, "future.reflect")
 	expectModule(t, moduleURIs, "future.tasks")
 }

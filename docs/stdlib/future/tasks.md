@@ -50,22 +50,6 @@ Fields:
 
 - `function: Function` — The function to run for the task.
 
-### attr Import
-
-```zirric
-@Proposal(ZE_002)
-attr Import {
-  module: Module
-}
-```
-
-Indicates that this task uses a module for its implementation. Must be declared
-on the field of a data declaration with `@Dependencies`.
-
-Fields:
-
-- `module: Module` — The module to use for the task.
-
 ### attr Name
 
 ```zirric
@@ -144,6 +128,8 @@ attr Arg {}
 
 Marks this field as a positional commandline argument.
 
+For a task using `@Call`, a `@Flag`/`@Arg` field's type must be `Bool`, `String`, or `Int` — the CLI uses it to register a real, typed flag or argument. This restriction doesn't apply to `@Exec` tasks, which parse their own arguments from `os.args()` instead.
+
 ## Union
 
 ### union Task
@@ -154,11 +140,9 @@ union Task
 ```
 
 Marks a data declaration as a task. The task can be executed from the command
-line. Exactly one of these two attributes are required: `@RunFile`, `@Run` or
-`@Import`.
+line. Exactly one of `@Exec` or `@Call` is required.
 
 Members:
 
 - `Exec`
 - `Call`
-- `Import`

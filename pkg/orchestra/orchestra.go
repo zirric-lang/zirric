@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -17,6 +18,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/cavereg"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/fsmodule"
+	"code.knabel.dev/zirric-lang/zirric/pkg/registry/localreg"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/staticmodule"
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
 	"code.knabel.dev/zirric-lang/zirric/pkg/vm"
@@ -25,14 +27,20 @@ import (
 
 const preludeModuleURI registry.LogicalURI = "prelude"
 
+const DefaultCavefileName = "Cavefile"
+
 type Config struct {
 	ProjectFS   billy.Filesystem
 	RegistryFS  billy.Filesystem
 	PackageName string // required; used as the project's logical URI base and package identity
+
+	Cavefile     *cavefile.Cavefile // optional; overrides auto-detecting the Cavefile in ProjectFS
+	CavefilePath string             // optional; overrides DefaultCavefileName as the Cavefile's path within ProjectFS
 }
 
 type Orchestra struct {
 	cave           cavefile.Cavefile
+	cavefilePath   string
 	projectFS      billy.Filesystem
 	projectBaseURI registry.LogicalURI
 	pkgmanager     *pkgmanager.PackageManager
@@ -52,12 +60,11 @@ func New(cfg Config) (*Orchestra, error) {
 		return nil, err
 	}
 
-	cave := ensureStandardLibraryDependency(cavefile.Cavefile{
-		Package: cavefile.Package{
-			Name:   cfg.PackageName,
-			Source: "file://" + cfg.ProjectFS.Root(),
-		},
-	})
+	cave, cavefilePath, err := loadCave(cfg)
+	if err != nil {
+		return nil, err
+	}
+	cave = ensureStandardLibraryDependency(cave)
 
 	caveReg, err := cavereg.New(cave, cfg.ProjectFS)
 	if err != nil {
@@ -67,6 +74,7 @@ func New(cfg Config) (*Orchestra, error) {
 	pm, err := pkgmanager.New(
 		cfg.RegistryFS,
 		pkgmanager.WithRegistry(caveReg),
+		pkgmanager.WithRegistry(localreg.New()),
 		pkgmanager.WithGitRegistry(),
 		withDefaultStdlibRegistry(),
 	)
@@ -79,7 +87,35 @@ func New(cfg Config) (*Orchestra, error) {
 		projectBaseURI: registry.LogicalURI(cave.Name),
 		pkgmanager:     pm,
 		cave:           cave,
+		cavefilePath:   cavefilePath,
 	}, nil
+}
+
+// loadCave resolves the project's Cavefile and its path within ProjectFS (empty when a synthetic Cavefile was used instead).
+func loadCave(cfg Config) (cavefile.Cavefile, string, error) {
+	if cfg.Cavefile != nil {
+		return *cfg.Cavefile, "", nil
+	}
+	path := cfg.CavefilePath
+	if path == "" {
+		path = DefaultCavefileName
+	}
+	if _, err := cfg.ProjectFS.Stat(path); err == nil {
+		cave, err := ParseCavefile(context.Background(), cfg.ProjectFS, cfg.RegistryFS, path)
+		if err != nil {
+			return cavefile.Cavefile{}, "", fmt.Errorf("parse %s: %w", path, err)
+		}
+		return cave, path, nil
+	}
+	if cfg.CavefilePath != "" {
+		return cavefile.Cavefile{}, "", fmt.Errorf("cavefile not found: %s", path)
+	}
+	return cavefile.Cavefile{
+		Package: cavefile.Package{
+			Name:   cfg.PackageName,
+			Source: "file://" + cfg.ProjectFS.Root(),
+		},
+	}, "", nil
 }
 
 func (o *Orchestra) ParseModulePath(ctx context.Context, modulePath string, resolver *ModuleResolver) (*ast.ContextModule, error) {
@@ -185,8 +221,48 @@ func (o *Orchestra) RunFile(ctx context.Context, filePath string) error {
 	return o.runBytecode(bytecode)
 }
 
+// RunFileWithArgs runs filePath like RunFile, but rewrites os.Args to [filePath, args...] first, so the script's own os.args() call sees this argv instead of the CLI's.
+func (o *Orchestra) RunFileWithArgs(ctx context.Context, filePath string, args []string) error {
+	prevArgs := os.Args
+	os.Args = buildArgv(filePath, args)
+	defer func() { os.Args = prevArgs }()
+
+	return o.RunFile(ctx, filePath)
+}
+
+func buildArgv(filePath string, args []string) []string {
+	argv := make([]string, 0, 1+len(args))
+	argv = append(argv, filePath)
+	argv = append(argv, args...)
+	return argv
+}
+
 func (o *Orchestra) NewResolver(opts ...ResolverOption) (*ModuleResolver, error) {
 	return NewModuleResolver(o.pkgmanager, o.cave, opts...)
+}
+
+// compileCavefileForTasks compiles the Cavefile through the real project resolver, unlike ParseCavefile's stdlib-only bootstrap parse.
+func (o *Orchestra) compileCavefileForTasks(ctx context.Context) (*compiler.Bytecode, *ast.ContextModule, *ModuleResolver, error) {
+	resolver, err := o.NewResolver()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	module, err := o.ParseFile(ctx, o.cavefilePath, resolver)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	bytecode, err := o.Compile(module, resolver)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return bytecode, module, resolver, nil
+}
+
+func (o *Orchestra) Cavefile() cavefile.Cavefile {
+	return o.cave
 }
 
 func (o *Orchestra) runBytecode(bytecode *compiler.Bytecode) error {

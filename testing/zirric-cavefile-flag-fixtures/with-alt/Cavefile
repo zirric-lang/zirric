@@ -1,0 +1,6 @@
+import future.tasks
+
+@tasks.Name("default-task")
+@tasks.Exec("default.zirr")
+data DefaultTask {
+}

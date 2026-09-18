@@ -5,9 +5,10 @@ description: "Planning document for the Zirric Command Line Interface (CLI)"
 
 # Zirric CLI Design
 
-::: callout tip <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Implemented
-This proposal has been accepted and implemented.
-You can use this feature in the latest version of Zirric.
+::: callout warning <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-dot-icon lucide-circle-dot"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg> In Progress
+This proposal has been accepted in principle.
+It is currently under active development.
+Parts might be incomplete or missing in Zirric.
 :::
 
 ## Introduction
@@ -23,6 +24,9 @@ Currently Zirric solely exists in unit tests, not as a usable programming langua
 The goal is a single CLI tool named `zirric` that encompasses all functionalities required for developing, managing, and running Zirric projects. This includes commands for running code, managing dependencies, handling tasks, and interacting with the Language Server Protocol (LSP).
 
 ```bash
+# global flag: overrides the Cavefile used by any command below (must precede the subcommand)
+$ zirric --cavefile <path> ...
+
 # default command
 $ zirric
 
@@ -43,7 +47,6 @@ $ zirric cavefile # shows the parsed Cavefile contents
 $ zirric task                                             # lists available tasks
 $ zirric task run [--flags...] <task-name> [--] [args...]
 $ zirric x <task-name> [--flags...] [--] [args...]        # shorthand for `task run`
-$ zirric [--flags...] <task-name> [args...]               # shorthand for `task run`
 
 # Project commands
 $ zirric test # runs tests, can be overridden by user-defined task
@@ -71,6 +74,8 @@ If the `Cavefile` needs to be parsed for the command to come, this needs to be d
 
 The CLI should only read arguments and flags until `--`. Remaining arguments are passed to the executed command or task as-is.
 
+`--cavefile <path>` overrides autodetection of the project's Cavefile and must precede the subcommand: several task commands disable their own flag parsing so a task's own arguments pass through untouched, which means a `--cavefile` placed after the subcommand would never be recognized.
+
 | Command      | Requires Cavefile? | Why?                         |
 | ------------ | ------------------ | ---------------------------- |
 | root command | Yes                | For help                     |
@@ -89,7 +94,6 @@ The CLI should only read arguments and flags until `--`. Remaining arguments are
 | `version`    | No                 | Irrelevant                   |
 | `help`       | Yes                | For tasks                    |
 | `completion` | No                 | Irrelevant                   |
-| any other    | Yes                | For run dependencies or task |
 
 ## Changes to the Standard Library
 

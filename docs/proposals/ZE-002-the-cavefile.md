@@ -5,15 +5,14 @@ description: A proposal to document the Zirric package manager and the Cavefile 
 
 # The Cavefile
 
-::: callout warning <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-dot-icon lucide-circle-dot"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg> In Progress
-This proposal has been accepted in principle.
-It is currently under active development.
-Parts might be incomplete or missing in Zirric.
+::: callout tip <svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Implemented
+This proposal has been accepted and implemented.
+You can use this feature in the latest version of Zirric.
 :::
 
 ## Introduction
 
-This proposal describes the current Zirric package manager and the `Cavefile` manifest that drives it. The goal is to document the partially implemented behaviour so users and contributors understand how dependencies are declared, resolved, and cached today.
+This proposal describes the Zirric package manager and the `Cavefile` manifest that drives it. The goal is to document its behaviour so users and contributors understand how dependencies and tasks are declared, resolved, and run.
 
 ## Motivation
 
@@ -34,7 +33,7 @@ As of now the package manager does not traverse transitive dependencies, leaving
 The data structure with the `@cave.Dependencies()` attribute will be used to declare dependencies in a `Cavefile`.
 
 ```zirric
-import future.cave
+import cave
 
 @cave.Dependencies()
 data Dependencies {
@@ -49,7 +48,7 @@ data Dependencies {
   // References a package hosted in a Git repository.
   @cave.Git("https://code.knabel.dev/zirric-lang/zirric")
   @cave.Version(">0.1.0")
-  future // importable as future
+  zirric // importable as zirric
 }
 ```
 
@@ -65,20 +64,32 @@ Additionally to dependencies, a `Cavefile` can declare tasks that the Zirric CLI
 @tasks.Help("Generates something")
 @tasks.Exec("tasks/generate.zirr")
 data GenerateTask {
-	@Bool
-	@tasks.Flag()
+  @tasks.Flag()
   @tasks.Name("dry")
-	@tasks.Help("If true, only simulates the generation")
-	isDryRun
+  @tasks.Help("If true, only simulates the generation")
+  isDryRun: Bool
 
-	@String
-	@tasks.Arg()
-	positional
+  @tasks.Arg()
+  positional: String
+}
+
+@tasks.Name("build")
+@tasks.Call(fn(opts: BuildTask) {
+  // ...
+})
+data BuildTask {
+  @tasks.Flag()
+  dry: Bool
+
+  @tasks.Arg()
+  target: String
 }
 ```
 
-This will declare a task named `generate` that can be executed with `zirric generate`.
-Upon execution, the `tasks/generate.zirr` script will be run with the provided flags and arguments.
+This will declare a task named `generate` that can be executed with `zirric task run generate` (or the `zirric x generate` shorthand).
+Upon execution, the `tasks/generate.zirr` script is run as its own program; it reads its own flags and arguments via `os.args()`, the same way any Zirric script would.
+
+`build` instead runs by calling the inline function passed to `@tasks.Call` directly, with a single argument: an instance of `BuildTask` built from the parsed, typed flag and argument values.
 
 ## Detailed Design
 
@@ -145,24 +156,24 @@ published to the toolchain.
 
 ### Task execution and parsing
 
-The `cave.tasks` package provides attributes and helpers to declare and execute tasks.
-Data structures may be tasks when annotated with `@tasks.Exec` to execute files, `@tasks.Call` to call functions or `@tasks.Import` to reuse existing tasks.
+The `future.tasks` package provides attributes and helpers to declare and execute tasks.
+Data structures may be tasks when annotated with `@tasks.Exec` to execute files or `@tasks.Call` to call functions.
 
 They will be parsed by the CLI and registered as commands. By default the command name is the lowercased data name, but it may be overridden with `@tasks.Name`. A help text may be provided with `@tasks.Help`.
 
-Tasks may declare flags and positional arguments by annotating fields with `@tasks.Flag` and `@tasks.Arg`.
+Tasks may declare flags and positional arguments by annotating fields with `@tasks.Flag` and `@tasks.Arg`. For a `@tasks.Call` task, each field's type must be `Bool`, `String`, or `Int`; the CLI registers a real, typed flag or positional argument per field (via Cobra), which is also what makes `--help` output and shell completions for task-defined commands possible. A `@tasks.Exec` task's declared fields have no effect on the CLI: flag parsing is disabled for it, and the script parses its own flags and arguments from `os.args()`.
 
 ## Changes to the Standard Library
 
-Introduces the `cave` and `cave.tasks` modules to the standard library.
+Introduces the `cave` and `future.tasks` modules to the standard library.
 
 - `cave`:
   - `Dependencies` attribute
   - a union for `Source` with values `Stdlib`, `Local`, and `Git`
   - `Stdlib`, `Local`, `Git`, and `Version` attributes
-- `cave.tasks`:
-  - a union for `Task` with values `Exec`, `Call`, and `Import`
-  - `Exec`, `Call`, and `Import` attributes for task declarations
+- `future.tasks`:
+  - a union for `Task` with values `Exec` and `Call`
+  - `Exec` and `Call` attributes for task declarations
   - `Name`, `Alias`, `Help`, `Short`, `Flag`, and `Arg` attributes for tasks and their fields
 
 ## Alternatives Considered

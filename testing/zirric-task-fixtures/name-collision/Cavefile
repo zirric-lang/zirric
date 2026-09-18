@@ -1,0 +1,11 @@
+import future.tasks
+
+@tasks.Name("dup")
+@tasks.Exec("a.zirr")
+data TaskA {
+}
+
+@tasks.Name("dup")
+@tasks.Exec("b.zirr")
+data TaskB {
+}

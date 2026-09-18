@@ -1,0 +1,7 @@
+import cave
+
+@cave.Dependencies()
+data Dependencies {
+  @cave.Local("../local-package")
+  helpers
+}

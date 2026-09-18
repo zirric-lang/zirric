@@ -18,7 +18,7 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 | Proposal                                                       | Title                               | Status      | Info     |
 | -------------------------------------------------------------- | ----------------------------------- | ----------- | -------- |
 | [ZE-001](/proposals/ZE-001-base-language)                      | Base Language                       | Implemented |          |
-| [ZE-002](/proposals/ZE-002-the-cavefile)                       | The Cavefile                        | In Progress |          |
+| [ZE-002](/proposals/ZE-002-the-cavefile)                       | The Cavefile                        | Implemented |          |
 | [ZE-003](/proposals/ZE-003-named-data-construction)            | Named Data Construction             | Rejected    |          |
 | [ZE-004](/proposals/ZE-004-Variadic-Arguments)                 | Variadic Arguments                  | Draft       | Outdated |
 | [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)            | Mixin Type Declarations             | Draft       | Outdated |
@@ -27,7 +27,7 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 | [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                      | Implemented |          |
 | [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                       | Implemented |          |
 | [ZE-010](/proposals/ZE-010-iterable)                           | Iterable                            | In Progress | Outdated |
-| [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                          | Implemented |          |
+| [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                          | In Progress |          |
 | [ZE-012](/proposals/ZE-012-type-and-returns-sugar)             | Type and Returns Sugar              | Rejected    |          |
 | [ZE-013](/proposals/ZE-013-mutability-and-constants)           | Mutability and Constants            | Implemented |          |
 | [ZE-014](/proposals/ZE-014-attribute-and-declaration-keywords) | Attribute and Declaration Keywords  | Implemented |          |

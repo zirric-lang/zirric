@@ -1,0 +1,17 @@
+import future.tasks
+import fmt
+
+@tasks.Name("build")
+@tasks.Alias(["b"])
+@tasks.Help("Builds the project")
+@tasks.Call(fn(opts: BuildTask) {
+  fmt.println(opts.target)
+})
+data BuildTask {
+  @tasks.Flag()
+  @tasks.Short('d')
+  dry: Bool
+
+  @tasks.Flag()
+  target: String
+}

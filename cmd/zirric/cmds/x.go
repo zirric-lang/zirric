@@ -8,7 +8,11 @@ func init() {
 }
 
 var xCmd = &cobra.Command{
-	Use:   "x <task-name> [args...]",
-	Short: "Shorthand for `task run`",
-	Args:  cobra.MinimumNArgs(1),
+	Use:                "x <task-name> [args...]",
+	Short:              "Shorthand for `task run`",
+	Args:               cobra.MinimumNArgs(1),
+	DisableFlagParsing: true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runNamedTask(args[0], args[1:])
+	},
 }

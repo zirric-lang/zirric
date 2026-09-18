@@ -1,0 +1,7 @@
+import future.tasks
+
+@tasks.Name("greet")
+@tasks.Alias(["hi"])
+@tasks.Exec("greet.zirr")
+data GreetTask {
+}

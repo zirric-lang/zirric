@@ -10,12 +10,11 @@ const ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
 
 // Marks a data declaration as a task.
 // The task can be executed from the command line.
-// Exactly one of these two attributes are required: @RunFile, @Run or @Import.
+// Exactly one of @Exec or @Call is required.
 @Proposal(ZE_002)
 union Task {
   Exec
   Call
-  Import
 }
 
 // Indicates that this task is implemented in an external file.
@@ -30,14 +29,6 @@ attr Exec {
 attr Call {
   // The function to run for the task.
   function: Function
-}
-
-// Indicates that this task uses a module for its implementation.
-// Must be declared on the field of a data declaration with @Dependencies.
-@Proposal(ZE_002)
-attr Import {
-  // The module to use for the task.
-  module: Module
 }
 
 // Renames the task, flag or argument.

@@ -144,6 +144,11 @@ module.exports = {
           icon: "sparkles"
         },
         {
+          title: "Cave",
+          path: "/stdlib/cave",
+          icon: "package"
+        },
+        {
           title: "Future",
           path: "/stdlib/future",
           icon: "flask-conical",
@@ -158,11 +163,6 @@ module.exports = {
               title: "Reflect",
               path: "/stdlib/future/reflect",
               icon: "scan"
-            },
-            {
-              title: "Cave",
-              path: "/stdlib/future/cave",
-              icon: "package"
             },
             {
               title: "Tasks",
@@ -203,7 +203,7 @@ module.exports = {
           path: "/proposals/ZE-001-base-language"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-02 Cavefile",
           path: "/proposals/ZE-002-the-cavefile"
         },
@@ -248,7 +248,7 @@ module.exports = {
           path: "/proposals/ZE-010-iterable"
         },
         {
-          icon: "circle-check",
+          icon: "circle-dot",
           title: "ZE-11 Zirric CLI",
           path: "/proposals/ZE-011-zirric-cli"
         },

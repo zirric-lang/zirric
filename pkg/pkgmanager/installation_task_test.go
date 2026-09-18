@@ -3,6 +3,7 @@ package pkgmanager
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -81,6 +82,14 @@ func (p *stubPackage) Resolve(ctx context.Context) (registry.ResolvedPackage, er
 		return nil, p.resolveErr
 	}
 	return p.resolved, nil
+}
+
+func sourcesAndVersions(pkgs []registry.ResolvedPackage) []string {
+	out := make([]string, len(pkgs))
+	for i, p := range pkgs {
+		out[i] = fmt.Sprintf("%s@%s", p.Source(), p.Version())
+	}
+	return out
 }
 
 func TestInstallationTaskRun(t *testing.T) {
@@ -265,7 +274,8 @@ func TestInstallationTaskRun(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				if !reflect.DeepEqual(completed, tt.wantCompleted) {
+				// completed packages are wrapped by aliasDependency, so compare by Source/Version instead of deep-equating the wrapper.
+				if !reflect.DeepEqual(sourcesAndVersions(completed), sourcesAndVersions(tt.wantCompleted)) {
 					t.Fatalf("completed packages mismatch: got %#v, want %#v", completed, tt.wantCompleted)
 				}
 				if !reflect.DeepEqual(task.queue, tt.wantQueue) {
@@ -282,5 +292,56 @@ func TestInstallationTaskRun(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestInstallationTaskRun_NotifiesOnInstalled(t *testing.T) {
+	versionOne := version.Parse("1.0.0")
+	provider := &stubProvider{
+		discoverFn: func(context.Context) ([]registry.ResolvedPackage, error) {
+			return []registry.ResolvedPackage{&stubResolvedPackage{source: "local/pkg", version: versionOne}}, nil
+		},
+	}
+
+	var events []InstallEvent
+	task := &InstallationTask{
+		cave: cavefile.Cavefile{Dependencies: []cavefile.Dependency{
+			{Package: cavefile.Package{Name: "pkg", Source: "local/pkg"}},
+		}},
+		pkgmanager:  &PackageManager{registries: []registry.Provider{provider}},
+		OnInstalled: func(evt InstallEvent) { events = append(events, evt) },
+	}
+
+	if _, err := task.Run(context.Background()); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected 1 install event, got %d: %+v", len(events), events)
+	}
+	if events[0].Dependency.Name != "pkg" || events[0].Package.Source() != "local/pkg" {
+		t.Errorf("unexpected event: %+v", events[0])
+	}
+}
+
+func TestInstallationTaskRun_ReadOnlyMissingDoesNotNotify(t *testing.T) {
+	provider := &stubProvider{
+		discoverFn: func(context.Context) ([]registry.ResolvedPackage, error) { return nil, nil },
+	}
+
+	var events []InstallEvent
+	task := &InstallationTask{
+		cave: cavefile.Cavefile{Dependencies: []cavefile.Dependency{
+			{Package: cavefile.Package{Name: "pkg", Source: "missing/pkg"}},
+		}},
+		pkgmanager:  &PackageManager{registries: []registry.Provider{provider}},
+		ReadOnly:    true,
+		OnInstalled: func(evt InstallEvent) { events = append(events, evt) },
+	}
+
+	if _, err := task.Run(context.Background()); err == nil {
+		t.Fatal("expected an error for a missing dependency in read-only mode")
+	}
+	if len(events) != 0 {
+		t.Fatalf("expected no install events for a missing dependency, got %+v", events)
 	}
 }

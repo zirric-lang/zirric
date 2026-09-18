@@ -1,12 +1,12 @@
 ---
-title: Future.Cave
-description: Experimental Cavefile schema, dependency attributes, and package metadata.
+title: Cave
+description: Cavefile schema, dependency attributes, and package metadata.
 ---
 
-# Future.Cave
+# Cave
 
-The `cave` module defines attributes and types used by Cavefiles, moved under
-`future/cave` as part of the ZE-002 proposal work.
+The `cave` module defines attributes and types used by Cavefiles, as part of
+the ZE-002 proposal work.
 
 ## Values
 
@@ -28,6 +28,24 @@ attr Dependencies {}
 ```
 
 Marks the current data structure as a dependencies manifest.
+
+### attr Package
+
+```zirric
+@Proposal(ZE_002)
+attr Package {
+  url: String
+}
+```
+
+Declares the canonical URL of the current package. Placed on the Cavefile's
+`mod` declaration, e.g. `@cave.Package("https://...") mod mymodule`. Used to
+derive the package's name and source instead of falling back to the project
+directory name.
+
+Fields:
+
+- `url: String` — The canonical URL of the package.
 
 ### attr Version
 

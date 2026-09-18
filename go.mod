@@ -8,8 +8,10 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2
+	github.com/spf13/pflag v1.0.10
 	github.com/tliron/commonlog v0.2.21
 	github.com/tliron/glsp v0.2.2
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -39,7 +41,6 @@ require (
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/sourcegraph/jsonrpc2 v0.2.0 // indirect
-	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/tliron/go-kutil v0.4.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	golang.org/x/crypto v0.53.0 // indirect

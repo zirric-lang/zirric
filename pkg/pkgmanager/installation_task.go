@@ -10,10 +10,20 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/version"
 )
 
+// InstallEvent reports a dependency having finished installing. More granular phases
+// (e.g. discovered/installing) may be added here in the future.
+type InstallEvent struct {
+	Dependency cavefile.Dependency
+	Package    registry.ResolvedPackage
+}
+
+type InstallProgress func(InstallEvent)
+
 type InstallationTask struct {
-	cave       cavefile.Cavefile
-	pkgmanager *PackageManager
-	ReadOnly   bool
+	cave        cavefile.Cavefile
+	pkgmanager  *PackageManager
+	ReadOnly    bool
+	OnInstalled InstallProgress
 
 	queue []cavefile.Dependency
 }
@@ -50,7 +60,9 @@ func (t *InstallationTask) Run(ctx context.Context) ([]registry.ResolvedPackage,
 	for _, dependency := range t.queue {
 		pkg, ok := t.tryResolveAvailable(dependency, availables)
 		if ok {
-			completed = append(completed, pkg)
+			aliased := aliasDependency(pkg, dependency)
+			completed = append(completed, aliased)
+			t.notify(dependency, aliased)
 			continue
 		}
 
@@ -70,12 +82,21 @@ func (t *InstallationTask) Run(ctx context.Context) ([]registry.ResolvedPackage,
 		if localPkg == nil {
 			return nil, fmt.Errorf("no registry can provide package %s", dependency.Source)
 		}
-		completed = append(completed, localPkg)
+		aliased := aliasDependency(localPkg, dependency)
+		completed = append(completed, aliased)
+		t.notify(dependency, aliased)
 	}
 	if len(missing) > 0 {
 		return completed, fmt.Errorf("dependencies not installed locally: %s; run 'zirric install'", strings.Join(missing, ", "))
 	}
 	return completed, nil
+}
+
+func (t *InstallationTask) notify(dep cavefile.Dependency, pkg registry.ResolvedPackage) {
+	if t.OnInstalled == nil {
+		return
+	}
+	t.OnInstalled(InstallEvent{Dependency: dep, Package: pkg})
 }
 
 func (t *InstallationTask) tryResolveAvailable(dep cavefile.Dependency, availables map[string][]registry.ResolvedPackage) (registry.ResolvedPackage, bool) {

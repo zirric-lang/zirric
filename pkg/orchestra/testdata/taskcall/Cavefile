@@ -1,0 +1,16 @@
+import future.tasks
+
+@tasks.Name("build")
+@tasks.Call(fn(opts: BuildTask) {
+  return opts.target
+})
+data BuildTask {
+  @tasks.Flag()
+  dry: Bool
+
+  @tasks.Flag()
+  target: String
+
+  @tasks.Flag()
+  count: Int
+}

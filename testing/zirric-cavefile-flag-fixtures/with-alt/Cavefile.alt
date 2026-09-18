@@ -1,0 +1,6 @@
+import future.tasks
+
+@tasks.Name("alt-task")
+@tasks.Exec("alt.zirr")
+data AltTask {
+}

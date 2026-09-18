@@ -1,0 +1,31 @@
+# Runs the CLI integration tests under testing/ against the built zirric binary using bats-core.
+# See: https://github.com/bats-core/bats-core
+
+name: CLI (bats)
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  bats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.27"
+          cache: true
+
+      - name: Build zirric
+        run: go build -o zirric ./cmd/zirric
+
+      - name: Install bats-core
+        run: apt-get update && apt-get install -y bats
+
+      - name: Run CLI tests
+        run: bats testing
