@@ -273,12 +273,12 @@ Proposals live in `docs/proposals/` and follow a defined lifecycle. Each proposa
 
 When changing a proposal's status, update **all three** locations:
 
-1. **The proposal file** (`docs/proposals/ZE-NNN-*.md`): Replace the status callout block with the appropriate one from the template (`ZE-000-template.md`). Each status has a distinct callout style and SVG icon:
-   - Draft: `::: callout draft` with circle SVG
-   - In Progress: `::: callout warning` with circle-dot SVG
-   - Implemented: `::: callout tip` with circle-check SVG
-   - Rejected: `::: callout danger` with circle-x SVG
-2. **The index** (`docs/proposals/index.md`): Update the Status column in the proposals table.
+1. **The proposal file** (`docs/proposals/ZE-NNN-*.md`): Replace the status callout block with the appropriate one from the template (`ZE-000-template.md`). Each status has a distinct callout style:
+   - Draft: `::: callout draft`
+   - In Progress: `::: callout warning`
+   - Implemented: `::: callout tip`, with the body linking to the release that shipped it: `You can use this feature since Zirric [vX.Y.Z](/changelog/vX.Y.Z).`
+   - Rejected: `::: callout danger`
+2. **The index** (`docs/proposals/index.md`): Update the Status column in the proposals table. When marking a proposal Implemented, also add a link to the release in the Info column: `[vX.Y.Z](/changelog/vX.Y.Z)`.
 3. **The navigation config** (`tasks/docmd/docmd.config.js`): Update the `icon` field of the corresponding entry in the Proposals children array.
 
 ### When a Proposal Is Implemented
@@ -288,11 +288,12 @@ After marking a proposal as Implemented, perform these additional steps:
 1. **Update the specification**: Reflect the new feature in the relevant files under `docs/specification/` (syntax, declarations, expressions, typesystem). See [Keeping the Specification Up to Date](#keeping-the-specification-up-to-date) below.
 2. **Update the getting-started guide**: If the feature affects onboarding or common usage, update `docs/guides/getting-started.md`.
 3. **Update the changelog**: Add the proposal to the current release notes file under `docs/changelog/` (see [Maintaining the Changelog](#maintaining-the-changelog) below).
-4. **Search for outdated code and docs**: Look for old APIs, syntax, or descriptions that contradict the implemented proposal in:
+4. **Link the release notes from the proposal**: In the proposal's `Implemented` callout, replace the generic "latest version" text with a link to the release that shipped it: `You can use this feature since Zirric [vX.Y.Z](/changelog/vX.Y.Z).` Use the current (possibly `-next`) target version from step 3 — the link path never has a `-next` suffix, since the file name always matches the final release tag. If the version is later renumbered before release, update this link along with the changelog file rename.
+5. **Search for outdated code and docs**: Look for old APIs, syntax, or descriptions that contradict the implemented proposal in:
    - `*.zirr` source files (e.g., `prelude/`, `future/`, `examples/`)
    - `Cavefile` files (e.g., `examples/project/Cavefile`)
    - All documentation under `docs/` (excluding other proposals in `docs/proposals/`)
-5. **Do NOT update other proposals** in `docs/proposals/` — proposals are historical records of their time. Update all other outdated documentation under `docs/`.
+6. **Do NOT update other proposals** in `docs/proposals/` — proposals are historical records of their time. The one exception is the release-notes link added in step 4, which is expected to be added retroactively once the proposal ships.
 
 ## Keeping the Specification Up to Date
 

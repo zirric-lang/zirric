@@ -8,34 +8,37 @@ description: A collection of Zirric Evolution Proposals (ZEPs) documenting chang
 This directory contains Zirric Evolution Proposals. Each proposal documents a change
 or addition to the Zirric language or ecosystem. Take care to notice the status of each proposal.
 
-- <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-icon lucide-circle"><circle cx="12" cy="12" r="10"/></svg> **Draft**: The proposal is in an early stage and may undergo significant changes.
-- <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-dot-icon lucide-circle-dot"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg> **In Progress**: The proposal is being actively worked on and refined.
-- <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> **Implemented**: The proposal has been implemented in the Zirric language or ecosystem.
-- <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> **Rejected**: The proposal has been reviewed and decided against implementation.
+- **Draft**: The proposal is in an early stage and may undergo significant changes.
+- **In Progress**: The proposal is being actively worked on and refined.
+- **Implemented**: The proposal has been implemented in the Zirric language or ecosystem.
+- **Rejected**: The proposal has been reviewed and decided against implementation.
 
 ## Proposals
 
 | Proposal                                                       | Title                               | Status      | Info     |
 | -------------------------------------------------------------- | ----------------------------------- | ----------- | -------- |
-| [ZE-001](/proposals/ZE-001-base-language)                      | Base Language                       | Implemented |          |
-| [ZE-002](/proposals/ZE-002-the-cavefile)                       | The Cavefile                        | Implemented |          |
+| [ZE-001](/proposals/ZE-001-base-language)                      | Base Language                       | Implemented | [v0.1.0](/changelog/v0.1.0) |
+| [ZE-002](/proposals/ZE-002-the-cavefile)                       | The Cavefile                        | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-003](/proposals/ZE-003-named-data-construction)            | Named Data Construction             | Rejected    |          |
 | [ZE-004](/proposals/ZE-004-Variadic-Arguments)                 | Variadic Arguments                  | Draft       | Outdated |
 | [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)            | Mixin Type Declarations             | Draft       | Outdated |
 | [ZE-006](/proposals/ZE-006-Attribute-Based-Parsing-System)     | Attribute-Based Parsing System      | Draft       | Outdated |
 | [ZE-007](/proposals/ZE-007-attribute-binding)                  | Attribute Binding                   | Draft       | Outdated |
-| [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                      | Implemented |          |
-| [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                       | Implemented |          |
+| [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                      | Implemented | [v0.1.0](/changelog/v0.1.0) |
+| [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                       | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-010](/proposals/ZE-010-iterable)                           | Iterable                            | In Progress | Outdated |
 | [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                          | In Progress |          |
 | [ZE-012](/proposals/ZE-012-type-and-returns-sugar)             | Type and Returns Sugar              | Rejected    |          |
-| [ZE-013](/proposals/ZE-013-mutability-and-constants)           | Mutability and Constants            | Implemented |          |
-| [ZE-014](/proposals/ZE-014-attribute-and-declaration-keywords) | Attribute and Declaration Keywords  | Implemented |          |
+| [ZE-013](/proposals/ZE-013-mutability-and-constants)           | Mutability and Constants            | Implemented | [v0.1.0](/changelog/v0.1.0) |
+| [ZE-014](/proposals/ZE-014-attribute-and-declaration-keywords) | Attribute and Declaration Keywords  | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-015](/proposals/ZE-015-extern-type-constructors)           | Extern Type Constructors            | Draft       | Outdated |
-| [ZE-016](/proposals/ZE-016-closure-syntax)                     | Unified Function and Closure Syntax | Implemented |          |
-| [ZE-017](/proposals/ZE-017-type-hints)                         | Type Hints and Type Matching        | Implemented |          |
-| [ZE-018](/proposals/ZE-018-io-fmt-os)                          | I/O, Formatting, and OS             | Implemented |          |
+| [ZE-016](/proposals/ZE-016-closure-syntax)                     | Unified Function and Closure Syntax | Implemented | [v0.1.0](/changelog/v0.1.0) |
+| [ZE-017](/proposals/ZE-017-type-hints)                         | Type Hints and Type Matching        | Implemented | [v0.1.0](/changelog/v0.1.0) |
+| [ZE-018](/proposals/ZE-018-io-fmt-os)                          | I/O, Formatting, and OS             | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-019](/proposals/ZE-019-result-and-option-sugar)            | Result and Option Sugar             | Draft       | Outdated |
+| [ZE-020](/proposals/ZE-020-capability-attributes-and-script)   | Capability Attributes and the `script` Module | Draft |    |
+| [ZE-021](/proposals/ZE-021-flow-architecture)                  | The `flow` Module: Model-Update-View Architecture | Draft |  |
+| [ZE-022](/proposals/ZE-022-export-declarations)                | Export Declarations                 | Draft       |          |
 
 ## Submitting Proposals
 

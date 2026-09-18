@@ -291,6 +291,21 @@ module.exports = {
           icon: "circle",
           title: "ZE-19 Result & Option Sugar",
           path: "/proposals/ZE-019-result-and-option-sugar"
+        },
+        {
+          icon: "circle",
+          title: "ZE-20 Capability Attributes & script",
+          path: "/proposals/ZE-020-capability-attributes-and-script"
+        },
+        {
+          icon: "circle",
+          title: "ZE-21 Flow Architecture",
+          path: "/proposals/ZE-021-flow-architecture"
+        },
+        {
+          icon: "circle",
+          title: "ZE-22 Export Declarations",
+          path: "/proposals/ZE-022-export-declarations"
         }
       ]
     },
