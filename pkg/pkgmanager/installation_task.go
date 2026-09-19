@@ -19,6 +19,15 @@ type InstallEvent struct {
 
 type InstallProgress func(InstallEvent)
 
+// DependencyNotInstalledError is produced only in read-only mode, letting callers distinguish "not installed yet" from an unresolvable dependency.
+type DependencyNotInstalledError struct {
+	Names []string
+}
+
+func (e *DependencyNotInstalledError) Error() string {
+	return fmt.Sprintf("dependencies not installed locally: %s; run 'zirric install'", strings.Join(e.Names, ", "))
+}
+
 type InstallationTask struct {
 	cave        cavefile.Cavefile
 	pkgmanager  *PackageManager
@@ -87,7 +96,7 @@ func (t *InstallationTask) Run(ctx context.Context) ([]registry.ResolvedPackage,
 		t.notify(dependency, aliased)
 	}
 	if len(missing) > 0 {
-		return completed, fmt.Errorf("dependencies not installed locally: %s; run 'zirric install'", strings.Join(missing, ", "))
+		return completed, &DependencyNotInstalledError{Names: missing}
 	}
 	return completed, nil
 }

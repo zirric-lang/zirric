@@ -239,6 +239,7 @@ GitHub Actions workflow (`.github/workflows/go.yml`):
 - **Testing**: Table-driven tests, helper functions for common setup
 - **Naming**: Go conventions - exported/unexported based on capital letters
 - **Documentation**: Godoc comments for public APIs
+- **Comments**: Only add a comment when it explains a non-obvious WHY (a hidden constraint, an invariant, a regression's root cause) — never to restate WHAT the code does. Keep comments compact: one line per comment, no line-wrapping mid-sentence (long lines are fine). Remove comments that aren't strictly necessary.
 
 ### Validation Checklist for Changes
 

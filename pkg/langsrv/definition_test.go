@@ -63,7 +63,6 @@ func TestTextDocumentDefinition(t *testing.T) {
 			wantLine: 0,
 			wantChar: 5,
 		},
-		// Local variable/parameter/constant definition tests
 		{
 			name:     "definition of parameter from function body",
 			src:      "fn greet(name) {\n  name\n}",
@@ -155,7 +154,6 @@ func TestDefinitionAcrossFiles(t *testing.T) {
 	}
 	ls.setFilesystem(base, "/")
 
-	// "Point" in main.zirr starts at col 10
 	params := &protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///main.zirr"},
@@ -180,14 +178,12 @@ func TestDefinitionAcrossFiles(t *testing.T) {
 		t.Errorf("definition location = line %d col %d, want line 0 col 5",
 			loc.Range.Start.Line, loc.Range.Start.Character)
 	}
-	// URI should point to types.zirr
 	if loc.URI != "file:///types.zirr" {
 		t.Errorf("definition URI = %q, want file:///types.zirr", loc.URI)
 	}
 }
 
 func TestDefinitionQualifiedModule(t *testing.T) {
-	// "mymod.helper" — go-to-definition on "helper" should navigate to mymod/types.zirr
 	base := memfs.New()
 	if err := base.MkdirAll("mymod", 0755); err != nil {
 		t.Fatal(err)
@@ -225,8 +221,44 @@ func TestDefinitionQualifiedModule(t *testing.T) {
 	}
 }
 
+// TestDefinitionBareImportViaProjectBaseURI is a regression test: with an explicit Cavefile package name ("ui"), a bare import's real URI is "ui.flow" — go-to-definition worked via an old ad hoc path, but diagnostics reported "unknown module" since the resolver had no <projectBaseURI>.<name> fallback yet.
+func TestDefinitionBareImportViaProjectBaseURI(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "Cavefile", "import cave\n\n@cave.Dependencies()\ndata App {}\n")
+	writeFile(t, base, "flow/types.zirr", "mod flow\nfn helper() {}\n")
+	writeFile(t, base, "main.zirr", "mod main\nimport flow\nflow.helper")
+
+	ls := &zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	// Cursor on "helper" in "flow.helper" (line 2, after "flow.").
+	params := &protocol.DefinitionParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///main.zirr"},
+			Position:     protocol.Position{Line: 2, Character: 6},
+		},
+	}
+	result, err := ls.textDocumentDefinition(nil, params)
+	if err != nil {
+		t.Fatalf("textDocumentDefinition: %v", err)
+	}
+	if result == nil {
+		t.Fatal("expected definition for bare-imported flow.helper, got nil")
+	}
+	loc, ok := result.(*protocol.Location)
+	if !ok {
+		t.Fatalf("expected *protocol.Location, got %T", result)
+	}
+	if loc.URI != "file:///flow/types.zirr" {
+		t.Errorf("definition URI = %q, want file:///flow/types.zirr", loc.URI)
+	}
+}
+
 func TestDefinitionModNameQualified(t *testing.T) {
-	// "mymod.helper" where mymod is the current module's mod declaration.
 	base := memfs.New()
 	writeFile(t, base, "mymod/main.zirr", "mod mymod\nfn helper() {}\nmymod.helper")
 

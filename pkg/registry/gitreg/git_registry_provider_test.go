@@ -31,7 +31,8 @@ func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {
 	defer cancel()
 
 	reg := gitreg.New(memfs.New())
-	pkgs, err := reg.DiscoverPackageVersions(ctx, zirricGitRepo)
+	// Pinned to an exact version predicate rather than left unpredicated: the real remote repo may also expose branches as candidates (e.g. its default branch), which would otherwise make which candidate ends up first after sorting depend on what refs happen to exist upstream.
+	pkgs, err := reg.DiscoverPackageVersions(ctx, zirricGitRepo, version.ParsePredicate(zirricVersion))
 	if err != nil {
 		t.Fatal(err)
 	}

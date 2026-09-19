@@ -40,9 +40,14 @@ func (e TypeExprFunc) TypeExpression() string {
 		if i > 0 {
 			out.WriteString(", ")
 		}
-		out.WriteString(p.Name.Value)
-		if p.TypeHint != nil {
-			fmt.Fprintf(&out, ": %s", p.TypeHint.TypeExpression())
+		switch {
+		case p.Name.Value == "" && p.TypeHint != nil:
+			// Bare, unnamed parameter, e.g. fn(@Cmd) -> Void.
+			out.WriteString(p.TypeHint.TypeExpression())
+		case p.TypeHint != nil:
+			fmt.Fprintf(&out, "%s: %s", p.Name.Value, p.TypeHint.TypeExpression())
+		default:
+			out.WriteString(p.Name.Value)
 		}
 	}
 	out.WriteString(")")

@@ -8,7 +8,6 @@ import (
 )
 
 func TestFindReferencesInFile(t *testing.T) {
-	// "greet" appears 3 times: declaration, call in main, call in other func.
 	src := "fn greet(name) {}\nfn main() { greet(\"world\") }\nfn run() { greet(\"hi\") }"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
@@ -20,7 +19,6 @@ func TestFindReferencesInFile(t *testing.T) {
 	}
 	ls.setFilesystem(base, "/")
 
-	// Cursor on the "greet" declaration
 	params := &protocol.ReferenceParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///main.zirr"},
@@ -34,6 +32,38 @@ func TestFindReferencesInFile(t *testing.T) {
 	}
 	if len(locs) < 3 {
 		t.Errorf("expected at least 3 references (decl + 2 calls), got %d", len(locs))
+	}
+}
+
+// TestFindReferencesCrossModule is a regression test: textDocumentReferences used to only ever search filepath.Dir(path), reporting zero references for a symbol used from a different directory that imports it.
+func TestFindReferencesCrossModule(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "flow/types.zirr", "mod flow\nfn helper() {}\n")
+	writeFile(t, base, "main.zirr", "mod main\nimport flow\nconst x = flow.helper()\n")
+
+	ls := &zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	params := &protocol.ReferenceParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///flow/types.zirr"},
+			Position:     protocol.Position{Line: 1, Character: 4},
+		},
+		Context: protocol.ReferenceContext{IncludeDeclaration: false},
+	}
+	locs, err := ls.textDocumentReferences(nil, params)
+	if err != nil {
+		t.Fatalf("textDocumentReferences: %v", err)
+	}
+	if len(locs) != 1 {
+		t.Fatalf("expected exactly 1 cross-module reference, got %d: %+v", len(locs), locs)
+	}
+	if locs[0].URI != "file:///main.zirr" {
+		t.Errorf("expected reference in main.zirr, got %s", locs[0].URI)
 	}
 }
 
@@ -60,11 +90,9 @@ func TestFindReferencesExcludeDeclaration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("textDocumentReferences: %v", err)
 	}
-	// Should have 1 reference (the call), not the declaration.
 	if len(locs) != 1 {
 		t.Errorf("expected 1 reference (call only), got %d", len(locs))
 	}
-	// The call is on line 1.
 	if locs[0].Range.Start.Line != 1 {
 		t.Errorf("reference should be on line 1, got line %d", locs[0].Range.Start.Line)
 	}
@@ -93,7 +121,6 @@ func TestFindReferencesAcrossFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("textDocumentReferences: %v", err)
 	}
-	// Should find reference in types.zirr (decl) and main.zirr (call).
 	if len(locs) < 2 {
 		t.Errorf("expected at least 2 cross-file references, got %d", len(locs))
 	}
@@ -109,11 +136,8 @@ func TestFindReferencesAcrossFiles(t *testing.T) {
 	}
 }
 
+// TestFindReferencesNoDuplicatesMultiFile is a regression test: SourceFile.EnumerateChildNodes visiting parent symbols used to emit each cross-file reference N times.
 func TestFindReferencesNoDuplicatesMultiFile(t *testing.T) {
-	// 3-file module: 1 declaration + 3 calls — must return exactly 4 locations
-	// (1 decl + 3 refs) regardless of the number of files. Regression for the
-	// bug where SourceFile.EnumerateChildNodes visiting parent symbols caused
-	// each cross-file reference to be emitted N times.
 	base := memfs.New()
 	writeFile(t, base, "lib.zirr", "fn helper() {}")
 	writeFile(t, base, "a.zirr", "fn fa() { helper() }")
@@ -138,14 +162,77 @@ func TestFindReferencesNoDuplicatesMultiFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("textDocumentReferences: %v", err)
 	}
-	// 1 decl (lib.zirr) + 3 calls (a, b, c) = 4 total; no duplicates.
 	if len(locs) != 4 {
 		t.Errorf("expected exactly 4 locations (1 decl + 3 calls), got %d", len(locs))
 	}
 }
 
+// TestFindReferencesInAttributeDecorators is a regression test: a decorator usage (@Widget(...)) is a DeclAttrInstance node, different from the TypeExprRef the walk already handled for type-hint positions, so it was silently missed.
+func TestFindReferencesInAttributeDecorators(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "main.zirr", "attr Widget {}\n\n@Widget()\ndata Model {}\n")
+
+	ls := &zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	params := &protocol.ReferenceParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///main.zirr"},
+			Position:     protocol.Position{Line: 0, Character: 6},
+		},
+		Context: protocol.ReferenceContext{IncludeDeclaration: false},
+	}
+	locs, err := ls.textDocumentReferences(nil, params)
+	if err != nil {
+		t.Fatalf("textDocumentReferences: %v", err)
+	}
+	if len(locs) != 1 {
+		t.Fatalf("expected exactly 1 reference (the @Widget() decorator), got %d: %+v", len(locs), locs)
+	}
+	if locs[0].Range.Start.Line != 2 {
+		t.Errorf("expected reference on line 2 (0-indexed), got line %d", locs[0].Range.Start.Line)
+	}
+}
+
+func TestFindReferencesInAttributeDecoratorsCrossModule(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "flow/types.zirr", "mod flow\nattr Widget {}\n")
+	writeFile(t, base, "main.zirr", "mod main\nimport flow { Widget }\n\n@Widget()\ndata Model {}\n")
+
+	ls := &zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	params := &protocol.ReferenceParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///flow/types.zirr"},
+			Position:     protocol.Position{Line: 1, Character: 6},
+		},
+		Context: protocol.ReferenceContext{IncludeDeclaration: false},
+	}
+	locs, err := ls.textDocumentReferences(nil, params)
+	if err != nil {
+		t.Fatalf("textDocumentReferences: %v", err)
+	}
+	// Both the member-import list entry and the @Widget() decorator usage must be found.
+	if len(locs) != 2 {
+		t.Fatalf("expected exactly 2 cross-module references, got %d: %+v", len(locs), locs)
+	}
+	for _, loc := range locs {
+		if loc.URI != "file:///main.zirr" {
+			t.Errorf("expected reference in main.zirr, got %s", loc.URI)
+		}
+	}
+}
+
 func TestFindReferencesInTypeExpressions(t *testing.T) {
-	// "Point" is used in: declaration, parameter type, return type, value ref.
 	src := "data Point { x }\nfn move(p: Point) -> Point { Point }"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
@@ -157,7 +244,6 @@ func TestFindReferencesInTypeExpressions(t *testing.T) {
 	}
 	ls.setFilesystem(base, "/")
 
-	// Cursor on "Point" declaration
 	params := &protocol.ReferenceParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///main.zirr"},
@@ -169,7 +255,6 @@ func TestFindReferencesInTypeExpressions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("textDocumentReferences: %v", err)
 	}
-	// 1 decl + 2 type refs (param + return) + 1 value ref = 4
 	if len(locs) != 4 {
 		t.Errorf("expected 4 references (decl + 2 type refs + 1 value ref), got %d", len(locs))
 		for i, loc := range locs {
@@ -179,7 +264,6 @@ func TestFindReferencesInTypeExpressions(t *testing.T) {
 }
 
 func TestFindReferencesFromTypePosition(t *testing.T) {
-	// Cursor on "Point" in a type hint position — should still find all references.
 	src := "data Point { x }\nfn move(p: Point) { Point }"
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", src)
@@ -191,7 +275,6 @@ func TestFindReferencesFromTypePosition(t *testing.T) {
 	}
 	ls.setFilesystem(base, "/")
 
-	// Cursor on "Point" in the parameter type hint (line 1, col 11)
 	params := &protocol.ReferenceParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///main.zirr"},
@@ -203,7 +286,6 @@ func TestFindReferencesFromTypePosition(t *testing.T) {
 	if err != nil {
 		t.Fatalf("textDocumentReferences: %v", err)
 	}
-	// 1 decl + 1 type ref + 1 value ref = 3
 	if len(locs) < 3 {
 		t.Errorf("expected at least 3 references, got %d", len(locs))
 		for i, loc := range locs {
@@ -213,7 +295,6 @@ func TestFindReferencesFromTypePosition(t *testing.T) {
 }
 
 func TestFindReferencesQualifiedModName(t *testing.T) {
-	// modname.helper should find "helper" references including the qualified one.
 	base := memfs.New()
 	writeFile(t, base, "mymod/main.zirr", "mod mymod\nfn helper() {}\nmymod.helper()\nhelper()")
 
@@ -224,7 +305,6 @@ func TestFindReferencesQualifiedModName(t *testing.T) {
 	}
 	ls.setFilesystem(base, "/")
 
-	// Cursor on "helper" in "mymod.helper()" at line 2, character 6
 	params := &protocol.ReferenceParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///mymod/main.zirr"},
@@ -236,11 +316,127 @@ func TestFindReferencesQualifiedModName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("textDocumentReferences: %v", err)
 	}
-	// Should find: 1 decl "fn helper" + 1 qualified ref "mymod.helper" + 1 unqualified ref "helper"
 	if len(locs) < 2 {
 		t.Errorf("expected at least 2 references, got %d", len(locs))
 		for i, loc := range locs {
 			t.Logf("  [%d] %s line=%d char=%d", i, loc.URI, loc.Range.Start.Line, loc.Range.Start.Character)
 		}
+	}
+}
+
+// TestFindReferencesUnionCase is a regression test: DeclUnionMember is a different AST shape than TypeExprRef/ExprIdentifier, so a union case (union Shape { Circle }) was invisible to references (and rename) entirely.
+func TestFindReferencesUnionCase(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "main.zirr", "data Circle { radius }\nunion Shape {\n\tCircle\n}\n")
+
+	ls := &zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	params := &protocol.ReferenceParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///main.zirr"},
+			Position:     protocol.Position{Line: 0, Character: 7},
+		},
+		Context: protocol.ReferenceContext{IncludeDeclaration: false},
+	}
+	locs, err := ls.textDocumentReferences(nil, params)
+	if err != nil {
+		t.Fatalf("textDocumentReferences: %v", err)
+	}
+	if len(locs) != 1 {
+		t.Fatalf("expected exactly 1 reference (the union case), got %d: %+v", len(locs), locs)
+	}
+	if locs[0].Range.Start.Line != 2 {
+		t.Errorf("expected the union case reference on line 2, got line %d", locs[0].Range.Start.Line)
+	}
+}
+
+// TestFindReferencesImportMemberList is a regression test: DeclImportMember is a different AST shape than ExprIdentifier/ExprMemberAccess, so a member-import list entry (import mod { Foo }) was invisible to references (and rename), even though the name resolved fine once used.
+func TestFindReferencesImportMemberList(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "flow/types.zirr", "mod flow\nfn helper() {}\n")
+	// Uses qualified flow.helper() rather than a bare helper() call: bare calls of a member-imported name from another directory hit a separate, pre-existing VM panic (confirmed via orchestra.RunFile), out of scope here.
+	writeFile(t, base, "main.zirr", "mod main\nimport flow { helper }\nconst x = flow.helper()\n")
+
+	ls := &zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	params := &protocol.ReferenceParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///flow/types.zirr"},
+			Position:     protocol.Position{Line: 1, Character: 4},
+		},
+		Context: protocol.ReferenceContext{IncludeDeclaration: false},
+	}
+	locs, err := ls.textDocumentReferences(nil, params)
+	if err != nil {
+		t.Fatalf("textDocumentReferences: %v", err)
+	}
+	if len(locs) != 2 {
+		t.Fatalf("expected exactly 2 references, got %d: %+v", len(locs), locs)
+	}
+	foundImportEntry := false
+	for _, loc := range locs {
+		if loc.URI != "file:///main.zirr" {
+			t.Errorf("expected reference in main.zirr, got %s", loc.URI)
+		}
+		if loc.Range.Start.Line == 1 {
+			foundImportEntry = true
+		}
+	}
+	if !foundImportEntry {
+		t.Error("expected a reference on line 1 (the import { helper } list entry)")
+	}
+}
+
+// TestFindReferencesFromUsageSiteInDifferentSubmodule is a regression test: the cross-module search used to always search the current file's own directory plus its importers, which is wrong when the cursor is on a symbol imported from elsewhere — it searched importers of the wrong (current, not declaring) module.
+func TestFindReferencesFromUsageSiteInDifferentSubmodule(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "moda/types.zirr", "mod moda\nfn shared() {}\n")
+	writeFile(t, base, "modb/usage.zirr", "mod modb\nimport moda\nconst x = moda.shared()\n")
+
+	ls := &zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	params := &protocol.ReferenceParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///modb/usage.zirr"},
+			Position:     protocol.Position{Line: 2, Character: 18},
+		},
+		Context: protocol.ReferenceContext{IncludeDeclaration: true},
+	}
+	locs, err := ls.textDocumentReferences(nil, params)
+	if err != nil {
+		t.Fatalf("textDocumentReferences: %v", err)
+	}
+	if len(locs) != 2 {
+		t.Fatalf("expected exactly 2 locations (decl + usage), got %d: %+v", len(locs), locs)
+	}
+	var sawDecl, sawUsage bool
+	for _, loc := range locs {
+		switch loc.URI {
+		case "file:///moda/types.zirr":
+			sawDecl = true
+		case "file:///modb/usage.zirr":
+			sawUsage = true
+		}
+	}
+	if !sawDecl {
+		t.Error("expected to find the declaration in moda/types.zirr")
+	}
+	if !sawUsage {
+		t.Error("expected to find the usage in modb/usage.zirr")
 	}
 }

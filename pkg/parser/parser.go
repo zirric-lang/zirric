@@ -306,6 +306,11 @@ func (p *Parser) parseDataDeclField() *ast.DeclField {
 		p.expect(token.COLON)
 		typeHint = p.parseTypeHintExpr()
 	}
+
+	if p.curIs(token.COMMA) {
+		p.expect(token.COMMA)
+	}
+
 	return ast.MakeDeclField(name, nil, attributes, typeHint)
 }
 
@@ -577,15 +582,23 @@ func (p *Parser) parsePropertyDeclarationList() []ast.DeclField {
 		if p.curToken.Type == token.RBRACE {
 			return fields
 		}
+		beforeSource, beforeType := p.curToken.Source, p.curToken.Type
 		field := p.parseDataDeclField()
-		if field != nil {
-			fields = append(fields, *field)
-		} else {
+		if field == nil {
 			p.errors = append(p.errors, ParseError{Token: p.curToken,
 				Summary: "invalid data declaration field",
 				Details: fmt.Sprintf("unexpected token %q in data declaration fields", p.curToken.Literal),
 			})
 			return fields
+		}
+		fields = append(fields, *field)
+		if p.curToken.Source == beforeSource && p.curToken.Type == beforeType {
+			// parseDataDeclField consumed no input; force progress so the loop can't spin forever on the same token.
+			p.detectError(ParseError{Token: p.curToken,
+				Summary: "invalid data declaration field",
+				Details: fmt.Sprintf("unexpected token %q in data declaration fields", p.curToken.Literal),
+			})
+			p.nextToken()
 		}
 	}
 }
@@ -723,16 +736,22 @@ func (p *Parser) parseTypeHintFunc() ast.TypeExpr {
 	return ast.MakeTypeExprFunc(fnTok, params, returnType)
 }
 
-// parseTypeHintFuncParams parses parameter list for fn type expressions.
+// parseTypeHintFuncParams parses a fn(...) parameter list; each parameter is "name: Type" or a bare "Type", disambiguated by one token of lookahead for a following ':'.
 func (p *Parser) parseTypeHintFuncParams() []ast.DeclParameter {
 	var params []ast.DeclParameter
 	for {
-		identTok, _ := p.expect(token.IDENT)
-		ident := ast.MakeIdentifier(identTok)
-
-		var typeHint ast.TypeExpr
-		if p.curIs(token.COLON) {
+		var (
+			ident    ast.Identifier
+			typeHint ast.TypeExpr
+		)
+		if p.curIs(token.IDENT) && p.peekIs(token.COLON) {
+			identTok, _ := p.expect(token.IDENT)
+			ident = ast.MakeIdentifier(identTok)
 			p.expect(token.COLON)
+			typeHint = p.parseTypeHintExpr()
+		} else {
+			// No name token to report positions from, so keep the type's own leading token.
+			ident = ast.Identifier{Token: p.curToken}
 			typeHint = p.parseTypeHintExpr()
 		}
 

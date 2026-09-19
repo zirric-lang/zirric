@@ -46,7 +46,6 @@ func TestTextDocumentHover(t *testing.T) {
 			pos:     protocol.Position{Line: 0, Character: 14},
 			wantNil: true,
 		},
-		// Type hint tests
 		{
 			name:        "func with param type hint",
 			src:         "fn greet(name: String) {}",
@@ -101,7 +100,6 @@ func TestTextDocumentHover(t *testing.T) {
 			pos:         protocol.Position{Line: 1, Character: 16},
 			wantContain: "data Point",
 		},
-		// Local variable/parameter/constant hover tests
 		{
 			name:        "hover over parameter name in function body",
 			src:         "fn greet(name) {\n  name\n}",
@@ -200,7 +198,6 @@ func TestHoverAcrossFiles(t *testing.T) {
 	}
 	ls.setFilesystem(base, "/")
 
-	// Hover over "Point" in main.zirr (col 10)
 	params := &protocol.HoverParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///main.zirr"},
@@ -257,6 +254,40 @@ func TestHoverModNameQualified(t *testing.T) {
 	}
 	if !strings.Contains(mc.Value, "helper") {
 		t.Errorf("hover content %q does not contain 'helper'", mc.Value)
+	}
+}
+
+// TestHoverWholeModuleImportOfStdlib is a regression test: before the resolver-fallback fix, whole-module imports (`import fmt` then `fmt.sprint`) couldn't see embedded stdlib packages, only member imports could.
+func TestHoverWholeModuleImportOfStdlib(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "main.zirr", "mod main\nimport fmt\nconst x = fmt.sprint\n")
+
+	ls := zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	params := &protocol.HoverParams{
+		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///main.zirr"},
+			Position:     protocol.Position{Line: 2, Character: 16},
+		},
+	}
+	result, err := ls.textDocumentHover(nil, params)
+	if err != nil {
+		t.Fatalf("textDocumentHover: %v", err)
+	}
+	if result == nil {
+		t.Fatal("expected hover for fmt.sprint (whole-module import of stdlib), got nil")
+	}
+	mc, ok := result.Contents.(protocol.MarkupContent)
+	if !ok {
+		t.Fatalf("expected MarkupContent, got %T", result.Contents)
+	}
+	if !strings.Contains(mc.Value, "sprint") {
+		t.Errorf("hover content %q does not contain 'sprint'", mc.Value)
 	}
 }
 

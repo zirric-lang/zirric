@@ -30,7 +30,7 @@ func (ls *zirricLangserver) textDocumentDocumentSymbol(
 		return nil, nil
 	}
 
-	module, _, sourceURIToPath, err := ls.parseModuleFiles(filepath.Dir(path))
+	module, _, sourceURIToPath, err := ls.parseModuleFilesForPath(path)
 	if err != nil {
 		return nil, nil
 	}

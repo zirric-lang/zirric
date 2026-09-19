@@ -1,8 +1,6 @@
 package langsrv
 
 import (
-	"path/filepath"
-
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"github.com/tliron/glsp"
@@ -27,7 +25,7 @@ func (ls *zirricLangserver) textDocumentDefinition(
 	if err != nil {
 		return nil, nil
 	}
-	module, _, sourceURIToPath, err := ls.parseModuleFiles(filepath.Dir(path))
+	module, _, sourceURIToPath, err := ls.parseModuleFilesForPath(path)
 	if err != nil {
 		return nil, nil
 	}

@@ -2,9 +2,12 @@ package analyzer
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
+	"code.knabel.dev/zirric-lang/zirric/pkg/pkgmanager"
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
 )
 
@@ -44,6 +47,15 @@ func (a *Analyzer) validateImport(module *ast.ContextModule, decl *ast.DeclImpor
 
 	resolved, err := a.resolver.ResolveModule(context.Background(), decl.ModuleName.URI())
 	if err != nil || resolved == nil {
+		var notInstalled *pkgmanager.DependencyNotInstalledError
+		if errors.As(err, &notInstalled) {
+			return []AnalysisError{{
+				Token:    decl.TokenLiteral(),
+				Summary:  "dependency not installed",
+				Details:  fmt.Sprintf("run 'zirric install' to install %s", strings.Join(notInstalled.Names, ", ")),
+				Severity: AnalysisSeverityWarning,
+			}}
+		}
 		return []AnalysisError{{
 			Token:   decl.TokenLiteral(),
 			Summary: "unknown module",

@@ -22,11 +22,15 @@ type DeclParameter struct {
 func formatParamList(params []DeclParameter) string {
 	parts := make([]string, len(params))
 	for i, p := range params {
-		s := string(p.Name.Value)
-		if p.TypeHint != nil {
-			s += ": " + p.TypeHint.TypeExpression()
+		switch {
+		case p.Name.Value == "" && p.TypeHint != nil:
+			// Bare, unnamed parameter, e.g. fn(@Cmd) -> Void.
+			parts[i] = p.TypeHint.TypeExpression()
+		case p.TypeHint != nil:
+			parts[i] = string(p.Name.Value) + ": " + p.TypeHint.TypeExpression()
+		default:
+			parts[i] = string(p.Name.Value)
 		}
-		parts[i] = s
 	}
 	return strings.Join(parts, ", ")
 }

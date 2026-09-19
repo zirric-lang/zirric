@@ -265,6 +265,11 @@ func (o *Orchestra) Cavefile() cavefile.Cavefile {
 	return o.cave
 }
 
+// CavefilePath returns the Cavefile's path within ProjectFS, or "" if the project has no physical Cavefile (a synthetic one was used instead).
+func (o *Orchestra) CavefilePath() string {
+	return o.cavefilePath
+}
+
 func (o *Orchestra) runBytecode(bytecode *compiler.Bytecode) error {
 	machine := vm.New(bytecode)
 	return machine.Run()

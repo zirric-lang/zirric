@@ -90,6 +90,9 @@ func TestParseTypeHintFunc(t *testing.T) {
 		{"data Foo { cb: fn(a: Int) -> String }", "fn(a: Int) -> String"},
 		{"data Foo { cb: fn() -> Bool }", "fn() -> Bool"},
 		{"data Foo { cb: fn() }", "fn()"},
+		{"data Foo { cb: fn(@Cmd) -> Void }", "fn(@Cmd) -> Void"},
+		{"data Foo { cb: fn(Int) -> Void }", "fn(Int) -> Void"},
+		{"data Foo { cb: fn(@Cmd, env: Any, dispatch: fn(@Cmd) -> Void) -> Void }", "fn(@Cmd, env: Any, dispatch: fn(@Cmd) -> Void) -> Void"},
 	}
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("%d. %s", i, tt.input), func(t *testing.T) {

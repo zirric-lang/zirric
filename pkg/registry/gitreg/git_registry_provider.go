@@ -99,6 +99,12 @@ func (r *GitRegistry) DiscoverPackageVersions(ctx context.Context, repoUrl strin
 	return vs, nil
 }
 
+// gitVersionCandidate pairs a resolvable git reference (never the symbolic HEAD itself) with the version it should be exposed as.
+type gitVersionCandidate struct {
+	ref *plumbing.Reference
+	v   version.Version
+}
+
 func (r *GitRegistry) remotePackageVersions(ctx context.Context, repoUrl string, predicates []version.Predicate) ([]registry.Package, error) {
 	rem := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
 		Name: git.DefaultRemoteName,
@@ -115,15 +121,38 @@ func (r *GitRegistry) remotePackageVersions(ctx context.Context, repoUrl string,
 		return nil, err
 	}
 
-	var pkgs []registry.Package
+	byName := make(map[plumbing.ReferenceName]*plumbing.Reference, len(refs))
 	for _, ref := range refs {
-		if !ref.Name().IsTag() {
-			continue
+		byName[ref.Name()] = ref
+	}
+
+	var hasTags bool
+	for _, ref := range refs {
+		if ref.Name().IsTag() {
+			hasTags = true
+			break
 		}
-		v := versionFromReference(ref)
+	}
+
+	var candidates []gitVersionCandidate
+	for _, ref := range refs {
+		switch {
+		case ref.Name().IsTag(), ref.Name().IsBranch():
+			// Branches are named candidates too (not just tags), so @cave.Version("main") resolves to a literal branch name, not only to a tagged release.
+			candidates = append(candidates, gitVersionCandidate{ref, versionFromReference(ref)})
+		case ref.Name() == plumbing.HEAD && !hasTags:
+			// HEAD's own Hash is all-zero (unusable for CloneOptions.ReferenceName), so resolve it to its target branch and expose that as version "latest" — only when there are no tags, so a tagged repo keeps its existing behavior.
+			if target, ok := byName[ref.Target()]; ok {
+				candidates = append(candidates, gitVersionCandidate{target, version.ParseVerbal("latest")})
+			}
+		}
+	}
+
+	var pkgs []registry.Package
+	for _, c := range candidates {
 		shouldAdd := true
 		for _, predicate := range predicates {
-			if !v.Matches(predicate) {
+			if !c.v.Matches(predicate) {
 				shouldAdd = false
 				break
 			}
@@ -133,8 +162,8 @@ func (r *GitRegistry) remotePackageVersions(ctx context.Context, repoUrl string,
 			pkgs = append(pkgs, &remoteGitPackage{
 				provider:     r,
 				source:       repoUrl,
-				gitReference: ref,
-				version:      v,
+				gitReference: c.ref,
+				version:      c.v,
 			})
 		}
 	}
@@ -154,7 +183,7 @@ func (r *GitRegistry) localPackageVersionClones(ctx context.Context, unversioned
 			errs = append(errs, err)
 			continue
 		}
-		ps, err := r.localPackageVersionAliasesInWorktree(ctx, packagefs)
+		ps, err := r.localPackageVersionAliasesInWorktree(ctx, packagefs, versionEntry.Name())
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -167,7 +196,8 @@ func (r *GitRegistry) localPackageVersionClones(ctx context.Context, unversioned
 	return providables, nil
 }
 
-func (r *GitRegistry) localPackageVersionAliasesInWorktree(ctx context.Context, worktree billy.Filesystem) ([]registry.ResolvedPackage, error) {
+// localPackageVersionAliasesInWorktree lists every version name worktree can be discovered under: dirVersion (the on-disk cache directory's own name — how clone() named it, e.g. "latest" or "main") plus any tag pointing at the same commit. dirVersion must always be included even when no ref reproduces it (e.g. the synthetic "latest" HEAD alias has no git ref literally called "latest") — otherwise Discover() can never recognize this clone as already installed, and every later install re-clones into the same populated directory, failing with go-git's ErrRepositoryAlreadyExists.
+func (r *GitRegistry) localPackageVersionAliasesInWorktree(ctx context.Context, worktree billy.Filesystem, dirVersion string) ([]registry.ResolvedPackage, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -189,26 +219,44 @@ func (r *GitRegistry) localPackageVersionAliasesInWorktree(ctx context.Context, 
 		return nil, err
 	}
 
+	head, err := repo.Head()
+	if err != nil {
+		return nil, err
+	}
+
 	refs, err := r.relevantReferences(repo)
 	if err != nil {
 		return nil, err
 	}
 
-	packages := make([]registry.ResolvedPackage, len(refs))
 	packageName := remote.Config().URLs[0]
-	for i, ref := range refs {
-		if !ref.Name().IsTag() {
-			continue
-		}
-		packages[i] = &localGitPackage{
+	newPackage := func(ref *plumbing.Reference, v version.Version) *localGitPackage {
+		return &localGitPackage{
 			fs: worktree,
 			remoteGitPackage: &remoteGitPackage{
 				provider:     r,
 				source:       packageName,
 				gitReference: ref,
-				version:      versionFromReference(ref),
+				version:      v,
 			},
 		}
+	}
+
+	seen := make(map[string]bool)
+	dv := version.Parse(dirVersion)
+	packages := []registry.ResolvedPackage{newPackage(head, dv)}
+	seen[dv.String()] = true
+
+	for _, ref := range refs {
+		if !ref.Name().IsTag() {
+			continue
+		}
+		v := versionFromReference(ref)
+		if seen[v.String()] {
+			continue
+		}
+		seen[v.String()] = true
+		packages = append(packages, newPackage(ref, v))
 	}
 	return packages, nil
 }

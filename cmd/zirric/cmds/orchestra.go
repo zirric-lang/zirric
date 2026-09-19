@@ -13,28 +13,8 @@ import (
 	billyutil "github.com/go-git/go-billy/v5/util"
 )
 
-func defaultRegistryFS() (billy.Filesystem, error) {
-	zirricPath, _ := os.LookupEnv("ZIRRIC_PATH")
-	if zirricPath == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return nil, fmt.Errorf("could not determine default ZIRRIC_PATH: %w", err)
-		}
-		zirricPath = filepath.Join(home, ".zirric")
-	}
-
-	registryRoot := filepath.Join(zirricPath, "registry")
-	if override, ok := os.LookupEnv("ZIRRIC_REGISTRY"); ok {
-		registryRoot = override
-	}
-	if err := os.MkdirAll(registryRoot, 0o755); err != nil {
-		return nil, err
-	}
-	return osfs.New(registryRoot), nil
-}
-
 func newOrchestra(projectFS billy.Filesystem, packageName string) (*orchestra.Orchestra, error) {
-	registryFS, err := defaultRegistryFS()
+	registryFS, err := orchestra.DefaultRegistryFS()
 	if err != nil {
 		return nil, err
 	}

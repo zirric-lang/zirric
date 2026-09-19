@@ -12,6 +12,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/analyzer"
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/lexer"
+	"code.knabel.dev/zirric-lang/zirric/pkg/orchestra"
 	"code.knabel.dev/zirric-lang/zirric/pkg/parser"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/staticmodule"
@@ -153,7 +154,7 @@ func (ls *zirricLangserver) parseDiagnosticsForFile(path string) (diags []protoc
 
 func (ls *zirricLangserver) parseDiagnosticsForFileInner(path string) ([]protocol.Diagnostic, *protocol.UInteger, error) {
 	sourceURI := string(registry.JoinModuleURI("", path))
-	module, parseErrsByFile, _, err := ls.parseModuleFiles(filepath.Dir(path))
+	module, parseErrsByFile, _, err := ls.parseModuleFilesForPath(path)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -169,7 +170,7 @@ func (ls *zirricLangserver) parseDiagnosticsForFileInner(path string) ([]protoco
 		diagnostics = append(diagnostics, diagnosticForParseError(parseErr, text))
 	}
 
-	if len(errs) == 0 {
+	if !moduleHasParseErrors(parseErrsByFile) {
 		an := analyzer.New(ls.resolver)
 		analysisErrs, _ := an.Analyze(module, false)
 
@@ -284,6 +285,111 @@ func (ls *zirricLangserver) parseModuleFiles(moduleDir string) (*ast.ContextModu
 	return module, parseErrsByFile, sourceURIToPath, nil
 }
 
+// parseModuleFilesForPath is what every "operate on the file this request is about" handler should call instead of parseModuleFiles(filepath.Dir(path)) directly: the Cavefile has no .zirr extension, so parseModuleFiles' directory scan always skips it, leaving hover/definition/completion/references/rename blind to its own content (import cave, @cave.* attributes, declared dependencies) even though diagnostics and go-to-definition into it from other files work fine via the resolver. Every other file is unaffected.
+func (ls *zirricLangserver) parseModuleFilesForPath(path string) (*ast.ContextModule, map[string][]parser.ParseError, map[string]string, error) {
+	if ls.isCavefilePath(path) {
+		return ls.parseCavefileModule(path)
+	}
+	return ls.parseModuleFiles(filepath.Dir(path))
+}
+
+// isCavefilePath reports whether path is the project's Cavefile, per ls.orch's own resolved Cavefile path (defaults to "Cavefile" at the workspace root when no Orchestra is set up yet).
+func (ls *zirricLangserver) isCavefilePath(path string) bool {
+	cavefilePath := orchestra.DefaultCavefileName
+	if ls.orch != nil {
+		if p := ls.orch.CavefilePath(); p != "" {
+			cavefilePath = p
+		}
+	}
+	return filepath.Clean(path) == filepath.Clean(cavefilePath)
+}
+
+// cavefileCacheKey namespaces parseCavefileModule's moduleCache entries away from parseModuleFiles' directory keys — belt-and-suspenders, since a directory literally named "Cavefile" would otherwise theoretically collide.
+func cavefileCacheKey(path string) string {
+	return "\x00cavefile:" + path
+}
+
+// parseCavefileModule parses path (the Cavefile) as its own standalone, single-file module — mirroring how the CLI itself compiles it (Orchestra.compileCavefileForTasks), and unlike parseModuleFiles, which only ever globs *.zirr files in a directory and so always skips it. Uses the same URI and caching conventions as parseModuleFiles so every existing caller (findSourceFile, sourceURIToPath lookups, …) works unchanged.
+func (ls *zirricLangserver) parseCavefileModule(path string) (*ast.ContextModule, map[string][]parser.ParseError, map[string]string, error) {
+	ls.moduleCacheMu.Lock()
+	defer ls.moduleCacheMu.Unlock()
+
+	cacheKey := cavefileCacheKey(path)
+	if entry, ok := ls.moduleCache[cacheKey]; ok {
+		return entry.module, entry.parseErrsByFile, entry.sourceURIToPath, nil
+	}
+
+	var (
+		moduleURI       = registry.JoinModuleURI("", path)
+		parseErrsByFile = make(map[string][]parser.ParseError)
+		sourceURIToPath = make(map[string]string)
+	)
+
+	fileText, err := readFileText(ls.fs, path)
+	if err != nil {
+		module := ast.MakeContextModule(moduleURI)
+		return module, parseErrsByFile, sourceURIToPath, err
+	}
+
+	sourceURI := moduleURI // single-file module: its own URI equals the module's URI
+	sourceURIToPath[string(sourceURI)] = path
+	sources := []registry.Source{overlaySource{uri: sourceURI, text: []byte(fileText)}}
+
+	var module *ast.ContextModule
+
+	if ls.orch != nil && ls.resolver != nil {
+		mod := staticmodule.NewModule(moduleURI, sources)
+		module, err = ls.orch.ParseModule(context.Background(), mod, ls.resolver)
+
+		var parseErrs parser.ParseErrors
+		if errors.As(err, &parseErrs) {
+			for _, pe := range parseErrs {
+				file := ""
+				if pe.Token.Source != nil {
+					file = pe.Token.Source.File
+				}
+				parseErrsByFile[file] = append(parseErrsByFile[file], pe)
+			}
+		} else if err != nil {
+			if module == nil {
+				module = ast.MakeContextModule(moduleURI)
+			}
+			return module, parseErrsByFile, sourceURIToPath, err
+		}
+	} else {
+		module = ast.MakeContextModule(moduleURI)
+		lex, lexErr := lexer.New(sources[0])
+		if lexErr == nil {
+			prs := parser.NewSourceParser(lex, module.Decls, string(sourceURI))
+			tree := prs.ParseSourceFile()
+			module.AddSourceFile(tree)
+			parseErrsByFile[string(sourceURI)] = prs.Errors()
+		}
+	}
+
+	if module == nil {
+		module = ast.MakeContextModule(moduleURI)
+	}
+
+	ls.moduleCache[cacheKey] = &moduleCacheEntry{
+		module:          module,
+		parseErrsByFile: parseErrsByFile,
+		sourceURIToPath: sourceURIToPath,
+	}
+
+	return module, parseErrsByFile, sourceURIToPath, nil
+}
+
+// moduleHasParseErrors checks every file in the module, not just the requested one, since error-recovery can leave malformed nodes the analyzer isn't safe to walk.
+func moduleHasParseErrors(parseErrsByFile map[string][]parser.ParseError) bool {
+	for _, errs := range parseErrsByFile {
+		if len(errs) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func readFileText(fs billy.Filesystem, path string) (string, error) {
 	file, err := fs.Open(path)
 	if err != nil {
@@ -304,7 +410,7 @@ func readFileText(fs billy.Filesystem, path string) (string, error) {
 
 func (ls *zirricLangserver) fileURI(path string) protocol.DocumentUri {
 	absPath := path
-	if ls.rootPath != "" {
+	if ls.rootPath != "" && !filepath.IsAbs(path) {
 		absPath = filepath.Join(ls.rootPath, path)
 	}
 
@@ -318,6 +424,9 @@ func diagnosticForAnalysisError(err analyzer.AnalysisError, text string) protoco
 		severity = protocol.DiagnosticSeverityError
 		message  = err.Summary
 	)
+	if err.Severity == analyzer.AnalysisSeverityWarning {
+		severity = protocol.DiagnosticSeverityWarning
+	}
 
 	if err.Details != "" {
 		message = fmt.Sprintf("%s: %s", err.Summary, err.Details)

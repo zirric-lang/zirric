@@ -6,10 +6,19 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
 )
 
+// AnalysisSeverity's zero value is AnalysisSeverityError, so existing call sites that don't set it keep their current behavior.
+type AnalysisSeverity int
+
+const (
+	AnalysisSeverityError AnalysisSeverity = iota
+	AnalysisSeverityWarning
+)
+
 type AnalysisError struct {
-	Token   token.Token
-	Summary string
-	Details string
+	Token    token.Token
+	Summary  string
+	Details  string
+	Severity AnalysisSeverity
 }
 
 // Error implements error.

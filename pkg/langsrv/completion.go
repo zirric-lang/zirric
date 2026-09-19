@@ -41,7 +41,7 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 		return nil, err
 	}
 
-	module, _, _, err := ls.parseModuleFiles(filepath.Dir(path))
+	module, _, _, err := ls.parseModuleFilesForPath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +54,11 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 		scope              = detectCompletionScope(text, pos, module, sourceURI, cursorOffset)
 	)
 	scope.dirName = sanitizeModuleName(filepath.Base(filepath.Dir(path)))
+
+	// Import statement's dotted module path ("import <cursor>"), distinct from scope.isImportBlock's member list.
+	if startPos, ok := importNameContext(text, pos); ok {
+		return ls.importModuleNameCompletions(startPos, pos), nil
+	}
 
 	// Handle dot-chain context: "alias.member", "modname.member", or "expr.field.subfield"
 	if segments, afterDot, isDotChain := dotChainContext(text, pos); isDotChain {

@@ -50,8 +50,14 @@ func (ls *zirricLangserver) initialize(ctx *glsp.Context, params *protocol.Initi
 			DocumentSymbolProvider:  &protocol.DocumentSymbolOptions{},
 			WorkspaceSymbolProvider: &protocol.WorkspaceSymbolOptions{},
 			ReferencesProvider:      &protocol.ReferenceOptions{},
+			RenameProvider: &protocol.RenameOptions{
+				PrepareProvider: &protocol.True,
+			},
 			SignatureHelpProvider: &protocol.SignatureHelpOptions{
 				TriggerCharacters: []string{"(", ","},
+			},
+			ExecuteCommandProvider: &protocol.ExecuteCommandOptions{
+				Commands: ls.executeCommandNames(),
 			},
 		},
 		ServerInfo: &protocol.InitializeResultServerInfo{Name: lsName},
@@ -140,10 +146,16 @@ func (ls *zirricLangserver) setFilesystem(base billy.Filesystem, rootPath string
 	ls.fs = newOverlayFS(base, ls.docs)
 	ls.moduleCache = make(map[string]*moduleCacheEntry)
 
+	// Reuse the CLI's on-disk registry cache so the LSP sees already-installed dependencies; fall back to an empty FS rather than failing initialization.
+	registryFS, err := orchestra.DefaultRegistryFS()
+	if err != nil {
+		registryFS = memfs.New()
+	}
+
 	pkgName := filepath.Base(rootPath)
 	orch, err := orchestra.New(orchestra.Config{
 		ProjectFS:   ls.fs,
-		RegistryFS:  memfs.New(),
+		RegistryFS:  registryFS,
 		PackageName: pkgName,
 	})
 	if err != nil {

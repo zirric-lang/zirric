@@ -11,6 +11,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/orchestra"
 	"code.knabel.dev/zirric-lang/zirric/pkg/parser"
+	"code.knabel.dev/zirric-lang/zirric/pkg/pkgmanager"
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 )
@@ -347,6 +348,37 @@ func TestRunFileWithCrossModuleImport(t *testing.T) {
 	orch := newTestOrchestra(t, projectFS, "project")
 	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
 		t.Fatalf("run file: %v", err)
+	}
+}
+
+// TestResolveModuleBareProjectSubmodule is a regression test: only the fully-qualified form used to resolve at the compiler/analyzer level, so a bare import (e.g. "flow") produced "unknown module" even though go-to-definition worked fine via a plain filesystem lookup.
+func TestResolveModuleBareProjectSubmodule(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "utils/greet.zirr", "mod utils\nconst greeting = \"hello\"\n")
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	resolver, err := orch.NewResolver()
+	if err != nil {
+		t.Fatalf("new resolver: %v", err)
+	}
+
+	mod, err := resolver.ResolveModule(context.Background(), "utils")
+	if err != nil {
+		t.Fatalf("resolve bare project submodule %q: %v", "utils", err)
+	}
+	if mod == nil {
+		t.Fatal("expected non-nil module")
+	}
+	if mod.Decls.Symbols["greeting"] == nil {
+		t.Fatal("expected 'greeting' to be declared in the resolved module")
+	}
+
+	qualified, err := resolver.ResolveModule(context.Background(), "project.utils")
+	if err != nil {
+		t.Fatalf("resolve qualified project submodule: %v", err)
+	}
+	if qualified != mod {
+		t.Fatal("expected bare and fully-qualified imports to resolve to the same module instance")
 	}
 }
 
@@ -701,6 +733,47 @@ func TestInvalidateModules(t *testing.T) {
 	}
 	if resolver.MainModule() == nil {
 		t.Fatal("expected MainModule after re-parse")
+	}
+}
+
+// TestReadOnlyResolverMissingDependencyIsScoped is a regression test: an unresolvable Cavefile dependency used to fail Prelude()/ParseModule for the whole project, not just files that import it; resolving the missing dependency itself must surface a typed pkgmanager.DependencyNotInstalledError.
+func TestReadOnlyResolverMissingDependencyIsScoped(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "Cavefile", `import cave
+
+@cave.Dependencies()
+data Dependencies {
+  @cave.Local("../does-not-exist")
+  missing
+}
+`)
+	writeFile(t, projectFS, "main.zirr", "mod main\nconst x = 1\n")
+
+	orch, err := orchestra.New(orchestra.Config{
+		ProjectFS:   projectFS,
+		RegistryFS:  memfs.New(),
+		PackageName: "project",
+	})
+	if err != nil {
+		t.Fatalf("new orchestra: %v", err)
+	}
+	resolver, err := orch.NewResolver(orchestra.ReadOnly())
+	if err != nil {
+		t.Fatalf("new resolver: %v", err)
+	}
+
+	module, err := orch.ParseFile(context.Background(), "main.zirr", resolver)
+	if err != nil {
+		t.Fatalf("expected main.zirr to parse despite an unrelated missing dependency, got: %v", err)
+	}
+	if module == nil {
+		t.Fatal("expected non-nil module")
+	}
+
+	_, err = resolver.ResolveModule(context.Background(), "missing")
+	var notInstalled *pkgmanager.DependencyNotInstalledError
+	if !errors.As(err, &notInstalled) {
+		t.Fatalf("expected *pkgmanager.DependencyNotInstalledError, got %T: %v", err, err)
 	}
 }
 

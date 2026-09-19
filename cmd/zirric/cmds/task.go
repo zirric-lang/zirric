@@ -11,12 +11,14 @@ import (
 func init() {
 	rootCmd.AddCommand(taskCmd)
 	skipCavefileFetchForCmds["task"] = false
+	skipCavefileFetchForCmds["tasks"] = false
 }
 
 var taskCmd = &cobra.Command{
-	Use:   "task",
-	Short: "List available tasks",
-	Args:  cobra.NoArgs,
+	Use:     "task",
+	Aliases: []string{"tasks"},
+	Short:   "List available tasks",
+	Args:    cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		projectFS, err := cwdFS()
 		if err != nil {

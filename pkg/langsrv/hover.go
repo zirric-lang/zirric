@@ -2,7 +2,6 @@ package langsrv
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
@@ -31,7 +30,7 @@ func (ls *zirricLangserver) textDocumentHover(
 		return nil, nil
 	}
 
-	module, _, _, err := ls.parseModuleFiles(filepath.Dir(path))
+	module, _, _, err := ls.parseModuleFilesForPath(path)
 	if err != nil {
 		return nil, nil
 	}

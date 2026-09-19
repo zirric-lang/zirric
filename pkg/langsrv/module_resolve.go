@@ -2,6 +2,7 @@ package langsrv
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -97,45 +98,142 @@ func findImportDecl(sf *ast.SourceFile, alias string) (*ast.DeclImport, bool) {
 	return nil, false
 }
 
-// importedModuleDir converts a DeclImport's module name to a relative directory path
-// and verifies that it contains .zirr files.
-func (ls *zirricLangserver) importedModuleDir(imp *ast.DeclImport) (string, bool) {
-	if len(imp.ModuleName) == 0 {
-		return "", false
+// loadImportedModule resolves imp via the same orchestra.ModuleResolver diagnostics use, including its <projectBaseURI>.<name> fallback, so hover/definition/completion/references agree with what diagnostics accept.
+func (ls *zirricLangserver) loadImportedModule(imp *ast.DeclImport) (*ast.ContextModule, map[string]string, bool) {
+	if ls.resolver == nil {
+		return nil, nil, false
 	}
-
-	parts := make([]string, len(imp.ModuleName))
-	for i, id := range imp.ModuleName {
-		parts[i] = id.Value
+	uri := imp.ModuleName.URI()
+	mod, err := ls.resolver.ResolveModule(context.Background(), uri)
+	if err != nil || mod == nil {
+		return nil, nil, false
 	}
-
-	relPath := filepath.Join(parts...)
-	entries, err := ls.fs.ReadDir(relPath)
-	if err != nil {
-		return "", false
-	}
-
-	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".zirr") {
-			return relPath, true
-		}
-	}
-	return "", false
+	return mod, ls.srcToPathForModule(uri, mod), true
 }
 
-// loadImportedModule parses the module referenced by a DeclImport.
-// Returns the parsed module, a sourceURI→relPath map, and whether it succeeded.
-func (ls *zirricLangserver) loadImportedModule(imp *ast.DeclImport) (*ast.ContextModule, map[string]string, bool) {
-	dir, ok := ls.importedModuleDir(imp)
-	if !ok {
-		return nil, nil, false
+// srcToPathForModule maps each source URI to a real path: project-local files strip the "<projectBaseURI>/" prefix fsmodule encodes; everything else (embedded stdlib, local/git deps) is materialized to a cached temp file, distinguished later via filepath.IsAbs.
+func (ls *zirricLangserver) srcToPathForModule(uri registry.LogicalURI, mod *ast.ContextModule) map[string]string {
+	srcToPath := make(map[string]string)
+	if ls.orch == nil {
+		return srcToPath
+	}
+	// LogicalURI.Join("") reproduces FSSource's exact prefix, including its edge case for a "/" project root.
+	prefix := string(registry.LogicalURI(ls.orch.Cavefile().Name).Join(""))
+
+	var external map[string]registry.Source // populated lazily, only if needed
+	for _, sf := range mod.Files {
+		if sf == nil {
+			continue
+		}
+		if rel, ok := strings.CutPrefix(sf.Path, prefix); ok {
+			srcToPath[sf.Path] = filepath.FromSlash(rel)
+			continue
+		}
+		if external == nil {
+			external = ls.externalModuleSources(uri)
+		}
+		src, ok := external[sf.Path]
+		if !ok {
+			continue
+		}
+		if path, ok := ls.materializeExternalSource(src); ok {
+			srcToPath[sf.Path] = path
+		}
+	}
+	return srcToPath
+}
+
+// externalModuleSources fetches uri's raw, unparsed sources from the resolver, keyed by their own logical URI string.
+func (ls *zirricLangserver) externalModuleSources(uri registry.LogicalURI) map[string]registry.Source {
+	if ls.resolver == nil {
+		return nil
+	}
+	sources, err := ls.resolver.FindModuleSources(context.Background(), uri)
+	if err != nil {
+		return nil
+	}
+	out := make(map[string]registry.Source, len(sources))
+	for _, src := range sources {
+		out[string(src.URI())] = src
+	}
+	return out
+}
+
+// materializeExternalSource writes src's content to a stable, cached, read-only temp file and returns its absolute path, since embedded/dependency sources don't live under ls.fs's chroot.
+func (ls *zirricLangserver) materializeExternalSource(src registry.Source) (string, bool) {
+	key := string(src.URI())
+
+	ls.externalSourcesMu.Lock()
+	defer ls.externalSourcesMu.Unlock()
+
+	if path, ok := ls.externalSources[key]; ok {
+		return path, true
 	}
 
-	mod, _, srcToPath, err := ls.parseModuleFiles(dir)
-	if err != nil {
-		return nil, nil, false
+	if ls.externalSourcesDir == "" {
+		dir, err := os.MkdirTemp("", "zirric-lsp-sources-")
+		if err != nil {
+			return "", false
+		}
+		ls.externalSourcesDir = dir
 	}
-	return mod, srcToPath, true
+
+	data, err := src.Read()
+	if err != nil {
+		return "", false
+	}
+
+	// Preserve the source's relative structure under the temp dir, sanitizing each segment since a dependency URL can contain characters invalid in Windows paths (e.g. ':') or "." / ".." segments that could escape the temp dir.
+	segments := strings.Split(key, "/")
+	pathParts := make([]string, 0, len(segments)+1)
+	pathParts = append(pathParts, ls.externalSourcesDir)
+	for _, seg := range segments {
+		pathParts = append(pathParts, sanitizePathSegment(seg))
+	}
+	target := filepath.Join(pathParts...)
+
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		return "", false
+	}
+	if err := os.WriteFile(target, data, 0o444); err != nil {
+		return "", false
+	}
+
+	if ls.externalSources == nil {
+		ls.externalSources = make(map[string]string)
+	}
+	ls.externalSources[key] = target
+	return target, true
+}
+
+// sanitizePathSegment replaces characters invalid in Windows paths (and control characters) with '_', and neutralizes "." / "..".
+func sanitizePathSegment(seg string) string {
+	if seg == "" || seg == "." || seg == ".." {
+		return "_"
+	}
+	var b strings.Builder
+	b.Grow(len(seg))
+	for _, r := range seg {
+		switch {
+		case r < 0x20, r == '<', r == '>', r == ':', r == '"', r == '|', r == '?', r == '*', r == '\\':
+			b.WriteByte('_')
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// readSourceText reads a workspace-relative path via the overlay filesystem, or an absolute (materializeExternalSource) path directly from the OS.
+func (ls *zirricLangserver) readSourceText(path string) (string, error) {
+	if filepath.IsAbs(path) {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return "", err
+		}
+		return string(data), nil
+	}
+	return readFileText(ls.fs, path)
 }
 
 // loadImportMemberModule parses the module referenced by a DeclImportMember.
@@ -145,36 +243,25 @@ func (ls *zirricLangserver) loadImportMemberModule(dim ast.DeclImportMember) (*a
 }
 
 // resolveImportMemberDecl resolves a DeclImportMember to its actual declaration.
-// First tries filesystem-based loading, then falls back to the Orchestra resolver
-// (needed for embedded modules like the prelude).
 func (ls *zirricLangserver) resolveImportMemberDecl(dim ast.DeclImportMember) ast.Decl {
 	name := dim.Name.Value
-	if mod, _, ok := ls.loadImportMemberModule(dim); ok {
-		if sym, ok := mod.Decls.Resolve(name); ok && sym.Decl != nil {
-			return sym.Decl
-		}
+	mod, _, ok := ls.loadImportMemberModule(dim)
+	if !ok {
+		return nil
 	}
-	// Fallback: resolve via Orchestra resolver (covers embedded/installed packages).
-	if ls.resolver != nil {
-		uri := registry.LogicalURI(ast.StaticReference(dim.ModuleName).String())
-		if mod, err := ls.resolver.ResolveModule(context.Background(), uri); err == nil && mod != nil {
-			if sym, ok := mod.Decls.Resolve(name); ok && sym.Decl != nil {
-				return sym.Decl
-			}
-		}
+	if sym, ok := mod.Decls.Resolve(name); ok && sym.Decl != nil {
+		return sym.Decl
 	}
 	return nil
 }
 
-// resolveImportMemberLocation resolves a DeclImportMember to the LSP Location of
-// the actual declaration. Tries filesystem, then Orchestra resolver.
+// resolveImportMemberLocation resolves a DeclImportMember to the LSP Location of the actual declaration.
 func (ls *zirricLangserver) resolveImportMemberLocation(dim ast.DeclImportMember, name string) *protocol.Location {
 	if importedMod, srcToPath, ok := ls.loadImportMemberModule(dim); ok {
 		if loc, ok := ls.symbolLocation(importedMod, name, srcToPath); ok {
 			return loc
 		}
 	}
-	// Fallback: resolve via Orchestra resolver.
 	resolved := ls.resolveImportMemberDecl(dim)
 	if resolved == nil {
 		return nil
@@ -201,7 +288,7 @@ func (ls *zirricLangserver) locationForDeclWithPaths(decl ast.Decl, srcToPath ma
 			filePath = mapped
 		}
 	}
-	text, err := readFileText(ls.fs, filePath)
+	text, err := ls.readSourceText(filePath)
 	if err != nil {
 		return nil
 	}
@@ -233,7 +320,7 @@ func (ls *zirricLangserver) symbolLocation(mod *ast.ContextModule, name string, 
 		return nil, false
 	}
 
-	defText, err := readFileText(ls.fs, defFilePath)
+	defText, err := ls.readSourceText(defFilePath)
 	if err != nil {
 		return nil, false
 	}

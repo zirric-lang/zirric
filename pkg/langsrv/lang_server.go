@@ -41,11 +41,14 @@ type zirricLangserver struct {
 	moduleCache   map[string]*moduleCacheEntry
 	moduleCacheMu sync.Mutex
 
-	// orch and resolver provide the Orchestra parsing pipeline.
-	// The LSP must NEVER call orch.RunFile, RunModulePath, Compile, or runBytecode.
-	// Only ParseModule/ParseFile/ParseModulePath and analyzer are permitted.
+	// orch/resolver: never call RunFile, RunModulePath, Compile, or runBytecode on these — only ParseModule/ParseFile/ParseModulePath and analyzer. Exception: "zirric.task.*" (commands.go), which shells out to a subprocess instead of touching these fields.
 	orch     *orchestra.Orchestra
 	resolver *orchestra.ModuleResolver
+
+	// externalSources caches materialized read-only copies of sources outside the workspace root (embedded stdlib, local/git deps), keyed by logical URI, valued by absolute OS path.
+	externalSourcesMu  sync.Mutex
+	externalSources    map[string]string
+	externalSourcesDir string
 }
 
 var ls zirricLangserver = zirricLangserver{}
@@ -56,6 +59,7 @@ func init() {
 	ls.diagURIs = make(map[protocol.DocumentUri]struct{})
 	ls.openDocs = make(map[string]protocol.DocumentUri)
 	ls.moduleCache = make(map[string]*moduleCacheEntry)
+	ls.externalSources = make(map[string]string)
 
 	handler = protocol.Handler{
 		Initialize:                 ls.initialize,
@@ -73,6 +77,9 @@ func init() {
 		WorkspaceSymbol:            ls.workspaceSymbol,
 		TextDocumentSignatureHelp:  ls.textDocumentSignatureHelp,
 		TextDocumentReferences:     ls.textDocumentReferences,
+		TextDocumentRename:         ls.textDocumentRename,
+		TextDocumentPrepareRename:  ls.textDocumentPrepareRename,
+		WorkspaceExecuteCommand:    ls.workspaceExecuteCommand,
 	}
 }
 

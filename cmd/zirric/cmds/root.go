@@ -73,7 +73,7 @@ func loadCavefileIfNeeded(args []string) error {
 	if skipCavefileFetchForCmds[target] {
 		return nil
 	}
-	if target != "task" && target != "x" {
+	if target != "task" && target != "tasks" && target != "x" {
 		return nil
 	}
 	return registerTaskCommands()
