@@ -11,7 +11,11 @@ func (a Array) Inspect() string {
 
 // Lookup implements RuntimeValue.
 func (a Array) Lookup(name string) RuntimeValue {
-	panic("unimplemented")
+	switch name {
+	case "length":
+		return Int(len(a))
+	}
+	return nil
 }
 
 // TypeConstantId implements RuntimeValue.

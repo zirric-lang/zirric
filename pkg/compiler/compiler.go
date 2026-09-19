@@ -666,15 +666,39 @@ func (c *Compiler) compileStmtForCollection(node ast.StmtFor) error {
 	}
 
 	collectionLocal := c.allocateTempLocal()
-	indexLocal := c.allocateTempLocal()
-	zeroConst := c.addConstant(c.plugins.Prelude().Int(0))
-	oneConst := c.addConstant(c.plugins.Prelude().Int(1))
-
 	err = c.Compile(node.CollectionExpr)
 	if err != nil {
 		return err
 	}
 	c.emit(op.SetLocal, collectionLocal)
+
+	arrayConstId, err := c.resolveBuiltinTypeConstantId("Array", symbols)
+	if err != nil {
+		return err
+	}
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.IsType, arrayConstId)
+	genericJump := c.emit(op.JumpFalse, placeholderJumpAddress)
+
+	if err := c.compileArrayForLoop(node.Body, collectionLocal, bindingLocal); err != nil {
+		return err
+	}
+	endJump := c.emit(op.Jump, placeholderJumpAddress)
+
+	c.changeOperand(genericJump, len(c.currentInstructions()))
+	if err := c.compileIterableForLoop(node.Body, collectionLocal, bindingLocal, symbols); err != nil {
+		return err
+	}
+
+	c.changeOperand(endJump, len(c.currentInstructions()))
+	return nil
+}
+
+func (c *Compiler) compileArrayForLoop(body ast.Block, collectionLocal, bindingLocal int) error {
+	indexLocal := c.allocateTempLocal()
+	zeroConst := c.addConstant(c.plugins.Prelude().Int(0))
+	oneConst := c.addConstant(c.plugins.Prelude().Int(1))
+
 	c.emit(op.Const, zeroConst)
 	c.emit(op.SetLocal, indexLocal)
 
@@ -692,7 +716,7 @@ func (c *Compiler) compileStmtForCollection(node ast.StmtFor) error {
 
 	breakJumps := make([]int, 0)
 	continueJumps := make([]int, 0)
-	err = c.compileLoopBlock(node.Body, &continueJumps, &breakJumps)
+	err := c.compileLoopBlock(body, &continueJumps, &breakJumps)
 	if err != nil {
 		return err
 	}
@@ -712,6 +736,68 @@ func (c *Compiler) compileStmtForCollection(node ast.StmtFor) error {
 	for _, pos := range breakJumps {
 		c.changeOperand(pos, endPos)
 	}
+	return nil
+}
+
+func (c *Compiler) compileIterableForLoop(body ast.Block, collectionLocal, bindingLocal int, symbols *ast.SymbolTable) error {
+	iterableConstId, err := c.resolveBuiltinTypeConstantId("Iterable", symbols)
+	if err != nil {
+		return err
+	}
+
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.IsType, iterableConstId)
+	okJump := c.emit(op.JumpTrue, placeholderJumpAddress)
+
+	panicConstId, err := c.resolveBuiltinTypeConstantId("panic", symbols)
+	if err != nil {
+		return err
+	}
+	msgConst := c.addConstant(c.plugins.Prelude().String("for <- requires a value with @Iterable"))
+	c.emit(op.Const, msgConst)
+	c.emit(op.Const, panicConstId)
+	c.emit(op.Call, 1)
+
+	c.changeOperand(okJump, len(c.currentInstructions()))
+
+	// The body below is only entered via the yield callable's ip-jump, never by falling through.
+	skipBodyJump := c.emit(op.Jump, placeholderJumpAddress)
+
+	bodyStartIp := len(c.currentInstructions())
+	breakJumps := make([]int, 0)
+	continueJumps := make([]int, 0)
+	if err := c.compileLoopBlock(body, &continueJumps, &breakJumps); err != nil {
+		return err
+	}
+
+	continueTarget := len(c.currentInstructions())
+	for _, pos := range continueJumps {
+		c.changeOperand(pos, continueTarget)
+	}
+	c.emit(op.ConstTrue)
+	jumpToEnd := c.emit(op.Jump, placeholderJumpAddress)
+
+	breakTarget := len(c.currentInstructions())
+	for _, pos := range breakJumps {
+		c.changeOperand(pos, breakTarget)
+	}
+	c.emit(op.ConstFalse)
+
+	bodyEndIp := len(c.currentInstructions())
+	c.changeOperand(jumpToEnd, bodyEndIp)
+
+	c.changeOperand(skipBodyJump, len(c.currentInstructions()))
+
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.MakeIterYield, bindingLocal, bodyStartIp, bodyEndIp)
+
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.Const, iterableConstId)
+	c.emit(op.Call, 1)
+	iterateFieldConst := c.addConstant(c.plugins.Prelude().String("iterate"))
+	c.emit(op.GetField, iterateFieldConst)
+
+	c.emit(op.CallIterate, 2)
 	return nil
 }
 
@@ -877,15 +963,40 @@ func (c *Compiler) compileExprForCollection(node ast.ExprFor, arrayLocal int) er
 	}
 
 	collectionLocal := c.allocateTempLocal()
-	indexLocal := c.allocateTempLocal()
-	zeroConst := c.addConstant(c.plugins.Prelude().Int(0))
-	oneConst := c.addConstant(c.plugins.Prelude().Int(1))
-
 	err = c.Compile(node.CollectionExpr)
 	if err != nil {
 		return err
 	}
 	c.emit(op.SetLocal, collectionLocal)
+
+	arrayConstId, err := c.resolveBuiltinTypeConstantId("Array", symbols)
+	if err != nil {
+		return err
+	}
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.IsType, arrayConstId)
+	genericJump := c.emit(op.JumpFalse, placeholderJumpAddress)
+
+	if err := c.compileArrayForExprLoop(node.Body, collectionLocal, bindingLocal, arrayLocal); err != nil {
+		return err
+	}
+	endJump := c.emit(op.Jump, placeholderJumpAddress)
+
+	c.changeOperand(genericJump, len(c.currentInstructions()))
+	if err := c.compileGenericIterableForExprLoop(node.Body, collectionLocal, bindingLocal, arrayLocal, symbols); err != nil {
+		return err
+	}
+
+	c.changeOperand(endJump, len(c.currentInstructions()))
+	c.emit(op.GetLocal, arrayLocal)
+	return nil
+}
+
+func (c *Compiler) compileArrayForExprLoop(body ast.ExprForBody, collectionLocal, bindingLocal, arrayLocal int) error {
+	indexLocal := c.allocateTempLocal()
+	zeroConst := c.addConstant(c.plugins.Prelude().Int(0))
+	oneConst := c.addConstant(c.plugins.Prelude().Int(1))
+
 	c.emit(op.Const, zeroConst)
 	c.emit(op.SetLocal, indexLocal)
 
@@ -903,7 +1014,7 @@ func (c *Compiler) compileExprForCollection(node ast.ExprFor, arrayLocal int) er
 
 	breakJumps := make([]int, 0)
 	continueJumps := make([]int, 0)
-	err = c.compileExprForBlock(node.Body, arrayLocal, &continueJumps, &breakJumps)
+	err := c.compileExprForBlock(body, arrayLocal, &continueJumps, &breakJumps)
 	if err != nil {
 		return err
 	}
@@ -923,7 +1034,67 @@ func (c *Compiler) compileExprForCollection(node ast.ExprFor, arrayLocal int) er
 	for _, pos := range breakJumps {
 		c.changeOperand(pos, endPos)
 	}
-	c.emit(op.GetLocal, arrayLocal)
+	return nil
+}
+
+func (c *Compiler) compileGenericIterableForExprLoop(body ast.ExprForBody, collectionLocal, bindingLocal, arrayLocal int, symbols *ast.SymbolTable) error {
+	iterableConstId, err := c.resolveBuiltinTypeConstantId("Iterable", symbols)
+	if err != nil {
+		return err
+	}
+
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.IsType, iterableConstId)
+	okJump := c.emit(op.JumpTrue, placeholderJumpAddress)
+
+	panicConstId, err := c.resolveBuiltinTypeConstantId("panic", symbols)
+	if err != nil {
+		return err
+	}
+	msgConst := c.addConstant(c.plugins.Prelude().String("for <- requires a value with @Iterable"))
+	c.emit(op.Const, msgConst)
+	c.emit(op.Const, panicConstId)
+	c.emit(op.Call, 1)
+
+	c.changeOperand(okJump, len(c.currentInstructions()))
+
+	skipBodyJump := c.emit(op.Jump, placeholderJumpAddress)
+
+	bodyStartIp := len(c.currentInstructions())
+	breakJumps := make([]int, 0)
+	continueJumps := make([]int, 0)
+	if err := c.compileExprForBlock(body, arrayLocal, &continueJumps, &breakJumps); err != nil {
+		return err
+	}
+
+	continueTarget := len(c.currentInstructions())
+	for _, pos := range continueJumps {
+		c.changeOperand(pos, continueTarget)
+	}
+	c.emit(op.ConstTrue)
+	jumpToEnd := c.emit(op.Jump, placeholderJumpAddress)
+
+	breakTarget := len(c.currentInstructions())
+	for _, pos := range breakJumps {
+		c.changeOperand(pos, breakTarget)
+	}
+	c.emit(op.ConstFalse)
+
+	bodyEndIp := len(c.currentInstructions())
+	c.changeOperand(jumpToEnd, bodyEndIp)
+
+	c.changeOperand(skipBodyJump, len(c.currentInstructions()))
+
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.MakeIterYield, bindingLocal, bodyStartIp, bodyEndIp)
+
+	c.emit(op.GetLocal, collectionLocal)
+	c.emit(op.Const, iterableConstId)
+	c.emit(op.Call, 1)
+	iterateFieldConst := c.addConstant(c.plugins.Prelude().String("iterate"))
+	c.emit(op.GetField, iterateFieldConst)
+
+	c.emit(op.CallIterate, 2)
 	return nil
 }
 

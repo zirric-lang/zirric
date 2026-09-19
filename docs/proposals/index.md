@@ -26,7 +26,7 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 | [ZE-007](/proposals/ZE-007-attribute-binding)                  | Attribute Binding                   | Draft       |          |
 | [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                      | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                       | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-010](/proposals/ZE-010-iterable)                           | Iterable                            | In Progress |          |
+| [ZE-010](/proposals/ZE-010-iterable)                           | Iterable                            | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                          | In Progress |          |
 | [ZE-012](/proposals/ZE-012-type-and-returns-sugar)             | Type and Returns Sugar              | Rejected    |          |
 | [ZE-013](/proposals/ZE-013-mutability-and-constants)           | Mutability and Constants            | Implemented | [v0.1.0](/changelog/v0.1.0) |

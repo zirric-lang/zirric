@@ -13,12 +13,44 @@ func (vm *VM) Run() error {
 	return vm.runTask(taskId)
 }
 
+// runTask runs the top-level, unbounded dispatch loop.
 func (vm *VM) runTask(taskId TaskId) error {
-	for vm.currentFrame().ip < len(vm.currentFrame().Instructions()) {
-		vm.currentFrame().ip++
+	return vm.runTaskUntil(taskId, -1, -1, -1)
+}
+
+// runTaskBounded runs frames until the stack unwinds to (or below) stopIdx.
+func (vm *VM) runTaskBounded(taskId TaskId, stopIdx int) error {
+	return vm.runTaskUntil(taskId, stopIdx, -1, -1)
+}
+
+// resumeBodyUntil resumes the top frame until resumeDepth+endIp (done), or panics iterReturnSignal if the stack unwinds below resumeDepth (early return).
+func (vm *VM) resumeBodyUntil(taskId TaskId, resumeDepth int, endIp int) error {
+	return vm.runTaskUntil(taskId, -1, resumeDepth, endIp)
+}
+
+// runTaskUntil backs runTask/runTaskBounded/resumeBodyUntil with one inline opcode switch, since this loop runs once per instruction for the whole program.
+func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp int) error {
+	for {
+		fr := vm.currentFrame()
+
+		if stopIdx >= 0 && vm.framesIdx <= stopIdx {
+			return nil
+		}
+		if resumeDepth >= 0 {
+			if vm.framesIdx < resumeDepth {
+				panic(iterReturnSignal{})
+			}
+			if vm.framesIdx == resumeDepth && fr.ip == endIp {
+				return nil
+			}
+		}
+		if fr.ip >= len(fr.Instructions()) {
+			return nil
+		}
+
+		fr.ip++
 
 		var (
-			fr   = vm.currentFrame()
 			ip   = fr.ip
 			ins  = fr.Instructions()
 			code = op.Opcode(ins[ip-1])
@@ -242,6 +274,26 @@ func (vm *VM) runTask(taskId TaskId) error {
 				if err := vm.push(val); err != nil {
 					return err
 				}
+			case runtime.String:
+				idx, ok := index.(runtime.Int)
+				if !ok {
+					return fmt.Errorf("string index must be Int (%T %q)", index, index.Inspect())
+				}
+
+				pos := int(idx)
+				if pos < 0 {
+					return fmt.Errorf("string index %d out of bounds", pos)
+				}
+
+				char, ok := runeAt(string(target), pos)
+				if !ok {
+					return fmt.Errorf("string index %d out of bounds", pos)
+				}
+
+				if err := vm.push(char); err != nil {
+					return err
+				}
+
 			default:
 				return fmt.Errorf("index operator not supported on %T", target)
 			}
@@ -613,6 +665,34 @@ func (vm *VM) runTask(taskId TaskId) error {
 			}
 			fr.locals[idx] = &runtime.UpvalueCell{Value: fr.locals[idx]}
 
+		case op.MakeIterYield:
+			bindingLocal := int(op.ReadUint16(ins[ip:]))
+			fr.ip += 2
+			bodyStartIp := int(op.ReadUint16(ins[fr.ip:]))
+			fr.ip += 2
+			bodyEndIp := int(op.ReadUint16(ins[fr.ip:]))
+			fr.ip += 2
+
+			yieldVal := vm.makeIterYieldFunc(taskId, fr, bindingLocal, bodyStartIp, bodyEndIp)
+			if err := vm.push(yieldVal); err != nil {
+				return err
+			}
+
+		case op.CallIterate:
+			argCount := int(op.ReadUint16(ins[ip:]))
+			fr.ip += 2
+			callee := vm.pop()
+
+			if argCount != 2 {
+				return fmt.Errorf("CallIterate: expected 2 arguments, got %d", argCount)
+			}
+
+			yield := vm.pop()
+			value := vm.pop()
+			if err := vm.callIterate(taskId, callee, value, yield); err != nil {
+				return err
+			}
+
 		case op.Return:
 			ret := vm.pop()
 			frame := vm.popFrame()
@@ -630,8 +710,6 @@ func (vm *VM) runTask(taskId TaskId) error {
 			return fmt.Errorf("unknown opcode %q", def.Name)
 		}
 	}
-
-	return nil
 }
 
 func (vm *VM) push(val runtime.RuntimeValue) error {
@@ -648,6 +726,18 @@ func (vm *VM) pop() runtime.RuntimeValue {
 	v := vm.stack[vm.sp-1]
 	vm.sp--
 	return v
+}
+
+// runeAt returns the rune at character position pos in s, and whether pos was in range.
+func runeAt(s string, pos int) (runtime.Char, bool) {
+	i := 0
+	for _, r := range s {
+		if i == pos {
+			return runtime.Char(r), true
+		}
+		i++
+	}
+	return 0, false
 }
 
 func (vm *VM) numericBinaryOperation(operator op.Opcode) error {

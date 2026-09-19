@@ -906,6 +906,14 @@ tCalls`,
 	runVmTests(t, tests)
 }
 
+// iterablePreamble adds the @Iterable attr and a stub panic fn that for-loops now reference.
+const iterablePreamble = compositeTypePreamble + `
+attr Iterable {
+	iterate(value, yield)
+}
+fn panic(message) { }
+`
+
 func TestForStatements(t *testing.T) {
 	tests := []vmTestCase{
 		{
@@ -982,7 +990,7 @@ func TestForStatements(t *testing.T) {
 		},
 		{
 			label: "array collection loop literal",
-			input: `
+			input: iterablePreamble + `
 			fn example() {
 				for item <- [1, 2] { return item }
 				return 9
@@ -993,7 +1001,7 @@ func TestForStatements(t *testing.T) {
 		},
 		{
 			label: "array collection loop empty",
-			input: `
+			input: iterablePreamble + `
 			fn example() {
 				for item <- [] { return 1 }
 				return 2
@@ -1004,7 +1012,7 @@ func TestForStatements(t *testing.T) {
 		},
 		{
 			label: "array for expression",
-			input: `
+			input: iterablePreamble + `
 			const result = for item <- [1, 2, 3] { item }
 			result
 			`,
@@ -1012,7 +1020,7 @@ func TestForStatements(t *testing.T) {
 		},
 		{
 			label: "array for expression decls",
-			input: `
+			input: iterablePreamble + `
 			const result = for item <- [1, 2, 3] {
 				const doubled = item * 2
 				doubled
@@ -1023,7 +1031,7 @@ func TestForStatements(t *testing.T) {
 		},
 		{
 			label: "array for expression continue",
-			input: `
+			input: iterablePreamble + `
 			const result = for item <- [1, 2, 3] {
 				if item == 2 {
 					continue
@@ -1041,6 +1049,232 @@ func TestForStatements(t *testing.T) {
 			result
 			`,
 			expected: []any{},
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+// TestForGenericIterable exercises `for x <- value` dispatch through @Iterable.iterate for a custom type.
+func TestForGenericIterable(t *testing.T) {
+	const counterPreamble = iterablePreamble + `
+	@Iterable(_counterIterate)
+	data Counter {
+		limit
+	}
+
+	fn _counterIterate(v, yield) {
+		var i = 0
+		for {
+			if i >= v.limit {
+				return
+			}
+			if !yield(i) {
+				break
+			}
+			i = i + 1
+		}
+	}
+	`
+
+	tests := []vmTestCase{
+		{
+			label: "sums all yielded values",
+			input: counterPreamble + `
+			fn example() {
+				var sum = 0
+				for x <- Counter(5) {
+					sum = sum + x
+				}
+				return sum
+			}
+			example()
+			`,
+			expected: 0 + 1 + 2 + 3 + 4,
+		},
+		{
+			label: "break stops iteration early",
+			input: counterPreamble + `
+			fn example() {
+				var sum = 0
+				for x <- Counter(5) {
+					if x == 3 {
+						break
+					}
+					sum = sum + x
+				}
+				return sum
+			}
+			example()
+			`,
+			expected: 0 + 1 + 2,
+		},
+		{
+			label: "continue skips an element",
+			input: counterPreamble + `
+			fn example() {
+				var sum = 0
+				for x <- Counter(5) {
+					if x == 2 {
+						continue
+					}
+					sum = sum + x
+				}
+				return sum
+			}
+			example()
+			`,
+			expected: 0 + 1 + 3 + 4,
+		},
+		{
+			label: "return unwinds through the reentrant iterate() call",
+			input: counterPreamble + `
+			fn example() {
+				for x <- Counter(5) {
+					if x == 3 {
+						return x
+					}
+				}
+				return -1
+			}
+			example()
+			`,
+			expected: 3,
+		},
+		{
+			label: "return inside nested if/else unwinds correctly",
+			input: counterPreamble + `
+			fn example() {
+				for x <- Counter(5) {
+					if x == 2 {
+						if true {
+							return x * 10
+						}
+					} else {
+						const noop = 0
+					}
+				}
+				return -1
+			}
+			example()
+			`,
+			expected: 20,
+		},
+		{
+			label: "nested generic for loops with a deep return",
+			input: counterPreamble + `
+			fn example() {
+				for x <- Counter(3) {
+					for y <- Counter(3) {
+						if x == 1 && y == 1 {
+							return x * 100 + y
+						}
+					}
+				}
+				return -1
+			}
+			example()
+			`,
+			expected: 101,
+		},
+		{
+			label: "expression-form for over a custom iterable",
+			input: counterPreamble + `
+			const result = for x <- Counter(4) { x * 2 }
+			result
+			`,
+			expected: []any{0, 2, 4, 6},
+		},
+		{
+			label: "break in expression-form over a custom iterable",
+			input: counterPreamble + `
+			const result = for x <- Counter(10) {
+				if x == 3 {
+					break
+				}
+				x
+			}
+			result
+			`,
+			expected: []any{0, 1, 2},
+		},
+		{
+			// Inner break/continue must stay scoped to the inner loop, not the outer one.
+			label: "inner break/continue does not leak into the outer loop",
+			input: counterPreamble + `
+			fn example() {
+				var visits = 0
+				var innerSum = 0
+				for x <- Counter(3) {
+					visits = visits + 1
+					for y <- Counter(5) {
+						if y == 1 {
+							continue
+						}
+						if y == 3 {
+							break
+						}
+						innerSum = innerSum + 1
+					}
+				}
+				return visits * 1000 + innerSum
+			}
+			example()
+			`,
+			// 3 outer visits; each inner loop adds y=0,2 (y=1 skipped, y=3 breaks) -> innerSum=6.
+			expected: 3*1000 + 6,
+		},
+		{
+			// The same for-loop site must dispatch fast-path vs generic at runtime, not compile time.
+			label: "the same for-loop site dispatches polymorphically at runtime",
+			input: counterPreamble + `
+			fn sumOf(collection) {
+				var sum = 0
+				for x <- collection {
+					sum = sum + x
+				}
+				return sum
+			}
+			sumOf([1, 2, 3]) + sumOf(Counter(4))
+			`,
+			// sumOf([1,2,3]) = 6 (Array fast path), sumOf(Counter(4)) = 0+1+2+3 = 6 (generic path)
+			expected: 6 + 6,
+		},
+		{
+			// Storing `yield` and calling it after iterate() returns must error clearly, not corrupt state.
+			label: "stale yield called after iterate() already returned errors clearly",
+			input: iterablePreamble + `
+			var savedYield = void
+
+			@Iterable(_misbehavingIterate)
+			data Sneaky { value }
+
+			fn _misbehavingIterate(v, yield) {
+				savedYield = yield
+			}
+
+			fn example() {
+				for x <- Sneaky(1) {}
+				return savedYield(99)
+			}
+			example()
+			`,
+			err: "error calling extern function: yield called after its for-loop's iterate() call already returned",
+		},
+		{
+			// panic is faked here (Bind only wires the real one inside a "prelude"-named module).
+			label: "value without @Iterable produces a clear error",
+			input: compositeTypePreamble + `
+			attr Iterable {
+				iterate(value, yield)
+			}
+			fn panic(message) {
+				return 1 / 0
+			}
+			data NotIterable { value }
+			for x <- NotIterable(1) { x }
+			`,
+			err: "division by zero",
 		},
 	}
 

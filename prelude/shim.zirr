@@ -16,6 +16,8 @@ extern type Module {}
 extern type ModuleType {}
 
 // A finite list of values.
+@Countable(fn(v: Array) -> Int { v.length })
+@Iterable(_arrayIterate)
 extern type Array {
   // The length of the array.
   length: Int
@@ -35,9 +37,13 @@ extern type Bool {
 extern type Char {}
 
 // An associative array of keys and their values.
+@Countable(fn(v: Dict) -> Int { v.length })
+@Iterable(_dictIterate)
 extern type Dict {
   // The length of the dictionary.
   length: Int
+  // The dictionary's keys, in unspecified order.
+  keys: Array
 }
 
 // A callable function.
@@ -60,8 +66,11 @@ union Number {
 }
 
 @Printable(fn(s: String) -> String { return s })
+@Countable(fn(v: String) -> Int { v.length })
+@Iterable(_stringIterate)
 extern type String {
   length: Int
+  chars: [Char]
 }
 
 // A sequence of raw bytes.

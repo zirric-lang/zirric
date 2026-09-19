@@ -87,6 +87,11 @@ const (
 	// If the constant is a UnionType, checks membership. Otherwise compares
 	// TypeConstantId directly. Pops the value and pushes a Bool result.
 	IsType
+
+	// MakeIterYield builds the native `yield` callable for a generic `for <-` dispatch (ZE-010).
+	MakeIterYield
+	// CallIterate reentrantly calls the `iterate` function (top of stack) with 2 args, unlike Call.
+	CallIterate
 )
 
 var definitions = map[Opcode]*Definition{
@@ -148,4 +153,7 @@ var definitions = map[Opcode]*Definition{
 	SetLocalCell: {"setlocalcell", []int{2}},   // local index
 	WrapLocal:    {"wraplocal", []int{2}},      // local index
 	IsType:       {"istype", []int{2}},         // const id of type or union
+
+	MakeIterYield: {"makeiteryield", []int{2, 2, 2}}, // binding local, body start ip, body end ip
+	CallIterate:   {"calliterate", []int{2}},         // arg count (always 2: value, yield)
 }

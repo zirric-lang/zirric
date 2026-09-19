@@ -243,7 +243,10 @@ func (c *Compiler) resolveTypeConstantId(typeExpr ast.TypeExpr) (int, error) {
 		if sym == nil || sym.Decl == nil {
 			return 0, fmt.Errorf("undefined type %q in type check", e.Reference.String())
 		}
-		origSym := sym.Original()
+		origSym, err := c.resolveThroughImportMember(sym.Original())
+		if err != nil {
+			return 0, fmt.Errorf("type %q: %w", e.Reference.String(), err)
+		}
 		if origSym.ConstantId == nil {
 			return 0, fmt.Errorf("type %q has no constant id", e.Reference.String())
 		}
@@ -259,12 +262,28 @@ func (c *Compiler) resolveTypeConstantId(typeExpr ast.TypeExpr) (int, error) {
 	}
 }
 
+// resolveThroughImportMember follows sym further if Original() left it as a DeclImportMember.
+func (c *Compiler) resolveThroughImportMember(sym *ast.Symbol) (*ast.Symbol, error) {
+	importMember, ok := sym.Decl.(ast.DeclImportMember)
+	if !ok {
+		return sym, nil
+	}
+	resolved, err := c.resolveTypeSymbolFromImport(importMember)
+	if err != nil {
+		return nil, err
+	}
+	return resolved, nil
+}
+
 func (c *Compiler) resolveIdentifierConstantId(name ast.Identifier, symbols *ast.SymbolTable) (int, error) {
 	symbol := symbols.LookupIdentifier(name)
 	if symbol == nil || symbol.Decl == nil {
 		return 0, fmt.Errorf("undefined type %q in type check", name.Value)
 	}
-	origSym := symbol.Original()
+	origSym, err := c.resolveThroughImportMember(symbol.Original())
+	if err != nil {
+		return 0, fmt.Errorf("type %q: %w", name.Value, err)
+	}
 	if origSym.ConstantId == nil {
 		return 0, fmt.Errorf("type %q has no constant id", name.Value)
 	}
@@ -276,7 +295,10 @@ func (c *Compiler) resolveBuiltinTypeConstantId(name string, symbols *ast.Symbol
 	if symbol == nil || symbol.Decl == nil {
 		return 0, fmt.Errorf("undefined built-in type %q in type check", name)
 	}
-	origSym := symbol.Original()
+	origSym, err := c.resolveThroughImportMember(symbol.Original())
+	if err != nil {
+		return 0, fmt.Errorf("built-in type %q: %w", name, err)
+	}
 	if origSym.ConstantId == nil {
 		return 0, fmt.Errorf("built-in type %q has no constant id", name)
 	}

@@ -5,10 +5,9 @@ description: "Define Countable and Iterable attributes and iteration protocols."
 
 # Iterable
 
-::: callout warning In Progress
-This proposal has been accepted in principle.
-It is currently under active development.
-Parts might be incomplete or missing in Zirric.
+::: callout tip Implemented
+This proposal has been accepted and implemented.
+You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
 :::
 
 ## Introduction
@@ -81,8 +80,12 @@ For arrays a more efficient implementation may be used that does not require fun
 
 ## Changes to the Standard Library
 
-- Add `@Countable`, `@Iterable`, `Range`, and `ClosedRange` in `prelude`.
-- `prelude.Dict`, `prelude.String` and `prelude.Array` should all be annotated with `@Countable` and `@Iterable`.
+- Add `@Countable`, `@Iterable`, `Range`, `ClosedRange`, and `Pair` in `prelude`.
+- `prelude.Array` is annotated with `@Countable` and `@Iterable`. This uses a more efficient hot path when possible.
+- `prelude.Dict` is annotated with `@Countable` and `@Iterable`. Iterating a `Dict` yields a `Pair { key, value }` for each entry, in unspecified order.
+- `prelude.Dict` has now a `keys: Array` field.
+- `prelude.String` is annotated with `@Countable` and `@Iterable`. Iterating a `String` yields one `Char` per element.
+- `prelude.String` can now be indexed on character position.
 
 ## Alternatives Considered
 

@@ -11,7 +11,17 @@ func (a Dict) Inspect() string {
 
 // Lookup implements RuntimeValue.
 func (a Dict) Lookup(name string) RuntimeValue {
-	panic("unimplemented")
+	switch name {
+	case "length":
+		return Int(len(a))
+	case "keys":
+		keys := make(Array, 0, len(a))
+		for k := range a {
+			keys = append(keys, k)
+		}
+		return keys
+	}
+	return nil
 }
 
 // TypeConstantId implements RuntimeValue.

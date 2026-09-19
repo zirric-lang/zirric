@@ -1,0 +1,103 @@
+mod prelude
+
+// Represents an open range of integers from start (inclusive) to end (exclusive).
+@Countable(_rangeCount)
+@Iterable(_rangeIterate)
+data Range {
+  start: Int
+  end: Int
+}
+
+// Represents a closed range of integers from start (inclusive) to end (inclusive).
+@Countable(_closedRangeCount)
+@Iterable(_closedRangeIterate)
+data ClosedRange {
+  start: Int
+  end: Int
+}
+
+// A key/value pair, as yielded when iterating a Dict.
+data Pair {
+  key
+  value
+}
+
+
+fn _rangeCount(v) {
+  if v.start >= v.end {
+    return 0
+  }
+  return v.end - v.start
+}
+
+fn _rangeIterate(v, yield) {
+  var i = v.start
+  for {
+    if i >= v.end {
+      return
+    }
+    if !yield(i) {
+      break
+    }
+    i = i + 1
+  }
+}
+
+fn _closedRangeCount(v) {
+  if v.start > v.end {
+    return 0
+  }
+  return v.end - v.start + 1
+}
+
+fn _closedRangeIterate(v, yield) {
+  var i = v.start
+  for {
+    if i > v.end {
+      return
+    }
+    if !yield(i) {
+      break
+    }
+    i = i + 1
+  }
+}
+
+fn _arrayIterate(v, yield) {
+  var i = 0
+  const l = v.length
+  for {
+    if i >= l {
+      return
+    }
+    if !yield(v[i]) {
+      break
+    }
+    i = i + 1
+  }
+}
+
+fn _dictIterate(v, yield) {
+  const keys = v.keys
+  var i = 0
+  const l = keys.length
+  for {
+    if i >= l {
+      return
+    }
+    const key = keys[i]
+    if !yield(Pair(key, v[key])) {
+      break
+    }
+    i = i + 1
+  }
+}
+
+fn _stringIterate(v, yield) {
+  // Delegates to `.chars` (decoded once) instead of indexing character-by-character, which is O(n) per index.
+  for c <- v.chars {
+    if !yield(c) {
+      break
+    }
+  }
+}

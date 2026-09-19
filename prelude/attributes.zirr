@@ -30,3 +30,15 @@ attr Printable {
   // A function to convert the value to a string.
   toString(self: @Printable) -> String
 }
+
+// Marks a type as countable, providing a way to get its length.
+attr Countable {
+  // Returns the length of a value.
+  length(value: @Countable) -> Int
+}
+
+// Marks a type as iterable, allowing `for element <- value`.
+attr Iterable {
+  // Calls `yield` with each element, stopping early if `yield` returns `false`.
+  iterate(value: @Iterable, yield: fn(Any) -> Bool)
+}

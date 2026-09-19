@@ -55,6 +55,226 @@ func TestRunFile(t *testing.T) {
 	}
 }
 
+func TestIsTypeCheckAgainstCrossModuleType(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn assertTrue(actual, label) {
+	if !actual {
+		panic(label)
+	}
+}
+
+assertTrue(3 is Int, "FAIL: is Int")
+assertTrue([1, 2] is Array, "FAIL: is Array")
+assertTrue([1, 2] is [Int], "FAIL: is [Int]")
+
+const described = switch 3 {
+case is Int: "int"
+case _: "other"
+}
+assertTrue(described == "int", "FAIL: switch case is Int")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+func TestIterableAgainstRealPrelude(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+fn sumRange() {
+	var sum = 0
+	for x <- Range(0, 5) {
+		sum = sum + x
+	}
+	return sum
+}
+assertEqual(sumRange(), 0 + 1 + 2 + 3 + 4, "FAIL: Range sum")
+
+fn sumClosedRange() {
+	var sum = 0
+	for x <- ClosedRange(0, 5) {
+		sum = sum + x
+	}
+	return sum
+}
+assertEqual(sumClosedRange(), 0 + 1 + 2 + 3 + 4 + 5, "FAIL: ClosedRange sum")
+
+fn countVisits(collection) {
+	var visits = 0
+	for x <- collection {
+		visits = visits + 1
+	}
+	return visits
+}
+assertEqual(countVisits(Range(0, 0)), 0, "FAIL: empty Range visits nothing")
+assertEqual(countVisits(Range(3, 3)), 0, "FAIL: empty Range (equal bounds) visits nothing")
+assertEqual(countVisits(ClosedRange(3, 3)), 1, "FAIL: single-element ClosedRange visits once")
+assertEqual(countVisits(ClosedRange(5, 3)), 0, "FAIL: inverted ClosedRange visits nothing")
+
+fn breaksEarly() {
+	var sum = 0
+	for x <- Range(0, 100) {
+		if x == 3 {
+			break
+		}
+		sum = sum + x
+	}
+	return sum
+}
+assertEqual(breaksEarly(), 0 + 1 + 2, "FAIL: Range break")
+
+fn arrayViaGenericPathStillWorks() {
+	var sum = 0
+	for x <- [10, 20, 30] {
+		sum = sum + x
+	}
+	return sum
+}
+assertEqual(arrayViaGenericPathStillWorks(), 60, "FAIL: Array fast path")
+
+const doubled = for x <- Range(0, 3) { x * 2 }
+assertEqual(doubled[0], 0, "FAIL: expr-form Range [0]")
+assertEqual(doubled[1], 2, "FAIL: expr-form Range [1]")
+assertEqual(doubled[2], 4, "FAIL: expr-form Range [2]")
+
+assertEqual(Countable(Range(0, 5)).length(Range(0, 5)), 5, "FAIL: Countable.length on Range")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+func TestDictIterableYieldsPairs(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+const pair = Pair("k", "v")
+assertEqual(pair.key, "k", "FAIL: Pair.key")
+assertEqual(pair.value, "v", "FAIL: Pair.value")
+
+const d = [1: "one", 2: "two", 3: "three"]
+
+assertEqual(d.length, 3, "FAIL: Dict.length")
+assertEqual(d.keys.length, 3, "FAIL: Dict.keys length")
+assertEqual([10, 20, 30].length, 3, "FAIL: Array.length")
+assertEqual(Countable(d).length(d), 3, "FAIL: Countable.length on Dict")
+
+fn checkAllPairsAndCountKeySum() {
+	var count = 0
+	var keySum = 0
+	for p <- d {
+		assertEqual(d[p.key], p.value, "FAIL: Dict iterate pair mismatch")
+		count = count + 1
+		keySum = keySum + p.key
+	}
+	return count * 1000 + keySum
+}
+assertEqual(checkAllPairsAndCountKeySum(), 3*1000 + (1+2+3), "FAIL: Dict iterate visit count/key sum")
+
+const collected = for p <- d { p.key }
+assertEqual(collected.length, 3, "FAIL: expr-form Dict iterate collected wrong count")
+
+fn breaksEarly() {
+	var count = 0
+	for p <- d {
+		count = count + 1
+		break
+	}
+	return count
+}
+assertEqual(breaksEarly(), 1, "FAIL: break stops Dict iteration early")
+
+fn emptyDict() {
+	var count = 0
+	for p <- [:] {
+		count = count + 1
+	}
+	return count
+}
+assertEqual(emptyDict(), 0, "FAIL: empty Dict visits nothing")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+func TestStringIterableYieldsChars(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+const s = "café"
+
+assertEqual(s.length, 4, "FAIL: String.length is character count, not byte count")
+assertEqual(s[0], 'c', "FAIL: String index 0")
+assertEqual(s[3], 'é', "FAIL: String index 3 (multi-byte character)")
+assertEqual(Countable(s).length(s), 4, "FAIL: Countable.length on String")
+
+assertEqual(s.chars.length, 4, "FAIL: String.chars length")
+assertEqual(s.chars[0], 'c', "FAIL: String.chars[0]")
+assertEqual(s.chars[3], 'é', "FAIL: String.chars[3] (multi-byte character)")
+assertEqual("".chars.length, 0, "FAIL: empty String.chars")
+
+fn countChars(str) {
+	var count = 0
+	for c <- str {
+		count = count + 1
+	}
+	return count
+}
+assertEqual(countChars(s), 4, "FAIL: String iterate visits one Char per character, not per byte")
+assertEqual(countChars(""), 0, "FAIL: empty String visits nothing")
+
+fn breaksEarly() {
+	var count = 0
+	for c <- s {
+		count = count + 1
+		if count == 2 {
+			break
+		}
+	}
+	return count
+}
+assertEqual(breaksEarly(), 2, "FAIL: break stops String iteration early")
+
+const collected = for c <- "ab" { c }
+assertEqual(collected.length, 2, "FAIL: expr-form String iterate collected wrong count")
+assertEqual(collected[0], 'a', "FAIL: expr-form String iterate [0]")
+assertEqual(collected[1], 'b', "FAIL: expr-form String iterate [1]")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
 func TestParseFileUsesPreludeAttribute(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\n@Deprecated(\"use NewExample\")\ndata Example { name }\n")
