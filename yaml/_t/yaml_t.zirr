@@ -1,0 +1,164 @@
+import tests { Test }
+import tests.assert
+
+import coding
+import dicts
+import json
+import results
+import strings
+import yaml
+
+data Address {
+	city: String
+	zip: String
+}
+
+data Server {
+	name: String
+	@coding.Name("generic")
+	@yaml.Name("specific")
+	address: Address
+	tags: [String]
+	nickname: Option
+}
+
+@Test()
+fn testParseScalars() {
+	assert.all([
+		assert.equal(true, yaml.parse("true").value),
+		assert.equal("hi", yaml.parse("hi").value),
+		assert.equal(1, yaml.parse("1").value),
+		assert.equal(1.5, yaml.parse("1.5").value),
+		assert.equal(void, yaml.parse("null").value),
+		// An empty stream holds no document at all.
+		assert.equal(void, yaml.parse("").value),
+	])
+}
+
+@Test()
+fn testParseMappingsAndSequences() {
+	const parsed = yaml.parse("name: zirric\ntags:\n  - a\n  - b\nmeta:\n  ok: true").value
+	assert.all([
+		assert.equal("zirric", parsed["name"]),
+		assert.equal(["a", "b"], parsed["tags"]),
+		assert.equal(true, parsed["meta"]["ok"]),
+	])
+}
+
+@Test()
+fn testEveryKeyBecomesAString() {
+	// The tree stays format-neutral, so `1: one` and `"1": one` decode alike and a tree means the same thing whichever format produced it.
+	const parsed = yaml.parse("1: one\ntrue: yes").value
+	assert.all([
+		assert.equal("one", parsed["1"]),
+		assert.equal(void, parsed[1]),
+		assert.equal("yes", parsed["true"]),
+	])
+}
+
+@Test()
+fn testATimestampStaysText() {
+	// YAML has native timestamps, but keeping them as text is what lets the same field decode the same way through json and yaml.
+	assert.all([
+		assert.equal("2024-01-01T00:00:00Z", yaml.parse("2024-01-01T00:00:00Z").value),
+		assert.equal(true, yaml.parse("when: 2024-01-01T00:00:00Z").value["when"] is String),
+	])
+}
+
+@Test()
+fn testParseRejectsAStreamOfSeveralDocuments() {
+	const parsed = yaml.parse("a: 1\n---\nb: 2")
+	assert.all([
+		assert.equal(true, results.isErr(parsed)),
+		// Several documents are not one value, so the caller is pointed at the function that returns all of them.
+		assert.equal(true, strings.contains(parsed.reason, "parseAll")),
+	])
+}
+
+@Test()
+fn testParseAllReadsEveryDocumentInOrder() {
+	assert.all([
+		assert.equal([["a": 1], ["b": 2]], yaml.parseAll("a: 1\n---\nb: 2").value),
+		assert.equal([["a": 1]], yaml.parseAll("a: 1").value),
+		assert.equal([], yaml.parseAll("").value),
+	])
+}
+
+@Test()
+fn testParseRejectsNonsense() {
+	assert.all([
+		assert.equal(true, results.isErr(yaml.parse("a: ["))),
+		assert.equal(true, results.isErr(yaml.parse("? [a, b]\n: value"))),
+	])
+}
+
+@Test()
+fn testFormat() {
+	assert.all([
+		assert.equal("a: 1\nb: 2", yaml.format(["a": 1, "b": 2]).value),
+		// Keys are sorted, so the same value always gives the same text.
+		assert.equal("a: 1\nz: 2", yaml.format(["z": 2, "a": 1]).value),
+		assert.equal("- 1\n- 2", yaml.format([1, 2]).value),
+		assert.equal("null", yaml.format(void).value),
+	])
+}
+
+@Test()
+fn testFormatIndented() {
+	assert.all([
+		assert.equal("a:\n    b: 1", yaml.formatIndented(["a": ["b": 1]], 4).value),
+		assert.equal("a:\n  b: 1", yaml.format(["a": ["b": 1]]).value),
+		assert.equal(true, results.isErr(yaml.formatIndented(["a": 1], 0))),
+	])
+}
+
+@Test()
+fn testFormatRefusesWhatTheTreeCannotHold() {
+	assert.all([
+		assert.equal(true, results.isErr(yaml.format('c'))),
+		assert.equal(true, results.isErr(yaml.format(fn(x) { x }))),
+		assert.equal(true, results.isErr(yaml.format([1: "a"]))),
+	])
+}
+
+@Test()
+fn testRoundTripThroughText() {
+	const original = ["name": "zirric", "count": 3, "ratio": 0.5, "tags": ["a", "b"], "nested": ["ok": true]]
+	assert.equal(original, yaml.parse(yaml.format(original).value).value)
+}
+
+@Test()
+fn testCodingNeedsNoChangeForANewFormat() {
+	const server = Server("Ada", Address("London", "E1"), ["a", "b"], Some("A"))
+	const text = yaml.format(coding.encodeWith(yaml, server).value).value
+	const back = coding.decodeWith(yaml, Server, yaml.parse(text).value).value
+	assert.all([
+		assert.equal("Ada", back.name),
+		assert.equal("London", back.address.city),
+		assert.equal(["a", "b"], back.tags),
+		assert.equal(Some("A"), back.nickname),
+	])
+}
+
+@Test()
+fn testAYAMLAttributeWinsOverTheGenericOne() {
+	const server = Server("Ada", Address("London", "E1"), [], None())
+	const tree = coding.encodeWith(yaml, server).value
+	assert.all([
+		assert.equal(true, dicts.hasKey(tree, "specific")),
+		assert.equal(false, dicts.hasKey(tree, "generic")),
+		// Under another format the YAML attribute must not apply at all.
+		assert.equal(true, dicts.hasKey(coding.encodeWith(json, server).value, "generic")),
+	])
+}
+
+@Test()
+fn testTheSameTreeTravelsThroughBothFormats() {
+	// The point of one tree for every format: a value encoded once can be written as either.
+	const tree = coding.encode(Address("London", "E1")).value
+	assert.all([
+		assert.equal("city: London\nzip: E1", yaml.format(tree).value),
+		assert.equal("{\"city\":\"London\",\"zip\":\"E1\"}", json.format(tree).value),
+		assert.equal(yaml.parse(yaml.format(tree).value).value, json.parse(json.format(tree).value).value),
+	])
+}

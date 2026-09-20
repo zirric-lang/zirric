@@ -126,3 +126,91 @@ fn testTypeOfFindsTheTypeAValueWasBuiltFrom() {
 		assert.equal(6, len(reflect.fieldsOf(found.value))),
 	])
 }
+
+@Test()
+fn testFieldValuesAlignWithFields() {
+	const value = Sample(1, "a", ["t"], ["k": 2], fn(text) { 0 }, void)
+	assert.all([
+		assert.equal(
+			["plain", "name", "tags", "scores", "parse", "nested"],
+			arrays.map(reflect.fieldsOf(Sample), fn(field) { field.name }),
+		),
+		assert.equal(1, reflect.fieldValues(value)[0]),
+		assert.equal("a", reflect.fieldValues(value)[1]),
+		assert.equal(["t"], reflect.fieldValues(value)[2]),
+		// Anything that is not a data value simply has no fields.
+		assert.equal([], reflect.fieldValues(42)),
+	])
+}
+
+@Test()
+fn testConstructBuildsAValueFromItsFields() {
+	const built = reflect.construct(Sample, [1, "a", [], [:], void, void])
+	assert.all([
+		assert.equal(true, built is Ok),
+		assert.equal("a", built.value.name),
+		// The value must be a genuine Sample, not something merely shaped like one.
+		assert.equal(true, reflect.isInstance(built.value, Sample)),
+	])
+}
+
+@Test()
+fn testConstructRefusesTheWrongNumberOfFields() {
+	assert.all([
+		assert.equal(true, reflect.construct(Sample, [1]) is Err),
+		assert.equal(true, reflect.construct(42, []) is Err),
+	])
+}
+
+@Test()
+fn testIsInstanceDecidesAsTheIsOperatorDoes() {
+	const value = Sample(1, "a", [], [:], void, void)
+	assert.all([
+		assert.equal(true, reflect.isInstance(value, Sample)),
+		assert.equal(false, reflect.isInstance(42, Sample)),
+		assert.equal(true, reflect.isInstance("x", String)),
+		// A union matches its members, and an attribute type matches what carries it.
+		assert.equal(true, reflect.isInstance(None(), Option)),
+		assert.equal(true, reflect.isInstance(fieldNamed("name"), Label)),
+		assert.equal(false, reflect.isInstance(fieldNamed("plain"), Label)),
+	])
+}
+
+@Test()
+fn testAttributeTypesAreRecognizable() {
+	assert.all([
+		assert.equal(true, reflect.isAttributeType(Label)),
+		assert.equal(false, reflect.isAttributeType(Sample)),
+		assert.equal(false, reflect.isAttributeType(42)),
+	])
+}
+
+@Test()
+fn testTypesCompareByIdentity() {
+	// A type is a value now that reflection hands them out, so comparing two must answer rather than stop the program.
+	assert.all([
+		assert.equal(true, Sample == Sample),
+		assert.equal(false, Sample == Label),
+		assert.equal(true, Option == Option),
+		assert.equal(false, Option == Sample),
+		assert.equal(true, String == String),
+		assert.equal(false, String == Int),
+		// The type reflection hands back is the same value as the one written in source.
+		assert.equal(true, reflect.typeOf(Sample(1, "a", [], [:], void, void)).value == Sample),
+		// Comparing a type with something that is not one is simply false.
+		assert.equal(false, Sample == 42),
+	])
+}
+
+@Test()
+fn testTypeOfAFunctionIsTheFuncType() {
+	// Every compiled function reports Func as its type, so the type table must not let one of them stand in for Func itself.
+	const anonymous = fn(x) { x }
+	assert.all([
+		assert.equal("Func", reflect.typeName(reflect.typeOf(anonymous).value)),
+		assert.equal("Func", reflect.typeName(reflect.typeOf(fieldNamed).value)),
+		assert.equal(true, reflect.typeOf(anonymous).value == reflect.typeOf(fieldNamed).value),
+		// The type is a type, not the function that happened to be compiled last.
+		assert.equal(false, reflect.isDataType(reflect.typeOf(anonymous).value)),
+	])
+}

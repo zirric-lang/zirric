@@ -59,3 +59,14 @@ fn testReduce() {
 		assert.equal(0, dicts.reduce([:], 0, fn(acc, k, v) { acc + v })),
 	])
 }
+
+@Test()
+fn testHasKey() {
+	assert.all([
+		assert.equal(true, dicts.hasKey(["a": 1], "a")),
+		assert.equal(false, dicts.hasKey(["a": 1], "b")),
+		// A key holding void is still a key, which indexing alone cannot tell apart from absence.
+		assert.equal(true, dicts.hasKey(["a": void], "a")),
+		assert.equal(false, dicts.hasKey([:], "a")),
+	])
+}

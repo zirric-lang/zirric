@@ -1,5 +1,6 @@
 mod assert
 
+import fmt
 import results
 
 fn all(res: [@AnyResult]) -> Result {
@@ -10,7 +11,7 @@ fn equal(expect, got) -> Result {
 	if expect == got {
 		Ok(true)
 	} else {
-		Err("expected "+expect+", got "+got)
+		Err("expected " + fmt.sprint(expect) + ", got " + fmt.sprint(got))
 	}
 }
 
@@ -26,16 +27,16 @@ fn isOk(val) -> Result {
 	switch val {
 	case is Ok:
 	case is Err:
-		Err("expected ok value, got" + val)
+		Err("expected an ok value, got " + fmt.sprint(val))
 	case is @AnyResult:
 		const res = AnyResult(val).toResult(val)
 		switch res {
 		case is Ok:
 		case _:
-			Err("expected ok result, got" + val)
+			Err("expected an ok result, got " + fmt.sprint(val))
 		}
 	case _:
-		Err("expected ok result, got" + val)
+		Err("expected an ok result, got " + fmt.sprint(val))
 	}
 }
 
@@ -47,10 +48,10 @@ fn isErr(val) -> Result {
 		switch res {
 		case is Err:
 		case _:
-			Err("expected err result, got" + val)
+			Err("expected an err result, got " + fmt.sprint(val))
 		}
 	case _:
-		Err("expected an err result, got VAL")
+		Err("expected an err result, got " + fmt.sprint(val))
 	}
 }
 
@@ -58,7 +59,7 @@ fn isError(val) -> Result {
 	switch val {
 	case is @Error:
 	case _:
-		Err("expected an error, got VAL")
+		Err("expected an error, got " + fmt.sprint(val))
 	}
 }
 

@@ -1,0 +1,269 @@
+import tests { Test }
+import tests.assert
+
+import coding
+import dicts
+import json
+import results
+import strings
+
+data Address {
+	city: String
+	zip: String
+}
+
+data Person {
+	name: String
+	age: Int
+	@coding.Name("home")
+	address: Address
+	tags: [String]
+	nickname: Option
+	@coding.Ignore()
+	secret
+	untyped
+}
+
+union Shape {
+	data Circle { radius: Int }
+	data Square { side: Int }
+}
+
+data Renamed {
+	@coding.Name("generic")
+	@json.Name("specific")
+	value: String
+}
+
+data Fallbacks {
+	@coding.Default(7)
+	count: Int
+	@coding.Decode(fn(raw) { Ok(raw + "!") })
+	note: String
+}
+
+fn samplePerson() -> Person {
+	Person("Ada", 36, Address("London", "E1"), ["a", "b"], Some("A"), "hidden", [1, 2])
+}
+
+@Test()
+fn testAFieldTravelsUnderItsDeclaredName() {
+	const tree = coding.encode(Address("London", "E1")).value
+	assert.equal(["city": "London", "zip": "E1"], tree)
+}
+
+@Test()
+fn testNameOverridesTheDeclaredName() {
+	const tree = coding.encode(samplePerson()).value
+	assert.all([
+		// The attribute renames the key, so the declared name must be gone entirely.
+		assert.equal(["city": "London", "zip": "E1"], tree["home"]),
+		assert.equal(void, tree["address"]),
+	])
+}
+
+@Test()
+fn testIgnoredFieldsDoNotTravel() {
+	const tree = coding.encode(samplePerson()).value
+	assert.all([
+		assert.equal(void, tree["secret"]),
+		assert.equal(void, coding.decode(Person, tree).value.secret),
+	])
+}
+
+@Test()
+fn testNestedTypesAndArraysAreWalked() {
+	const tree = coding.encode(samplePerson()).value
+	assert.all([
+		assert.equal("London", tree["home"]["city"]),
+		assert.equal(["a", "b"], tree["tags"]),
+		// An untyped field keeps whatever tree it holds.
+		assert.equal([1, 2], tree["untyped"]),
+	])
+}
+
+@Test()
+fn testARoundTripKeepsEveryTravellingField() {
+	const back = coding.decode(Person, coding.encode(samplePerson()).value).value
+	assert.all([
+		assert.equal("Ada", back.name),
+		assert.equal(36, back.age),
+		assert.equal("London", back.address.city),
+		assert.equal(["a", "b"], back.tags),
+		assert.equal(Some("A"), back.nickname),
+		assert.equal([1, 2], back.untyped),
+	])
+}
+
+@Test()
+fn testAPresentOptionTravelsAsItsValue() {
+	const tree = coding.encode(samplePerson()).value
+	// Not as an object of its own, which is what lets absence and None be the same thing.
+	assert.equal("A", tree["nickname"])
+}
+
+@Test()
+fn testAnAbsentOptionLeavesNoKey() {
+	const tree = coding.encode(Person("Ada", 1, Address("a", "b"), [], None(), "s", void)).value
+	assert.all([
+		assert.equal(false, dicts.hasKey(tree, "nickname")),
+		assert.equal(None(), coding.decode(Person, tree).value.nickname),
+	])
+}
+
+@Test()
+fn testAFormatAttributeWinsOverTheGenericOne() {
+	const value = Renamed("v")
+	assert.all([
+		assert.equal("v", coding.encode(value).value["generic"]),
+		assert.equal("v", coding.encodeWith(json, value).value["specific"]),
+		// The generic key must not also be written, or both spellings would travel.
+		assert.equal(void, coding.encodeWith(json, value).value["generic"]),
+	])
+}
+
+@Test()
+fn testAFormatAttributeAlsoDecidesWhatIsRead() {
+	assert.all([
+		assert.equal("v", coding.decodeWith(json, Renamed, ["specific": "v"]).value.value),
+		// Reading the generic key under a format that names its own is a missing key, not a fallback.
+		assert.equal(true, results.isErr(coding.decodeWith(json, Renamed, ["generic": "v"]))),
+	])
+}
+
+@Test()
+fn testDefaultFillsAnAbsentKey() {
+	const decoded = coding.decode(Fallbacks, ["note": "n"]).value
+	assert.equal(7, decoded.count)
+}
+
+@Test()
+fn testDecodeAttributeReplacesTheGeneralRules() {
+	const decoded = coding.decode(Fallbacks, ["note": "n"]).value
+	assert.equal("n!", decoded.note)
+}
+
+@Test()
+fn testAMissingKeyWithNoDefaultIsAnError() {
+	const decoded = coding.decode(Address, ["city": "London"])
+	assert.all([
+		assert.equal(true, results.isErr(decoded)),
+		// The error names the type, the field and the key, since a tree gives no other clue where it went wrong.
+		assert.equal(true, strings.contains(decoded.reason, "Address.zip")),
+		assert.equal(true, strings.contains(decoded.reason, "zip")),
+	])
+}
+
+@Test()
+fn testAValueOfTheWrongTypeIsAnError() {
+	const decoded = coding.decode(Address, ["city": 1, "zip": "E1"])
+	assert.all([
+		assert.equal(true, results.isErr(decoded)),
+		assert.equal(true, strings.contains(decoded.reason, "expected String")),
+	])
+}
+
+@Test()
+fn testAUnionIsDecodedByTryingEachMember() {
+	assert.all([
+		assert.equal(Square(4), coding.decode(Shape, ["side": 4]).value),
+		assert.equal(Circle(2), coding.decode(Shape, ["radius": 2]).value),
+		assert.equal(true, results.isErr(coding.decode(Shape, ["nope": 1]))),
+	])
+}
+
+@Test()
+fn testATreeSurvivesRealJSONText() {
+	const text = json.format(coding.encodeWith(json, samplePerson()).value).value
+	const back = coding.decodeWith(json, Person, json.parse(text).value).value
+	assert.all([
+		assert.equal("Ada", back.name),
+		assert.equal("E1", back.address.zip),
+		assert.equal(Some("A"), back.nickname),
+	])
+}
+
+
+@AnyOption()
+union Maybe {
+	data Just { value }
+	data Nothing
+}
+
+data Ignored {
+	@coding.Ignore()
+	skippedOption: Option
+	@coding.Ignore()
+	skippedTyped: String
+	@coding.Ignore()
+	@coding.Default(9)
+	skippedDefault: Int
+	kept: String
+}
+
+data Custom {
+	maybe: Maybe
+}
+
+@Test()
+fn testAnIgnoredFieldStandsWhereAMissingKeyDoes() {
+	const decoded = coding.decode(Ignored, ["kept": "k"]).value
+	assert.all([
+		// An ignored Option is absent, not void, the same as a key that was never written.
+		assert.equal(None(), decoded.skippedOption),
+		assert.equal(9, decoded.skippedDefault),
+		// Ignoring a field is never an error, however it is typed, since leaving it out is the point.
+		assert.equal(void, decoded.skippedTyped),
+		assert.equal("k", decoded.kept),
+	])
+}
+
+@Test()
+fn testACustomOptionUnionIsNotTreatedAsPreludesOption() {
+	// Wrapping in prelude's Some would build a value of the wrong type, so the ordinary union rules apply and say so instead.
+	const decoded = coding.decode(Custom, ["maybe": 1])
+	assert.all([
+		assert.equal(true, results.isErr(decoded)),
+		assert.equal(true, strings.contains(decoded.reason, "Maybe")),
+	])
+}
+
+union Untyped {
+	data First { a }
+	data Second { b }
+}
+
+@Test()
+fn testAMissingKeyIsAnErrorEvenForAnUntypedField() {
+	// An untyped field is not an optional one, or a union member made of them would match every object.
+	assert.all([
+		assert.equal(true, results.isErr(coding.decode(First, [:]))),
+		assert.equal(true, results.isErr(coding.decode(First, ["b": 1]))),
+		assert.equal(First(1), coding.decode(First, ["a": 1]).value),
+		// A key that is present but holds void is still present.
+		assert.equal(First(void), coding.decode(First, ["a": void]).value),
+	])
+}
+
+@Test()
+fn testUnionMembersWithUntypedFieldsAreStillToldApart() {
+	assert.all([
+		assert.equal(Second(2), coding.decode(Untyped, ["b": 2]).value),
+		assert.equal(First(1), coding.decode(Untyped, ["a": 1]).value),
+		// Extra keys are ignored, so the member that can be built wins.
+		assert.equal(Second(2), coding.decode(Untyped, ["b": 2, "extra": 9]).value),
+		// A tree satisfying both is genuinely ambiguous and resolves by declaration order.
+		assert.equal(First(1), coding.decode(Untyped, ["a": 1, "b": 2]).value),
+	])
+}
+
+@Test()
+fn testEncodeRefusesWhatATreeCannotHold() {
+	// Refused by coding rather than left for the format, so the error can name the field it came from.
+	assert.all([
+		assert.equal(true, results.isErr(coding.encode('c'))),
+		assert.equal(true, results.isErr(coding.encode(fn(x) { x }))),
+		assert.equal(true, strings.contains(coding.encode(Address("a", 'x')).reason, "Address.zip")),
+		assert.equal(true, strings.contains(coding.encode(Address("a", 'x')).reason, "Char")),
+	])
+}

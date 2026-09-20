@@ -1,0 +1,113 @@
+mod coding
+
+import reflect
+import results
+
+// Turns a value into a native tree.
+// Anything the tree already has a form for is kept as it is; a data value becomes a Dict keyed by its fields.
+fn _encode(format: Option, value: Any) -> Result {
+	switch value {
+	case is [Any]:
+		return _encodeArray(format, value)
+	case is [Any: Any]:
+		return _encodeDict(format, value)
+	// An Option is written as what it holds rather than as an object of its own, which is what lets a field's absence and a `None` be the same thing.
+	case is Some:
+		return _encode(format, value.value)
+	case is None:
+		return Ok(void)
+	// The scalars a tree is made of stand for themselves.
+	case is Int:
+		return Ok(value)
+	case is Float:
+		return Ok(value)
+	case is String:
+		return Ok(value)
+	case is Bool:
+		return Ok(value)
+	case is Void:
+		return Ok(value)
+	}
+
+	const found = reflect.typeOf(value)
+	switch found {
+	case is Some:
+		if reflect.isDataType(found.value) {
+			return _encodeData(format, found.value, value)
+		}
+	}
+	// Refused here rather than left for the format to trip over, so that the error names the field it came from.
+	return Err(_describe(value) + " cannot be encoded")
+}
+
+fn _encodeArray(format: Option, values: [Any]) -> Result {
+	var tree = []
+	for value <- values {
+		const encoded = _encode(format, value)
+		switch encoded {
+		case is Err:
+			return encoded
+		}
+		tree = append(tree, encoded.value)
+	}
+	return Ok(tree)
+}
+
+fn _encodeDict(format: Option, entries: [Any: Any]) -> Result {
+	var tree = [:]
+	for pair <- entries {
+		switch pair.key {
+		case is String:
+			const encoded = _encode(format, pair.value)
+			switch encoded {
+			case is Err:
+				return encoded
+			}
+			tree[pair.key] = encoded.value
+		case _:
+			return Err("a tree is keyed by String, got " + _describe(pair.key))
+		}
+	}
+	return Ok(tree)
+}
+
+fn _encodeData(format: Option, t: Any, value: Any) -> Result {
+	const fields = reflect.fieldsOf(t)
+	const values = reflect.fieldValues(value)
+
+	var tree = [:]
+	var index = 0
+	for field <- fields {
+		const raw = values[index]
+		index = index + 1
+
+		if _isIgnored(format, field) {
+			continue
+		}
+		// An absent Option leaves no key behind, so that decoding it back finds nothing and rebuilds the None.
+		switch raw {
+		case is None:
+			continue
+		}
+
+		const encoded = _encodeField(format, field, raw)
+		switch encoded {
+		case is Err:
+			return results.mapErr(encoded, fn(reason) {
+				reflect.typeName(t) + "." + field.name + ": " + reason
+			})
+		}
+		tree[_keyOf(format, field)] = encoded.value
+	}
+	return Ok(tree)
+}
+
+fn _encodeField(format: Option, field: reflect.Field, raw: Any) -> Result {
+	const custom = _encoderOf(format, field)
+	switch custom {
+	case is Some:
+		return results.from(custom.value(raw))
+	case _:
+		return _encode(format, raw)
+	}
+}

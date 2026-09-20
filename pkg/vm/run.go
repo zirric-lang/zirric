@@ -120,17 +120,11 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			v := vm.pop()
 			typeVal := vm.constants[constId]
 			var result runtime.Bool
-			switch tv := typeVal.(type) {
-			case *runtime.UnionType:
-				result = runtime.Bool(tv.IsMember(v.TypeConstantId()))
-			case *runtime.AttributeType:
-				// Attribute check: does the value (or its type) carry this attribute?
-				result = runtime.Bool(vm.hasAttribute(v, tv.TypeConstantId()))
-			case runtime.SimpleType:
-				result = runtime.Bool(v.TypeConstantId() == tv.TypeConstantId())
-			case *runtime.DataType:
-				result = runtime.Bool(v.TypeConstantId() == tv.TypeConstantId())
+			switch typeVal.(type) {
+			case *runtime.UnionType, *runtime.AttributeType, runtime.SimpleType, *runtime.DataType:
+				result = runtime.Bool(vm.IsType(v, typeVal))
 			default:
+				// Not a type value at all, so the constant can only stand for itself.
 				result = runtime.Bool(v.TypeConstantId() == runtime.TypeId(constId))
 			}
 			if err := vm.push(result); err != nil {
@@ -952,8 +946,26 @@ func valuesEqual(lhs, rhs runtime.RuntimeValue) bool {
 		return lhs == rhs
 	case *runtime.ExternFunc:
 		return lhs == rhs
+	// A type is a value too, now that reflection hands them out, and two of them are equal when they are the same declaration.
+	// Each type lives once in the constants table, so identity is that test; a SimpleType is a struct rather than a pointer, so it compares by the type it stands for.
+	case *runtime.DataType:
+		rhs, ok := rhs.(*runtime.DataType)
+		return ok && lhs == rhs
+	case *runtime.UnionType:
+		rhs, ok := rhs.(*runtime.UnionType)
+		return ok && lhs == rhs
+	case *runtime.AttributeType:
+		rhs, ok := rhs.(*runtime.AttributeType)
+		return ok && lhs == rhs
+	case runtime.SimpleType:
+		rhs, ok := rhs.(runtime.SimpleType)
+		return ok && lhs.TypeConstantId() == rhs.TypeConstantId()
+	case *runtime.ModuleValue:
+		rhs, ok := rhs.(*runtime.ModuleValue)
+		return ok && lhs == rhs
 	}
-	panic(fmt.Sprintf("unknown type for equality check %T of %q", lhs, lhs.Inspect()))
+	// Anything else compares unequal rather than stopping the program: `==` is written by users, and a kind this function has not been taught is a gap to fill, not a reason to hand someone a crash.
+	return false
 }
 
 func (vm *VM) initGlobal(owner TaskId, ins op.Instructions, locals int) (runtime.RuntimeValue, error) {

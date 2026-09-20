@@ -1,0 +1,14 @@
+mod yaml
+
+// Reads one YAML document into the native tree: a mapping is a Dict, a sequence an Array, and null is void.
+// A stream holding several documents is an `Err`, since that is not one value; use `parseAll` for those.
+extern fn parse(text: String) -> Result
+
+// Reads every document in a stream, in order.
+extern fn parseAll(text: String) -> Result
+
+// Renders a native tree as YAML text, indented by two spaces.
+extern fn format(value: Any) -> Result
+
+// As `format`, indented by a given number of spaces.
+extern fn formatIndented(value: Any, indent: Int) -> Result

@@ -86,6 +86,12 @@ func New(bytecode *compiler.Bytecode) *VM {
 	// from their position in the constants array (e.g. String at index 31
 	// but with hardcoded typeIdString=8).
 	for i, c := range bytecode.Constants {
+		// Only a type value belongs in this table. A CompiledFunction is Attributable too and reports Func as its own type, so without this the last function compiled ends up registered as the Func type itself, and asking what type a function is answers with some unrelated function.
+		switch c.(type) {
+		case runtime.SimpleType, *runtime.DataType, *runtime.UnionType, *runtime.AttributeType:
+		default:
+			continue
+		}
 		if a, ok := c.(runtime.Attributable); ok {
 			tid := a.TypeConstantId()
 			if int(tid) != i {
@@ -227,6 +233,24 @@ func (vm *VM) ResolveModuleMember(moduleName string, memberName string) (runtime
 		return nil, fmt.Errorf("ResolveModuleMember: module %q has no public member %q", moduleName, memberName)
 	}
 	return member, nil
+}
+
+// IsType implements runtime.VMCaller.
+// It is the check `is` performs, sharing its implementation so that reflection and bytecode cannot come to disagree about what a value is.
+// A typeValue that is not a type is never matched.
+func (vm *VM) IsType(value runtime.RuntimeValue, typeValue runtime.RuntimeValue) bool {
+	switch typeValue := typeValue.(type) {
+	case *runtime.UnionType:
+		return typeValue.IsMember(value.TypeConstantId())
+	case *runtime.AttributeType:
+		// Attribute check: does the value (or its type) carry this attribute?
+		return vm.hasAttribute(value, typeValue.TypeConstantId())
+	case runtime.SimpleType:
+		return value.TypeConstantId() == typeValue.TypeConstantId()
+	case *runtime.DataType:
+		return value.TypeConstantId() == typeValue.TypeConstantId()
+	}
+	return false
 }
 
 // ResolveType implements runtime.VMCaller.

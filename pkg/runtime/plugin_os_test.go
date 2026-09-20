@@ -160,7 +160,8 @@ func (noModuleCaller) ResolveGlobal(int) (RuntimeValue, error) {
 func (noModuleCaller) ResolveModuleMember(string, string) (RuntimeValue, error) {
 	return nil, fmt.Errorf("module not part of this program")
 }
-func (noModuleCaller) ResolveType(TypeId) RuntimeValue { return nil }
+func (noModuleCaller) ResolveType(TypeId) RuntimeValue        { return nil }
+func (noModuleCaller) IsType(RuntimeValue, RuntimeValue) bool { return false }
 
 func TestMakeWriteStreamRequiresTheIOModule(t *testing.T) {
 	if _, err := MakeWriteStream(noModuleCaller{}, io.Discard); err == nil {

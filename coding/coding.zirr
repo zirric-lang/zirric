@@ -1,0 +1,50 @@
+mod coding
+
+// The key a field is read and written under, instead of its declared name.
+// Every attribute here is an override, so a type carrying none encodes under the names it declares.
+attr Name {
+	// The key to use.
+	text
+}
+
+// Marks a field as one that does not travel.
+// An ignored field is skipped when encoding, and takes its `@Default` — or `void` — when decoding.
+attr Ignore {}
+
+// The value a field takes when its key is absent.
+attr Default {
+	// The value to use.
+	value
+}
+
+// Decodes a field from the raw tree found under its key, instead of by the general rules.
+attr Decode {
+	// `fn(raw: Any) -> Result`.
+	parse
+}
+
+// Encodes a field to a tree, instead of by the general rules.
+attr Encode {
+	// `fn(value: Any) -> Result`.
+	format
+}
+
+// A value as a native tree of `Dict`, `Array`, `String`, `Int`, `Float`, `Bool` and `void`.
+fn encode(value: Any) -> Result {
+	_encode(None(), value)
+}
+
+// A native tree as a value of type `t`.
+fn decode(t: Any, tree: Any) -> Result {
+	_decode(None(), t, tree)
+}
+
+// As `encode`, but consulting the format module's own attributes first, so `@json.Name` overrides `@coding.Name`.
+fn encodeWith(format: Module, value: Any) -> Result {
+	_encode(Some(format), value)
+}
+
+// As `decode`, but consulting the format module's own attributes first.
+fn decodeWith(format: Module, t: Any, tree: Any) -> Result {
+	_decode(Some(format), t, tree)
+}

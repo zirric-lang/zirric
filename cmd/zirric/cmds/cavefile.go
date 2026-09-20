@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
+	"github.com/goccy/go-yaml"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 var cavefileOutputFormat string

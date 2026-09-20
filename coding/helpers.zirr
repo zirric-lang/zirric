@@ -1,0 +1,52 @@
+mod coding
+
+import reflect
+import dicts
+
+// Whether the tree carries the key at all, which `tree[key]` alone cannot say, since an absent key and a `void` value both read as `void`.
+fn _hasKey(tree: [Any: Any], key: String) -> Bool {
+	dicts.hasKey(tree, key)
+}
+
+fn _isOptional(hint: reflect.TypeRef) -> Bool {
+	switch hint {
+	case is reflect.NamedType:
+		switch hint.resolved {
+		case is Some:
+			return _isOptionType(hint.resolved.value)
+		case _:
+			return false
+		}
+	case _:
+		return false
+	}
+}
+
+// Only prelude's own Option, rather than anything carrying @AnyOption.
+// A value of another option-shaped union cannot be built by wrapping in Some, so those go through the ordinary union rules instead of being silently turned into the wrong type.
+fn _isOptionType(t: Any) -> Bool {
+	t == Option
+}
+
+fn _isAnyType(t: Any) -> Bool {
+	reflect.typeName(t) == "Any"
+}
+
+// Names what a tree holds, for error messages that say what was found rather than only what was wanted.
+fn _describe(tree: Any) -> String {
+	switch tree {
+	case is Void:
+		return "nothing"
+	case is [Any]:
+		return "an array"
+	case is [Any: Any]:
+		return "an object"
+	}
+	const found = reflect.typeOf(tree)
+	switch found {
+	case is Some:
+		return reflect.typeName(found.value)
+	case _:
+		return "an unknown value"
+	}
+}

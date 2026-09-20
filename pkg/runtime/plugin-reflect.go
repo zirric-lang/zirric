@@ -88,6 +88,46 @@ func (*ReflectPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 			}
 			return result, nil
 		})
+	case "fieldValues":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			dataValue, ok := args[0].(*DataValue)
+			if !ok {
+				return make(Array, 0), nil
+			}
+			values := make(Array, len(dataValue.Values))
+			copy(values, dataValue.Values)
+			return values, nil
+		})
+	case "isAttributeType":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			_, ok := args[0].(*AttributeType)
+			return Bool(ok), nil
+		})
+	case "isInstance":
+		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			if caller == nil {
+				return Bool(false), nil
+			}
+			return Bool(caller.IsType(args[0], args[1])), nil
+		})
+	case "construct":
+		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			dataType, ok := args[0].(*DataType)
+			if !ok {
+				return ResultErr(caller, String(fmt.Sprintf("construct expects a data type, got %s", args[0].Inspect())))
+			}
+			values, ok := args[1].(Array)
+			if !ok {
+				return ResultErr(caller, String(fmt.Sprintf("construct expects an Array of field values, got %T", args[1])))
+			}
+			if len(values) != len(dataType.FieldSymbols) {
+				return ResultErr(caller, String(fmt.Sprintf("%s takes %d fields, got %d", declaredTypeName(dataType), len(dataType.FieldSymbols), len(values))))
+			}
+			// The array is copied because a DataValue keeps the slice it is given, and the caller's array must not become its storage.
+			fields := make([]RuntimeValue, len(values))
+			copy(fields, values)
+			return ResultOk(caller, MakeDataValue(dataType, fields))
+		})
 	case "_typeOf":
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			if caller == nil {

@@ -1,0 +1,100 @@
+mod coding
+
+import reflect
+
+// The attribute types to consult for one kind of override, most specific first.
+// A format module needs no registration: declaring `attr Name` in it is what makes `@json.Name` win over `@coding.Name`.
+fn _kindsOf(format: Option, name: String, generic: Any) -> [Any] {
+	const specific = _formatAttribute(format, name)
+	switch specific {
+	case is Some:
+		return [specific.value, generic]
+	case _:
+		return [generic]
+	}
+}
+
+// The attribute of that name declared by a format module, if it declares one at all and it really is an attribute.
+fn _formatAttribute(format: Option, name: String) -> Option {
+	switch format {
+	case is Some:
+		const declared = reflect.member(format.value, name)
+		switch declared {
+		case is Some:
+			if reflect.isAttributeType(declared.value) {
+				return Some(declared.value)
+			}
+			return None()
+		case _:
+			return None()
+		}
+	case _:
+		return None()
+	}
+}
+
+// The first of these attributes carried by the field, or None.
+// Only attributes with exactly one field can be read this way, which is every attribute here except `Ignore`.
+fn _firstAttribute(field: reflect.Field, kinds: [Any]) -> Option {
+	for kind <- kinds {
+		if reflect.isInstance(field, kind) {
+			return Some(kind(field))
+		}
+	}
+	return None()
+}
+
+// Whether the field carries any of these attributes, for attributes that have no payload to read.
+fn _hasAttribute(field: reflect.Field, kinds: [Any]) -> Bool {
+	for kind <- kinds {
+		if reflect.isInstance(field, kind) {
+			return true
+		}
+	}
+	return false
+}
+
+// The key a field travels under: a format's own name attribute, then the generic one, then the name it was declared with.
+fn _keyOf(format: Option, field: reflect.Field) -> String {
+	const named = _firstAttribute(field, _kindsOf(format, "Name", Name))
+	switch named {
+	case is Some:
+		return named.value.text
+	case _:
+		return field.name
+	}
+}
+
+fn _isIgnored(format: Option, field: reflect.Field) -> Bool {
+	_hasAttribute(field, _kindsOf(format, "Ignore", Ignore))
+}
+
+fn _defaultOf(format: Option, field: reflect.Field) -> Option {
+	const found = _firstAttribute(field, _kindsOf(format, "Default", Default))
+	switch found {
+	case is Some:
+		return Some(found.value.value)
+	case _:
+		return None()
+	}
+}
+
+fn _decoderOf(format: Option, field: reflect.Field) -> Option {
+	const found = _firstAttribute(field, _kindsOf(format, "Decode", Decode))
+	switch found {
+	case is Some:
+		return Some(found.value.parse)
+	case _:
+		return None()
+	}
+}
+
+fn _encoderOf(format: Option, field: reflect.Field) -> Option {
+	const found = _firstAttribute(field, _kindsOf(format, "Encode", Encode))
+	switch found {
+	case is Some:
+		return Some(found.value.format)
+	case _:
+		return None()
+	}
+}

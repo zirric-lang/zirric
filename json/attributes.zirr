@@ -1,0 +1,29 @@
+mod json
+
+// The JSON key a field is read and written under, overriding `@coding.Name` for JSON only.
+// `coding` finds these by name, so declaring them here is all it takes for them to win.
+attr Name {
+	// The key to use.
+	text
+}
+
+// Marks a field as one that does not travel as JSON, overriding `@coding.Ignore`.
+attr Ignore {}
+
+// The value a field takes when its JSON key is absent, overriding `@coding.Default`.
+attr Default {
+	// The value to use.
+	value
+}
+
+// Decodes a field from its raw JSON tree, overriding `@coding.Decode`.
+attr Decode {
+	// `fn(raw: Any) -> Result`.
+	parse
+}
+
+// Encodes a field to a JSON tree, overriding `@coding.Encode`.
+attr Encode {
+	// `fn(value: Any) -> Result`.
+	format
+}

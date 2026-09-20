@@ -1,0 +1,167 @@
+mod coding
+
+import reflect
+import results
+
+// Builds a value of type `t` from a native tree.
+fn _decode(format: Option, t: Any, tree: Any) -> Result {
+	if reflect.isDataType(t) {
+		return _decodeData(format, t, tree)
+	}
+	if reflect.isUnionType(t) {
+		return _decodeUnion(format, t, tree)
+	}
+	if reflect.isInstance(tree, t) {
+		return Ok(tree)
+	}
+	return Err("expected " + reflect.typeName(t) + ", got " + _describe(tree))
+}
+
+fn _decodeData(format: Option, t: Any, tree: Any) -> Result {
+	switch tree {
+	case is [Any: Any]:
+		return _decodeFields(format, t, tree)
+	case _:
+		return Err("expected an object for " + reflect.typeName(t) + ", got " + _describe(tree))
+	}
+}
+
+fn _decodeFields(format: Option, t: Any, tree: [Any: Any]) -> Result {
+	var values = []
+	for field <- reflect.fieldsOf(t) {
+		const decoded = _decodeField(format, field, tree)
+		switch decoded {
+		case is Err:
+			return results.mapErr(decoded, fn(reason) {
+				reflect.typeName(t) + "." + field.name + ": " + reason
+			})
+		}
+		values = append(values, decoded.value)
+	}
+	return reflect.construct(t, values)
+}
+
+fn _decodeField(format: Option, field: reflect.Field, tree: [Any: Any]) -> Result {
+	// An ignored field never reads the tree, so it stands exactly where a missing key does: it takes its default, or None when it is optional.
+	if _isIgnored(format, field) {
+		return _decodeAbsent(format, field, true)
+	}
+
+	const key = _keyOf(format, field)
+	if !_hasKey(tree, key) {
+		return _decodeAbsent(format, field, false)
+	}
+
+	const raw = tree[key]
+	const custom = _decoderOf(format, field)
+	switch custom {
+	case is Some:
+		return results.from(custom.value(raw))
+	case _:
+		return _decodeHint(format, field.declaredType, raw)
+	}
+}
+
+// A field with nothing to read takes its default, or `None` when it is optional, and is an error otherwise.
+// An ignored field is never an error, since leaving it out of the tree is the whole point of ignoring it.
+fn _decodeAbsent(format: Option, field: reflect.Field, ignored: Bool) -> Result {
+	const fallback = _defaultOf(format, field)
+	switch fallback {
+	case is Some:
+		return Ok(fallback.value)
+	}
+	if _isOptional(field.declaredType) {
+		return Ok(None())
+	}
+	if ignored {
+		return Ok(void)
+	}
+	// An untyped field is not an optional one. Letting it default to void would make a union member with untyped fields match any object at all, which would leave try-each unable to tell members apart.
+	return Err("missing key \"" + _keyOf(format, field) + "\"")
+}
+
+// Decodes a raw tree against the type a field was declared with, which is what lets `[String: Person]` be walked rather than parsed.
+fn _decodeHint(format: Option, hint: reflect.TypeRef, raw: Any) -> Result {
+	switch hint {
+	case is reflect.ArrayType:
+		return _decodeArray(format, hint.element, raw)
+	case is reflect.DictType:
+		return _decodeDict(format, hint.value, raw)
+	case is reflect.NamedType:
+		return _decodeNamed(format, hint, raw)
+	case _:
+		// A function type, an attribute constraint or no hint at all: nothing more specific to build.
+		return Ok(raw)
+	}
+}
+
+fn _decodeNamed(format: Option, hint: reflect.TypeRef, raw: Any) -> Result {
+	switch hint.resolved {
+	case is Some:
+		const t = hint.resolved.value
+		if _isAnyType(t) {
+			return Ok(raw)
+		}
+		// An Option carries no element type, so there is nothing more specific to decode the present value against.
+		if _isOptionType(t) {
+			switch raw {
+			case is Void:
+				return Ok(None())
+			case _:
+				return Ok(Some(raw))
+			}
+		}
+		return _decode(format, t, raw)
+	case _:
+		// A name that resolves to nothing cannot describe what to build, so the tree is left as it is.
+		return Ok(raw)
+	}
+}
+
+fn _decodeArray(format: Option, element: reflect.TypeRef, raw: Any) -> Result {
+	switch raw {
+	case is [Any]:
+		var values = []
+		for item <- raw {
+			const decoded = _decodeHint(format, element, item)
+			switch decoded {
+			case is Err:
+				return decoded
+			}
+			values = append(values, decoded.value)
+		}
+		return Ok(values)
+	case _:
+		return Err("expected an array, got " + _describe(raw))
+	}
+}
+
+fn _decodeDict(format: Option, value: reflect.TypeRef, raw: Any) -> Result {
+	switch raw {
+	case is [Any: Any]:
+		var entries = [:]
+		for pair <- raw {
+			const decoded = _decodeHint(format, value, pair.value)
+			switch decoded {
+			case is Err:
+				return decoded
+			}
+			entries[pair.key] = decoded.value
+		}
+		return Ok(entries)
+	case _:
+		return Err("expected an object, got " + _describe(raw))
+	}
+}
+
+// A union is decoded by trying each member in turn, keeping the first that succeeds.
+fn _decodeUnion(format: Option, t: Any, tree: Any) -> Result {
+	for member <- reflect.unionMembers(t) {
+		const decoded = _decode(format, member, tree)
+		switch decoded {
+		case is Ok:
+			return decoded
+		}
+	}
+	return Err("no member of " + reflect.typeName(t) + " accepts " + _describe(tree))
+}

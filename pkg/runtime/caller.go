@@ -26,6 +26,8 @@ type VMCaller interface {
 	ResolveModuleMember(moduleName string, memberName string) (RuntimeValue, error)
 	// ResolveType returns the type value a TypeId names — the same value an `is` check compares against — or nil when the id names no type.
 	ResolveType(id TypeId) RuntimeValue
+	// IsType reports whether value is of typeValue, deciding it exactly as the `is` operator does.
+	IsType(value RuntimeValue, typeValue RuntimeValue) bool
 }
 
 // TrivialString converts v to a display string for the handful of builtin

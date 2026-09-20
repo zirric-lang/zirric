@@ -296,6 +296,11 @@ module.exports = {
           icon: "circle-dot",
           title: "ZE-20 Standard Library",
           path: "/proposals/ZE-020-standard-library"
+        },
+        {
+          icon: "circle-dot",
+          title: "ZE-21 Encoding and Decoding",
+          path: "/proposals/ZE-021-encoding-and-decoding"
         }
       ]
     },

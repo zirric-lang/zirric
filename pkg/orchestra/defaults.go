@@ -5,6 +5,7 @@ import (
 	bytesfs "code.knabel.dev/zirric-lang/zirric/bytes"
 	cavefs "code.knabel.dev/zirric-lang/zirric/cave"
 	clockfs "code.knabel.dev/zirric-lang/zirric/clock"
+	codingfs "code.knabel.dev/zirric-lang/zirric/coding"
 	dictsfs "code.knabel.dev/zirric-lang/zirric/dicts"
 	errorsfs "code.knabel.dev/zirric-lang/zirric/errors"
 	fmtfs "code.knabel.dev/zirric-lang/zirric/fmt"
@@ -31,6 +32,7 @@ import (
 	tasksfs "code.knabel.dev/zirric-lang/zirric/tasks"
 	testsfs "code.knabel.dev/zirric-lang/zirric/tests"
 	timefs "code.knabel.dev/zirric-lang/zirric/time"
+	yamlfs "code.knabel.dev/zirric-lang/zirric/yaml"
 	"github.com/go-git/go-billy/v5"
 )
 
@@ -81,7 +83,9 @@ func DefaultStdlibProvider() (*embedreg.EmbedRegistry, error) {
 		embedreg.FSConfig{Name: "random", FS: randomfs.FS},
 		embedreg.FSConfig{Name: "time", FS: timefs.FS},
 		embedreg.FSConfig{Name: "clock", FS: clockfs.FS},
+		embedreg.FSConfig{Name: "coding", FS: codingfs.FS},
 		embedreg.FSConfig{Name: "json", FS: jsonfs.FS},
+		embedreg.FSConfig{Name: "yaml", FS: yamlfs.FS},
 	)
 }
 

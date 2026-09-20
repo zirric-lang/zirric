@@ -1,0 +1,29 @@
+mod yaml
+
+// The YAML key a field is read and written under, overriding `@coding.Name` for YAML only.
+// `coding` finds these by name, so declaring them here is all it takes for them to win.
+attr Name {
+	// The key to use.
+	text
+}
+
+// Marks a field as one that does not travel as YAML, overriding `@coding.Ignore`.
+attr Ignore {}
+
+// The value a field takes when its YAML key is absent, overriding `@coding.Default`.
+attr Default {
+	// The value to use.
+	value
+}
+
+// Decodes a field from its raw YAML tree, overriding `@coding.Decode`.
+attr Decode {
+	// `fn(raw: Any) -> Result`.
+	parse
+}
+
+// Encodes a field to a YAML tree, overriding `@coding.Encode`.
+attr Encode {
+	// `fn(value: Any) -> Result`.
+	format
+}

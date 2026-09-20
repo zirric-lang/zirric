@@ -5,6 +5,16 @@ fn isEmpty(d: Dict) -> Bool {
 	len(d) == 0
 }
 
+// Returns whether d has an entry for key. Indexing alone cannot tell, since a missing key and a void value both read as void.
+fn hasKey(d: Dict, key: Any) -> Bool {
+	for pair <- d {
+		if pair.key == key {
+			return true
+		}
+	}
+	return false
+}
+
 // Returns a new dict with transform applied to each value, keeping the same keys. transform receives both the key and its value.
 fn map(d: Dict, transform: fn(Any, Any) -> Any) -> Dict {
 	var result = [:]

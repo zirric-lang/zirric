@@ -31,7 +31,7 @@ Add a new set of modules around every logical group of types:
 - `fmt` has been cleaned up from `os`
 - `fs` abstracts a filesystem, with an in-memory one so that code touching files stays testable
 - `io` adds new attributes for dependency management
-- `json` reads and writes JSON as Zirric's own values
+- `json` reads and writes JSON as Zirric's own values, and `yaml` does the same for YAML
 - `math` covers `prelude.Int` and `prelude.Float`, which had no operations beyond the arithmetic operators
 - `options` adds helpers around `prelude.Option` and `@prelude.AnyOption`
 - `paths` manipulates slash-separated paths as text, without touching a filesystem
@@ -77,12 +77,12 @@ Helpers are written in Zirric wherever the language can express them, and as `ex
 - `dicts`, `errors`, `fun`, `options`, `ranges` and `results` are pure Zirric.
 - `math` is almost entirely Go, since the VM implements the arithmetic operators and nothing else. Only `clamp` is Zirric, composed from `min` and `max`.
 - `paths` is entirely Go, wrapping the standard `path` package so that behaviour matches an established implementation rather than a hand-rolled one.
-- `json` is entirely Go, wrapping `encoding/json`.
+- `json` and `yaml` are entirely Go, wrapping `encoding/json` and `goccy/go-yaml`.
 - `fs` splits evenly. The filesystem operations are Go, wrapping billy so that an in-memory filesystem and the host's own are the same code; `walk`, `glob`, `copy`, `withFile` and the string helpers are Zirric, composed from those operations.
 - `random` follows the same split: the three generators are Go, everything derived from them is Zirric.
 - `time` is Go, but unusually its arithmetic lives in the VM rather than the module, since its three types are primitives rather than values built on top of one.
 - `clock` is entirely Zirric. A clock is a closure over a reading, so the test clocks and the host's alike are built in the language; `os` supplies only the two raw readings.
-- `reflect` is Go only where it must be. Enumerating a module's members needs access to the module value's exports, describing a type's fields needs what the compiler recorded about the declaration, and reaching a package's modules needs the compiler itself; everything built on top of those — `member`, `hasMember`, `typeOf`, `modulesWhere`, `modulesExcept` — is Zirric, as are the `Field` and `TypeRef` types the Go side fills in.
+- `reflect` is Go only where it must be. Enumerating a module's members needs access to the module value's exports, describing a type's fields needs what the compiler recorded about the declaration, and reaching a package's modules needs the compiler itself; everything built on top of those — `member`, `hasMember`, `typeOf`, `modulesWhere`, `modulesExcept` — is Zirric, as are the `Field` and `TypeRef` types the Go side fills in. `construct` and `fieldValues` are the pair that takes a data value apart and puts one back together, which nothing else in the language can do for a type known only at runtime; [ZE-021](/proposals/ZE-021-encoding-and-decoding) is what needs them.
 
 ### Characters versus bytes
 
@@ -250,6 +250,7 @@ Iteration order is unspecified, so `reduce` must be given an order-independent c
 | Declaration | Kind | Description                                                                   |
 | ----------- | ---- | ----------------------------------------------------------------------------- |
 | `isEmpty`   | `fn` | Whether the dict has no entries.                                              |
+| `hasKey`    | `fn` | Whether the dict has an entry for a key, which indexing alone cannot tell.    |
 | `map`       | `fn` | Maps each value, keeping the keys. The transform receives both key and value. |
 | `mapKeys`   | `fn` | Maps each key, keeping the values.                                            |
 | `mapValues` | `fn` | Maps each value, keeping the keys. The transform receives only the value.     |
@@ -325,7 +326,7 @@ JSON maps onto Zirric's own values rather than onto a tree of its own: an object
 
 A number is an `Int` when it was written as one and a `Float` otherwise, so `1` and `1.0` stay apart. Object keys come out sorted, so the same value always produces the same text, and text is not HTML-escaped, since a Zirric `String` is text.
 
-Only the types JSON has a form for can be written; a `Char`, a function or a `Dict` with non-`String` keys is an `Err` naming what it found. Mapping data types and their attributes onto this tree is a later concern, and will not change what is here.
+Only the types JSON has a form for can be written; a `Char`, a function or a `Dict` with non-`String` keys is an `Err` naming what it found. Mapping a program's own data types onto this tree is [ZE-021](/proposals/ZE-021-encoding-and-decoding)'s concern and does not change what is here.
 
 | Declaration      | Kind        | Description                                         |
 | ---------------- | ----------- | --------------------------------------------------- |
@@ -467,22 +468,26 @@ Reports only a module's public members, in name order. Enumeration is the one th
 
 Types are reflected the same way. `fieldsOf` returns values, so the attributes written on a field are read off it exactly as off any other declaration.
 
-| Declaration    | Kind        | Description                                                   |
-| -------------- | ----------- | ------------------------------------------------------------- |
-| `Field`        | `data`      | A field of a data type, carrying that field's own attributes. |
-| `TypeRef`      | `union`     | A type hint as it was written.                                |
-| `NamedType`    | `data`      | A type named directly, and the type that name resolves to.    |
-| `ArrayType`    | `data`      | An array type, `[Element]`.                                   |
-| `DictType`     | `data`      | A dict type, `[Key: Value]`.                                  |
-| `FuncType`     | `data`      | A function type, `fn(Parameters) -> Returns`.                 |
-| `AttrsType`    | `data`      | An attribute constraint, e.g. `@Iterable`.                    |
-| `UnknownType`  | `data`      | No type hint was written.                                     |
-| `typeName`     | `extern fn` | The declared name of a type.                                  |
-| `isDataType`   | `extern fn` | Whether a value is a data type.                               |
-| `isUnionType`  | `extern fn` | Whether a value is a union type.                              |
-| `fieldsOf`     | `extern fn` | The fields of a data type, in declaration order.              |
-| `unionMembers` | `extern fn` | The member types of a union type, in declaration order.       |
-| `typeOf`       | `fn`        | The type a value was built from, or `None`.                   |
+| Declaration       | Kind        | Description                                                   |
+| ----------------- | ----------- | ------------------------------------------------------------- |
+| `Field`           | `data`      | A field of a data type, carrying that field's own attributes. |
+| `TypeRef`         | `union`     | A type hint as it was written.                                |
+| `NamedType`       | `data`      | A type named directly, and the type that name resolves to.    |
+| `ArrayType`       | `data`      | An array type, `[Element]`.                                   |
+| `DictType`        | `data`      | A dict type, `[Key: Value]`.                                  |
+| `FuncType`        | `data`      | A function type, `fn(Parameters) -> Returns`.                 |
+| `AttrsType`       | `data`      | An attribute constraint, e.g. `@Iterable`.                    |
+| `UnknownType`     | `data`      | No type hint was written.                                     |
+| `typeName`        | `extern fn` | The declared name of a type.                                  |
+| `isDataType`      | `extern fn` | Whether a value is a data type.                               |
+| `isUnionType`     | `extern fn` | Whether a value is a union type.                              |
+| `fieldsOf`        | `extern fn` | The fields of a data type, in declaration order.              |
+| `unionMembers`    | `extern fn` | The member types of a union type, in declaration order.       |
+| `typeOf`          | `fn`        | The type a value was built from, or `None`.                   |
+| `fieldValues`     | `extern fn` | The field values of a data value, aligned with `fieldsOf`.    |
+| `isAttributeType` | `extern fn` | Whether a value is an attribute type.                         |
+| `isInstance`      | `extern fn` | Whether a value is of a type, as `is` decides it.             |
+| `construct`       | `extern fn` | Builds a value of a data type from its fields.                |
 
 #### reflect.packages
 

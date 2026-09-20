@@ -36,6 +36,19 @@ extern fn isDataType(t: Any) -> Bool
 // Whether t is a union type, and so has members to enumerate.
 extern fn isUnionType(t: Any) -> Bool
 
+// Whether t is an attribute type, and so can be called on a value to read that attribute.
+extern fn isAttributeType(t: Any) -> Bool
+
+// Whether a value is of a type, decided exactly as the `is` operator decides it.
+// Unlike `is`, the type is a value here, so it can come from reflection rather than from source.
+extern fn isInstance(value: Any, t: Any) -> Bool
+
+// Builds a value of a data type from its fields, in declaration order, or `Err` if the count does not match.
+extern fn construct(t: Any, values: [Any]) -> Result
+
+// The field values of a data value, in declaration order and so aligned with `fieldsOf`, or an empty array for anything else.
+extern fn fieldValues(value: Any) -> [Any]
+
 // The fields of a data type, in declaration order, or an empty array for anything else.
 extern fn fieldsOf(t: Any) -> [Field]
 
