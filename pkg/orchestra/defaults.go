@@ -12,6 +12,7 @@ import (
 	funfs "code.knabel.dev/zirric-lang/zirric/fun"
 	futurefs "code.knabel.dev/zirric-lang/zirric/future"
 	iofs "code.knabel.dev/zirric-lang/zirric/io"
+	jsonfs "code.knabel.dev/zirric-lang/zirric/json"
 	mathfs "code.knabel.dev/zirric-lang/zirric/math"
 	optionsfs "code.knabel.dev/zirric-lang/zirric/options"
 	osfs "code.knabel.dev/zirric-lang/zirric/os"
@@ -80,6 +81,7 @@ func DefaultStdlibProvider() (*embedreg.EmbedRegistry, error) {
 		embedreg.FSConfig{Name: "random", FS: randomfs.FS},
 		embedreg.FSConfig{Name: "time", FS: timefs.FS},
 		embedreg.FSConfig{Name: "clock", FS: clockfs.FS},
+		embedreg.FSConfig{Name: "json", FS: jsonfs.FS},
 	)
 }
 

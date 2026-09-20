@@ -52,6 +52,52 @@ func (*ReflectPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 			}
 			return result, nil
 		})
+	case "typeName":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			return String(declaredTypeName(args[0])), nil
+		})
+	case "isDataType":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			_, ok := args[0].(*DataType)
+			return Bool(ok), nil
+		})
+	case "isUnionType":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			_, ok := args[0].(*UnionType)
+			return Bool(ok), nil
+		})
+	case "fieldsOf":
+		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			dataType, ok := args[0].(*DataType)
+			if !ok {
+				return make(Array, 0), nil
+			}
+			return fieldValues(caller, dataType)
+		})
+	case "unionMembers":
+		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			unionType, ok := args[0].(*UnionType)
+			if !ok || caller == nil {
+				return make(Array, 0), nil
+			}
+			result := make(Array, 0, len(unionType.MemberTypeIds))
+			for _, memberId := range unionType.MemberTypeIds {
+				if member := caller.ResolveType(memberId); member != nil {
+					result = append(result, member)
+				}
+			}
+			return result, nil
+		})
+	case "_typeOf":
+		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			if caller == nil {
+				return Void{}, nil
+			}
+			if resolved := caller.ResolveType(args[0].TypeConstantId()); resolved != nil {
+				return resolved, nil
+			}
+			return Void{}, nil
+		})
 	case "_member":
 		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			mod, err := asModule("_member", args[0])
@@ -117,6 +163,127 @@ func (*ReflectPackagesPlugin) Bind(ctx BindContext, module *ast.SymbolTable, dec
 		})
 	}
 	return nil
+}
+
+// declaredTypeName returns the name a type was declared under, or the empty string for anything that is not a type.
+func declaredTypeName(value RuntimeValue) string {
+	var symbol *ast.Symbol
+	switch value := value.(type) {
+	case *DataType:
+		symbol = value.Symbol
+	case *UnionType:
+		symbol = value.Symbol
+	case *AttributeType:
+		symbol = value.Symbol
+	case SimpleType:
+		symbol = value.Decl
+	default:
+		return ""
+	}
+	if symbol == nil || symbol.Decl == nil {
+		return ""
+	}
+	return symbol.Decl.DeclName().Value
+}
+
+// fieldValues builds one reflect.Field per declared field, each carrying that field's own attributes rather than the type's.
+func fieldValues(caller VMCaller, dataType *DataType) (RuntimeValue, error) {
+	result := make(Array, 0, len(dataType.FieldSymbols))
+	for i, fieldSymbol := range dataType.FieldSymbols {
+		declaredType, err := makeTypeRefValue(caller, dataType.FieldTypeAt(i))
+		if err != nil {
+			return nil, err
+		}
+		field, err := MakeDataValueNamed(caller, "reflect", "Field", map[string]RuntimeValue{
+			"name":         String(fieldSymbol.Name),
+			"declaredType": declaredType,
+		})
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, WithAttributes(field, dataType.FieldAttributesAt(i)))
+	}
+	return result, nil
+}
+
+// makeTypeRefValue builds the reflect.TypeRef describing a written type hint.
+func makeTypeRefValue(caller VMCaller, ref TypeRef) (RuntimeValue, error) {
+	switch ref.Kind {
+	case TypeRefNamed:
+		resolved, err := resolvedTypeOption(caller, ref.Type)
+		if err != nil {
+			return nil, err
+		}
+		return MakeDataValueNamed(caller, "reflect", "NamedType", map[string]RuntimeValue{
+			"name":     String(ref.Name),
+			"resolved": resolved,
+		})
+	case TypeRefArray:
+		element, err := makeTypeRefValue(caller, derefTypeRef(ref.Element))
+		if err != nil {
+			return nil, err
+		}
+		return MakeDataValueNamed(caller, "reflect", "ArrayType", map[string]RuntimeValue{"element": element})
+	case TypeRefDict:
+		key, err := makeTypeRefValue(caller, derefTypeRef(ref.Key))
+		if err != nil {
+			return nil, err
+		}
+		value, err := makeTypeRefValue(caller, derefTypeRef(ref.Value))
+		if err != nil {
+			return nil, err
+		}
+		return MakeDataValueNamed(caller, "reflect", "DictType", map[string]RuntimeValue{"key": key, "value": value})
+	case TypeRefFunc:
+		parameters, err := makeTypeRefValues(caller, ref.Parameters)
+		if err != nil {
+			return nil, err
+		}
+		returns, err := makeTypeRefValue(caller, derefTypeRef(ref.Returns))
+		if err != nil {
+			return nil, err
+		}
+		return MakeDataValueNamed(caller, "reflect", "FuncType", map[string]RuntimeValue{
+			"parameters": parameters,
+			"returns":    returns,
+		})
+	case TypeRefAttrs:
+		attributes, err := makeTypeRefValues(caller, ref.Attributes)
+		if err != nil {
+			return nil, err
+		}
+		return MakeDataValueNamed(caller, "reflect", "AttrsType", map[string]RuntimeValue{"attributes": attributes})
+	}
+	return MakeDataValueNamed(caller, "reflect", "UnknownType", nil)
+}
+
+func makeTypeRefValues(caller VMCaller, refs []TypeRef) (Array, error) {
+	result := make(Array, 0, len(refs))
+	for _, ref := range refs {
+		value, err := makeTypeRefValue(caller, ref)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+// resolvedTypeOption wraps the type a name resolved to, or None when the name resolved to nothing that exists at runtime.
+func resolvedTypeOption(caller VMCaller, typeId *TypeId) (RuntimeValue, error) {
+	if typeId != nil && caller != nil {
+		if resolved := caller.ResolveType(*typeId); resolved != nil {
+			return OptionSome(caller, resolved)
+		}
+	}
+	return OptionNone(caller)
+}
+
+func derefTypeRef(ref *TypeRef) TypeRef {
+	if ref == nil {
+		return TypeRef{}
+	}
+	return *ref
 }
 
 func sortedKeys(m map[string]int) []string {

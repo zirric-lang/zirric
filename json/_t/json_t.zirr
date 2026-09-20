@@ -1,0 +1,102 @@
+import tests { Test }
+import tests.assert
+
+import json
+import results
+
+@Test()
+fn testParsePrimitives() {
+	assert.all([
+		assert.equal(true, json.parse("true").value),
+		assert.equal(false, json.parse("false").value),
+		assert.equal("hi", json.parse("\"hi\"").value),
+		assert.equal(void, json.parse("null").value),
+	])
+}
+
+@Test()
+fn testNumbersKeepTheirWrittenForm() {
+	// An integer literal stays an Int; anything else becomes a Float, so 1 and 1.0 remain distinguishable.
+	assert.all([
+		assert.equal(1, json.parse("1").value),
+		assert.equal(true, json.parse("1").value is Int),
+		assert.equal(true, json.parse("1.0").value is Float),
+		assert.equal(1.5, json.parse("1.5").value),
+		assert.equal(-42, json.parse("-42").value),
+		assert.equal(true, json.parse("1e3").value is Float),
+	])
+}
+
+@Test()
+fn testParseArray() {
+	assert.equal([1, 2, 3], json.parse("[1, 2, 3]").value)
+}
+
+@Test()
+fn testParseNestedStructure() {
+	const parsed = json.parse("{\"name\": \"zirric\", \"tags\": [\"a\", \"b\"], \"meta\": {\"ok\": true}}").value
+	assert.all([
+		assert.equal("zirric", parsed["name"]),
+		assert.equal(["a", "b"], parsed["tags"]),
+		assert.equal(true, parsed["meta"]["ok"]),
+	])
+}
+
+@Test()
+fn testParseRejectsNonsense() {
+	assert.all([
+		assert.equal(true, results.isErr(json.parse("{"))),
+		assert.equal(true, results.isErr(json.parse(""))),
+		assert.equal(true, results.isErr(json.parse("{\"a\": }"))),
+		// Two values in a row is not one JSON value.
+		assert.equal(true, results.isErr(json.parse("1 2"))),
+	])
+}
+
+@Test()
+fn testFormatPrimitives() {
+	assert.all([
+		assert.equal("true", json.format(true).value),
+		assert.equal("null", json.format(void).value),
+		assert.equal("\"hi\"", json.format("hi").value),
+		assert.equal("42", json.format(42).value),
+		assert.equal("1.5", json.format(1.5).value),
+	])
+}
+
+@Test()
+fn testFormatCollections() {
+	assert.all([
+		assert.equal("[1,2,3]", json.format([1, 2, 3]).value),
+		assert.equal("{\"a\":1,\"b\":2}", json.format(["a": 1, "b": 2]).value),
+		// Keys are sorted, so the same value always gives the same text.
+		assert.equal("{\"a\":1,\"z\":2}", json.format(["z": 2, "a": 1]).value),
+	])
+}
+
+@Test()
+fn testFormatDoesNotEscapeText() {
+	// These are text, not HTML, so escaping them would only corrupt the value.
+	assert.equal("\"a < b & c\"", json.format("a < b & c").value)
+}
+
+@Test()
+fn testFormatIndented() {
+	assert.equal("[\n  1,\n  2\n]", json.formatIndented([1, 2], "  ").value)
+}
+
+@Test()
+fn testFormatRefusesWhatJSONCannotHold() {
+	assert.all([
+		assert.equal(true, results.isErr(json.format('c'))),
+		assert.equal(true, results.isErr(json.format(fn(x) { x }))),
+		// JSON objects are keyed by strings only.
+		assert.equal(true, results.isErr(json.format([1: "a"]))),
+	])
+}
+
+@Test()
+fn testRoundTrip() {
+	const original = ["name": "zirric", "count": 3, "ratio": 0.5, "tags": ["a", "b"], "nested": ["ok": true], "missing": void]
+	assert.equal(original, json.parse(json.format(original).value).value)
+}

@@ -1,0 +1,50 @@
+mod reflect
+
+// A field of a data type, carrying the attributes written on it.
+// Attributes are read off a Field exactly as off any other value, so `coding.Name(field).text` and `field is @coding.Ignore` both work.
+data Field {
+	// The name the field was declared under.
+	name: String
+	// The type hint written on the field, which is an UnknownType when none was.
+	declaredType: TypeRef
+}
+
+// A type hint as it was written.
+// Hints are not enforced at runtime, so a TypeRef describes what a declaration promises rather than what a value turns out to be.
+union TypeRef {
+	// A type referred to by name, e.g. String or Person.
+	data NamedType {
+		// The name as written, which is qualified when the declaration qualified it, e.g. "String" or "prelude.Option".
+		name: String
+		// The type the name refers to, or None when it refers to nothing that exists as a value at runtime.
+		resolved: Option
+	}
+
+	// An array type, e.g. [String].
+	data ArrayType {
+		element: TypeRef
+	}
+
+	// A dict type, e.g. [String: Int].
+	data DictType {
+		key: TypeRef
+		value: TypeRef
+	}
+
+	// A function type, e.g. fn(String) -> Int.
+	data FuncType {
+		// One TypeRef per parameter, UnknownType where a parameter had no hint.
+		parameters: [TypeRef]
+		// The declared result, which is an UnknownType when the function declares none.
+		returns: TypeRef
+	}
+
+	// An attribute constraint, e.g. @Iterable @Countable.
+	data AttrsType {
+		// One NamedType per required attribute.
+		attributes: [TypeRef]
+	}
+
+	// No type hint was written.
+	data UnknownType
+}

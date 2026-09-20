@@ -229,6 +229,31 @@ func (vm *VM) ResolveModuleMember(moduleName string, memberName string) (runtime
 	return member, nil
 }
 
+// ResolveType implements runtime.VMCaller.
+// It looks the id up the same way AttributesOf does — builtins first, then the constants table — so reflection hands back the very value an `is` check compares against.
+func (vm *VM) ResolveType(id runtime.TypeId) runtime.RuntimeValue {
+	if builtin, ok := vm.builtinTypes[id]; ok {
+		return builtin
+	}
+	idx := int(id)
+	if idx < 0 || idx >= len(vm.constants) {
+		return nil
+	}
+	switch constant := vm.constants[idx].(type) {
+	case *runtime.DataType:
+		return constant
+	case *runtime.UnionType:
+		return constant
+	case *runtime.AttributeType:
+		return constant
+	case runtime.SimpleType:
+		return constant
+	case *runtime.SimpleType:
+		return constant
+	}
+	return nil
+}
+
 func (vm *VM) moduleGlobalId(moduleName string) (int, bool) {
 	if id, ok := vm.moduleGlobals[registry.LogicalURI(moduleName)]; ok {
 		return id, true

@@ -1514,9 +1514,12 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		}
 		dt.Attributes = attributes
 
-		if err := c.validateFieldAttributes(decl.Fields, c.currentSymbols()); err != nil {
+		fieldAttributes, err := c.compileFieldAttributes(decl.Fields, c.currentSymbols())
+		if err != nil {
 			return err
 		}
+		dt.FieldAttributes = fieldAttributes
+		dt.FieldTypes = c.compileFieldTypes(decl.Fields)
 
 		c.constants[*sym.ConstantId] = dt
 
@@ -2238,25 +2241,102 @@ func (c *Compiler) compileParamAttributes(params []ast.DeclParameter, symbols *a
 	return result, nil
 }
 
-func (c *Compiler) validateFieldAttributes(fields []ast.DeclField, symbols *ast.SymbolTable) error {
+// compileFieldAttributes compiles the attributes written on each field and returns them by field position, or nil when no field carries any.
+// Attributes on the parameters of a function-typed field are compiled so that mistakes in them are still reported, but nothing reads them back.
+func (c *Compiler) compileFieldAttributes(fields []ast.DeclField, symbols *ast.SymbolTable) ([]map[runtime.TypeId]int, error) {
+	if len(fields) == 0 {
+		return nil, nil
+	}
+	result := make([]map[runtime.TypeId]int, len(fields))
+	hasAny := false
 	for i := range fields {
 		field := fields[i]
-		if len(field.Attributes) == 0 {
-			continue
-		}
-		if _, err := c.compileAttributeChain(field.Attributes, symbols); err != nil {
-			return err
-		}
 		for _, param := range field.Parameters {
 			if len(param.Attributes) == 0 {
 				continue
 			}
 			if _, err := c.compileAttributeChain(param.Attributes, symbols); err != nil {
-				return err
+				return nil, err
 			}
 		}
+		if len(field.Attributes) == 0 {
+			continue
+		}
+		attributes, err := c.compileAttributeChain(field.Attributes, symbols)
+		if err != nil {
+			return nil, err
+		}
+		if attributes != nil {
+			result[i] = attributes
+			hasAny = true
+		}
 	}
-	return nil
+	if !hasAny {
+		return nil, nil
+	}
+	return result, nil
+}
+
+// compileFieldTypes describes the type hint written on each field, by field position, or nil when no field carries one.
+// Hints are not enforced at runtime, so this only records what was written; an unresolvable name is left unresolved rather than reported, since that is the checker's business and reflection must not turn it into a compile error.
+func (c *Compiler) compileFieldTypes(fields []ast.DeclField) []runtime.TypeRef {
+	if len(fields) == 0 {
+		return nil
+	}
+	result := make([]runtime.TypeRef, len(fields))
+	hasAny := false
+	for i := range fields {
+		if fields[i].TypeHint == nil {
+			continue
+		}
+		result[i] = c.describeTypeExpr(fields[i].TypeHint)
+		hasAny = true
+	}
+	if !hasAny {
+		return nil
+	}
+	return result
+}
+
+// describeTypeExpr converts a written type expression into the structural form reflection exposes, resolving names against the symbols currently being compiled.
+// A name that resolves to nothing is left unresolved rather than reported, since an unknown type is the checker's business and reflection must not turn it into a compile error.
+func (c *Compiler) describeTypeExpr(expr ast.TypeExpr) runtime.TypeRef {
+	switch expr := expr.(type) {
+	case ast.TypeExprRef:
+		named := runtime.TypeRef{Kind: runtime.TypeRefNamed, Name: expr.Reference.String()}
+		if constantId, err := c.resolveTypeConstantId(expr); err == nil {
+			typeId := runtime.TypeId(constantId)
+			named.Type = &typeId
+		}
+		return named
+	case ast.TypeExprArray:
+		element := c.describeTypeExpr(expr.Element)
+		return runtime.TypeRef{Kind: runtime.TypeRefArray, Element: &element}
+	case ast.TypeExprDict:
+		key := c.describeTypeExpr(expr.Key)
+		value := c.describeTypeExpr(expr.Value)
+		return runtime.TypeRef{Kind: runtime.TypeRefDict, Key: &key, Value: &value}
+	case ast.TypeExprFunc:
+		parameters := make([]runtime.TypeRef, len(expr.Parameters))
+		for i, param := range expr.Parameters {
+			parameters[i] = c.describeTypeExpr(param.TypeHint)
+		}
+		returns := c.describeTypeExpr(expr.ReturnType)
+		return runtime.TypeRef{Kind: runtime.TypeRefFunc, Parameters: parameters, Returns: &returns}
+	case ast.TypeExprAttrs:
+		attributes := make([]runtime.TypeRef, len(expr.Attrs))
+		for i, attr := range expr.Attrs {
+			attributes[i] = c.describeTypeExpr(attr)
+		}
+		return runtime.TypeRef{Kind: runtime.TypeRefAttrs, Attributes: attributes}
+	}
+	return runtime.TypeRef{}
+}
+
+// validateFieldAttributes compiles field attributes only to report errors in them, for declarations that keep no field attributes of their own.
+func (c *Compiler) validateFieldAttributes(fields []ast.DeclField, symbols *ast.SymbolTable) error {
+	_, err := c.compileFieldAttributes(fields, symbols)
+	return err
 }
 
 func (c *Compiler) compileAttributeInstance(inst *ast.DeclAttrInstance, sym *ast.Symbol, symbols *ast.SymbolTable) (int, error) {

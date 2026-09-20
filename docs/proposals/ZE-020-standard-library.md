@@ -31,13 +31,14 @@ Add a new set of modules around every logical group of types:
 - `fmt` has been cleaned up from `os`
 - `fs` abstracts a filesystem, with an in-memory one so that code touching files stays testable
 - `io` adds new attributes for dependency management
+- `json` reads and writes JSON as Zirric's own values
 - `math` covers `prelude.Int` and `prelude.Float`, which had no operations beyond the arithmetic operators
 - `options` adds helpers around `prelude.Option` and `@prelude.AnyOption`
 - `paths` manipulates slash-separated paths as text, without touching a filesystem
 - `prelude` got some slight adjustments
 - `random` supplies randomness, in a fast, a reproducible and a cryptographic flavour
 - `ranges` covers `prelude.Range`, `prelude.ClosedRange` and `prelude.OpenRange`
-- `reflect` inspects `prelude.Module`, with `reflect.packages` reaching the modules of a package
+- `reflect` inspects modules, types and their fields, with `reflect.packages` reaching the modules of a package
 - `results` adds helpers around `prelude.Result` and `@prelude.AnyResult`
 - `scripts` collects the conveniences that assume a process, such as printing to stdout
 - `fun` holds function-level helpers and lazy sequence operations
@@ -76,11 +77,12 @@ Helpers are written in Zirric wherever the language can express them, and as `ex
 - `dicts`, `errors`, `fun`, `options`, `ranges` and `results` are pure Zirric.
 - `math` is almost entirely Go, since the VM implements the arithmetic operators and nothing else. Only `clamp` is Zirric, composed from `min` and `max`.
 - `paths` is entirely Go, wrapping the standard `path` package so that behaviour matches an established implementation rather than a hand-rolled one.
+- `json` is entirely Go, wrapping `encoding/json`.
 - `fs` splits evenly. The filesystem operations are Go, wrapping billy so that an in-memory filesystem and the host's own are the same code; `walk`, `glob`, `copy`, `withFile` and the string helpers are Zirric, composed from those operations.
 - `random` follows the same split: the three generators are Go, everything derived from them is Zirric.
 - `time` is Go, but unusually its arithmetic lives in the VM rather than the module, since its three types are primitives rather than values built on top of one.
 - `clock` is entirely Zirric. A clock is a closure over a reading, so the test clocks and the host's alike are built in the language; `os` supplies only the two raw readings.
-- `reflect` is Go only where it must be. Enumerating a module's members needs access to the module value's exports, and reaching a package's modules needs the compiler; everything built on top of those — `member`, `hasMember`, `modulesWhere`, `modulesExcept` — is Zirric.
+- `reflect` is Go only where it must be. Enumerating a module's members needs access to the module value's exports, describing a type's fields needs what the compiler recorded about the declaration, and reaching a package's modules needs the compiler itself; everything built on top of those — `member`, `hasMember`, `typeOf`, `modulesWhere`, `modulesExcept` — is Zirric, as are the `Field` and `TypeRef` types the Go side fills in.
 
 ### Characters versus bytes
 
@@ -150,13 +152,21 @@ Permissions are deliberately absent. billy puts them behind a capability its in-
 
 This is also what makes a file a stream. A file has to be closable, so it cannot be an `io.Writer` value; carrying `@Writer` costs it nothing.
 
-### Reflection needs only enumeration
+### Module reflection needs only enumeration
 
 A module is already a first-class value: `import tests` binds a `prelude.Module`, and a function value already answers `name` and `arity` and carries the attributes of its own declaration. Matching those attributes is ordinary Zirric — `switch decl { case is @tests.Test: }` — so the only thing missing was a way to ask a module what it declares. `reflect` adds exactly that, and nothing else needs Go.
 
 This is why `tests.discover` is written in Zirric rather than as an extern. It walks `reflect.members`, keeps the declarations carrying `@Test`, and reads `@Skip`, `@Todo` and `@Comment` off each one the same way any other code would.
 
 Only public members are reported, since a module value holds exactly its exports. `_`-prefixed declarations are internal and stay invisible, which is what makes `strings._firstIndexOf` absent from `reflect.memberNames(strings)` while `strings.firstIndexOf` is present.
+
+### A field is a value that carries its attributes
+
+Reflecting a type is not enumeration, because a field is not a value the program can otherwise hold: `Person` has a field called `name`, but nothing in the language hands you that field. `reflect.fieldsOf` therefore builds one, and the important part is that the `Field` it builds carries the attributes written on the declaration as its own. That makes reading them ordinary Zirric — `coding.Name(field).text` and `field is @coding.Ignore` are the same expressions one would write against a function declaration — rather than a second, parallel way of asking about attributes.
+
+A field's declared type is kept structurally rather than as text, so `[String: Person]` arrives as a `DictType` of two `NamedType`s and a decoder can walk it instead of parsing it. Each `NamedType` carries the type its name resolved to, which is the same value an `is` check compares against, so reflection can recurse into a nested data type without going back through a name.
+
+Type hints are not enforced at runtime, which a `TypeRef` does not change: it says what a declaration promised, not what a value turned out to be.
 
 ### Loading a package is deliberate
 
@@ -307,6 +317,20 @@ The capability attributes let a value declare which streams it provides, so code
 | `HasErrorWriter`    | `attr` | Provides a standard error writer, usually `os.stderr`. |
 | `HasStandardReader` | `attr` | Provides a standard input reader, usually `os.stdin`.  |
 
+### json
+
+JSON maps onto Zirric's own values rather than onto a tree of its own: an object is a `Dict` with `String` keys, an array an `Array`, and `null` is `void`.
+
+A number is an `Int` when it was written as one and a `Float` otherwise, so `1` and `1.0` stay apart. Object keys come out sorted, so the same value always produces the same text, and text is not HTML-escaped, since a Zirric `String` is text.
+
+Only the types JSON has a form for can be written; a `Char`, a function or a `Dict` with non-`String` keys is an `Err` naming what it found. Mapping data types and their attributes onto this tree is a later concern, and will not change what is here.
+
+| Declaration      | Kind        | Description                                         |
+| ---------------- | ----------- | --------------------------------------------------- |
+| `parse`          | `extern fn` | Reads JSON text, or `Err`.                          |
+| `format`         | `extern fn` | Renders a value as JSON text, or `Err`.             |
+| `formatIndented` | `extern fn` | As `format`, spread over lines with a given indent. |
+
 ### math
 
 `Int` and `Float` mix freely in arithmetic, where the VM promotes to `Float`, and this module follows the same instinct: `abs`, `min`, `max` and `clamp` return whichever type they were given, while the rounding family, `sqrt` and `pow` return `Float` because that is what they genuinely produce. `toInt` is the way back.
@@ -353,6 +377,7 @@ Only `fs` is new; the standard streams and process accessors are unchanged, thou
 | `fs`             | `extern fn` | The host's own filesystem, rooted so that absolute paths resolve as written. |
 | `systemClock`    | `extern fn` | The host's wall clock.                                                       |
 | `monotonicClock` | `extern fn` | The host's monotonic clock, for measuring elapsed time.                      |
+| `processes`      | `fn`        | The host's own ability to run programs.                                      |
 | `stdout`         | `extern fn` | The standard output stream, as an `@io.Writer`.                              |
 | `stdin`          | `extern fn` | The standard input stream, as an `@io.Reader`.                               |
 | `stderr`         | `extern fn` | The standard error stream, as an `@io.Writer`.                               |
@@ -437,6 +462,25 @@ Reports only a module's public members, in name order. Enumeration is the one th
 | `memberNames` | `extern fn` | The name of every public member, in the same order as `members`. |
 | `member`      | `fn`        | The public member of a module by name, or `None` if it has none. |
 | `hasMember`   | `fn`        | Whether a module has a public member of that name.               |
+
+Types are reflected the same way. `fieldsOf` returns values, so the attributes written on a field are read off it exactly as off any other declaration.
+
+| Declaration    | Kind        | Description                                                   |
+| -------------- | ----------- | ------------------------------------------------------------- |
+| `Field`        | `data`      | A field of a data type, carrying that field's own attributes. |
+| `TypeRef`      | `union`     | A type hint as it was written.                                |
+| `NamedType`    | `data`      | A type named directly, and the type that name resolves to.    |
+| `ArrayType`    | `data`      | An array type, `[Element]`.                                   |
+| `DictType`     | `data`      | A dict type, `[Key: Value]`.                                  |
+| `FuncType`     | `data`      | A function type, `fn(Parameters) -> Returns`.                 |
+| `AttrsType`    | `data`      | An attribute constraint, e.g. `@Iterable`.                    |
+| `UnknownType`  | `data`      | No type hint was written.                                     |
+| `typeName`     | `extern fn` | The declared name of a type.                                  |
+| `isDataType`   | `extern fn` | Whether a value is a data type.                               |
+| `isUnionType`  | `extern fn` | Whether a value is a union type.                              |
+| `fieldsOf`     | `extern fn` | The fields of a data type, in declaration order.              |
+| `unionMembers` | `extern fn` | The member types of a union type, in declaration order.       |
+| `typeOf`       | `fn`        | The type a value was built from, or `None`.                   |
 
 #### reflect.packages
 
@@ -631,6 +675,12 @@ Every assertion returns a `Result`, so a test body is an expression rather than 
 | Declaration | Kind | Description                                                    |
 | ----------- | ---- | -------------------------------------------------------------- |
 | `reporter`  | `fn` | An event callback writing TAP version 14 output to a `Writer`. |
+
+## Deferred
+
+Running other programs is left out. A useful interface needs to write to a program's input while reading its output, and to run more than one at a time, neither of which is expressible while the language is single-threaded: anything built now would buffer everything and deadlock on a pipeline that fills a pipe. The shape it should take — a `Processes` value, a capability, and a separation between a program that fails and a program that will not start — survives in this proposal's history rather than in code, to be revisited once concurrency exists.
+
+Time zones and calendar arithmetic belong to `time` and are described there.
 
 ## Alternatives Considered
 

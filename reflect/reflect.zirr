@@ -26,3 +26,31 @@ fn member(m: Module, name: String) -> Option {
 fn hasMember(m: Module, name: String) -> Bool {
 	member(m, name) is Some
 }
+
+// The declared name of a type, or the empty String for anything that is not a type.
+extern fn typeName(t: Any) -> String
+
+// Whether t is a data type, and so has fields to enumerate.
+extern fn isDataType(t: Any) -> Bool
+
+// Whether t is a union type, and so has members to enumerate.
+extern fn isUnionType(t: Any) -> Bool
+
+// The fields of a data type, in declaration order, or an empty array for anything else.
+extern fn fieldsOf(t: Any) -> [Field]
+
+// The member types of a union type, in declaration order, or an empty array for anything else.
+extern fn unionMembers(t: Any) -> [Any]
+
+extern fn _typeOf(value: Any) -> Any
+
+// The type of a value, or None for a value whose type has no runtime representation.
+fn typeOf(value: Any) -> Option {
+	const resolved = _typeOf(value)
+	switch resolved {
+	case is Void:
+		None()
+	case _:
+		Some(resolved)
+	}
+}

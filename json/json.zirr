@@ -1,0 +1,14 @@
+mod json
+
+// JSON maps onto Zirric's own values rather than onto a tree of its own: an object is a Dict with String keys, an array is an Array, a string is a String, a boolean is a Bool, and null is void.
+// A number is an Int when it was written as one, and a Float otherwise, so 1 and 1.0 stay apart.
+
+// Reads JSON text, failing with Err when the text is not one JSON value.
+extern fn parse(text: String) -> Result
+
+// Renders a value as JSON text, failing with Err when it holds something JSON has no form for.
+// Object keys come out sorted, so the same value always produces the same text.
+extern fn format(value: Any) -> Result
+
+// As format, but spread over lines with each level prefixed by indent.
+extern fn formatIndented(value: Any, indent: String) -> Result

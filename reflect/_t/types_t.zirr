@@ -1,0 +1,128 @@
+import tests { Test }
+import tests.assert
+
+import reflect
+import arrays
+
+attr Label { text }
+
+data Sample {
+	plain
+	@Label("id")
+	name: String
+	tags: [String]
+	scores: [String: Int]
+	parse: fn(String) -> Int
+	nested: Sample
+}
+
+fn fieldNamed(name: String) -> reflect.Field {
+	var found = void
+	for field <- reflect.fieldsOf(Sample) {
+		if field.name == name {
+			found = field
+		}
+	}
+	return found
+}
+
+@Test()
+fn testFieldsAreEveryFieldInDeclarationOrder() {
+	assert.equal(
+		["plain", "name", "tags", "scores", "parse", "nested"],
+		arrays.map(reflect.fieldsOf(Sample), fn(field) { field.name }),
+	)
+}
+
+@Test()
+fn testAFieldCarriesItsOwnAttributes() {
+	// The attribute is read off the field exactly as it would be off a declaration.
+	assert.all([
+		assert.equal("id", Label(fieldNamed("name")).text),
+		// A field with no attributes must not inherit its neighbour's.
+		assert.equal(void, Label(fieldNamed("plain"))),
+	])
+}
+
+@Test()
+fn testAFieldWithoutAHintIsUnknown() {
+	assert.equal(true, fieldNamed("plain").declaredType is reflect.UnknownType)
+}
+
+@Test()
+fn testANamedHintResolvesToItsType() {
+	const declared = fieldNamed("name").declaredType
+	assert.all([
+		assert.equal(true, declared is reflect.NamedType),
+		assert.equal("String", declared.name),
+		assert.equal(true, declared.resolved is Some),
+		assert.equal("String", reflect.typeName(declared.resolved.value)),
+	])
+}
+
+@Test()
+fn testAHintCanNameTheTypeItIsDeclaredOn() {
+	const declared = fieldNamed("nested").declaredType
+	assert.all([
+		assert.equal("Sample", declared.name),
+		assert.equal("Sample", reflect.typeName(declared.resolved.value)),
+	])
+}
+
+@Test()
+fn testArrayAndDictHintsKeepTheirElementTypes() {
+	const tags = fieldNamed("tags").declaredType
+	const scores = fieldNamed("scores").declaredType
+	assert.all([
+		assert.equal(true, tags is reflect.ArrayType),
+		assert.equal("String", tags.element.name),
+		assert.equal(true, scores is reflect.DictType),
+		assert.equal("String", scores.key.name),
+		assert.equal("Int", scores.value.name),
+	])
+}
+
+@Test()
+fn testAFunctionHintKeepsItsParametersAndResult() {
+	const parse = fieldNamed("parse").declaredType
+	assert.all([
+		assert.equal(true, parse is reflect.FuncType),
+		assert.equal(["String"], arrays.map(parse.parameters, fn(p) { p.name })),
+		assert.equal("Int", parse.returns.name),
+	])
+}
+
+@Test()
+fn testTypesReportWhatTheyAre() {
+	assert.all([
+		assert.equal(true, reflect.isDataType(Sample)),
+		assert.equal(false, reflect.isUnionType(Sample)),
+		assert.equal(true, reflect.isUnionType(reflect.TypeRef)),
+		assert.equal(false, reflect.isDataType(reflect.TypeRef)),
+		assert.equal("Sample", reflect.typeName(Sample)),
+		// Anything that is not a type has no declared name, rather than being reported as one.
+		assert.equal("", reflect.typeName(42)),
+		assert.equal([], reflect.fieldsOf(42)),
+	])
+}
+
+@Test()
+fn testUnionMembersAreItsMemberTypes() {
+	assert.equal(
+		["NamedType", "ArrayType", "DictType", "FuncType", "AttrsType", "UnknownType"],
+		arrays.map(reflect.unionMembers(reflect.TypeRef), fn(m) { reflect.typeName(m) }),
+	)
+}
+
+@Test()
+fn testTypeOfFindsTheTypeAValueWasBuiltFrom() {
+	const value = Sample(1, "a", [], [:], fn(text) { 0 }, void)
+	const found = reflect.typeOf(value)
+	assert.all([
+		assert.equal(true, found is Some),
+		assert.equal("Sample", reflect.typeName(found.value)),
+		// The type reflection finds is the very type an `is` check compares against.
+		assert.equal(true, reflect.fieldsOf(found.value) is [Any]),
+		assert.equal(6, len(reflect.fieldsOf(found.value))),
+	])
+}

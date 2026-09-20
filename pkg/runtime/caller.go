@@ -24,6 +24,8 @@ type VMCaller interface {
 	// It is how a plugin reaches a declared type in order to construct values of it: MakeDataValue copies the DataType's attributes, which a hand-built DataValue would otherwise lack.
 	// The module must have been compiled into the program, which for prelude is always the case.
 	ResolveModuleMember(moduleName string, memberName string) (RuntimeValue, error)
+	// ResolveType returns the type value a TypeId names — the same value an `is` check compares against — or nil when the id names no type.
+	ResolveType(id TypeId) RuntimeValue
 }
 
 // TrivialString converts v to a display string for the handful of builtin
@@ -86,6 +88,50 @@ func makePreludeResult(caller VMCaller, name string, payload RuntimeValue) (Runt
 		return nil, fmt.Errorf("prelude.%s is %T, not a data type", name, member)
 	}
 	return MakeDataValue(dataType, []RuntimeValue{payload}), nil
+}
+
+// OptionSome builds a prelude Some carrying value.
+// As with ResultOk, going through the declared type is what preserves @AnyOption, without which options.from would not recognize the value as an option.
+func OptionSome(caller VMCaller, value RuntimeValue) (RuntimeValue, error) {
+	return makePreludeOption(caller, "Some", []RuntimeValue{value})
+}
+
+// OptionNone builds a prelude None.
+func OptionNone(caller VMCaller) (RuntimeValue, error) {
+	return makePreludeOption(caller, "None", nil)
+}
+
+func makePreludeOption(caller VMCaller, name string, payload []RuntimeValue) (RuntimeValue, error) {
+	if caller == nil {
+		return nil, fmt.Errorf("%s requires a VMCaller", name)
+	}
+	member, err := caller.ResolveModuleMember("prelude", name)
+	if err != nil {
+		return nil, err
+	}
+	dataType, ok := member.(*DataType)
+	if !ok {
+		return nil, fmt.Errorf("prelude.%s is %T, not a data type", name, member)
+	}
+	return MakeDataValue(dataType, payload), nil
+}
+
+// WithAttributes gives value the attributes in extra on top of those it already carries.
+// A DataValue shares its attribute map with the type that built it, so this replaces the map rather than writing into it, which would annotate every other value of that type too.
+func WithAttributes(value RuntimeValue, extra map[TypeId]int) RuntimeValue {
+	dataValue, ok := value.(*DataValue)
+	if !ok || len(extra) == 0 {
+		return value
+	}
+	merged := make(map[TypeId]int, len(dataValue.Attrs)+len(extra))
+	for id, globalId := range dataValue.Attrs {
+		merged[id] = globalId
+	}
+	for id, globalId := range extra {
+		merged[id] = globalId
+	}
+	dataValue.Attrs = merged
+	return dataValue
 }
 
 // MakeDataValueNamed builds a value of a declared type, taking its fields by name.

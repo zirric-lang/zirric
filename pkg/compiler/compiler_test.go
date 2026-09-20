@@ -1555,6 +1555,62 @@ func TestFunctionAttributes(t *testing.T) {
 	}
 }
 
+func TestDataFieldAttributes(t *testing.T) {
+	module := prepareContextModuleParsing(t, "module.test", `
+		attr Job { jobName }
+		data Person {
+			id
+			@Job("Singer")
+			name
+		}
+	`)
+	resolver := newTestModuleResolver(module, nil)
+
+	comp := compiler.New(resolver)
+	if err := comp.Compile(module); err != nil {
+		t.Fatalf("compile: %s", err)
+	}
+
+	var dataType *runtime.DataType
+	var annoType *runtime.AttributeType
+	for _, constant := range comp.Bytecode().Constants {
+		switch constant := constant.(type) {
+		case *runtime.DataType:
+			if constant.Symbol.Name == "Person" {
+				dataType = constant
+			}
+		case *runtime.AttributeType:
+			if constant.Symbol.Name == "Job" {
+				annoType = constant
+			}
+		}
+	}
+
+	if dataType == nil {
+		t.Fatal("missing data type constant for Person")
+		return
+	}
+	if annoType == nil {
+		t.Fatal("missing attribute type constant for Job")
+		return
+	}
+
+	typeId := runtime.TypeId(*annoType.Symbol.ConstantId)
+	if len(dataType.FieldAttributes) != len(dataType.FieldSymbols) {
+		t.Fatalf("field attributes and fields disagree: %d vs %d", len(dataType.FieldAttributes), len(dataType.FieldSymbols))
+	}
+	if dataType.FieldSymbols[1].Name != "name" {
+		t.Fatalf("unexpected second field: %q", dataType.FieldSymbols[1].Name)
+	}
+	if _, ok := dataType.FieldAttributesAt(1)[typeId]; !ok {
+		t.Fatalf("missing field attribute for type id %d", typeId)
+	}
+	// An unannotated field must stay unannotated rather than inherit its neighbour's attributes.
+	if dataType.FieldAttributesAt(0) != nil {
+		t.Fatalf("unexpected attributes on field %q", dataType.FieldSymbols[0].Name)
+	}
+}
+
 // testExternPlugin provides bindings for extern declarations used in tests.
 type testExternPlugin struct{}
 
