@@ -38,9 +38,23 @@ FLOAT  = digits, ".", digits, [("e" | "E"), ["-"], digits]
        | digits, ("e" | "E"), ["-"], digits;
 
 STRING = '"', {string_char}, '"';
+CHAR   = "'", char_char, "'";
+
+string_char = ? any character except '"' or backslash ? | escape | backslash, '"';
+char_char   = ? any character except "'" or backslash ? | escape | backslash, "'";
+
+escape = backslash, ( "a" | "b" | "f" | "n" | "r" | "t" | "v" | backslash
+                    | "x", 2 * hex_digit
+                    | "u", 4 * hex_digit
+                    | "U", 8 * hex_digit
+                    | 3 * octal_digit );
+
+backslash = ? the "\" character ?;
 
 BOOL   = "true" | "false";
 ```
+
+String and char literals accept the same escapes, except that each escapes only its own delimiter: `\"` belongs to a string and `\'` to a char. `\u` and `\U` name a code point, which a `STRING` holds UTF-8 encoded, while `\x` and the three-digit octal form name a single byte. Any other escape is an error rather than literal text.
 
 ### Operator and Punctuation Tokens
 

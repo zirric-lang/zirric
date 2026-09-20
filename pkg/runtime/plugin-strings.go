@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -71,6 +72,18 @@ func (*StringsPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 				return nil, fmt.Errorf("slice bounds out of range [%d:%d] with length %d", start, end, len(runes))
 			}
 			return String(runes[start:end]), nil
+		})
+	case "isDigit":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			return everyRune(args[0], unicode.IsDigit)
+		})
+	case "isLetter":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			return everyRune(args[0], unicode.IsLetter)
+		})
+	case "isSpace":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			return everyRune(args[0], unicode.IsSpace)
 		})
 	case "contains":
 		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
@@ -258,6 +271,31 @@ func (*StringsPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 			}
 			return String(strings.TrimSuffix(s, suffix)), nil
 		})
+	case "quote":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			s, err := likeToString(args[0])
+			if err != nil {
+				return nil, err
+			}
+			return String(strconv.Quote(s)), nil
+		})
+	case "unquote":
+		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			s, err := likeToString(args[0])
+			if err != nil {
+				return nil, err
+			}
+			// Only the two literal forms Zirric itself has. Go's backquoted raw
+			// strings are not one of them, so strconv.Unquote never sees them.
+			if len(s) < 2 || (s[0] != '"' && s[0] != '\'') || s[len(s)-1] != s[0] {
+				return ResultErr(caller, String(fmt.Sprintf("not a quoted literal: %s", strconv.Quote(s))))
+			}
+			unquoted, err := strconv.Unquote(s)
+			if err != nil {
+				return ResultErr(caller, String(fmt.Sprintf("invalid quoted literal %s: %v", strconv.Quote(s), err)))
+			}
+			return ResultOk(caller, String(unquoted))
+		})
 	}
 	return nil
 }
@@ -272,6 +310,23 @@ func likeToString(v RuntimeValue) (string, error) {
 	default:
 		return "", fmt.Errorf("expected a Char or String argument, got %T", v)
 	}
+}
+
+// everyRune reports whether v is non-empty text in which every character satisfies pred.
+func everyRune(v RuntimeValue, pred func(rune) bool) (RuntimeValue, error) {
+	s, err := likeToString(v)
+	if err != nil {
+		return nil, err
+	}
+	if s == "" {
+		return Bool(false), nil
+	}
+	for _, r := range s {
+		if !pred(r) {
+			return Bool(false), nil
+		}
+	}
+	return Bool(true), nil
 }
 
 func likeToStringPair(args []RuntimeValue) (string, string, error) {

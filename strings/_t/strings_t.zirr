@@ -1,6 +1,7 @@
 import tests { Test }
 import tests.assert
 
+import results
 import strings
 
 @Test()
@@ -57,6 +58,51 @@ fn testIsEmpty() {
 	assert.all([
 		assert.equal(true, strings.isEmpty("")),
 		assert.equal(false, strings.isEmpty("x")),
+	])
+}
+
+@Test()
+fn testIsDigit() {
+	assert.all([
+		assert.equal(true, strings.isDigit('7')),
+		assert.equal(true, strings.isDigit("2026")),
+		assert.equal(false, strings.isDigit("12a")),
+		assert.equal(false, strings.isDigit('a')),
+		// Empty text has no digits, so it is not all digits.
+		assert.equal(false, strings.isDigit("")),
+		// Unicode-aware — Arabic-Indic digits count as digits.
+		assert.equal(true, strings.isDigit("٣٤")),
+	])
+}
+
+@Test()
+fn testIsLetter() {
+	assert.all([
+		assert.equal(true, strings.isLetter('a')),
+		assert.equal(true, strings.isLetter("hello")),
+		assert.equal(false, strings.isLetter("hello world")),
+		assert.equal(false, strings.isLetter("abc1")),
+		assert.equal(false, strings.isLetter('7')),
+		assert.equal(false, strings.isLetter("")),
+		// Unicode-aware — accented and non-Latin letters count as letters.
+		assert.equal(true, strings.isLetter("café")),
+		assert.equal(true, strings.isLetter("日本語")),
+	])
+}
+
+@Test()
+fn testIsSpace() {
+	assert.all([
+		assert.equal(true, strings.isSpace(' ')),
+		assert.equal(true, strings.isSpace('\t')),
+		assert.equal(true, strings.isSpace("  ")),
+		assert.equal(true, strings.isSpace(" \t\n")),
+		assert.equal(false, strings.isSpace("a b")),
+		assert.equal(false, strings.isSpace('a')),
+		assert.equal(false, strings.isSpace("")),
+		// Unicode-aware — a non-breaking space is whitespace.
+		assert.equal(true, strings.isSpace('\u00a0')),
+		assert.equal(true, strings.isSpace("\u00a0\u2003")),
 	])
 }
 
@@ -186,4 +232,36 @@ fn testTrimPrefixSuffix() {
 		assert.equal("hel", strings.trimSuffix("hello", "lo")),
 		assert.equal("hello", strings.trimSuffix("hello", "xyz")),
 	])
+}
+
+@Test()
+fn testQuote() {
+	assert.all([
+		assert.equal("\"hi\"", strings.quote("hi")),
+		assert.equal("\"\"", strings.quote("")),
+		assert.equal("\"a\\nb\"", strings.quote("a\nb")),
+		assert.equal("\"a\\\"b\"", strings.quote("a\"b")),
+		// A Char is quoted as a String.
+		assert.equal("\"a\"", strings.quote('a')),
+	])
+}
+
+@Test()
+fn testUnquote() {
+	assert.all([
+		assert.equal("hi", strings.unquote("\"hi\"").value),
+		assert.equal("", strings.unquote("\"\"").value),
+		assert.equal("a\nb", strings.unquote("\"a\\nb\"").value),
+		// Both literal forms are accepted.
+		assert.equal("a", strings.unquote("'a'").value),
+		// Unquoted text is not a literal, and neither is a half-quoted one.
+		assert.equal(true, results.isErr(strings.unquote("hi"))),
+		assert.equal(true, results.isErr(strings.unquote("\"unterminated"))),
+	])
+}
+
+@Test()
+fn testQuoteRoundTrips() {
+	const text = "café \"quoted\"\tand\ttabbed"
+	assert.equal(text, strings.unquote(strings.quote(text)).value)
 }

@@ -3,6 +3,8 @@ package parser
 import (
 	"errors"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
@@ -421,7 +423,48 @@ func (p *Parser) parsePrattExprIndex(owner ast.Expr) ast.Expr {
 
 func (p *Parser) parsePrattExprString() ast.Expr {
 	tok := p.nextToken()
-	return ast.MakeExprString(tok, tok.Literal)
+	str, err := parseStringLiteral(tok.Literal)
+	if err != nil {
+		p.errUnderlyingErrorf(err, "invalid string literal %q", tok.Literal)
+	}
+	return ast.MakeExprString(tok, str)
+}
+
+// parseStringLiteral decodes the escapes in a string literal's raw source. It
+// shares strconv.UnquoteChar with parseCharLiteral, so a string accepts the
+// escapes a char does — \n, \t, \\ and also \a, \b, \f, \r, \v, \xNN, \uNNNN,
+// \UNNNNNNNN and a three-digit octal — differing only in the delimiter each
+// escapes, \" here and \' there. Everything that is not an escape is copied
+// verbatim, leaving multi-byte characters and raw newlines untouched.
+func parseStringLiteral(literal string) (string, error) {
+	if !strings.Contains(literal, "\\") {
+		return literal, nil
+	}
+	var out strings.Builder
+	for literal != "" {
+		if literal[0] != '\\' {
+			next := strings.IndexByte(literal, '\\')
+			if next == -1 {
+				out.WriteString(literal)
+				break
+			}
+			out.WriteString(literal[:next])
+			literal = literal[next:]
+			continue
+		}
+		ch, multibyte, tail, err := strconv.UnquoteChar(literal, '"')
+		if err != nil {
+			return "", err
+		}
+		// A \xNN escape names a single byte, not the code point of that value.
+		if ch < utf8.RuneSelf || !multibyte {
+			out.WriteByte(byte(ch))
+		} else {
+			out.WriteRune(ch)
+		}
+		literal = tail
+	}
+	return out.String(), nil
 }
 
 func parseCharLiteral(literal string) (rune, error) {

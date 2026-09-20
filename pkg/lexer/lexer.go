@@ -1,8 +1,6 @@
 package lexer
 
 import (
-	"strings"
-
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
 )
@@ -180,48 +178,32 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
+// parseString scans a double-quoted string literal and returns its raw source,
+// escapes included. Decoding happens in the parser, the same way char literals
+// are handled, so both literal forms accept exactly one set of escapes.
+// An unterminated literal ends at EOF rather than being rejected, which keeps
+// a half-typed line usable while it is being edited.
 func (l *Lexer) parseString() string {
-	var out strings.Builder
+	position := l.currPos + 1
 	escaped := false
 	for {
 		l.advance()
-		ch := l.ch
-
-		if ch == 0 {
+		if l.ch == 0 {
 			break
 		}
-
 		if escaped {
-			switch ch {
-			case 'n':
-				out.WriteByte('\n')
-			case 't':
-				out.WriteByte('\t')
-			case '\\':
-				out.WriteByte('\\')
-			case '"':
-				out.WriteByte('"')
-			default:
-				out.WriteByte('\\')
-				out.WriteByte(ch)
-			}
 			escaped = false
 			continue
 		}
-
-		if ch == '\\' {
+		if l.ch == '\\' {
 			escaped = true
 			continue
 		}
-
-		if ch == '"' {
+		if l.ch == '"' {
 			break
 		}
-
-		out.WriteByte(ch)
 	}
-
-	return out.String()
+	return l.input[position:l.currPos]
 }
 
 func (l *Lexer) parseChar() (string, bool) {

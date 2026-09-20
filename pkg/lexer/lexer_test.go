@@ -590,7 +590,7 @@ func TestAllTokens(t *testing.T) {
 				expectedType    token.TokenType
 				expectedLiteral string
 			}{
-				{token.STRING, "\n"},
+				{token.STRING, "\\n"},
 				{token.EOF, ""},
 			},
 		},
@@ -601,7 +601,7 @@ func TestAllTokens(t *testing.T) {
 				expectedType    token.TokenType
 				expectedLiteral string
 			}{
-				{token.STRING, "\t"},
+				{token.STRING, "\\t"},
 				{token.EOF, ""},
 			},
 		},
@@ -612,7 +612,7 @@ func TestAllTokens(t *testing.T) {
 				expectedType    token.TokenType
 				expectedLiteral string
 			}{
-				{token.STRING, "\""},
+				{token.STRING, "\\\""},
 				{token.EOF, ""},
 			},
 		},
@@ -623,7 +623,18 @@ func TestAllTokens(t *testing.T) {
 				expectedType    token.TokenType
 				expectedLiteral string
 			}{
-				{token.STRING, "\\"},
+				{token.STRING, "\\\\"},
+				{token.EOF, ""},
+			},
+		},
+		{
+			name:  "string escaped unicode",
+			input: `"\u00a0"`,
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.STRING, `\u00a0`},
 				{token.EOF, ""},
 			},
 		},

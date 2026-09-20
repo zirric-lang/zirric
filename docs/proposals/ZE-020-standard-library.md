@@ -92,6 +92,8 @@ Helpers are written in Zirric wherever the language can express them, and as `ex
 
 Any operation that can fail to find something returns `Option` rather than a sentinel: `arrays.first`, `arrays.last`, `bytes.firstIndexOf`, `strings.lastIndexOf`, `ranges.intersect` and `errors.join` all follow this. The `-1` returned by the underlying `extern fn` search primitives is converted at the Zirric boundary and never surfaces to callers.
 
+A failure with something to say about itself is an `Err` instead, so `json.parse`, `time.parse` and `strings.unquote` return `Result`. The distinction is whether the caller learns anything from the reason: nothing follows from a needle simply not being there, while text that is not a quoted literal fails for a reason worth reporting.
+
 ### Laziness in `fun`
 
 `fun.map`, `fun.filter`, `fun.flatMap`, `fun.take`, `fun.skip` and `fun.zip` accept any `@Iterable` and return a lazy `@Iterable`. Nothing runs until the result is actually iterated, so the operations compose without building an intermediate array per step, and they terminate against infinite sources: `fun.take(counter, 3)` stops after three elements rather than hanging.
@@ -600,6 +602,9 @@ Positions count characters, not bytes. Most of this module is Go: indexing has t
 | `slice`        | `extern fn` | The characters from `start` (inclusive) to `end` (exclusive).            |
 | `range`        | `fn`        | The characters selected by a `ranges.Like`.                              |
 | `isEmpty`      | `fn`        | Whether the text has no characters.                                      |
+| `isDigit`      | `extern fn` | Whether the text is not empty and every character is a decimal digit.    |
+| `isLetter`     | `extern fn` | Whether the text is not empty and every character is a letter.           |
+| `isSpace`      | `extern fn` | Whether the text is not empty and every character is whitespace.         |
 | `contains`     | `extern fn` | Whether a needle occurs anywhere.                                        |
 | `hasPrefix`    | `extern fn` | Whether the text starts with a prefix.                                   |
 | `hasSuffix`    | `extern fn` | Whether the text ends with a suffix.                                     |
@@ -617,6 +622,8 @@ Positions count characters, not bytes. Most of this module is Go: indexing has t
 | `trim`         | `extern fn` | Leading and trailing whitespace removed.                                 |
 | `trimPrefix`   | `extern fn` | A leading prefix removed, if present.                                    |
 | `trimSuffix`   | `extern fn` | A trailing suffix removed, if present.                                   |
+| `quote`        | `extern fn` | The text as a double-quoted string literal, escapes included.            |
+| `unquote`      | `extern fn` | The text a quoted literal denotes, or `Err` if it is not one.            |
 
 ### tests
 

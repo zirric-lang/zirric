@@ -39,6 +39,18 @@ fn isEmpty(v: Like) -> Bool {
 	count(v) == 0
 }
 
+// Returns whether v is not empty and every character is a decimal digit.
+// Unicode-aware — isDigit('٣') is true, isDigit("") is false.
+extern fn isDigit(v: Like) -> Bool
+
+// Returns whether v is not empty and every character is a letter.
+// Unicode-aware — isLetter('é') is true, isLetter("") is false.
+extern fn isLetter(v: Like) -> Bool
+
+// Returns whether v is not empty and every character is whitespace.
+// Unicode-aware — a non-breaking space counts, isSpace("") is false.
+extern fn isSpace(v: Like) -> Bool
+
 // Returns whether needle occurs anywhere in v.
 extern fn contains(v: Like, needle: Like) -> Bool
 
@@ -108,3 +120,13 @@ extern fn trimPrefix(v: Like, prefix: Like) -> String
 
 // Returns v with a trailing suffix removed, if present.
 extern fn trimSuffix(v: Like, suffix: Like) -> String
+
+// Returns v as a double-quoted string literal, escaping the characters that
+// need it, so the result reads back as Zirric source. A Char is quoted as a
+// String — quote('a') is the same as quote("a").
+extern fn quote(v: Like) -> String
+
+// Reads a quoted literal, returning Ok with the text it denotes and Err when v
+// is not one. Both literal forms are accepted, "\"hi\"" and "'a'", and quote
+// is inverted exactly.
+extern fn unquote(v: Like) -> Result
