@@ -1,0 +1,30 @@
+mod time
+
+// The zero point of the monotonic scale. Its position carries no meaning; it exists so that instants can be constructed, which is mostly useful for test clocks.
+extern fn origin() -> Instant
+
+// The span from earlier to later, which is negative when they are the other way round.
+extern fn since(earlier: Instant, later: Instant) -> Duration
+
+// The span between two points on the wall clock.
+extern fn between(earlier: Timestamp, later: Timestamp) -> Duration
+
+// A Timestamp the given number of nanoseconds after the Unix epoch.
+extern fn fromEpoch(nanoseconds: Int) -> Timestamp
+
+// The number of nanoseconds from the Unix epoch to t.
+extern fn toEpoch(t: Timestamp) -> Int
+
+// t rendered in RFC 3339 form, in UTC, such as "2024-03-05T14:30:00Z".
+extern fn format(t: Timestamp) -> String
+
+// Reads an RFC 3339 timestamp, failing with Err when the text is not one.
+extern fn parse(text: String) -> Result
+
+// The calendar parts of t, in UTC.
+extern fn year(t: Timestamp) -> Int
+extern fn month(t: Timestamp) -> Int
+extern fn day(t: Timestamp) -> Int
+extern fn hour(t: Timestamp) -> Int
+extern fn minute(t: Timestamp) -> Int
+extern fn second(t: Timestamp) -> Int

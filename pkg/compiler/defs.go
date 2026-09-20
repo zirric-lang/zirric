@@ -86,7 +86,7 @@ func NewWithAnalyzer(moduleResolver resolver.ModuleResolver, analysis *analyzer.
 		globals:         []*CompilationScope{},
 		moduleGlobals:   map[registry.LogicalURI]int{},
 		compiledModules: map[*ast.ContextModule]int{},
-		plugins:         runtime.NewExternPluginRegistry(&runtime.Prelude{}, &runtime.OSPlugin{}, &runtime.FmtPlugin{}, &runtime.BytesPlugin{}, &runtime.StringsPlugin{}, &runtime.ReflectPlugin{}, &runtime.ReflectPackagesPlugin{}, &runtime.MathPlugin{}, &runtime.PathsPlugin{}, &runtime.FSPlugin{}, &runtime.RandomPlugin{}),
+		plugins:         runtime.NewExternPluginRegistry(&runtime.Prelude{}, &runtime.OSPlugin{}, &runtime.FmtPlugin{}, &runtime.BytesPlugin{}, &runtime.StringsPlugin{}, &runtime.ReflectPlugin{}, &runtime.ReflectPackagesPlugin{}, &runtime.MathPlugin{}, &runtime.PathsPlugin{}, &runtime.FSPlugin{}, &runtime.RandomPlugin{}, &runtime.TimePlugin{}),
 		resolver:        moduleResolver,
 		analyzer:        analysis,
 		analyzed:        map[*ast.ContextModule]struct{}{},

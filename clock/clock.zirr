@@ -1,0 +1,60 @@
+mod clock
+
+import time
+
+// Provides the wall clock, for timestamping and calendar work.
+attr HasSystemClock {
+	clock(self: @HasSystemClock) -> SystemClock
+}
+
+// Provides the monotonic clock, for measuring how long something took.
+// Kept apart from HasSystemClock because a wall clock can jump, so code measuring elapsed time must not be handed one.
+attr HasMonotonicClock {
+	clock(self: @HasMonotonicClock) -> MonotonicClock
+}
+
+// A clock reading civil time, which can jump when the host is corrected.
+data SystemClock {
+	now: fn() -> Timestamp
+}
+
+// A clock that only ever moves forward, whose origin carries no meaning.
+data MonotonicClock {
+	now: fn() -> Instant
+}
+
+// The current wall-clock time.
+fn now(c: SystemClock) -> Timestamp {
+	c.now()
+}
+
+// The current monotonic reading. Subtract two to learn how much time passed between them.
+fn instant(c: MonotonicClock) -> Instant {
+	c.now()
+}
+
+// A wall clock frozen at one time, for tests that must see a fixed date.
+fn fixed(at: Timestamp) -> SystemClock {
+	SystemClock(fn() { at })
+}
+
+// A wall clock starting at from and advancing by step on every reading, for tests that need time to pass predictably.
+fn stepping(from: Timestamp, step: Duration) -> SystemClock {
+	var current = from
+	return SystemClock(fn() {
+		const reading = current
+		current = current + step
+		return reading
+	})
+}
+
+// A monotonic clock starting at the origin and advancing by step on every reading.
+// A step of zero makes every reading identical, which is how code under a timeout is tested without waiting.
+fn steppingMonotonic(step: Duration) -> MonotonicClock {
+	var current = time.origin()
+	return MonotonicClock(fn() {
+		const reading = current
+		current = current + step
+		return reading
+	})
+}

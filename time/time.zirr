@@ -1,0 +1,13 @@
+mod time
+
+// A span of time, in nanoseconds.
+// A primitive rather than a wrapper, so that spans add, subtract and scale with the usual operators, and print as 1.5s rather than as a bare number.
+extern type Duration {}
+
+// A reading from a monotonic clock. Its origin is arbitrary, so it is only meaningful next to another Instant.
+// Subtracting two gives a Duration; adding a Duration moves it. Nothing else is allowed, which is what keeps elapsed time honest.
+extern type Instant {}
+
+// A point on the wall clock, as nanoseconds since the Unix epoch.
+// Distinct from Instant because wall clocks jump, so a Timestamp must never be used to measure how long something took.
+extern type Timestamp {}

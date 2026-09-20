@@ -32,6 +32,12 @@ type VMCaller interface {
 // attribute. Byte renders as two hex digits.
 func TrivialString(v RuntimeValue) (string, bool) {
 	switch v := v.(type) {
+	case Duration:
+		return v.Inspect(), true
+	case Instant:
+		return v.Inspect(), true
+	case Timestamp:
+		return v.Inspect(), true
 	case String:
 		return string(v), true
 	case Int:

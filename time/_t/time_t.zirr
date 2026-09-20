@@ -1,0 +1,160 @@
+import tests { Test }
+import tests.assert
+
+import time
+import results
+
+@Test()
+fn testDurationArithmeticUsesOperators() {
+	const a = time.seconds(2)
+	const b = time.milliseconds(500)
+	assert.all([
+		assert.equal(time.milliseconds(2500), a + b),
+		assert.equal(time.milliseconds(1500), a - b),
+		assert.equal(time.seconds(6), a * 3),
+		assert.equal(time.seconds(4), 2 * a),
+		assert.equal(time.milliseconds(500), a / 4),
+	])
+}
+
+@Test()
+fn testDurationsCompare() {
+	const a = time.seconds(1)
+	const b = time.seconds(2)
+	assert.all([
+		assert.equal(true, a < b),
+		assert.equal(true, b > a),
+		assert.equal(true, a <= a),
+		assert.equal(true, a == time.milliseconds(1000)),
+		assert.equal(false, a == b),
+	])
+}
+
+@Test()
+fn testDurationUnits() {
+	assert.all([
+		assert.equal(time.seconds(60), time.minutes(1)),
+		assert.equal(time.minutes(60), time.hours(1)),
+		assert.equal(time.milliseconds(1), time.microseconds(1000)),
+		assert.equal(time.microseconds(1), time.nanoseconds(1000)),
+		assert.equal(time.nanoseconds(0), time.zero()),
+	])
+}
+
+@Test()
+fn testDurationAccessors() {
+	const d = time.milliseconds(1500)
+	assert.all([
+		assert.equal(1500000000, time.asNanoseconds(d)),
+		assert.equal(1500, time.asMilliseconds(d)),
+		assert.equal(1.5, time.asSeconds(d)),
+		assert.equal(0.025, time.asMinutes(time.milliseconds(1500))),
+	])
+}
+
+@Test()
+fn testAbsolute() {
+	assert.all([
+		assert.equal(time.seconds(2), time.absolute(time.zero() - time.seconds(2))),
+		assert.equal(time.seconds(2), time.absolute(time.seconds(2))),
+	])
+}
+
+@Test()
+fn testDurationPrintsReadably() {
+	assert.all([
+		assert.equal("1.5s", time.formatDuration(time.milliseconds(1500))),
+		assert.equal("250ms", time.formatDuration(time.milliseconds(250))),
+		assert.equal("0s", time.formatDuration(time.zero())),
+		assert.equal("2m", time.formatDuration(time.minutes(2))),
+		// The same reading is used when a duration is concatenated into text.
+		assert.equal("took 1.5s", "took " + time.milliseconds(1500)),
+	])
+}
+
+@Test()
+fn testTimestampEpochRoundTrip() {
+	const t = time.fromEpoch(1709649000000000000)
+	assert.all([
+		assert.equal(1709649000000000000, time.toEpoch(t)),
+		assert.equal(2024, time.year(t)),
+		assert.equal(3, time.month(t)),
+		assert.equal(5, time.day(t)),
+	])
+}
+
+@Test()
+fn testTimestampArithmetic() {
+	const t = time.fromEpoch(0)
+	const later = t + time.hours(1)
+	assert.all([
+		assert.equal(time.hours(1), later - t),
+		assert.equal(time.hours(1), time.between(t, later)),
+		assert.equal(t, later - time.hours(1)),
+		assert.equal(true, later > t),
+	])
+}
+
+@Test()
+fn testFormatAndParse() {
+	const parsed = time.parse("2024-03-05T14:30:00Z")
+	assert.all([
+		assert.equal(true, results.isOk(parsed)),
+		assert.equal(2024, time.year(parsed.value)),
+		assert.equal(14, time.hour(parsed.value)),
+		assert.equal(30, time.minute(parsed.value)),
+		assert.equal("2024-03-05T14:30:00Z", time.format(parsed.value)),
+	])
+}
+
+@Test()
+fn testParseRejectsNonsense() {
+	assert.all([
+		assert.equal(true, results.isErr(time.parse("not a timestamp"))),
+		assert.equal(true, time.parse("nope") is Err),
+	])
+}
+
+@Test()
+fn testParseDuration() {
+	assert.all([
+		assert.equal(time.milliseconds(1500), time.parseDuration("1.5s").value),
+		assert.equal(time.milliseconds(250), time.parseDuration("250ms").value),
+		assert.equal(time.minutes(165), time.parseDuration("2h45m").value),
+		assert.equal(time.zero() - time.minutes(90), time.parseDuration("-1.5h").value),
+		assert.equal(time.nanoseconds(5), time.parseDuration("5ns").value),
+		assert.equal(time.zero(), time.parseDuration("0s").value),
+	])
+}
+
+@Test()
+fn testParseDurationRejectsNonsense() {
+	assert.all([
+		assert.equal(true, results.isErr(time.parseDuration("tomorrow"))),
+		assert.equal(true, results.isErr(time.parseDuration("5"))),
+		assert.equal(true, time.parseDuration("") is Err),
+	])
+}
+
+@Test()
+fn testFormatAndParseDurationRoundTrip() {
+	// Formatting is for people, but it must never lose precision: whatever it prints has to read back as the same span.
+	const spans = [
+		time.nanoseconds(1),
+		time.nanoseconds(1234567891),
+		time.microseconds(7),
+		time.milliseconds(1500),
+		time.seconds(90),
+		time.minutes(2),
+		time.hours(25),
+		time.zero(),
+		time.zero() - time.milliseconds(250),
+	]
+	var allRoundTrip = true
+	for span <- spans {
+		if time.parseDuration(time.formatDuration(span)).value != span {
+			allRoundTrip = false
+		}
+	}
+	assert.equal(true, allRoundTrip)
+}

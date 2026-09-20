@@ -2,6 +2,7 @@ mod os
 
 import io
 import fs
+import clock
 
 // Returns a Writer for the standard output stream.
 extern fn stdout() -> @io.Writer
@@ -23,3 +24,16 @@ extern fn args() -> [String]
 
 // Returns the host's own filesystem, rooted so that absolute paths resolve as written.
 extern fn fs() -> fs.FileSystem
+
+extern fn _nowTimestamp() -> Timestamp
+extern fn _nowInstant() -> Instant
+
+// The host's wall clock, which reports civil time and can jump when the machine is corrected.
+fn systemClock() -> clock.SystemClock {
+	clock.SystemClock(fn() { _nowTimestamp() })
+}
+
+// The host's monotonic clock, which only moves forward and is the one to measure elapsed time with.
+fn monotonicClock() -> clock.MonotonicClock {
+	clock.MonotonicClock(fn() { _nowInstant() })
+}

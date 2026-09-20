@@ -1,0 +1,105 @@
+import tests { Test }
+import tests.assert
+
+import clock
+import time
+import os
+
+@Test()
+fn testFixedClockNeverMoves() {
+	const at = time.fromEpoch(1709649000000000000)
+	const c = clock.fixed(at)
+	assert.all([
+		assert.equal(at, clock.now(c)),
+		assert.equal(at, clock.now(c)),
+		assert.equal(time.zero(), clock.now(c) - clock.now(c)),
+	])
+}
+
+@Test()
+fn testSteppingClockAdvancesPredictably() {
+	const start = time.fromEpoch(0)
+	const c = clock.stepping(start, time.seconds(10))
+	assert.all([
+		assert.equal(start, clock.now(c)),
+		assert.equal(start + time.seconds(10), clock.now(c)),
+		assert.equal(start + time.seconds(20), clock.now(c)),
+	])
+}
+
+@Test()
+fn testSteppingMonotonicMeasuresElapsed() {
+	// This is how code under a timeout is tested: time passes exactly as much as the test says, with no waiting.
+	const c = clock.steppingMonotonic(time.milliseconds(250))
+	const first = clock.instant(c)
+	const second = clock.instant(c)
+	const third = clock.instant(c)
+	assert.all([
+		assert.equal(time.milliseconds(250), second - first),
+		assert.equal(time.milliseconds(500), third - first),
+	])
+}
+
+@Test()
+fn testAFrozenMonotonicClockReportsNoElapsedTime() {
+	const c = clock.steppingMonotonic(time.zero())
+	const start = clock.instant(c)
+	assert.equal(time.zero(), clock.instant(c) - start)
+}
+
+@Test()
+fn testHostClocksProduceValues() {
+	const system = os.systemClock()
+	const monotonic = os.monotonicClock()
+
+	const before = clock.instant(monotonic)
+	const after = clock.instant(monotonic)
+
+	assert.all([
+		// Far enough past the epoch to show the wall clock is genuinely being read.
+		assert.equal(true, time.year(clock.now(system)) > 2020),
+		// A monotonic clock never goes backwards.
+		assert.equal(true, after - before >= time.zero()),
+	])
+}
+
+// An environment offering both clocks, as a host application would.
+@clock.HasSystemClock(_systemOf)
+@clock.HasMonotonicClock(_monotonicOf)
+data Environment {
+	system: clock.SystemClock
+	monotonic: clock.MonotonicClock
+}
+
+fn _systemOf(self: Environment) -> clock.SystemClock {
+	self.system
+}
+
+fn _monotonicOf(self: Environment) -> clock.MonotonicClock {
+	self.monotonic
+}
+
+// An environment offering only the wall clock, which must not satisfy code that measures elapsed time.
+@clock.HasSystemClock(_onlySystemOf)
+data SystemOnlyEnvironment {
+	system: clock.SystemClock
+}
+
+fn _onlySystemOf(self: SystemOnlyEnvironment) -> clock.SystemClock {
+	self.system
+}
+
+@Test()
+fn testClockCapabilitiesAreSeparate() {
+	const at = time.fromEpoch(0)
+	const env = Environment(clock.fixed(at), clock.steppingMonotonic(time.seconds(1)))
+	const limited = SystemOnlyEnvironment(clock.fixed(at))
+
+	assert.all([
+		assert.equal(at, clock.now(clock.HasSystemClock(env).clock(env))),
+		assert.equal(true, env is @clock.HasMonotonicClock),
+		// Having a wall clock does not make an environment fit for measuring elapsed time.
+		assert.equal(true, limited is @clock.HasSystemClock),
+		assert.equal(false, limited is @clock.HasMonotonicClock),
+	])
+}

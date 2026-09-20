@@ -745,6 +745,11 @@ func (vm *VM) numericBinaryOperation(operator op.Opcode) error {
 		return vm.concatString(operator, rhsStr, lhs, false)
 	}
 
+	// Durations, instants and timestamps carry a unit, so only the combinations that mean something are accepted and everything else is reported rather than silently coerced.
+	if handled, err := vm.timeBinaryOperation(operator, lhs, rhs); handled {
+		return err
+	}
+
 	switch rhs := rhs.(type) {
 	case runtime.Int:
 		switch lhs := lhs.(type) {
@@ -920,6 +925,33 @@ func valuesEqual(lhs, rhs runtime.RuntimeValue) bool {
 			}
 		}
 		return true
+	case runtime.Duration:
+		rhs, ok := rhs.(runtime.Duration)
+		return ok && lhs == rhs
+	case runtime.Instant:
+		rhs, ok := rhs.(runtime.Instant)
+		return ok && lhs == rhs
+	case runtime.Timestamp:
+		rhs, ok := rhs.(runtime.Timestamp)
+		return ok && lhs == rhs
+	case *runtime.DataValue:
+		rhs, ok := rhs.(*runtime.DataValue)
+		if !ok || len(lhs.Values) != len(rhs.Values) {
+			return false
+		}
+		// The type ids were already compared above, so two values of different data types never reach here.
+		for i := range lhs.Values {
+			if !valuesEqual(lhs.Values[i], rhs.Values[i]) {
+				return false
+			}
+		}
+		return true
+	case *runtime.CompiledFunction:
+		return lhs == rhs
+	case *runtime.Closure:
+		return lhs == rhs
+	case *runtime.ExternFunc:
+		return lhs == rhs
 	}
 	panic(fmt.Sprintf("unknown type for equality check %T of %q", lhs, lhs.Inspect()))
 }
@@ -939,4 +971,100 @@ func (vm *VM) initGlobal(owner TaskId, ins op.Instructions, locals int) (runtime
 	vm.popFrame()
 
 	return val, nil
+}
+
+// timeBinaryOperation implements arithmetic over Duration, Instant and Timestamp, reporting whether it recognized the operand pair at all.
+// The accepted combinations are the ones that carry meaning: spans add to spans, a span shifts a point in time, and two points of the same kind differ by a span.
+// Everything else — adding a bare number to a duration, or mixing a monotonic reading with a wall-clock one — is an error rather than a silent reinterpretation, which is the whole reason these are distinct types.
+func (vm *VM) timeBinaryOperation(operator op.Opcode, lhs, rhs runtime.RuntimeValue) (bool, error) {
+	switch lhs := lhs.(type) {
+	case runtime.Duration:
+		switch rhs := rhs.(type) {
+		case runtime.Duration:
+			if compared, ok := compareOrdered(int64(lhs), int64(rhs), operator); ok {
+				return true, vm.push(compared)
+			}
+			switch operator {
+			case op.Add:
+				return true, vm.push(runtime.Duration(lhs + rhs))
+			case op.Sub:
+				return true, vm.push(runtime.Duration(lhs - rhs))
+			}
+		case runtime.Int:
+			switch operator {
+			case op.Mul:
+				return true, vm.push(runtime.Duration(int64(lhs) * int64(rhs)))
+			case op.Div:
+				if rhs == 0 {
+					return true, fmt.Errorf("division by zero")
+				}
+				return true, vm.push(runtime.Duration(int64(lhs) / int64(rhs)))
+			}
+		}
+	case runtime.Int:
+		// Only Int times Duration belongs here; every other Int pairing is ordinary arithmetic and must be left alone.
+		scaled, ok := rhs.(runtime.Duration)
+		if !ok {
+			return false, nil
+		}
+		if operator == op.Mul {
+			return true, vm.push(runtime.Duration(int64(lhs) * int64(scaled)))
+		}
+	case runtime.Instant:
+		switch rhs := rhs.(type) {
+		case runtime.Instant:
+			if compared, ok := compareOrdered(int64(lhs), int64(rhs), operator); ok {
+				return true, vm.push(compared)
+			}
+			if operator == op.Sub {
+				return true, vm.push(runtime.Duration(int64(lhs) - int64(rhs)))
+			}
+		case runtime.Duration:
+			switch operator {
+			case op.Add:
+				return true, vm.push(runtime.Instant(int64(lhs) + int64(rhs)))
+			case op.Sub:
+				return true, vm.push(runtime.Instant(int64(lhs) - int64(rhs)))
+			}
+		}
+	case runtime.Timestamp:
+		switch rhs := rhs.(type) {
+		case runtime.Timestamp:
+			if compared, ok := compareOrdered(int64(lhs), int64(rhs), operator); ok {
+				return true, vm.push(compared)
+			}
+			if operator == op.Sub {
+				return true, vm.push(runtime.Duration(int64(lhs) - int64(rhs)))
+			}
+		case runtime.Duration:
+			switch operator {
+			case op.Add:
+				return true, vm.push(runtime.Timestamp(int64(lhs) + int64(rhs)))
+			case op.Sub:
+				return true, vm.push(runtime.Timestamp(int64(lhs) - int64(rhs)))
+			}
+		}
+	default:
+		return false, nil
+	}
+
+	def, err := op.LookupDefinition(byte(operator))
+	if err != nil {
+		panic(fmt.Sprintf("unknown operator %x", operator))
+	}
+	return true, fmt.Errorf("unsupported operator %q for %T and %T", def.Name, lhs, rhs)
+}
+
+func compareOrdered(lhs, rhs int64, operator op.Opcode) (runtime.RuntimeValue, bool) {
+	switch operator {
+	case op.LessThan:
+		return runtime.Bool(lhs < rhs), true
+	case op.LessThanOrEqual:
+		return runtime.Bool(lhs <= rhs), true
+	case op.GreaterThan:
+		return runtime.Bool(lhs > rhs), true
+	case op.GreaterThanOrEqual:
+		return runtime.Bool(lhs >= rhs), true
+	}
+	return nil, false
 }

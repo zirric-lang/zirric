@@ -632,7 +632,7 @@ func TestDeclFunction(t *testing.T) {
 					name:   "example",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 13),
+						code.Make(code.Const, userConst(1)),
 						code.Make(code.Return),
 					},
 				},
@@ -648,14 +648,14 @@ func TestDeclFunction(t *testing.T) {
 					name:   "example",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 13),
+						code.Make(code.Const, userConst(1)),
 						code.Make(code.Return),
 					},
 				},
 				42,
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.Const, 12),
+				code.Make(code.Const, userConst(0)),
 				code.Make(code.Call, 0),
 				code.Make(code.Pop),
 			},
@@ -689,7 +689,7 @@ func TestDeclFunction(t *testing.T) {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.Const, 12),
+				code.Make(code.Const, userConst(0)),
 				code.Make(code.Call, 0),
 				code.Make(code.Pop),
 			},
@@ -714,7 +714,7 @@ func TestDeclFunction(t *testing.T) {
 				42,
 			},
 			expectedGlobals: [][]code.Instructions{
-				{code.Make(code.Const, 13)},
+				{code.Make(code.Const, userConst(1))},
 			},
 			expectedInstructions: []code.Instructions{},
 		},
@@ -738,7 +738,7 @@ func TestDeclFunction(t *testing.T) {
 				42,
 			},
 			expectedGlobals: [][]code.Instructions{
-				{code.Make(code.Const, 13)},
+				{code.Make(code.Const, userConst(1))},
 			},
 			expectedInstructions: []code.Instructions{},
 		},
@@ -755,7 +755,7 @@ func TestDeclFunction(t *testing.T) {
 					name:   "example",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 13),
+						code.Make(code.Const, userConst(1)),
 						code.Make(code.SetLocal, 0),
 						code.Make(code.GetLocal, 0),
 						code.Make(code.GetLocal, 0),
@@ -817,7 +817,7 @@ func TestLocalConstAndVar(t *testing.T) {
 					name:   "f",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 13),
+						code.Make(code.Const, userConst(1)),
 						code.Make(code.SetLocal, 0),
 						code.Make(code.GetLocal, 0),
 						code.Make(code.Return),
@@ -834,7 +834,7 @@ func TestLocalConstAndVar(t *testing.T) {
 					name:   "f",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 13),
+						code.Make(code.Const, userConst(1)),
 						code.Make(code.SetLocal, 0),
 						code.Make(code.GetLocal, 0),
 						code.Make(code.Return),
@@ -889,10 +889,10 @@ func TestDeclData(t *testing.T) {
 				"name",
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.Const, 13),
-				code.Make(code.Const, 12),
+				code.Make(code.Const, userConst(1)),
+				code.Make(code.Const, userConst(0)),
 				code.Make(code.Call, 1),
-				code.Make(code.GetField, 14),
+				code.Make(code.GetField, userConst(2)),
 				code.Make(code.Pop),
 			},
 		},
@@ -918,11 +918,11 @@ func TestDeclData(t *testing.T) {
 				"name",
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.Const, 13),
-				code.Make(code.Const, 14),
-				code.Make(code.Const, 12),
+				code.Make(code.Const, userConst(1)),
+				code.Make(code.Const, userConst(2)),
+				code.Make(code.Const, userConst(0)),
 				code.Make(code.Call, 2),
-				code.Make(code.GetField, 15),
+				code.Make(code.GetField, userConst(3)),
 				code.Make(code.Pop),
 			},
 		},
@@ -2399,4 +2399,10 @@ func (p *resolverTestPlugin) Bind(ctx runtime.BindContext, module *ast.SymbolTab
 		})
 	}
 	return nil
+}
+
+// userConst gives the ConstantId of the nth constant a program declares.
+// They begin after the builtin type ids, so expressing them relatively keeps these expectations correct when a builtin type is added.
+func userConst(n int) int {
+	return runtime.NumBuiltinTypeIds + n
 }

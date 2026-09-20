@@ -24,6 +24,9 @@ const (
 	typeIdBinary
 	typeIdByte
 	typeIdVoid
+	typeIdDuration
+	typeIdInstant
+	typeIdTimestamp
 )
 
 // allBuiltinTypeIds lists every hardcoded builtin TypeId in declaration order.
@@ -42,6 +45,9 @@ var allBuiltinTypeIds = []TypeId{
 	typeIdBinary,
 	typeIdByte,
 	typeIdVoid,
+	typeIdDuration,
+	typeIdInstant,
+	typeIdTimestamp,
 }
 
 // NumBuiltinTypeIds is the number of reserved builtin TypeIds.
@@ -65,6 +71,11 @@ var BuiltinTypeIds = map[string]TypeId{
 	"Binary": typeIdBinary,
 	"Byte":   typeIdByte,
 	"Void":   typeIdVoid,
+
+	// Declared by the time module rather than prelude, but registered here because the lookup is by bare type name.
+	"Duration":  typeIdDuration,
+	"Instant":   typeIdInstant,
+	"Timestamp": typeIdTimestamp,
 }
 
 var _ ExternPlugin = &Prelude{}

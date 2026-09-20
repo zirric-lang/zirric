@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	gotime "time"
 
 	"github.com/go-git/go-billy/v5/osfs"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 )
+
+// processStart anchors monotonic readings.
+// Go exposes its monotonic clock only as the difference between two time.Time values, so readings are taken relative to a moment captured once at startup.
+var processStart = gotime.Now()
 
 var _ ExternPlugin = &OSPlugin{}
 
@@ -52,6 +57,14 @@ func (*OSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 	case "fs":
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			return MakeFileSystem(caller, osfs.New("/"))
+		})
+	case "_nowTimestamp":
+		return MakeExternFunc(decl, func(_ VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
+			return Timestamp(gotime.Now().UnixNano()), nil
+		})
+	case "_nowInstant":
+		return MakeExternFunc(decl, func(_ VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
+			return Instant(gotime.Since(processStart)), nil
 		})
 	case "args":
 		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {

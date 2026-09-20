@@ -1,0 +1,50 @@
+mod time
+
+// Spans are built from a unit rather than a bare number, so that a call site says which unit it meant.
+
+// A span of the given number of nanoseconds.
+extern fn nanoseconds(count: Int) -> Duration
+
+// A span of the given number of microseconds.
+extern fn microseconds(count: Int) -> Duration
+
+// A span of the given number of milliseconds.
+extern fn milliseconds(count: Int) -> Duration
+
+// A span of the given number of seconds.
+extern fn seconds(count: Int) -> Duration
+
+// A span of the given number of minutes.
+extern fn minutes(count: Int) -> Duration
+
+// A span of the given number of hours.
+extern fn hours(count: Int) -> Duration
+
+// A span of no time at all.
+extern fn zero() -> Duration
+
+// The whole number of nanoseconds in d.
+extern fn asNanoseconds(d: Duration) -> Int
+
+// The whole number of milliseconds in d, discarding any remainder.
+extern fn asMilliseconds(d: Duration) -> Int
+
+// The number of seconds in d, including any fraction.
+extern fn asSeconds(d: Duration) -> Float
+
+// The number of minutes in d, including any fraction.
+extern fn asMinutes(d: Duration) -> Float
+
+// The number of hours in d, including any fraction.
+extern fn asHours(d: Duration) -> Float
+
+// d without its sign.
+extern fn absolute(d: Duration) -> Duration
+
+// A human reading of d, such as "1.5s" or "250ms".
+// The result always reads back through parseDuration as the same span.
+extern fn formatDuration(d: Duration) -> String
+
+// Reads a span such as "1.5s", "250ms", "2h45m" or "-1.5h", failing with Err when the text is not one.
+// Accepts the units ns, us, µs, ms, s, m and h.
+extern fn parseDuration(text: String) -> Result
