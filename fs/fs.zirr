@@ -1,0 +1,51 @@
+mod fs
+
+import io
+
+// Provides a filesystem, so that code can require one instead of reaching for os directly.
+attr HasFileSystem {
+	fileSystem(self: @HasFileSystem) -> FileSystem
+}
+
+// A filesystem. Every operation that can fail returns a Result rather than stopping the program.
+// Each field has a matching module function taking the filesystem first, which is usually the nicer way to call it.
+data FileSystem {
+	readFile: fn(String) -> Result
+	writeFile: fn(String, Binary) -> Result
+	open: fn(String) -> Result
+	create: fn(String) -> Result
+	exists: fn(String) -> Bool
+	remove: fn(String) -> Result
+	move: fn(String, String) -> Result
+	list: fn(String) -> Result
+	mkdirAll: fn(String) -> Result
+	cd: fn(String) -> Result
+	root: fn() -> String
+}
+
+// An open file. It is both a reader and a writer, and must be closed.
+@io.Reader(_readFrom)
+@io.Writer(_writeTo)
+data File {
+	readFrom: fn(Int) -> Binary
+	writeTo: fn(Binary) -> Int
+	closeWith: fn() -> Result
+}
+
+// One entry of a directory listing.
+data Entry {
+	name: String
+	isDir: Bool
+	size: Int
+}
+
+fn _readFrom(self: File, length: Int) -> Binary {
+	self.readFrom(length)
+}
+
+fn _writeTo(self: File, buf: Binary) -> Int {
+	self.writeTo(buf)
+}
+
+// An empty in-memory filesystem, which touches no disk and so needs no cleaning up.
+extern fn memory() -> FileSystem

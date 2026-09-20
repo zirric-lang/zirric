@@ -233,10 +233,11 @@ data GreetTask {
 }
 `
 	greet := `mod greet
+import io
 import os
 import bytes
 
-os.stdout().write(bytes.fromString("hello from task\n"))
+io.Writer(os.stdout()).write(os.stdout(), bytes.fromString("hello from task\n"))
 `
 	if err := os.WriteFile(filepath.Join(root, "Cavefile"), []byte(cave), 0o644); err != nil {
 		t.Fatalf("write Cavefile: %v", err)

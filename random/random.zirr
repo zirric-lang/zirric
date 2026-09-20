@@ -1,0 +1,32 @@
+mod random
+
+// Provides a fast source of randomness, for simulations, sampling and anything else where predictability is not a hazard.
+// A seeded source satisfies this, which is what lets a test pin down behaviour that depends on randomness.
+attr HasFastRandom {
+	random(self: @HasFastRandom) -> Source
+}
+
+// Provides a cryptographically strong source of randomness, for tokens, keys and anything an adversary should not predict.
+// Kept apart from HasFastRandom so that code needing secrecy says so, and cannot be handed a seeded generator by mistake.
+attr HasStrongRandom {
+	random(self: @HasStrongRandom) -> Source
+}
+
+// A source of randomness. The three constructors below differ only in where the bits come from, so code written against a Source works with any of them.
+// Each field has a matching module function taking the source first, which is usually the nicer way to call it.
+data Source {
+	int: fn(Int) -> Int
+	float: fn() -> Float
+	bytes: fn(Int) -> Binary
+	bool: fn() -> Bool
+}
+
+// A fast generator seeded from the clock. Suitable for simulations and sampling, never for secrets.
+extern fn fast() -> Source
+
+// A fast generator seeded with the given value, producing the same sequence every run.
+// This is what makes code using randomness testable: pass a seeded source and the outcome is fixed.
+extern fn seeded(seed: Int) -> Source
+
+// The operating system's cryptographic generator. Slower, and the only one to use for tokens, keys or anything an adversary should not predict.
+extern fn strong() -> Source

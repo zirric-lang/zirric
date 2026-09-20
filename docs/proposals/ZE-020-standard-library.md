@@ -28,10 +28,13 @@ Add a new set of modules around every logical group of types:
 - `dicts` supports `prelude.Dict`
 - `errors` is centered around `@prelude.Error`
 - `fmt` has been cleaned up from `os`
+- `fs` abstracts a filesystem, with an in-memory one so that code touching files stays testable
 - `io` adds new attributes for dependency management
 - `math` covers `prelude.Int` and `prelude.Float`, which had no operations beyond the arithmetic operators
 - `options` adds helpers around `prelude.Option` and `@prelude.AnyOption`
+- `paths` manipulates slash-separated paths as text, without touching a filesystem
 - `prelude` got some slight adjustments
+- `random` supplies randomness, in a fast, a reproducible and a cryptographic flavour
 - `ranges` covers `prelude.Range`, `prelude.ClosedRange` and `prelude.OpenRange`
 - `reflect` inspects `prelude.Module`, with `reflect.packages` reaching the modules of a package
 - `results` adds helpers around `prelude.Result` and `@prelude.AnyResult`
@@ -70,6 +73,9 @@ Helpers are written in Zirric wherever the language can express them, and as `ex
 - `strings` is mostly Go. Character indexing has to decode UTF-8, and repeated `result = result + part` is quadratic because strings are immutable, so anything that builds a string from parts is implemented with a Go `strings.Builder` instead.
 - `dicts`, `errors`, `fun`, `options`, `ranges` and `results` are pure Zirric.
 - `math` is almost entirely Go, since the VM implements the arithmetic operators and nothing else. Only `clamp` is Zirric, composed from `min` and `max`.
+- `paths` is entirely Go, wrapping the standard `path` package so that behaviour matches an established implementation rather than a hand-rolled one.
+- `fs` splits evenly. The filesystem operations are Go, wrapping billy so that an in-memory filesystem and the host's own are the same code; `walk`, `glob`, `copy`, `withFile` and the string helpers are Zirric, composed from those operations.
+- `random` follows the same split: the three generators are Go, everything derived from them is Zirric.
 - `reflect` is Go only where it must be. Enumerating a module's members needs access to the module value's exports, and reaching a package's modules needs the compiler; everything built on top of those — `member`, `hasMember`, `modulesWhere`, `modulesExcept` — is Zirric.
 
 ### Characters versus bytes
@@ -89,6 +95,34 @@ Laziness is carried by a single unexported `_lazy` type that wraps one step clos
 `fun.reduce` is the exception and consumes its input eagerly, since folding to a single value has to visit every element. `fun.zip` is lazy in its first argument only; its second is buffered up front, because pairing by position needs random access that the push-based `@Iterable` protocol cannot provide incrementally for two independent sources.
 
 The eager `[Any]`-specific equivalents in `arrays` are kept alongside these. They return arrays directly, which is what is wanted when the input is already an array and the result is about to be indexed or measured.
+
+### Randomness is a value too
+
+`random` repeats the shape `fs` uses: a `Source` is a value, and the three constructors differ only in where the bits come from. Code written against a `Source` neither knows nor cares which it was handed.
+
+That is what makes randomness testable. `random.seeded(n)` produces the same sequence every run, so a function that shuffles, samples or picks can be tested for its actual behaviour rather than merely for not crashing — pass a seeded source and the outcome is fixed. `fs.memory()` does the same job for files.
+
+The split between `fast` and `strong` is deliberate and named rather than implied. `fast` is seeded from the clock and is a pseudo-random generator; `strong` draws from the operating system's cryptographic generator. Because both are a `Source`, moving from one to the other is a one-line change at the point of construction, and nothing downstream is rewritten.
+
+The capabilities are split the same way, and for a sharper reason than tidiness. A single `HasRandom` would be ambiguous exactly where the difference matters: code generating a token would accept whatever the environment offered, including a seeded generator. `@HasStrongRandom` and `@HasFastRandom` make the requirement part of the signature, so an environment providing only reproducible randomness cannot satisfy code that needs secrecy. A test environment can offer the fast capability alone and will be rejected, at the point of use, by anything asking for the strong one.
+
+### A filesystem is a value
+
+`fs` describes a filesystem as a value rather than as a set of free functions, so a program can be handed one and never learn which it received. `fs.memory()` is a complete filesystem that touches no disk, which is what makes code that reads and writes files testable without fixtures or cleanup — every test in `fs/_t` runs against one.
+
+Both implementations wrap [billy](https://github.com/go-git/go-billy), already a dependency of the package manager, so the in-memory and host filesystems are the same code over a different backing store rather than two implementations that drift.
+
+`cd` returns a filesystem rooted at a subdirectory, which is how a program gives away a confined view of its own. It replaces what would otherwise be a separate `os.dir`.
+
+Permissions are deliberately absent. billy puts them behind a capability its in-memory filesystem does not implement, so exposing them would mean an API that works on one filesystem and fails on another.
+
+### Streams are an attribute, not a type
+
+`io.Reader` and `io.Writer` began as `data` types, which meant only `io` could produce a stream: anything wanting to accept one had to be handed a value of that exact type. As attributes they work the way `@Countable` and `@Iterable` already do — a program annotates its own type and it is a writer, accepted by `fmt.fprint`, the TAP reporter, or anything else asking for `@Writer`.
+
+`ReadStream` and `WriteStream` remain as the types the host hands out, each holding a single function the runtime supplies. They are ordinary types carrying the attribute, with no privileged status.
+
+This is also what makes a file a stream. A file has to be closable, so it cannot be an `io.Writer` value; carrying `@Writer` costs it nothing.
 
 ### Reflection needs only enumeration
 
@@ -180,21 +214,52 @@ The concrete types behind `join` and `wrap` are intentionally unexported, so the
 
 **Removed:** `println`. Moved to `scripts`.
 
-| Declaration | Kind        | Description                                                                     |
-| ----------- | ----------- | ------------------------------------------------------------------------------- |
-| `sprint`    | `extern fn` | Any value as a `String`, preferring `@Printable` and falling back to builtins.  |
-| `fprint`    | `fn`        | Writes a printable value to a `Writer` and returns the number of bytes written. |
-| `fprintln`  | `fn`        | As `fprint`, followed by a newline.                                             |
+| Declaration | Kind        | Description                                                                    |
+| ----------- | ----------- | ------------------------------------------------------------------------------ |
+| `sprint`    | `extern fn` | Any value as a `String`, preferring `@Printable` and falling back to builtins. |
+| `fprint`    | `fn`        | Writes a printable value to any `@Writer` and returns the bytes written.       |
+| `fprintln`  | `fn`        | As `fprint`, followed by a newline.                                            |
+
+### fs
+
+Every operation that can fail returns a `Result`; nothing here stops the program. A `File` carries both `@io.Reader` and `@io.Writer`, so it can be passed anywhere a stream is expected, including `fmt.fprint`.
+
+| Declaration     | Kind        | Description                                                                 |
+| --------------- | ----------- | --------------------------------------------------------------------------- |
+| `FileSystem`    | `data`      | A filesystem, as a value that can be passed around.                         |
+| `File`          | `data`      | An open file: a reader, a writer, and closable.                             |
+| `Entry`         | `data`      | One directory entry: `name`, `isDir`, `size`.                               |
+| `HasFileSystem` | `attr`      | Provides a filesystem, so code can require one instead of using `os`.       |
+| `memory`        | `extern fn` | An empty in-memory filesystem, touching no disk.                            |
+| `close`         | `fn`        | Releases a file; writes are not guaranteed to have landed until it returns. |
+| `withFile`      | `fn`        | Runs a body with an open file and closes it afterwards.                     |
+| `readString`    | `fn`        | A file's contents decoded as a `String`.                                    |
+| `writeString`   | `fn`        | Writes a `String` as UTF-8.                                                 |
+| `walk`          | `fn`        | Every file path beneath a directory, descending into subdirectories.        |
+| `glob`          | `fn`        | Every file path beneath a base directory matching a pattern.                |
+| `copy`          | `fn`        | Copies one file between filesystems, which may be the same one.             |
+
+Every `FileSystem` field also exists as a module function taking the filesystem first — `readFile`, `writeFile`, `open`, `create`, `exists`, `remove`, `move`, `list`, `mkdirAll`, `cd`, `root` — so that `fs.readFile(disk, path)` reads like the rest of the library rather than `disk.readFile(path)`, and so a filesystem can be threaded through `fun.pipe` and friends. The field remains the thing a custom filesystem implements; the function is only a call onto it.
+
+The module is split across `fs.zirr` for the types, `operations.zirr` for those delegations, and `helpers.zirr` for everything composed from them.
 
 ### io
 
-`Reader` and `Writer` are unchanged. The new attributes let a value declare which streams it provides, so code can require a capability instead of reaching for `os` directly.
+`Reader` and `Writer` became attributes rather than `data` types, so being a stream is something any type can carry instead of something only `io` can hand out. A program can annotate its own buffer, and it works with `fmt.fprint` and the TAP reporter like any other writer.
 
-| Declaration         | Kind   | Description                                              |
-| ------------------- | ------ | -------------------------------------------------------- |
-| `HasStandardWriter` | `attr` | Provides a standard out `Writer`, usually `os.stdout`.   |
-| `HasErrorWriter`    | `attr` | Provides a standard error `Writer`, usually `os.stderr`. |
-| `HasStandardReader` | `attr` | Provides a standard input `Reader`, usually `os.stdin`.  |
+`ReadStream` and `WriteStream` are what the host provides — the concrete types behind `os.stdout` and friends — but they hold no privileged position.
+
+The capability attributes let a value declare which streams it provides, so code can require a capability instead of reaching for `os` directly.
+
+| Declaration         | Kind   | Description                                            |
+| ------------------- | ------ | ------------------------------------------------------ |
+| `Reader`            | `attr` | Marks a type as a readable stream of bytes.            |
+| `Writer`            | `attr` | Marks a type as a writable stream of bytes.            |
+| `ReadStream`        | `data` | A readable stream backed by the host.                  |
+| `WriteStream`       | `data` | A writable stream backed by the host.                  |
+| `HasStandardWriter` | `attr` | Provides a standard out writer, usually `os.stdout`.   |
+| `HasErrorWriter`    | `attr` | Provides a standard error writer, usually `os.stderr`. |
+| `HasStandardReader` | `attr` | Provides a standard input reader, usually `os.stdin`.  |
 
 ### math
 
@@ -233,6 +298,36 @@ Float division is unguarded, so `1.0 / 0.0` and `0.0 / 0.0` yield infinity and N
 | `flatMap`   | `fn` | As `map`, for transforms that can themselves be absent. |
 | `or`        | `fn` | The contained value, or a default when absent.          |
 
+### os
+
+Only `fs` is new; the standard streams and process accessors are unchanged, though `stdout`, `stdin` and `stderr` now yield values carrying `@io.Writer` or `@io.Reader` rather than values of a `Writer`/`Reader` type.
+
+| Declaration | Kind        | Description                                                                  |
+| ----------- | ----------- | ---------------------------------------------------------------------------- |
+| `fs`        | `extern fn` | The host's own filesystem, rooted so that absolute paths resolve as written. |
+| `stdout`    | `extern fn` | The standard output stream, as an `@io.Writer`.                              |
+| `stdin`     | `extern fn` | The standard input stream, as an `@io.Reader`.                               |
+| `stderr`    | `extern fn` | The standard error stream, as an `@io.Writer`.                               |
+| `exit`      | `extern fn` | Ends the process with a status code. Unchanged.                              |
+| `env`       | `extern fn` | An environment variable's value. Unchanged.                                  |
+| `args`      | `extern fn` | The command line arguments. Unchanged.                                       |
+
+### paths
+
+Pure text manipulation: nothing here touches a filesystem. Paths are slash-separated regardless of host, matching the filesystem abstraction rather than the machine the program runs on.
+
+| Declaration | Kind        | Description                                                                  |
+| ----------- | ----------- | ---------------------------------------------------------------------------- |
+| `join`      | `extern fn` | Every part joined into one path, cleaned.                                    |
+| `clean`     | `extern fn` | Redundant separators and `.` or `..` elements resolved.                      |
+| `base`      | `extern fn` | The last element of a path.                                                  |
+| `dir`       | `extern fn` | A path without its last element.                                             |
+| `ext`       | `extern fn` | The extension of the last element, including the dot, or `""`.               |
+| `stem`      | `extern fn` | The last element without its extension.                                      |
+| `isAbs`     | `extern fn` | Whether the path begins at the root.                                         |
+| `segments`  | `extern fn` | The path's non-empty elements, in order.                                     |
+| `match`     | `extern fn` | Whether a path matches a glob pattern, or `Err` if the pattern is malformed. |
+
 ### prelude
 
 | Declaration                         | Kind          | Description                                                                    |
@@ -250,6 +345,27 @@ Float division is unguarded, so `1.0 / 0.0` and `0.0 / 0.0` yield infinity and N
 **Removed:** `bytesFromString` and `binaryFromString`, superseded by `bytes.fromString` and `bytes.fromChar`. The `length` fields on `Array`, `Dict` and `String`, superseded by `len`. `with` and `pipe`, moved to `fun`. `Bool.toggle`.
 
 **Changed:** `Dict.keys` and `String.chars` became methods, `keys()` and `chars()`. `Func` gained a `name` field.
+
+### random
+
+A `Source` is a value, so code takes one rather than reaching for a generator. Each field has a matching module function taking the source first.
+
+| Declaration       | Kind        | Description                                                             |
+| ----------------- | ----------- | ----------------------------------------------------------------------- |
+| `Source`          | `data`      | A source of randomness.                                                 |
+| `HasFastRandom`   | `attr`      | Provides a fast source, which a seeded one satisfies.                   |
+| `HasStrongRandom` | `attr`      | Provides a cryptographic source.                                        |
+| `fast`            | `extern fn` | Seeded from the clock. For simulations and sampling, never for secrets. |
+| `seeded`          | `extern fn` | Seeded with a given value, producing the same sequence every run.       |
+| `strong`          | `extern fn` | The operating system's cryptographic generator.                         |
+| `int`             | `fn`        | A whole number from 0 up to but excluding a bound.                      |
+| `float`           | `fn`        | A number from 0 up to but excluding 1.                                  |
+| `bytes`           | `fn`        | A given number of random bytes.                                         |
+| `bool`            | `fn`        | True or false with equal likelihood.                                    |
+| `intBetween`      | `fn`        | A whole number within a range.                                          |
+| `floatBetween`    | `fn`        | A number within a range.                                                |
+| `choice`          | `fn`        | One element of an array, or `None` if it is empty.                      |
+| `shuffle`         | `fn`        | The elements in a new order, leaving the original untouched.            |
 
 ### ranges
 
@@ -313,6 +429,23 @@ Conveniences that assume a process and its standard streams, so that `fmt` itsel
 | `println`   | `fn` | Writes a printable value and a newline to stdout. |
 | `eprint`    | `fn` | Writes a printable value to stderr.               |
 | `eprintln`  | `fn` | Writes a printable value and a newline to stderr. |
+
+The same idea extends to files: these operate on `os.fs()`, so a script need not thread a filesystem through itself. Code that wants to stay testable takes an `fs.FileSystem` instead.
+
+The module is split by what each group wraps — `fmt-scripts.zirr` and `fs-scripts.zirr` — so that adding helpers for another module adds a file rather than lengthening one.
+
+| Declaration   | Kind | Description                                             |
+| ------------- | ---- | ------------------------------------------------------- |
+| `readFile`    | `fn` | A file's bytes from the host's filesystem.              |
+| `writeFile`   | `fn` | Writes bytes to the host's filesystem.                  |
+| `readString`  | `fn` | A file's contents as a `String`.                        |
+| `writeString` | `fn` | Writes a `String` as UTF-8.                             |
+| `exists`      | `fn` | Whether a path exists.                                  |
+| `list`        | `fn` | The entries of a directory.                             |
+| `remove`      | `fn` | Removes a path.                                         |
+| `move`        | `fn` | Moves a file.                                           |
+| `mkdirAll`    | `fn` | Creates a directory and any missing parents.            |
+| `glob`        | `fn` | Every path beneath a base directory matching a pattern. |
 
 ### fun
 
@@ -401,6 +534,8 @@ Finds and runs tests. Kept apart from `tests` because it reaches for `reflect`, 
 | `discoverWhere` | `fn`    | The cases of every project module whose name satisfies a predicate.      |
 | `runWhere`      | `fn`    | Runs the cases of every project module whose name satisfies a predicate. |
 | `runT`          | `fn`    | Runs the cases of every project module whose name ends with `_t`.        |
+
+A discovered case is named `<module>.<function>`, so tests sharing a function name across modules stay distinguishable in the report.
 
 #### tests.assert
 

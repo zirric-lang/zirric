@@ -1,0 +1,54 @@
+mod scripts
+
+import os
+import fs
+
+// Reads path from the host's filesystem.
+fn readFile(path: String) -> Result {
+	os.fs().readFile(path)
+}
+
+// Writes content to path on the host's filesystem.
+fn writeFile(path: String, content: Binary) -> Result {
+	os.fs().writeFile(path, content)
+}
+
+// Reads path from the host's filesystem, decoded as a String.
+fn readString(path: String) -> Result {
+	fs.readString(os.fs(), path)
+}
+
+// Writes content to path on the host's filesystem, encoded as UTF-8.
+fn writeString(path: String, content: String) -> Result {
+	fs.writeString(os.fs(), path, content)
+}
+
+// Returns whether path exists on the host's filesystem.
+fn exists(path: String) -> Bool {
+	os.fs().exists(path)
+}
+
+// Lists the entries of a directory on the host's filesystem.
+fn list(path: String) -> Result {
+	os.fs().list(path)
+}
+
+// Removes path from the host's filesystem.
+fn remove(path: String) -> Result {
+	os.fs().remove(path)
+}
+
+// Moves a file on the host's filesystem.
+fn move(from: String, to: String) -> Result {
+	os.fs().move(from, to)
+}
+
+// Creates a directory and any missing parents on the host's filesystem.
+fn mkdirAll(path: String) -> Result {
+	os.fs().mkdirAll(path)
+}
+
+// Every file path under base on the host's filesystem matching pattern.
+fn glob(base: String, pattern: String) -> Result {
+	fs.glob(os.fs(), base, pattern)
+}

@@ -1,0 +1,59 @@
+mod fs
+
+// One function per FileSystem field, each taking the filesystem first.
+// These exist so that calls read the same way as the rest of the library — fs.readFile(disk, path) rather than disk.readFile(path) — and so that a filesystem can be piped through fun.with and friends.
+
+// Returns the contents of path.
+fn readFile(fsys: FileSystem, path: String) -> Result {
+	fsys.readFile(path)
+}
+
+// Writes content to path, replacing it if it exists, and returns the number of bytes written.
+fn writeFile(fsys: FileSystem, path: String, content: Binary) -> Result {
+	fsys.writeFile(path, content)
+}
+
+// Opens path for reading. The file must be closed.
+fn open(fsys: FileSystem, path: String) -> Result {
+	fsys.open(path)
+}
+
+// Creates path for writing, replacing it if it exists. The file must be closed.
+fn create(fsys: FileSystem, path: String) -> Result {
+	fsys.create(path)
+}
+
+// Returns whether path exists.
+fn exists(fsys: FileSystem, path: String) -> Bool {
+	fsys.exists(path)
+}
+
+// Removes path.
+fn remove(fsys: FileSystem, path: String) -> Result {
+	fsys.remove(path)
+}
+
+// Moves the file at from to to.
+fn move(fsys: FileSystem, from: String, to: String) -> Result {
+	fsys.move(from, to)
+}
+
+// Returns the entries of the directory at path.
+fn list(fsys: FileSystem, path: String) -> Result {
+	fsys.list(path)
+}
+
+// Creates path and any missing parent directories.
+fn mkdirAll(fsys: FileSystem, path: String) -> Result {
+	fsys.mkdirAll(path)
+}
+
+// Returns a filesystem rooted at path, which is how a confined view of this one is handed out.
+fn cd(fsys: FileSystem, path: String) -> Result {
+	fsys.cd(path)
+}
+
+// Returns the path this filesystem is rooted at.
+fn root(fsys: FileSystem) -> String {
+	fsys.root()
+}

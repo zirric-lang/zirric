@@ -81,3 +81,31 @@ func makePreludeResult(caller VMCaller, name string, payload RuntimeValue) (Runt
 	}
 	return MakeDataValue(dataType, []RuntimeValue{payload}), nil
 }
+
+// MakeDataValueNamed builds a value of a declared type, taking its fields by name.
+// Field order is read from the resolved type rather than assumed, so reordering a data declaration cannot silently misalign the values a plugin supplies.
+func MakeDataValueNamed(caller VMCaller, moduleName string, typeName string, fields map[string]RuntimeValue) (RuntimeValue, error) {
+	if caller == nil {
+		return nil, fmt.Errorf("%s.%s can only be built while a VM is running", moduleName, typeName)
+	}
+	member, err := caller.ResolveModuleMember(moduleName, typeName)
+	if err != nil {
+		return nil, err
+	}
+	dataType, ok := member.(*DataType)
+	if !ok {
+		return nil, fmt.Errorf("%s.%s is %T, not a data type", moduleName, typeName, member)
+	}
+	values := make([]RuntimeValue, len(dataType.FieldSymbols))
+	for i, field := range dataType.FieldSymbols {
+		value, ok := fields[field.Name]
+		if !ok {
+			return nil, fmt.Errorf("%s.%s is missing field %q", moduleName, typeName, field.Name)
+		}
+		values[i] = value
+	}
+	if len(fields) != len(values) {
+		return nil, fmt.Errorf("%s.%s takes %d fields, got %d", moduleName, typeName, len(values), len(fields))
+	}
+	return MakeDataValue(dataType, values), nil
+}

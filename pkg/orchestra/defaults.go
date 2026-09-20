@@ -7,17 +7,20 @@ import (
 	dictsfs "code.knabel.dev/zirric-lang/zirric/dicts"
 	errorsfs "code.knabel.dev/zirric-lang/zirric/errors"
 	fmtfs "code.knabel.dev/zirric-lang/zirric/fmt"
+	fsfs "code.knabel.dev/zirric-lang/zirric/fs"
 	funfs "code.knabel.dev/zirric-lang/zirric/fun"
 	futurefs "code.knabel.dev/zirric-lang/zirric/future"
 	iofs "code.knabel.dev/zirric-lang/zirric/io"
 	mathfs "code.knabel.dev/zirric-lang/zirric/math"
 	optionsfs "code.knabel.dev/zirric-lang/zirric/options"
 	osfs "code.knabel.dev/zirric-lang/zirric/os"
+	pathsfs "code.knabel.dev/zirric-lang/zirric/paths"
 	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/pkgmanager"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/embedreg"
 	"code.knabel.dev/zirric-lang/zirric/pkg/version"
 	preludefs "code.knabel.dev/zirric-lang/zirric/prelude"
+	randomfs "code.knabel.dev/zirric-lang/zirric/random"
 	rangesfs "code.knabel.dev/zirric-lang/zirric/ranges"
 	reflectfs "code.knabel.dev/zirric-lang/zirric/reflect"
 	resultsfs "code.knabel.dev/zirric-lang/zirric/results"
@@ -70,6 +73,9 @@ func DefaultStdlibProvider() (*embedreg.EmbedRegistry, error) {
 		embedreg.FSConfig{Name: "reflect", FS: reflectfs.FS},
 		embedreg.FSConfig{Name: "tests", FS: testsfs.FS},
 		embedreg.FSConfig{Name: "math", FS: mathfs.FS},
+		embedreg.FSConfig{Name: "paths", FS: pathsfs.FS},
+		embedreg.FSConfig{Name: "fs", FS: fsfs.FS},
+		embedreg.FSConfig{Name: "random", FS: randomfs.FS},
 	)
 }
 

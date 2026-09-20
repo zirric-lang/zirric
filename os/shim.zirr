@@ -1,15 +1,16 @@
 mod os
 
-import io { Writer, Reader }
+import io
+import fs
 
 // Returns a Writer for the standard output stream.
-extern fn stdout() -> Writer
+extern fn stdout() -> @io.Writer
 
 // Returns a Reader for the standard input stream.
-extern fn stdin() -> Reader
+extern fn stdin() -> @io.Reader
 
 // Returns a Writer for the standard error stream.
-extern fn stderr() -> Writer
+extern fn stderr() -> @io.Writer
 
 // Terminates the process with the given exit code.
 extern fn exit(code: Int) -> Void
@@ -19,3 +20,6 @@ extern fn env(key: String) -> String
 
 // Returns the command line arguments as an array of strings.
 extern fn args() -> [String]
+
+// Returns the host's own filesystem, rooted so that absolute paths resolve as written.
+extern fn fs() -> fs.FileSystem

@@ -1,0 +1,40 @@
+mod random
+
+import arrays
+
+// Returns a whole number from low up to but excluding high.
+fn intBetween(source: Source, low: Int, high: Int) -> Int {
+	low + int(source, high - low)
+}
+
+// Returns a number from low up to but excluding high.
+fn floatBetween(source: Source, low: Float, high: Float) -> Float {
+	low + float(source) * (high - low)
+}
+
+// Returns one element of items, or None if items is empty.
+fn choice(source: Source, items: [Any]) -> Option {
+	if arrays.isEmpty(items) {
+		return None()
+	}
+	return Some(items[int(source, len(items))])
+}
+
+// Returns items in a new order, leaving the original untouched.
+fn shuffle(source: Source, items: [Any]) -> [Any] {
+	var result = []
+	for item <- items {
+		result = append(result, item)
+	}
+
+	// Fisher-Yates, walking backwards so that every ordering is equally likely.
+	var i = len(result) - 1
+	for i > 0 {
+		const j = int(source, i + 1)
+		const held = result[i]
+		result[i] = result[j]
+		result[j] = held
+		i = i - 1
+	}
+	return result
+}

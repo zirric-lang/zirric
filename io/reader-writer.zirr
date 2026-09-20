@@ -1,13 +1,34 @@
 mod io
 
-// A readable stream of bytes.
-data Reader {
-	// Reads up to the given number of bytes and returns the result.
-	read(length: Int) -> Binary
+// Marks a type as a readable stream of bytes.
+attr Reader {
+	// Reads up to the given number of bytes. An empty result means the stream is exhausted.
+	read(self: @Reader, length: Int) -> Binary
 }
 
-// A writable stream of bytes.
-data Writer {
+// Marks a type as a writable stream of bytes.
+attr Writer {
 	// Writes the given buffer and returns the number of bytes written.
-	write(buf: Binary) -> Int
+	write(self: @Writer, buf: Binary) -> Int
+}
+
+// A readable stream backed by the host, such as standard input or an open file.
+// Any type can be a reader by carrying @Reader; this is simply the one the host hands out.
+@Reader(_readFromStream)
+data ReadStream {
+	readFrom: fn(Int) -> Binary
+}
+
+// A writable stream backed by the host, such as standard output or an open file.
+@Writer(_writeToStream)
+data WriteStream {
+	writeTo: fn(Binary) -> Int
+}
+
+fn _readFromStream(self: ReadStream, length: Int) -> Binary {
+	self.readFrom(length)
+}
+
+fn _writeToStream(self: WriteStream, buf: Binary) -> Int {
+	self.writeTo(buf)
 }

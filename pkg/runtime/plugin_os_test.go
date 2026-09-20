@@ -1,10 +1,12 @@
 package runtime
 
 import (
+	"fmt"
+	"io"
+	"strings"
 	"testing"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
-	"code.knabel.dev/zirric-lang/zirric/pkg/token"
 )
 
 // mockBindContext provides symbol resolution for tests.
@@ -23,16 +25,6 @@ func (m *mockBindContext) MainPackageModules() (string, map[string]int) {
 	return "", nil
 }
 
-func makeDataSymbol(name string, constantId int) *ast.Symbol {
-	ident := ast.MakeIdentifier(token.Token{Literal: name})
-	decl := ast.MakeDeclData(token.Token{}, ident)
-	return &ast.Symbol{
-		Name:       name,
-		ConstantId: &constantId,
-		Decl:       decl,
-	}
-}
-
 func TestOSPluginModule(t *testing.T) {
 	plugin := &OSPlugin{}
 	if plugin.Module() != "os" {
@@ -42,16 +34,9 @@ func TestOSPluginModule(t *testing.T) {
 
 func TestOSPluginBindStdout(t *testing.T) {
 	plugin := &OSPlugin{}
-	writerConstId := 42
-	ctx := &mockBindContext{
-		symbols: map[string]map[string]*ast.Symbol{
-			"io": {"Writer": makeDataSymbol("Writer", writerConstId)},
-		},
-	}
 	sym := makeExternFuncSymbol("stdout", 0)
-	module := &ast.SymbolTable{}
 
-	val := plugin.Bind(ctx, module, sym)
+	val := plugin.Bind(&mockBindContext{}, &ast.SymbolTable{}, sym)
 	if val == nil {
 		t.Fatal("Bind returned nil for stdout")
 	}
@@ -62,61 +47,26 @@ func TestOSPluginBindStdout(t *testing.T) {
 	if ef.Arity() != 0 {
 		t.Errorf("arity: got %d, want 0", ef.Arity())
 	}
-
-	// Call the extern fn to get a Writer DataValue.
-	result, err := ef.Impl(nil, []RuntimeValue{})
-	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
-	dv, ok := result.(*DataValue)
-	if !ok {
-		t.Fatalf("expected *DataValue, got %T", result)
-	}
-	if dv.TypeId != TypeId(writerConstId) {
-		t.Errorf("TypeId: got %d, want %d", dv.TypeId, writerConstId)
-	}
-	if _, ok := dv.Fields["write"]; !ok {
-		t.Error("Writer DataValue missing 'write' field")
-	}
-	// Verify the write function is callable.
-	writeFn, ok := dv.Values[dv.Fields["write"]].(*ExternFunc)
-	if !ok {
-		t.Fatalf("write field is not *ExternFunc, got %T", dv.Values[dv.Fields["write"]])
-	}
-	if writeFn.Arity() != 1 {
-		t.Errorf("write fn arity: got %d, want 1", writeFn.Arity())
+	// The stream type is resolved through the running VM, so there is nothing to build without one.
+	if _, err := ef.Impl(nil, []RuntimeValue{}); err == nil {
+		t.Error("expected an error when called without a VM")
 	}
 }
 
 func TestOSPluginBindStdin(t *testing.T) {
 	plugin := &OSPlugin{}
-	readerConstId := 43
-	ctx := &mockBindContext{
-		symbols: map[string]map[string]*ast.Symbol{
-			"io": {"Reader": makeDataSymbol("Reader", readerConstId)},
-		},
-	}
 	sym := makeExternFuncSymbol("stdin", 0)
-	module := &ast.SymbolTable{}
 
-	val := plugin.Bind(ctx, module, sym)
+	val := plugin.Bind(&mockBindContext{}, &ast.SymbolTable{}, sym)
 	if val == nil {
 		t.Fatal("Bind returned nil for stdin")
 	}
-	ef := val.(*ExternFunc)
-	result, err := ef.Impl(nil, []RuntimeValue{})
-	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
-	dv, ok := result.(*DataValue)
+	ef, ok := val.(*ExternFunc)
 	if !ok {
-		t.Fatalf("expected *DataValue, got %T", result)
+		t.Fatalf("expected *ExternFunc, got %T", val)
 	}
-	if dv.TypeId != TypeId(readerConstId) {
-		t.Errorf("TypeId: got %d, want %d", dv.TypeId, readerConstId)
-	}
-	if _, ok := dv.Fields["read"]; !ok {
-		t.Error("Reader DataValue missing 'read' field")
+	if _, err := ef.Impl(nil, []RuntimeValue{}); err == nil {
+		t.Error("expected an error when called without a VM")
 	}
 }
 
@@ -197,18 +147,28 @@ func TestOSPluginBindUnknown(t *testing.T) {
 	}
 }
 
-func TestOSPluginWriterWithNilSymbol(t *testing.T) {
-	// Verify that makeWriterValue returns an error when the symbol is nil.
-	_, err := makeWriterValue(nil, nil)
-	if err == nil {
-		t.Error("expected error for nil writer symbol")
+// noModuleCaller stands in for a VM that cannot reach the io module, which is the only way stream construction fails now that the type is resolved at runtime rather than passed in.
+type noModuleCaller struct{}
+
+func (noModuleCaller) CallFunction(RuntimeValue, ...RuntimeValue) (RuntimeValue, error) {
+	return nil, fmt.Errorf("not supported")
+}
+func (noModuleCaller) AttributesOf(RuntimeValue) map[TypeId]int { return nil }
+func (noModuleCaller) ResolveGlobal(int) (RuntimeValue, error) {
+	return nil, fmt.Errorf("not supported")
+}
+func (noModuleCaller) ResolveModuleMember(string, string) (RuntimeValue, error) {
+	return nil, fmt.Errorf("module not part of this program")
+}
+
+func TestMakeWriteStreamRequiresTheIOModule(t *testing.T) {
+	if _, err := MakeWriteStream(noModuleCaller{}, io.Discard); err == nil {
+		t.Error("expected an error when io.WriteStream cannot be resolved")
 	}
 }
 
-func TestOSPluginReaderWithNilSymbol(t *testing.T) {
-	// Verify that makeReaderValue returns an error when the symbol is nil.
-	_, err := makeReaderValue(nil, nil)
-	if err == nil {
-		t.Error("expected error for nil reader symbol")
+func TestMakeReadStreamRequiresTheIOModule(t *testing.T) {
+	if _, err := MakeReadStream(noModuleCaller{}, strings.NewReader("")); err == nil {
+		t.Error("expected an error when io.ReadStream cannot be resolved")
 	}
 }

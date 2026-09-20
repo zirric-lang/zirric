@@ -3,17 +3,17 @@ mod io
 // Provides a standard out writer.
 // In production, this usually points to `os.stdout`.
 attr HasStandardWriter {
-	writer(self) -> Writer
+	writer(self) -> @Writer
 }
 
 // Provides a standard error writer.
 // In production, this usually points to `os.stderr`.
 attr HasErrorWriter {
-	writer(self) -> Writer
+	writer(self) -> @Writer
 }
 
 // Provides a standard input writer.
 // In production, this usually points to `os.stdin`.
 attr HasStandardReader {
-	reader(self) -> Reader
+	reader(self) -> @Reader
 }

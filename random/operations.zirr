@@ -1,0 +1,23 @@
+mod random
+
+// One function per Source field, each taking the source first.
+
+// Returns a whole number from 0 up to but excluding bound, which must be above zero.
+fn int(source: Source, bound: Int) -> Int {
+	source.int(bound)
+}
+
+// Returns a number from 0 up to but excluding 1.
+fn float(source: Source) -> Float {
+	source.float()
+}
+
+// Returns count random bytes.
+fn bytes(source: Source, count: Int) -> Binary {
+	source.bytes(count)
+}
+
+// Returns true or false with equal likelihood.
+fn bool(source: Source) -> Bool {
+	source.bool()
+}

@@ -1,0 +1,82 @@
+import tests { Test }
+import tests.assert
+
+import paths
+import results
+
+@Test()
+fn testJoin() {
+	assert.all([
+		assert.equal("a/b/c", paths.join(["a", "b", "c"])),
+		assert.equal("a/b", paths.join(["a/", "/b"])),
+		assert.equal("a/c", paths.join(["a", "b", "..", "c"])),
+		assert.equal("", paths.join([])),
+	])
+}
+
+@Test()
+fn testClean() {
+	assert.all([
+		assert.equal("a/c", paths.clean("a/b/../c")),
+		assert.equal("a/b", paths.clean("a//b/")),
+		assert.equal(".", paths.clean("")),
+	])
+}
+
+@Test()
+fn testBaseAndDir() {
+	assert.all([
+		assert.equal("c.txt", paths.base("a/b/c.txt")),
+		assert.equal("a/b", paths.dir("a/b/c.txt")),
+		assert.equal(".", paths.dir("c.txt")),
+		assert.equal("/", paths.dir("/c.txt")),
+	])
+}
+
+@Test()
+fn testExtAndStem() {
+	assert.all([
+		assert.equal(".txt", paths.ext("a/b/c.txt")),
+		assert.equal("", paths.ext("a/b/c")),
+		assert.equal("c", paths.stem("a/b/c.txt")),
+		assert.equal("c", paths.stem("a/b/c")),
+		assert.equal(".zirr", paths.ext("main.zirr")),
+	])
+}
+
+@Test()
+fn testIsAbs() {
+	assert.all([
+		assert.equal(true, paths.isAbs("/a/b")),
+		assert.equal(false, paths.isAbs("a/b")),
+	])
+}
+
+@Test()
+fn testSegments() {
+	assert.all([
+		assert.equal(["a", "b", "c"], paths.segments("a/b/c")),
+		assert.equal(["a", "b"], paths.segments("/a/b/")),
+		assert.equal([], paths.segments("")),
+	])
+}
+
+@Test()
+fn testMatch() {
+	assert.all([
+		assert.equal(true, results.from(paths.match("*.zirr", "main.zirr")).value),
+		assert.equal(false, results.from(paths.match("*.zirr", "main.go")).value),
+		assert.equal(true, results.from(paths.match("a/*/c", "a/b/c")).value),
+		assert.equal(false, results.from(paths.match("a/*", "a/b/c")).value),
+	])
+}
+
+@Test()
+fn testMatchRejectsAMalformedPattern() {
+	const result = paths.match("[", "anything")
+	assert.all([
+		assert.equal(true, results.isErr(result)),
+		// The Result must be a genuine prelude Err, which a plugin can only build by resolving the declared type.
+		assert.equal(true, result is Err),
+	])
+}

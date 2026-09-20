@@ -1,0 +1,31 @@
+mod paths
+
+// Paths are slash-separated regardless of the host, matching the filesystem abstraction rather than the machine the program runs on.
+
+// Joins every part into a single path, cleaning the result.
+extern fn join(parts: [String]) -> String
+
+// Returns p with redundant separators and . or .. elements resolved.
+extern fn clean(p: String) -> String
+
+// Returns the last element of p.
+extern fn base(p: String) -> String
+
+// Returns p without its last element, i.e. its directory.
+extern fn dir(p: String) -> String
+
+// Returns the extension of p's last element, including the leading dot, or "" if it has none.
+extern fn ext(p: String) -> String
+
+// Returns the last element of p without its extension.
+extern fn stem(p: String) -> String
+
+// Returns whether p begins at the root.
+extern fn isAbs(p: String) -> Bool
+
+// Returns p's non-empty elements, in order.
+extern fn segments(p: String) -> [String]
+
+// Returns whether p matches pattern, where * matches any run of non-separator characters, ? matches one, and [abc] matches a character class.
+// Fails with Err when the pattern is malformed, which is why this returns a Result rather than a Bool.
+extern fn match(pattern: String, p: String) -> Result

@@ -33,7 +33,7 @@ fn testSprint() {
 @Test()
 fn testFprint() {
 	var buf = bytes.fromString("")
-	const w = io.Writer(fn(chunk) {
+	const w = io.WriteStream(fn(chunk) {
 		buf = append(buf, chunk)
 		return len(chunk)
 	})
@@ -48,7 +48,7 @@ fn testFprint() {
 @Test()
 fn testFprintln() {
 	var buf = bytes.fromString("")
-	const w = io.Writer(fn(chunk) {
+	const w = io.WriteStream(fn(chunk) {
 		buf = append(buf, chunk)
 		return len(chunk)
 	})
@@ -57,5 +57,27 @@ fn testFprintln() {
 	return assert.all([
 		assert.equal(6, num),
 		assert.equal(bytes.fromString("hello\n"), buf),
+	])
+}
+
+// A writer of the test's own making, to show that @io.Writer is satisfied by any type that carries it rather than only by io.WriteStream.
+@io.Writer(_collectInto)
+data Collector {
+	chunks: [Binary]
+}
+
+fn _collectInto(self: Collector, buf: Binary) -> Int {
+	self.chunks = append(self.chunks, buf)
+	return len(buf)
+}
+
+@Test()
+fn testFprintAcceptsAnyWriter() {
+	const collector = Collector([])
+	const num = fprint("hi", collector)
+	return assert.all([
+		assert.equal(2, num),
+		assert.equal(1, len(collector.chunks)),
+		assert.equal(bytes.fromString("hi"), collector.chunks[0]),
 	])
 }

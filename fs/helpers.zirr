@@ -1,0 +1,98 @@
+mod fs
+
+import bytes
+import paths
+import results
+
+// Releases the file. Writes are not guaranteed to have reached the filesystem until this returns.
+fn close(file: File) -> Result {
+	file.closeWith()
+}
+
+// Runs body with an open file and closes it afterwards, whether or not body succeeded.
+// This is the safe way to use open and create, which otherwise leak the handle when something goes wrong.
+fn withFile(opened: Result, body: fn(File) -> Any) -> Result {
+	switch opened {
+	case is Err:
+		return opened
+	case is Ok:
+	}
+
+	const file = opened.value
+	const outcome = body(file)
+	const closed = close(file)
+	switch closed {
+	case is Err:
+		return closed
+	case is Ok:
+		return Ok(outcome)
+	}
+}
+
+// Returns the contents of path decoded as a String.
+fn readString(fsys: FileSystem, path: String) -> Result {
+	results.map(readFile(fsys, path), fn(content) { bytes.toString(content) })
+}
+
+// Writes content to path, encoded as UTF-8.
+fn writeString(fsys: FileSystem, path: String, content: String) -> Result {
+	writeFile(fsys, path, bytes.fromString(content))
+}
+
+// Every file path under path, in no particular order, descending into directories.
+fn walk(fsys: FileSystem, path: String) -> Result {
+	const listed = list(fsys, path)
+	switch listed {
+	case is Err:
+		return listed
+	case is Ok:
+	}
+
+	var found = []
+	for entry <- listed.value {
+		const child = paths.join([path, entry.name])
+		if entry.isDir {
+			const nested = walk(fsys, child)
+			switch nested {
+			case is Err:
+				return nested
+			case is Ok:
+				for deeper <- nested.value {
+					found = append(found, deeper)
+				}
+			}
+		} else {
+			found = append(found, child)
+		}
+	}
+	return Ok(found)
+}
+
+// Every file path under base matching pattern, where * matches within one path element.
+fn glob(fsys: FileSystem, base: String, pattern: String) -> Result {
+	const walked = walk(fsys, base)
+	switch walked {
+	case is Err:
+		return walked
+	case is Ok:
+	}
+
+	var matches = []
+	for candidate <- walked.value {
+		const matched = paths.match(pattern, candidate)
+		switch matched {
+		case is Err:
+			return matched
+		case is Ok:
+			if matched.value {
+				matches = append(matches, candidate)
+			}
+		}
+	}
+	return Ok(matches)
+}
+
+// Copies one file between filesystems, which may be the same one.
+fn copy(source: FileSystem, sourcePath: String, target: FileSystem, targetPath: String) -> Result {
+	results.flatMap(readFile(source, sourcePath), fn(content) { writeFile(target, targetPath, content) })
+}

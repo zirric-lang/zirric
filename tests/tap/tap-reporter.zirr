@@ -1,10 +1,10 @@
 mod tap
 
-import io { Writer }
+import io
 import tests { TestEvent }
 import fmt
 
-fn reporter(writer: Writer) -> fn(TestEvent) {
+fn reporter(writer: @io.Writer) -> fn(TestEvent) {
 	var i = 0
 	return fn(ev: TestEvent) {
 		switch ev {
