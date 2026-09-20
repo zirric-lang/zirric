@@ -28,12 +28,13 @@ Add a new set of modules around every logical group of types:
 - `clock` reads the time, kept apart from `time` so that nothing pure depends on a clock
 - `dicts` supports `prelude.Dict`
 - `errors` is centered around `@prelude.Error`
-- `fmt` has been cleaned up from `os`
+- `fmt` no longer depends on `os`
 - `fs` abstracts a filesystem, with an in-memory one so that code touching files stays testable
-- `io` adds new attributes for dependency management
-- `json` reads and writes JSON as Zirric's own values, and `yaml` does the same for YAML
+- `fun` holds function-level helpers and lazy sequence operations
+- `io` adds new attributes for dependency injection
 - `math` covers `prelude.Int` and `prelude.Float`, which had no operations beyond the arithmetic operators
 - `options` adds helpers around `prelude.Option` and `@prelude.AnyOption`
+- `os` hands out the host's own capabilities: its filesystem, its two clocks and the standard streams
 - `paths` manipulates slash-separated paths as text, without touching a filesystem
 - `prelude` got some slight adjustments
 - `random` supplies randomness, in a fast, a reproducible and a cryptographic flavour
@@ -41,7 +42,6 @@ Add a new set of modules around every logical group of types:
 - `reflect` inspects modules, types and their fields, with `reflect.packages` reaching the modules of a package
 - `results` adds helpers around `prelude.Result` and `@prelude.AnyResult`
 - `scripts` collects the conveniences that assume a process, such as printing to stdout
-- `fun` holds function-level helpers and lazy sequence operations
 - `strings` for working with `prelude.Char` and `prelude.String`
 - `time` supplies `Duration`, `Instant` and `Timestamp` as primitives, with no way to read a clock
 - `tests` makes it possible to write tests in Zirric, with `tests.runner` discovering and running them through `reflect`
@@ -77,7 +77,6 @@ Helpers are written in Zirric wherever the language can express them, and as `ex
 - `dicts`, `errors`, `fun`, `options`, `ranges` and `results` are pure Zirric.
 - `math` is almost entirely Go, since the VM implements the arithmetic operators and nothing else. Only `clamp` is Zirric, composed from `min` and `max`.
 - `paths` is entirely Go, wrapping the standard `path` package so that behaviour matches an established implementation rather than a hand-rolled one.
-- `json` and `yaml` are entirely Go, wrapping `encoding/json` and `goccy/go-yaml`.
 - `fs` splits evenly. The filesystem operations are Go, wrapping billy so that an in-memory filesystem and the host's own are the same code; `walk`, `glob`, `copy`, `withFile` and the string helpers are Zirric, composed from those operations.
 - `random` follows the same split: the three generators are Go, everything derived from them is Zirric.
 - `time` is Go, but unusually its arithmetic lives in the VM rather than the module, since its three types are primitives rather than values built on top of one.
@@ -92,7 +91,7 @@ Helpers are written in Zirric wherever the language can express them, and as `ex
 
 Any operation that can fail to find something returns `Option` rather than a sentinel: `arrays.first`, `arrays.last`, `bytes.firstIndexOf`, `strings.lastIndexOf`, `ranges.intersect` and `errors.join` all follow this. The `-1` returned by the underlying `extern fn` search primitives is converted at the Zirric boundary and never surfaces to callers.
 
-A failure with something to say about itself is an `Err` instead, so `json.parse`, `time.parse` and `strings.unquote` return `Result`. The distinction is whether the caller learns anything from the reason: nothing follows from a needle simply not being there, while text that is not a quoted literal fails for a reason worth reporting.
+A failure with something to say about itself is an `Err` instead, so `time.parse`, `paths.match` and `strings.unquote` return `Result`. The distinction is whether the caller learns anything from the reason: nothing follows from a needle simply not being there, while text that is not a quoted literal fails for a reason worth reporting.
 
 ### Laziness in `fun`
 
@@ -231,17 +230,17 @@ The test clocks are the point. `stepping` and `steppingMonotonic` make time pass
 
 None of this module is Go. A clock is a closure over a reading, so every clock here — including the host's, which `os` builds from two raw readings — is ordinary Zirric.
 
-| Declaration         | Kind        | Description                                                       |
-| ------------------- | ----------- | ----------------------------------------------------------------- |
-| `SystemClock`       | `data`      | A clock reading civil time, which can jump.                       |
-| `MonotonicClock`    | `data`      | A clock that only moves forward, whose origin carries no meaning. |
-| `HasSystemClock`    | `attr`      | Provides the wall clock.                                          |
-| `HasMonotonicClock` | `attr`      | Provides the monotonic clock.                                     |
-| `now`               | `fn`        | The current wall-clock time.                                      |
-| `instant`           | `fn`        | The current monotonic reading.                                    |
-| `fixed`             | `extern fn` | A wall clock frozen at one time.                                  |
-| `stepping`          | `extern fn` | A wall clock advancing by a fixed step on every reading.          |
-| `steppingMonotonic` | `extern fn` | A monotonic clock advancing by a fixed step on every reading.     |
+| Declaration         | Kind   | Description                                                       |
+| ------------------- | ------ | ----------------------------------------------------------------- |
+| `SystemClock`       | `data` | A clock reading civil time, which can jump.                       |
+| `MonotonicClock`    | `data` | A clock that only moves forward, whose origin carries no meaning. |
+| `HasSystemClock`    | `attr` | Provides the wall clock.                                          |
+| `HasMonotonicClock` | `attr` | Provides the monotonic clock.                                     |
+| `now`               | `fn`   | The current wall-clock time.                                      |
+| `instant`           | `fn`   | The current monotonic reading.                                    |
+| `fixed`             | `fn`   | A wall clock frozen at one time.                                  |
+| `stepping`          | `fn`   | A wall clock advancing by a fixed step on every reading.          |
+| `steppingMonotonic` | `fn`   | A monotonic clock advancing by a fixed step on every reading.     |
 
 ### dicts
 
@@ -302,6 +301,28 @@ Every `FileSystem` field also exists as a module function taking the filesystem 
 
 The module is split across `fs.zirr` for the types, `operations.zirr` for those delegations, and `helpers.zirr` for everything composed from them.
 
+### fun
+
+`map`, `filter`, `flatMap`, `take`, `skip` and `zip` take any `@Iterable` and return a lazy `@Iterable`. `reduce` is eager.
+
+| Declaration | Kind   | Description                                                                |
+| ----------- | ------ | -------------------------------------------------------------------------- |
+| `with`      | `fn`   | Applies a function to a value, without naming an intermediate variable.    |
+| `pipe`      | `fn`   | Combines functions into one applying them left to right.                   |
+| `identity`  | `fn`   | Returns its argument unchanged.                                            |
+| `constant`  | `fn`   | A function always returning the same value, ignoring its argument.         |
+| `negate`    | `fn`   | The boolean negation of a predicate.                                       |
+| `compose`   | `fn`   | Combines two functions right to left, the mirror of `pipe`.                |
+| `flip`      | `fn`   | A function with its two arguments swapped.                                 |
+| `map`       | `fn`   | Lazily applies a transform to each element.                                |
+| `filter`    | `fn`   | Lazily keeps the elements for which a predicate returns `true`.            |
+| `flatMap`   | `fn`   | Lazily applies a transform and flattens each resulting `@Iterable`.        |
+| `reduce`    | `fn`   | Folds the elements into a single value, left to right. Eager.              |
+| `take`      | `fn`   | Lazily yields at most the first `n` elements.                              |
+| `skip`      | `fn`   | Lazily omits the first `n` elements and yields the rest.                   |
+| `zip`       | `fn`   | Lazily pairs two sequences by position, stopping when either is exhausted. |
+| `Zipped`    | `data` | A pair of values at the same position in `zip`'s two sources.              |
+
 ### io
 
 `Reader` and `Writer` became attributes rather than `data` types, so being a stream is something any type can carry instead of something only `io` can hand out. A program can annotate its own buffer, and it works with `fmt.fprint` and the TAP reporter like any other writer.
@@ -320,43 +341,31 @@ The capability attributes let a value declare which streams it provides, so code
 | `HasErrorWriter`    | `attr` | Provides a standard error writer, usually `os.stderr`. |
 | `HasStandardReader` | `attr` | Provides a standard input reader, usually `os.stdin`.  |
 
-### json
-
-JSON maps onto Zirric's own values rather than onto a tree of its own: an object is a `Dict` with `String` keys, an array an `Array`, and `null` is `void`.
-
-A number is an `Int` when it was written as one and a `Float` otherwise, so `1` and `1.0` stay apart. Object keys come out sorted, so the same value always produces the same text, and text is not HTML-escaped, since a Zirric `String` is text.
-
-Only the types JSON has a form for can be written; a `Char`, a function or a `Dict` with non-`String` keys is an `Err` naming what it found. Mapping a program's own data types onto this tree is [ZE-021](/proposals/ZE-021-encoding-and-decoding)'s concern and does not change what is here.
-
-| Declaration      | Kind        | Description                                         |
-| ---------------- | ----------- | --------------------------------------------------- |
-| `parse`          | `extern fn` | Reads JSON text, or `Err`.                          |
-| `format`         | `extern fn` | Renders a value as JSON text, or `Err`.             |
-| `formatIndented` | `extern fn` | As `format`, spread over lines with a given indent. |
-
 ### math
 
 `Int` and `Float` mix freely in arithmetic, where the VM promotes to `Float`, and this module follows the same instinct: `abs`, `min`, `max` and `clamp` return whichever type they were given, while the rounding family, `sqrt` and `pow` return `Float` because that is what they genuinely produce. `toInt` is the way back.
 
 Float division is unguarded, so `1.0 / 0.0` and `0.0 / 0.0` yield infinity and NaN without any effort on the caller's part. `isInfinite` and `isNaN` are how those are detected — NaN in particular compares unequal to everything, itself included, so no equality test can find it.
 
-| Declaration | Kind           | Description                                                                |
-| ----------- | -------------- | -------------------------------------------------------------------------- |
-| `pi`        | `extern const` | The ratio of a circle's circumference to its diameter.                     |
-| `e`         | `extern const` | Euler's number, the base of the natural logarithm.                         |
-| `toFloat`   | `extern fn`    | A number as a `Float`.                                                     |
-| `toInt`     | `extern fn`    | A number as an `Int`, discarding any fractional part rather than rounding. |
-| `abs`       | `extern fn`    | A number without its sign, as the type it was given.                       |
-| `min`       | `extern fn`    | Whichever of two numbers is smaller, as the type it was given.             |
-| `max`       | `extern fn`    | Whichever of two numbers is larger, as the type it was given.              |
-| `clamp`     | `fn`           | A number limited to a range, as the type it was given.                     |
-| `sign`      | `extern fn`    | `-1`, `0` or `1` according to the number's sign.                           |
-| `floor`     | `extern fn`    | The greatest whole number not above the input.                             |
-| `ceil`      | `extern fn`    | The least whole number not below the input.                                |
-| `round`     | `extern fn`    | The nearest whole number, halves away from zero.                           |
-| `trunc`     | `extern fn`    | The input with its fractional part discarded, rounding toward zero.        |
-| `sqrt`      | `extern fn`    | The square root.                                                           |
-| `pow`       | `extern fn`    | A base raised to an exponent.                                              |
+| Declaration  | Kind           | Description                                                                |
+| ------------ | -------------- | -------------------------------------------------------------------------- |
+| `pi`         | `extern const` | The ratio of a circle's circumference to its diameter.                     |
+| `e`          | `extern const` | Euler's number, the base of the natural logarithm.                         |
+| `toFloat`    | `extern fn`    | A number as a `Float`.                                                     |
+| `toInt`      | `extern fn`    | A number as an `Int`, discarding any fractional part rather than rounding. |
+| `abs`        | `extern fn`    | A number without its sign, as the type it was given.                       |
+| `min`        | `extern fn`    | Whichever of two numbers is smaller, as the type it was given.             |
+| `max`        | `extern fn`    | Whichever of two numbers is larger, as the type it was given.              |
+| `clamp`      | `fn`           | A number limited to a range, as the type it was given.                     |
+| `sign`       | `extern fn`    | `-1`, `0` or `1` according to the number's sign.                           |
+| `floor`      | `extern fn`    | The greatest whole number not above the input.                             |
+| `ceil`       | `extern fn`    | The least whole number not below the input.                                |
+| `round`      | `extern fn`    | The nearest whole number, halves away from zero.                           |
+| `trunc`      | `extern fn`    | The input with its fractional part discarded, rounding toward zero.        |
+| `sqrt`       | `extern fn`    | The square root.                                                           |
+| `pow`        | `extern fn`    | A base raised to an exponent.                                              |
+| `isNaN`      | `extern fn`    | Whether a number is NaN, which no equality test can find.                  |
+| `isInfinite` | `extern fn`    | Whether a number is positive or negative infinity.                         |
 
 ### options
 
@@ -373,14 +382,13 @@ Float division is unguarded, so `1.0 / 0.0` and `0.0 / 0.0` yield infinity and N
 
 ### os
 
-Only `fs` is new; the standard streams and process accessors are unchanged, though `stdout`, `stdin` and `stderr` now yield values carrying `@io.Writer` or `@io.Reader` rather than values of a `Writer`/`Reader` type.
+New here are `fs` and the two clocks; the standard streams and process accessors are unchanged, though `stdout`, `stdin` and `stderr` now yield values carrying `@io.Writer` or `@io.Reader` rather than values of a `Writer`/`Reader` type.
 
 | Declaration      | Kind        | Description                                                                  |
 | ---------------- | ----------- | ---------------------------------------------------------------------------- |
 | `fs`             | `extern fn` | The host's own filesystem, rooted so that absolute paths resolve as written. |
-| `systemClock`    | `extern fn` | The host's wall clock.                                                       |
-| `monotonicClock` | `extern fn` | The host's monotonic clock, for measuring elapsed time.                      |
-| `processes`      | `fn`        | The host's own ability to run programs.                                      |
+| `systemClock`    | `fn`        | The host's wall clock.                                                       |
+| `monotonicClock` | `fn`        | The host's monotonic clock, for measuring elapsed time.                      |
 | `stdout`         | `extern fn` | The standard output stream, as an `@io.Writer`.                              |
 | `stdin`          | `extern fn` | The standard input stream, as an `@io.Reader`.                               |
 | `stderr`         | `extern fn` | The standard error stream, as an `@io.Writer`.                               |
@@ -546,54 +554,6 @@ The module is split by what each group wraps — `fmt-scripts.zirr` and `fs-scri
 | `mkdirAll`    | `fn` | Creates a directory and any missing parents.            |
 | `glob`        | `fn` | Every path beneath a base directory matching a pattern. |
 
-### time
-
-Pure throughout: nothing here reads a clock. The three types are primitives, so their arithmetic is the VM's rather than this module's — see [Time is three primitives](#time-is-three-primitives-not-one-number).
-
-| Declaration                                                                  | Kind          | Description                                                              |
-| ---------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------ |
-| `Duration`                                                                   | `extern type` | A span of time.                                                          |
-| `Instant`                                                                    | `extern type` | A monotonic reading, meaningful only next to another.                    |
-| `Timestamp`                                                                  | `extern type` | A point on the wall clock.                                               |
-| `nanoseconds`, `microseconds`, `milliseconds`, `seconds`, `minutes`, `hours` | `extern fn`   | A span of that many units.                                               |
-| `zero`                                                                       | `extern fn`   | A span of no time.                                                       |
-| `origin`                                                                     | `extern fn`   | The zero point of the monotonic scale, so an instant can be constructed. |
-| `asNanoseconds`, `asMilliseconds`                                            | `extern fn`   | A span as a whole number of units.                                       |
-| `asSeconds`, `asMinutes`, `asHours`                                          | `extern fn`   | A span as a number of units, including any fraction.                     |
-| `absolute`                                                                   | `extern fn`   | A span without its sign.                                                 |
-| `formatDuration`                                                             | `extern fn`   | A span as text, always readable back by `parseDuration`.                 |
-| `parseDuration`                                                              | `extern fn`   | Reads a span such as `1.5s`, `2h45m` or `-250ms`, or `Err`.              |
-| `since`                                                                      | `extern fn`   | The span between two instants.                                           |
-| `between`                                                                    | `extern fn`   | The span between two timestamps.                                         |
-| `fromEpoch`, `toEpoch`                                                       | `extern fn`   | Conversion between a timestamp and nanoseconds since the Unix epoch.     |
-| `format`                                                                     | `extern fn`   | A timestamp in RFC 3339 form, in UTC.                                    |
-| `parse`                                                                      | `extern fn`   | Reads an RFC 3339 timestamp, or `Err`.                                   |
-| `year`, `month`, `day`, `hour`, `minute`, `second`                           | `extern fn`   | The calendar parts of a timestamp, in UTC.                               |
-
-Time zones and calendar arithmetic such as "one month later" are deliberately absent: both need a zone database and rules that vary by locale, which is a larger commitment than a first version should make. Everything here is UTC.
-
-### fun
-
-`map`, `filter`, `flatMap`, `take`, `skip` and `zip` take any `@Iterable` and return a lazy `@Iterable`. `reduce` is eager.
-
-| Declaration | Kind   | Description                                                                |
-| ----------- | ------ | -------------------------------------------------------------------------- |
-| `with`      | `fn`   | Applies a function to a value, without naming an intermediate variable.    |
-| `pipe`      | `fn`   | Combines functions into one applying them left to right.                   |
-| `identity`  | `fn`   | Returns its argument unchanged.                                            |
-| `constant`  | `fn`   | A function always returning the same value, ignoring its argument.         |
-| `negate`    | `fn`   | The boolean negation of a predicate.                                       |
-| `compose`   | `fn`   | Combines two functions right to left, the mirror of `pipe`.                |
-| `flip`      | `fn`   | A function with its two arguments swapped.                                 |
-| `map`       | `fn`   | Lazily applies a transform to each element.                                |
-| `filter`    | `fn`   | Lazily keeps the elements for which a predicate returns `true`.            |
-| `flatMap`   | `fn`   | Lazily applies a transform and flattens each resulting `@Iterable`.        |
-| `reduce`    | `fn`   | Folds the elements into a single value, left to right. Eager.              |
-| `take`      | `fn`   | Lazily yields at most the first `n` elements.                              |
-| `skip`      | `fn`   | Lazily omits the first `n` elements and yields the rest.                   |
-| `zip`       | `fn`   | Lazily pairs two sequences by position, stopping when either is exhausted. |
-| `Zipped`    | `data` | A pair of values at the same position in `zip`'s two sources.              |
-
 ### strings
 
 Positions count characters, not bytes. Most of this module is Go: indexing has to decode UTF-8, and building a string from parts in Zirric would be quadratic.
@@ -630,9 +590,35 @@ Positions count characters, not bytes. Most of this module is Go: indexing has t
 | `quote`        | `extern fn` | The text as a double-quoted string literal, escapes included.            |
 | `unquote`      | `extern fn` | The text a quoted literal denotes, or `Err` if it is not one.            |
 
+### time
+
+Pure throughout: nothing here reads a clock. The three types are primitives, so their arithmetic is the VM's rather than this module's — see [Time is three primitives](#time-is-three-primitives-not-one-number).
+
+| Declaration                                                                  | Kind          | Description                                                              |
+| ---------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------ |
+| `Duration`                                                                   | `extern type` | A span of time.                                                          |
+| `Instant`                                                                    | `extern type` | A monotonic reading, meaningful only next to another.                    |
+| `Timestamp`                                                                  | `extern type` | A point on the wall clock.                                               |
+| `nanoseconds`, `microseconds`, `milliseconds`, `seconds`, `minutes`, `hours` | `extern fn`   | A span of that many units.                                               |
+| `zero`                                                                       | `extern fn`   | A span of no time.                                                       |
+| `origin`                                                                     | `extern fn`   | The zero point of the monotonic scale, so an instant can be constructed. |
+| `asNanoseconds`, `asMilliseconds`                                            | `extern fn`   | A span as a whole number of units.                                       |
+| `asSeconds`, `asMinutes`, `asHours`                                          | `extern fn`   | A span as a number of units, including any fraction.                     |
+| `absolute`                                                                   | `extern fn`   | A span without its sign.                                                 |
+| `formatDuration`                                                             | `extern fn`   | A span as text, always readable back by `parseDuration`.                 |
+| `parseDuration`                                                              | `extern fn`   | Reads a span such as `1.5s`, `2h45m` or `-250ms`, or `Err`.              |
+| `since`                                                                      | `extern fn`   | The span between two instants.                                           |
+| `between`                                                                    | `extern fn`   | The span between two timestamps.                                         |
+| `fromEpoch`, `toEpoch`                                                       | `extern fn`   | Conversion between a timestamp and nanoseconds since the Unix epoch.     |
+| `format`                                                                     | `extern fn`   | A timestamp in RFC 3339 form, in UTC.                                    |
+| `parse`                                                                      | `extern fn`   | Reads an RFC 3339 timestamp, or `Err`.                                   |
+| `year`, `month`, `day`, `hour`, `minute`, `second`                           | `extern fn`   | The calendar parts of a timestamp, in UTC.                               |
+
+Time zones and calendar arithmetic such as "one month later" are deliberately absent: both need a zone database and rules that vary by locale, which is a larger commitment than a first version should make. Everything here is UTC.
+
 ### tests
 
-A test is a function annotated with `@Test` returning a `Result`. `run` executes a list of `TestCase` and reports progress through an event callback, which keeps reporting independent of execution.
+A test is a function annotated with `@Test` returning a `Result`. `exec` executes a list of `TestCase` and reports progress through an event callback, which keeps reporting independent of execution.
 
 `tests` is only this vocabulary — declarations, no functions and no imports. Running and finding tests both live in `tests.runner`, so depending on the attributes and types drags in neither reflection nor a reporter.
 

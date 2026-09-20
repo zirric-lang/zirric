@@ -13,11 +13,11 @@ Parts might be incomplete or missing in Zirric.
 
 ## Introduction
 
-Adds a way to turn Zirric values into JSON and YAML and back, driven by attributes on the declaration rather than by code written per type.
+Adds the `json` and `yaml` modules, and a way to turn Zirric values into either and back, driven by attributes on the declaration rather than by code written per type.
 
 ## Motivation
 
-`json.parse` already reads JSON into Zirric's own values, and `json.format` writes them back. That is enough to work with a document, but not enough to work with a program's own types: turning a `Dict` into a `Person` is a hand-written function per type, and it has to be kept in step with the declaration it mirrors. Every field added to a type is a field that can be forgotten in two places.
+Reading JSON into Zirric's own values and writing them back is enough to work with a document, but not enough to work with a program's own types: turning a `Dict` into a `Person` is a hand-written function per type, and it has to be kept in step with the declaration it mirrors. Every field added to a type is a field that can be forgotten in two places.
 
 The declaration already says almost everything an encoder needs: the fields, their order, their names, and their types. What it does not say is the handful of things that differ between a type and its serialized form — a key spelled differently, a field that should not travel, a value that has a default when absent. Those are exactly what attributes are for.
 
@@ -25,12 +25,12 @@ The declaration already says almost everything an encoder needs: the fields, the
 
 Three modules:
 
-- `coding` converts between a value and a **native tree** — the `Dict`/`Array`/`String`/`Int`/`Float`/`Bool`/`void` representation that `json.parse` already produces. It knows nothing about JSON or YAML.
+- `coding` converts between a value and a **native tree** — the `Dict`/`Array`/`String`/`Int`/`Float`/`Bool`/`void` representation that `json.parse` produces. It knows nothing about JSON or YAML.
 - `json` and `yaml` convert between a native tree and text.
 
 Separating them means one set of rules for mapping types onto trees, and one small module per format. Adding a format adds a parser and a printer, not a second encoder.
 
-Mapping is driven by `reflect`: `reflect.fieldsOf` gives the fields of a data type in declaration order, each carrying the attributes written on it.
+Mapping is driven by ZE-020's `reflect`, which needs no addition here: `fieldsOf` gives the fields of a data type in declaration order, each carrying the attributes written on it, while `fieldValues` and `construct` take a value apart and put one back together, and `isInstance` checks a value against a type known only at runtime. `dicts.hasKey` is what tells an absent key from one holding `void`.
 
 ### Attributes
 
@@ -56,7 +56,7 @@ Encoding needs only the value. Decoding needs to know what to build, so it takes
 
 ```zirric
 const tree = coding.encodeWith(json, person).value
-const person = coding.decodeWith(json, Person, tree).value
+const decoded = coding.decodeWith(json, Person, tree).value
 ```
 
 The type hints on the fields are what make this work, which is why ZE-020's `reflect` describes a hint structurally rather than as text: `[String: Person]` arrives as a `DictType` of two `NamedType`s, and the decoder walks it.
@@ -69,7 +69,7 @@ A union is decoded by trying each member in turn and keeping the first that succ
 
 There is no `coding.Value` union. A tree is made of the values the language already has, so a program can inspect one, build one by hand, and pass it to any format without a conversion step. It also means `json.parse` composes with `coding.decode` without either module knowing about the other.
 
-A tree means the same thing whichever format produced it, and YAML gives up two things to keep that true. A native timestamp stays the text it was written as, so a field decodes the same way through `json` and through `yaml`; converting one is `@coding.Decode`'s job. A mapping key becomes a `String` whatever it was written as, so `1: one` and `"1": one` are one and the same — which also matches what decoding into a data type needs, since fields are named by text.
+A tree means the same thing whichever format produced it, and YAML gives up two things to keep that true. A YAML timestamp stays the text it was written as, so a field decodes the same way through `json` and through `yaml`; converting one is `@coding.Decode`'s job. A mapping key becomes a `String` whatever it was written as, so `1: one` and `"1": one` are one and the same — which also matches what decoding into a data type needs, since fields are named by text.
 
 ### Attributes are read off a field like any other value
 
@@ -87,7 +87,7 @@ Encoding is driven by the value, never by a type hint, since the value is what i
 | `Array`                              | An `Array`, each element encoded.                             |
 | `Dict`                               | A `Dict`, each value encoded. A non-`String` key is an `Err`. |
 | `Some`                               | Whatever it holds, encoded — never an object of its own.      |
-| `None`                               | No key at all; the field is left out of the tree.             |
+| `None`                               | No key at all as a field, and `void` on its own.              |
 | a data value                         | A `Dict` keyed by the fields that travel.                     |
 | anything else                        | An `Err` naming what it found.                                |
 
@@ -115,13 +115,13 @@ This applies to prelude's `Option` alone, not to everything carrying `@AnyOption
 
 A union is decoded by trying each member in turn and keeping the first that succeeds. There is no discriminator: members are told apart by whether their fields can be built from the tree at all.
 
-Two consequences are worth stating plainly. Extra keys are ignored, so a member matches when the tree carries everything it needs, not when the tree carries exactly that. And members whose required fields overlap resolve by declaration order: `union Shape { Circle { radius }, Square { side } }` tells itself apart, but a tree carrying both `radius` and `side` decodes as whichever member was declared first.
+Two consequences are worth stating plainly. Extra keys are ignored, so a member matches when the tree carries everything it needs, not when the tree carries exactly that. And members whose required fields overlap resolve by declaration order: a `Shape` union of `data Circle { radius }` and `data Square { side }` tells itself apart, but a tree carrying both `radius` and `side` decodes as whichever member was declared first.
 
 This is also why an absent key is an error rather than a `void`: a member whose fields all defaulted would match every object, and try-each would always stop at the first member. A union that must be told apart by a tag rather than by shape wants `@coding.Decode` on the field holding it.
 
-### Custom decoding is per field
+### Custom coding is per field
 
-`@coding.Decode` takes a function and hands it the raw tree for that field. This is the escape hatch for anything the general rules cannot express — a date as a string, an enum as a number, a field whose shape depends on another. It is deliberately per field rather than per type, since a type that needs custom treatment usually needs it in one place.
+`@coding.Decode` takes a function and hands it the raw tree for that field. This is the escape hatch for anything the general rules cannot express — a date as a string, an enum as a number, a field whose shape depends on another. `@coding.Encode` is its mirror, handed the field's value. Both are deliberately per field rather than per type, since a type that needs custom treatment usually needs it in one place.
 
 ## Changes to the Standard Library
 
@@ -141,15 +141,24 @@ This is also why an absent key is an error rather than a `void`: a member whose 
 
 ### json
 
-Already described in ZE-020, plus one attribute per generic one, each overriding it for JSON alone.
+Over `encoding/json`. Both format modules are Go throughout, while `coding` is Zirric.
 
-| Declaration | Kind   | Description                                   |
-| ----------- | ------ | --------------------------------------------- |
-| `Name`      | `attr` | The JSON key for a field.                     |
-| `Ignore`    | `attr` | The field does not travel as JSON.            |
-| `Default`   | `attr` | The value to use when the JSON key is absent. |
-| `Decode`    | `attr` | Decodes this field from its raw JSON tree.    |
-| `Encode`    | `attr` | Encodes this field to a JSON tree.            |
+JSON maps onto Zirric's own values rather than onto a tree of its own: an object is a `Dict` with `String` keys, an array an `Array`, and `null` is `void`.
+
+A number is an `Int` when it was written as one and a `Float` otherwise, so `1` and `1.0` stay apart. Object keys come out sorted, so the same value always produces the same text, and text is not HTML-escaped, since a Zirric `String` is text.
+
+Only the types JSON has a form for can be written; a `Char`, a function or a `Dict` with non-`String` keys is an `Err` naming what it found. The attributes are one per generic one, each overriding it for JSON alone.
+
+| Declaration      | Kind        | Description                                         |
+| ---------------- | ----------- | --------------------------------------------------- |
+| `parse`          | `extern fn` | Reads JSON text, or `Err`.                          |
+| `format`         | `extern fn` | Renders a value as JSON text, or `Err`.             |
+| `formatIndented` | `extern fn` | As `format`, spread over lines with a given indent. |
+| `Name`           | `attr`      | The JSON key for a field.                           |
+| `Ignore`         | `attr`      | The field does not travel as JSON.                  |
+| `Default`        | `attr`      | The value to use when the JSON key is absent.       |
+| `Decode`         | `attr`      | Decodes this field from its raw JSON tree.          |
+| `Encode`         | `attr`      | Encodes this field to a JSON tree.                  |
 
 ### yaml
 
@@ -169,30 +178,13 @@ Over `goccy/go-yaml`, which also replaced `gopkg.in/yaml.v3` in `zirric cavefile
 | `Decode`         | `attr`      | Decodes this field from its raw YAML tree.         |
 | `Encode`         | `attr`      | Encodes this field to a YAML tree.                 |
 
-### reflect
-
-Four additions to ZE-020's `reflect`. `fieldValues` and `construct` are what take a value apart and put one back together when the type is known only at runtime; `isInstance` is how a decoder checks a value against a type it was handed rather than one written in source.
-
-| Declaration       | Kind        | Description                                                |
-| ----------------- | ----------- | ---------------------------------------------------------- |
-| `fieldValues`     | `extern fn` | The field values of a data value, aligned with `fieldsOf`. |
-| `construct`       | `extern fn` | Builds a value of a data type from its fields.             |
-| `isInstance`      | `extern fn` | Whether a value is of a type, as `is` decides it.          |
-| `isAttributeType` | `extern fn` | Whether a value is an attribute type.                      |
-
-### dicts
-
-| Declaration | Kind | Description                                                                                                |
-| ----------- | ---- | ---------------------------------------------------------------------------------------------------------- |
-| `hasKey`    | `fn` | Whether a dict has an entry for a key, which decoding needs to tell an absent key from one holding `void`. |
-
 ## Alternatives Considered
 
 **A `Codable` attribute per type.** Swift requires conformance; Zirric does not need it, because reflection can already describe any data type. Requiring an attribute would mean a type has to opt in to being encodable, which buys nothing when encoding is a function rather than a protocol.
 
 **One encoder per format.** Would let each format see the declaration directly, but every format would then reimplement the attribute rules, and they would drift.
 
-**A tree type of its own.** Rejected in ZE-020 for `json` and rejected again here: a `Dict` is already a tree node, and introducing a parallel one would mean converting at both ends.
+**A tree type of its own.** Rejected for the format modules and for `coding` alike: a `Dict` is already a tree node, and introducing a parallel one would mean converting at both ends.
 
 ## Acknowledgements
 
