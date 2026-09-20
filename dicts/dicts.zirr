@@ -1,0 +1,63 @@
+mod dicts
+
+// Returns whether d has no entries.
+fn isEmpty(d: Dict) -> Bool {
+	len(d) == 0
+}
+
+// Returns a new dict with transform applied to each value, keeping the same keys. transform receives both the key and its value.
+fn map(d: Dict, transform: fn(Any, Any) -> Any) -> Dict {
+	var result = [:]
+	for pair <- d {
+		result[pair.key] = transform(pair.key, pair.value)
+	}
+	return result
+}
+
+// Returns a new dict with transform applied to each key, keeping the same values.
+fn mapKeys(d: Dict, transform: fn(Any) -> Any) -> Dict {
+	var result = [:]
+	for pair <- d {
+		result[transform(pair.key)] = pair.value
+	}
+	return result
+}
+
+// Returns a new dict with transform applied to each value, keeping the same keys.
+fn mapValues(d: Dict, transform: fn(Any) -> Any) -> Dict {
+	var result = [:]
+	for pair <- d {
+		result[pair.key] = transform(pair.value)
+	}
+	return result
+}
+
+// Returns a new dict with transform applied to each key/value Pair, replacing both.
+fn mapPairs(d: Dict, transform: fn(Pair) -> Pair) -> Dict {
+	var result = [:]
+	for pair <- d {
+		const mapped = transform(pair)
+		result[mapped.key] = mapped.value
+	}
+	return result
+}
+
+// Returns a new dict containing only the entries of d for which predicate returns true. predicate receives both the key and its value.
+fn filter(d: Dict, predicate: fn(Any, Any) -> Bool) -> Dict {
+	var result = [:]
+	for pair <- d {
+		if predicate(pair.key, pair.value) {
+			result[pair.key] = pair.value
+		}
+	}
+	return result
+}
+
+// Combines d's entries into a single value, starting from initial and applying combine(accumulator, key, value) for each entry, in no particular order.
+fn reduce(d: Dict, initial: Any, combine: fn(Any, Any, Any) -> Any) -> Any {
+	var acc = initial
+	for pair <- d {
+		acc = combine(acc, pair.key, pair.value)
+	}
+	return acc
+}

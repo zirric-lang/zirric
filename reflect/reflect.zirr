@@ -1,0 +1,28 @@
+mod reflect
+
+// The canonical name of a module, e.g. "code.knabel.dev.zirric_lang.zirric.arrays".
+extern fn moduleName(m: Module) -> String
+
+// Every public member of m, ordered by name.
+extern fn members(m: Module) -> [Any]
+
+// The name of every public member of m, in the same order as members.
+extern fn memberNames(m: Module) -> [String]
+
+extern fn _member(m: Module, name: String) -> Any
+
+// The public member of m called name, or None if it has none.
+fn member(m: Module, name: String) -> Option {
+	const value = _member(m, name)
+	switch value {
+	case is Void:
+		None()
+	case _:
+		Some(value)
+	}
+}
+
+// Whether m has a public member called name.
+fn hasMember(m: Module, name: String) -> Bool {
+	member(m, name) is Some
+}

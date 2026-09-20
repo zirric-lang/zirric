@@ -60,6 +60,58 @@ func TestUnaryOperators(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestStringLiterals(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			label:             "simple string",
+			input:             `"a"`,
+			expectedConstants: []any{"a"},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.Const, 0),
+				code.Make(code.Pop),
+			},
+		},
+		{
+			label:             "escaped newline",
+			input:             `"\n"`,
+			expectedConstants: []any{"\n"},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.Const, 0),
+				code.Make(code.Pop),
+			},
+		},
+		{
+			label:             "escaped tab",
+			input:             `"\t"`,
+			expectedConstants: []any{"\t"},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.Const, 0),
+				code.Make(code.Pop),
+			},
+		},
+		{
+			label:             "escaped quote",
+			input:             `"\""`,
+			expectedConstants: []any{`"`},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.Const, 0),
+				code.Make(code.Pop),
+			},
+		},
+		{
+			label:             "escaped backslash",
+			input:             `"\\"`,
+			expectedConstants: []any{`\`},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.Const, 0),
+				code.Make(code.Pop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func TestCharLiterals(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -75,6 +127,15 @@ func TestCharLiterals(t *testing.T) {
 			label:             "escaped newline",
 			input:             "'\\n'",
 			expectedConstants: []any{'\n'},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.Const, 0),
+				code.Make(code.Pop),
+			},
+		},
+		{
+			label:             "escaped tab",
+			input:             "'\\t'",
+			expectedConstants: []any{'\t'},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.Const, 0),
 				code.Make(code.Pop),
@@ -571,7 +632,7 @@ func TestDeclFunction(t *testing.T) {
 					name:   "example",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 12),
+						code.Make(code.Const, 13),
 						code.Make(code.Return),
 					},
 				},
@@ -587,14 +648,14 @@ func TestDeclFunction(t *testing.T) {
 					name:   "example",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 12),
+						code.Make(code.Const, 13),
 						code.Make(code.Return),
 					},
 				},
 				42,
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.Const, 11),
+				code.Make(code.Const, 12),
 				code.Make(code.Call, 0),
 				code.Make(code.Pop),
 			},
@@ -628,7 +689,7 @@ func TestDeclFunction(t *testing.T) {
 				},
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.Const, 11),
+				code.Make(code.Const, 12),
 				code.Make(code.Call, 0),
 				code.Make(code.Pop),
 			},
@@ -653,7 +714,7 @@ func TestDeclFunction(t *testing.T) {
 				42,
 			},
 			expectedGlobals: [][]code.Instructions{
-				{code.Make(code.Const, 12)},
+				{code.Make(code.Const, 13)},
 			},
 			expectedInstructions: []code.Instructions{},
 		},
@@ -677,7 +738,7 @@ func TestDeclFunction(t *testing.T) {
 				42,
 			},
 			expectedGlobals: [][]code.Instructions{
-				{code.Make(code.Const, 12)},
+				{code.Make(code.Const, 13)},
 			},
 			expectedInstructions: []code.Instructions{},
 		},
@@ -694,7 +755,7 @@ func TestDeclFunction(t *testing.T) {
 					name:   "example",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 12),
+						code.Make(code.Const, 13),
 						code.Make(code.SetLocal, 0),
 						code.Make(code.GetLocal, 0),
 						code.Make(code.GetLocal, 0),
@@ -756,7 +817,7 @@ func TestLocalConstAndVar(t *testing.T) {
 					name:   "f",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 12),
+						code.Make(code.Const, 13),
 						code.Make(code.SetLocal, 0),
 						code.Make(code.GetLocal, 0),
 						code.Make(code.Return),
@@ -773,7 +834,7 @@ func TestLocalConstAndVar(t *testing.T) {
 					name:   "f",
 					params: 0,
 					ins: []code.Instructions{
-						code.Make(code.Const, 12),
+						code.Make(code.Const, 13),
 						code.Make(code.SetLocal, 0),
 						code.Make(code.GetLocal, 0),
 						code.Make(code.Return),
@@ -828,10 +889,10 @@ func TestDeclData(t *testing.T) {
 				"name",
 			},
 			expectedInstructions: []code.Instructions{
+				code.Make(code.Const, 13),
 				code.Make(code.Const, 12),
-				code.Make(code.Const, 11),
 				code.Make(code.Call, 1),
-				code.Make(code.GetField, 13),
+				code.Make(code.GetField, 14),
 				code.Make(code.Pop),
 			},
 		},
@@ -857,11 +918,11 @@ func TestDeclData(t *testing.T) {
 				"name",
 			},
 			expectedInstructions: []code.Instructions{
-				code.Make(code.Const, 12),
 				code.Make(code.Const, 13),
-				code.Make(code.Const, 11),
+				code.Make(code.Const, 14),
+				code.Make(code.Const, 12),
 				code.Make(code.Call, 2),
-				code.Make(code.GetField, 14),
+				code.Make(code.GetField, 15),
 				code.Make(code.Pop),
 			},
 		},
@@ -1502,7 +1563,7 @@ func (p *testExternPlugin) Module() string { return "" }
 func (p *testExternPlugin) Bind(ctx runtime.BindContext, module *ast.SymbolTable, decl *ast.Symbol) runtime.RuntimeValue {
 	switch decl.Name {
 	case "greet":
-		return runtime.MakeExternFunc(decl, func(args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
+		return runtime.MakeExternFunc(decl, func(_ runtime.VMCaller, args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
 			return runtime.String("hello"), nil
 		})
 	case "Void":
@@ -2333,7 +2394,7 @@ func (p *resolverTestPlugin) Bind(ctx runtime.BindContext, module *ast.SymbolTab
 	switch decl.Name {
 	case "wrap":
 		p.resolvedWrapper = ctx.ResolveModuleSymbol("types", "Wrapper")
-		return runtime.MakeExternFunc(decl, func(args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
+		return runtime.MakeExternFunc(decl, func(_ runtime.VMCaller, args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
 			return runtime.Void{}, nil
 		})
 	}

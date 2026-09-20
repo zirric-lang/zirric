@@ -19,21 +19,21 @@ func (*OSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 	switch decl.Name {
 	case "stdout":
 		writerSym := ctx.ResolveModuleSymbol("io", "Writer")
-		return MakeExternFunc(decl, func(args []RuntimeValue) (RuntimeValue, error) {
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			return makeWriterValue(writerSym, os.Stdout)
 		})
 	case "stdin":
 		readerSym := ctx.ResolveModuleSymbol("io", "Reader")
-		return MakeExternFunc(decl, func(args []RuntimeValue) (RuntimeValue, error) {
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			return makeReaderValue(readerSym, os.Stdin)
 		})
 	case "stderr":
 		writerSym := ctx.ResolveModuleSymbol("io", "Writer")
-		return MakeExternFunc(decl, func(args []RuntimeValue) (RuntimeValue, error) {
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			return makeWriterValue(writerSym, os.Stderr)
 		})
 	case "exit":
-		return MakeExternFunc(decl, func(args []RuntimeValue) (RuntimeValue, error) {
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			code, ok := args[0].(Int)
 			if !ok {
 				return nil, fmt.Errorf("exit expects Int code, got %T", args[0])
@@ -42,7 +42,7 @@ func (*OSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 			return Void{}, nil
 		})
 	case "env":
-		return MakeExternFunc(decl, func(args []RuntimeValue) (RuntimeValue, error) {
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			key, ok := args[0].(String)
 			if !ok {
 				return nil, fmt.Errorf("env expects String key, got %T", args[0])
@@ -50,7 +50,7 @@ func (*OSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 			return String(os.Getenv(string(key))), nil
 		})
 	case "args":
-		return MakeExternFunc(decl, func(args []RuntimeValue) (RuntimeValue, error) {
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			result := make([]RuntimeValue, len(os.Args))
 			for i, arg := range os.Args {
 				result[i] = String(arg)
@@ -65,8 +65,8 @@ func makeWriterValue(writerSym *ast.Symbol, w *os.File) (RuntimeValue, error) {
 	if writerSym == nil || writerSym.ConstantId == nil {
 		return nil, fmt.Errorf("writer type not resolved")
 	}
-	writeFn := MakeNativeFunc("write", 1, func(args []RuntimeValue) (RuntimeValue, error) {
-		buf, ok := args[0].(Bytes)
+	writeFn := MakeNativeFunc("write", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		buf, ok := args[0].(Binary)
 		if !ok {
 			return nil, fmt.Errorf("write expects Bytes, got %T", args[0])
 		}
@@ -87,7 +87,7 @@ func makeReaderValue(readerSym *ast.Symbol, r *os.File) (RuntimeValue, error) {
 	if readerSym == nil || readerSym.ConstantId == nil {
 		return nil, fmt.Errorf("reader type not resolved")
 	}
-	readFn := MakeNativeFunc("read", 1, func(args []RuntimeValue) (RuntimeValue, error) {
+	readFn := MakeNativeFunc("read", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 		length, ok := args[0].(Int)
 		if !ok {
 			return nil, fmt.Errorf("read expects Int, got %T", args[0])
@@ -97,7 +97,7 @@ func makeReaderValue(readerSym *ast.Symbol, r *os.File) (RuntimeValue, error) {
 		if err != nil {
 			return nil, fmt.Errorf("read: %w", err)
 		}
-		return Bytes(buf[:n]), nil
+		return Binary(buf[:n]), nil
 	})
 	return &DataValue{
 		TypeId: TypeId(*readerSym.ConstantId),

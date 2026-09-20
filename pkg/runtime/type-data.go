@@ -50,7 +50,7 @@ func (dt *DataType) Inspect() string {
 
 // Lookup implements Callable.
 func (dt *DataType) Lookup(name string) RuntimeValue {
-	panic("unimplemented")
+	return nil
 }
 
 // TypeConstantId implements Callable.

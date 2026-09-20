@@ -1,0 +1,67 @@
+mod prelude_t
+
+import tests
+import tests.assert
+
+@tests.Test()
+fn testRangeIterable() -> Result {
+	var collected = []
+	for i <- Range(1, 4) {
+		collected = append(collected, i)
+	}
+	// Array equality (==) doesn't work yet, so check elements individually.
+	assert.all([
+		assert.equal(3, len(collected)),
+		assert.equal(1, collected[0]),
+		assert.equal(2, collected[1]),
+		assert.equal(3, collected[2]),
+		assert.equal(3, len(Range(1, 4))),
+		assert.equal(0, len(Range(4, 4))),
+		assert.equal(0, len(Range(5, 4))),
+	])
+}
+
+@tests.Test()
+fn testClosedRangeIterable() -> Result {
+	var collected = []
+	for i <- ClosedRange(1, 4) {
+		collected = append(collected, i)
+	}
+	assert.all([
+		assert.equal(4, len(collected)),
+		assert.equal(1, collected[0]),
+		assert.equal(4, collected[3]),
+		assert.equal(4, len(ClosedRange(1, 4))),
+		assert.equal(1, len(ClosedRange(4, 4))),
+		assert.equal(0, len(ClosedRange(5, 4))),
+	])
+}
+
+@tests.Test()
+fn testOpenRangeIterable() -> Result {
+	var collected = []
+	for i <- OpenRange(1, 4) {
+		collected = append(collected, i)
+	}
+	assert.all([
+		assert.equal(2, len(collected)),
+		assert.equal(2, collected[0]),
+		assert.equal(3, collected[1]),
+		assert.equal(4, len(OpenRange(1, 6))),
+		// Nothing lies strictly between two adjacent (or equal) integers.
+		assert.equal(0, len(OpenRange(1, 2))),
+		assert.equal(0, len(OpenRange(1, 1))),
+	])
+}
+
+@tests.Test()
+fn testRangeBreaksEarly() -> Result {
+	var count = 0
+	for i <- ClosedRange(1, 100) {
+		count = count + 1
+		if count == 3 {
+			break
+		}
+	}
+	assert.equal(3, count)
+}

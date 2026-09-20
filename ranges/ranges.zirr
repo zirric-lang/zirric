@@ -1,0 +1,94 @@
+mod ranges
+
+union Like {
+	Range
+	ClosedRange
+	OpenRange
+}
+
+// Returns whether value lies within r.
+fn contains(r: Like, value: Int) -> Bool {
+	switch r {
+	case is Range:
+		return value >= r.start && value < r.end
+	case is ClosedRange:
+		return value >= r.start && value <= r.end
+	case is OpenRange:
+		return value > r.start && value < r.end
+	}
+}
+
+// Returns r's equivalent closed, inclusive bounds, or None if r contains no
+// integers (e.g. Range(5, 5), or OpenRange(5, 6)).
+fn toClosedRange(r: Like) -> Option {
+	switch r {
+	case is Range:
+		if r.start >= r.end {
+			return None()
+		}
+		return Some(ClosedRange(r.start, r.end - 1))
+	case is ClosedRange:
+		if r.start > r.end {
+			return None()
+		}
+		return Some(r)
+	case is OpenRange:
+		if r.start + 1 >= r.end {
+			return None()
+		}
+		return Some(ClosedRange(r.start + 1, r.end - 1))
+	}
+}
+
+// Returns whether a and b share any values.
+fn overlap(a: Like, b: Like) -> Bool {
+	intersect(a, b) is Some
+}
+
+// Returns the values a and b have in common, or None if they don't overlap.
+fn intersect(a: Like, b: Like) -> Option {
+	const boundsA = toClosedRange(a)
+	const boundsB = toClosedRange(b)
+	switch boundsA {
+	case is None:
+		return None()
+	case is Some:
+	}
+	switch boundsB {
+	case is None:
+		return None()
+	case is Some:
+	}
+
+	const lo = if boundsA.value.start > boundsB.value.start { boundsA.value.start } else { boundsB.value.start }
+	const hi = if boundsA.value.end < boundsB.value.end { boundsA.value.end } else { boundsB.value.end }
+	if lo > hi {
+		return None()
+	}
+	return Some(ClosedRange(lo, hi))
+}
+
+// Combines a and b into a single range spanning both, if they overlap or are
+// adjacent (e.g. [1,3] and [4,6] merge into [1,6]). Returns None if there's
+// a gap between them, since the result wouldn't be a single contiguous range.
+fn merge(a: Like, b: Like) -> Option {
+	const boundsA = toClosedRange(a)
+	const boundsB = toClosedRange(b)
+	switch boundsA {
+	case is None:
+		return None()
+	case is Some:
+	}
+	switch boundsB {
+	case is None:
+		return None()
+	case is Some:
+	}
+
+	if boundsA.value.start > boundsB.value.end + 1 || boundsB.value.start > boundsA.value.end + 1 {
+		return None()
+	}
+	const lo = if boundsA.value.start < boundsB.value.start { boundsA.value.start } else { boundsB.value.start }
+	const hi = if boundsA.value.end > boundsB.value.end { boundsA.value.end } else { boundsB.value.end }
+	return Some(ClosedRange(lo, hi))
+}

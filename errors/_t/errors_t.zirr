@@ -1,0 +1,35 @@
+import tests { Test }
+import tests.assert
+
+import errors
+
+@Test()
+fn testDebug() {
+	assert.equal("boom", errors.debug(Err("boom")))
+}
+
+@Test()
+fn testWrap() {
+	assert.all([
+		assert.equal("reading config: boom", errors.debug(errors.wrap(Err("boom"), "reading config"))),
+		assert.equal("outer: inner: boom", errors.debug(errors.wrap(errors.wrap(Err("boom"), "inner"), "outer"))),
+	])
+}
+
+@Test()
+fn testUnwrap() {
+	const inner = Err("boom")
+	assert.all([
+		assert.equal("boom", errors.debug(errors.unwrap(errors.wrap(inner, "context")))),
+		assert.equal("boom", errors.debug(errors.unwrap(inner))),
+	])
+}
+
+@Test()
+fn testJoin() {
+	assert.all([
+		assert.equal(true, errors.join([]) is None),
+		assert.equal("boom", errors.debug(errors.join([Err("boom")]).value)),
+		assert.equal("a\nb", errors.debug(errors.join([Err("a"), Err("b")]).value)),
+	])
+}

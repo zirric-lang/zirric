@@ -10,7 +10,7 @@ func (a *Analyzer) resolveIdentifiers(module *ast.ContextModule) {
 		if sym == nil || sym.Decl == nil {
 			continue
 		}
-		resolveNode(sym.Decl, module.Symbols)
+		resolveNode(sym.Decl, symbolsForPromotedDecl(module, sym.Decl))
 	}
 
 	for _, file := range module.Files {
@@ -27,6 +27,32 @@ func (a *Analyzer) resolveIdentifiers(module *ast.ContextModule) {
 			resolveNode(stmt, file.Symbols)
 		}
 	}
+}
+
+// symbolsForPromotedDecl returns the symbol table to use when resolving a module.Decls.Symbols entry's own value/body.
+// DeclFunc handles this itself (resolveNode uses n.Impl.Symbols, its own properly file-parented table), but DeclConstant/DeclVariable have no such per-declaration table — when exported (ast.DeclTable.Insert promotes them into the module-level table instead of leaving them in their file's own table), module.Symbols is their only entry point here, and it's the *flattened* module-wide view, which doesn't include the declaring file's own imports (imports stay file-local, never promoted).
+// So a top-level `const x = someImport.member` would fail to resolve someImport with "undefined identifier".
+// Find the declaring file's own symbol table instead, by matching source file paths (mirrors compiler.sourceFileSymbols' same file-matching pattern).
+func symbolsForPromotedDecl(module *ast.ContextModule, decl ast.Decl) *ast.SymbolTable {
+	switch decl.(type) {
+	case *ast.DeclConstant, *ast.DeclVariable:
+	default:
+		return module.Symbols
+	}
+	declSource := decl.TokenLiteral().Source
+	if declSource == nil {
+		return module.Symbols
+	}
+	for _, file := range module.Files {
+		if file == nil || file.Symbols == nil {
+			continue
+		}
+		fileSource := file.TokenLiteral().Source
+		if fileSource != nil && fileSource.File == declSource.File {
+			return file.Symbols
+		}
+	}
+	return module.Symbols
 }
 
 func resolveNode(node ast.Node, symbols *ast.SymbolTable) {

@@ -1,0 +1,167 @@
+mod fun
+
+// Applies fun to val and returns the result. Useful for starting a pipe()-style chain from a value without naming an intermediate variable.
+fn with(val, fun: fn(Any)) {
+	fun(val)
+}
+
+// Combines funs into a single function that applies them in order, left to right, passing each result to the next.
+fn pipe(funs: [fn(Any) -> Any]) -> Any {
+	return fn(v) {
+		var val = v
+		for f <- funs {
+			val = f(val)
+		}
+		return val
+	}
+}
+
+// Returns v unchanged. Useful wherever an API expects a function but you already have the value.
+fn identity(v: Any) -> Any {
+	v
+}
+
+// Returns a function that always returns value, ignoring whatever it's called with.
+fn constant(value: Any) -> fn(Any) -> Any {
+	fn(ignored) { value }
+}
+
+// Returns a predicate that's the boolean negation of predicate — negate(p)(v) is !p(v).
+fn negate(predicate: fn(Any) -> Bool) -> fn(Any) -> Bool {
+	fn(v) { !predicate(v) }
+}
+
+// Combines f and g into a single function that applies g first, then f — compose(f, g)(v) is f(g(v)). The mirror image of pipe, which applies its functions left to right instead.
+fn compose(f: fn(Any) -> Any, g: fn(Any) -> Any) -> fn(Any) -> Any {
+	fn(v) { f(g(v)) }
+}
+
+// Returns a function that calls f with its two arguments swapped — flip(f)(a, b) is f(b, a).
+fn flip(f: fn(Any, Any) -> Any) -> fn(Any, Any) -> Any {
+	fn(a, b) { f(b, a) }
+}
+
+// A lazily-evaluated @Iterable, as returned by map/filter/flatMap. Nothing runs until something actually iterates it — a `for` loop, reduce, or any other @Iterable consumer.
+@Iterable(_lazyIterate)
+data _lazy {
+	// Calls yield with each element in turn, stopping early once yield returns false.
+	run: fn(fn(Any) -> Bool)
+}
+
+fn _lazyIterate(v, yield) {
+	v.run(yield)
+}
+
+// Returns a lazy @Iterable that applies transform to each element of v, in order.
+fn map(v: @Iterable, transform: fn(Any) -> Any) -> @Iterable {
+	_lazy(fn(yield) {
+		for x <- v {
+			if !yield(transform(x)) {
+				return
+			}
+		}
+	})
+}
+
+// Returns a lazy @Iterable containing only the elements of v for which predicate returns true, in order.
+fn filter(v: @Iterable, predicate: fn(Any) -> Bool) -> @Iterable {
+	_lazy(fn(yield) {
+		for x <- v {
+			if predicate(x) {
+				if !yield(x) {
+					return
+				}
+			}
+		}
+	})
+}
+
+// Returns a lazy @Iterable that applies transform to each element of v and flattens each resulting @Iterable into a single sequence, in order.
+fn flatMap(v: @Iterable, transform: fn(Any) -> @Iterable) -> @Iterable {
+	_lazy(fn(yield) {
+		for x <- v {
+			for y <- transform(x) {
+				if !yield(y) {
+					return
+				}
+			}
+		}
+	})
+}
+
+// Combines v's elements into a single value, starting from initial and applying combine(accumulator, element) left to right. Unlike map/filter/flatMap, this consumes v eagerly.
+fn reduce(v: @Iterable, initial: Any, combine: fn(Any, Any) -> Any) -> Any {
+	var acc = initial
+	for x <- v {
+		acc = combine(acc, x)
+	}
+	return acc
+}
+
+// Returns a lazy @Iterable containing at most the first n elements of v.
+fn take(v: @Iterable, n: Int) -> @Iterable {
+	_lazy(fn(yield) {
+		if n <= 0 {
+			return
+		}
+		var count = 0
+		for x <- v {
+			if !yield(x) {
+				return
+			}
+			count = count + 1
+			if count >= n {
+				return
+			}
+		}
+	})
+}
+
+// Returns a lazy @Iterable that omits v's first n elements, yielding the rest unchanged.
+fn skip(v: @Iterable, n: Int) -> @Iterable {
+	_lazy(fn(yield) {
+		var count = 0
+		for x <- v {
+			if count < n {
+				count = count + 1
+			} else {
+				if !yield(x) {
+					return
+				}
+			}
+		}
+	})
+}
+
+// A pair of values at the same position in zip's two source sequences.
+data Zipped {
+	first
+	second
+}
+
+// Returns a lazy @Iterable of Zipped(x, y) for each x in a paired with the element at the same position in b, stopping as soon as either source is exhausted.
+// b is buffered into memory up front — pairing needs random access into it, which the push-based @Iterable protocol can't give incrementally for two independent sources — so b must be finite, even though a is still walked one element at a time.
+fn zip(a: @Iterable, b: @Iterable) -> @Iterable {
+	const bValues = _toArray(b)
+	_lazy(fn(yield) {
+		const bLen = len(bValues)
+		var i = 0
+		for x <- a {
+			if i >= bLen {
+				return
+			}
+			if !yield(Zipped(x, bValues[i])) {
+				return
+			}
+			i = i + 1
+		}
+	})
+}
+
+fn _toArray(v: @Iterable) -> [Any] {
+	var result = []
+	for x <- v {
+		result = append(result, x)
+	}
+	return result
+}

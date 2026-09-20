@@ -1,6 +1,8 @@
 package analyzer
 
 import (
+	"context"
+
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/resolver"
@@ -224,7 +226,14 @@ func (a *Analyzer) assignModuleIDs(module *ast.ContextModule, reserveModule bool
 	}
 }
 
+// ReserveModuleGlobal exposes module global reservation so the compiler can assign slots to modules no import reaches.
+// It must be used instead of AllocateGlobalId so that a module later reached by an import dedups onto the same slot.
+func (a *Analyzer) ReserveModuleGlobal(name registry.LogicalURI) int {
+	return a.reserveModuleGlobal(name)
+}
+
 func (a *Analyzer) reserveModuleGlobal(name registry.LogicalURI) int {
+	name = a.canonicalModuleURI(name)
 	if idx, ok := a.moduleGlobals[name]; ok {
 		return idx
 	}
@@ -232,6 +241,19 @@ func (a *Analyzer) reserveModuleGlobal(name registry.LogicalURI) int {
 	a.nextGlobal++
 	a.moduleGlobals[name] = id
 	return id
+}
+
+// canonicalModuleURI resolves name to the URI a module is actually named (ContextModule.Name).
+// A local project module can be imported under a short, unqualified form (e.g. "tests") that differs from the canonical form its own "mod X" self-declaration is analyzed under (e.g. "zirric.tests") — without this, reserveModuleGlobal would allocate two distinct, never-reconciled global slots for the same module, one of which is never filled by the compiler.
+func (a *Analyzer) canonicalModuleURI(name registry.LogicalURI) registry.LogicalURI {
+	if a.resolver == nil {
+		return name
+	}
+	resolved, err := a.resolver.ResolveModule(context.Background(), name)
+	if err != nil || resolved == nil {
+		return name
+	}
+	return resolved.Name
 }
 
 // AnalyzeSourceFile incrementally analyzes a single source file against an existing module.

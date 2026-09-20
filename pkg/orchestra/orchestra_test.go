@@ -174,9 +174,9 @@ assertEqual(pair.value, "v", "FAIL: Pair.value")
 
 const d = [1: "one", 2: "two", 3: "three"]
 
-assertEqual(d.length, 3, "FAIL: Dict.length")
-assertEqual(d.keys.length, 3, "FAIL: Dict.keys length")
-assertEqual([10, 20, 30].length, 3, "FAIL: Array.length")
+assertEqual(len(d), 3, "FAIL: Dict length via len()")
+assertEqual(len(d.keys()), 3, "FAIL: Dict.keys() length")
+assertEqual(len([10, 20, 30]), 3, "FAIL: Array length via len()")
 assertEqual(Countable(d).length(d), 3, "FAIL: Countable.length on Dict")
 
 fn checkAllPairsAndCountKeySum() {
@@ -192,7 +192,7 @@ fn checkAllPairsAndCountKeySum() {
 assertEqual(checkAllPairsAndCountKeySum(), 3*1000 + (1+2+3), "FAIL: Dict iterate visit count/key sum")
 
 const collected = for p <- d { p.key }
-assertEqual(collected.length, 3, "FAIL: expr-form Dict iterate collected wrong count")
+assertEqual(len(collected), 3, "FAIL: expr-form Dict iterate collected wrong count")
 
 fn breaksEarly() {
 	var count = 0
@@ -232,15 +232,14 @@ fn assertEqual(actual, expected, label) {
 
 const s = "café"
 
-assertEqual(s.length, 4, "FAIL: String.length is character count, not byte count")
-assertEqual(s[0], 'c', "FAIL: String index 0")
-assertEqual(s[3], 'é', "FAIL: String index 3 (multi-byte character)")
-assertEqual(Countable(s).length(s), 4, "FAIL: Countable.length on String")
+assertEqual(len(s), 5, "FAIL: String length via len() is byte count, matching Go's len(), not character count")
+assertEqual(s[0] is Byte, true, "FAIL: String index yields Byte")
+assertEqual(Countable(s).length(s), 5, "FAIL: Countable.length on String is byte count")
 
-assertEqual(s.chars.length, 4, "FAIL: String.chars length")
-assertEqual(s.chars[0], 'c', "FAIL: String.chars[0]")
-assertEqual(s.chars[3], 'é', "FAIL: String.chars[3] (multi-byte character)")
-assertEqual("".chars.length, 0, "FAIL: empty String.chars")
+assertEqual(len(s.chars()), 4, "FAIL: String.chars() length")
+assertEqual(s.chars()[0], 'c', "FAIL: String.chars()[0]")
+assertEqual(s.chars()[3], 'é', "FAIL: String.chars()[3] (multi-byte character)")
+assertEqual(len("".chars()), 0, "FAIL: empty String.chars()")
 
 fn countChars(str) {
 	var count = 0
@@ -265,9 +264,171 @@ fn breaksEarly() {
 assertEqual(breaksEarly(), 2, "FAIL: break stops String iteration early")
 
 const collected = for c <- "ab" { c }
-assertEqual(collected.length, 2, "FAIL: expr-form String iterate collected wrong count")
+assertEqual(len(collected), 2, "FAIL: expr-form String iterate collected wrong count")
 assertEqual(collected[0], 'a', "FAIL: expr-form String iterate [0]")
 assertEqual(collected[1], 'b', "FAIL: expr-form String iterate [1]")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+func TestBinaryAndStringIndexingYieldByte(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+import bytes
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+const b = bytes.fromString("hi")
+
+assertEqual(len(b), 2, "FAIL: Binary length via len()")
+assertEqual(Countable(b).length(b), 2, "FAIL: Countable.length on Binary")
+
+assertEqual(b[0] is Byte, true, "FAIL: Binary index yields Byte")
+assertEqual(b[0] is Binary, false, "FAIL: a Byte is not itself a Binary")
+assertEqual(b[0] is Int, false, "FAIL: a Byte is not an Int")
+
+const s = "hi"
+assertEqual(s[0] is Byte, true, "FAIL: String index yields Byte")
+
+fn countBytes(binary) {
+	var count = 0
+	for x <- binary {
+		assertEqual(x is Byte, true, "FAIL: Binary iterate visits Byte values")
+		count = count + 1
+	}
+	return count
+}
+assertEqual(countBytes(b), 2, "FAIL: Binary iterate visits one Byte per element")
+assertEqual(countBytes(bytes.fromString("")), 0, "FAIL: empty Binary visits nothing")
+
+fn breaksEarly() {
+	var count = 0
+	for x <- bytes.fromString("abcdef") {
+		count = count + 1
+		if count == 3 {
+			break
+		}
+	}
+	return count
+}
+assertEqual(breaksEarly(), 3, "FAIL: break stops Binary iteration early")
+
+const collected = for x <- bytes.fromString("ab") { x is Byte }
+assertEqual(len(collected), 2, "FAIL: expr-form Binary iterate collected wrong count")
+assertEqual(collected[0], true, "FAIL: expr-form Binary iterate [0]")
+assertEqual(collected[1], true, "FAIL: expr-form Binary iterate [1]")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+// TestSwitchWithBreakAndContinueInsideForLoop is a regression test: a switch statement nested directly in a (statement-form) for loop's body had no case in compileLoopBlock, so break/continue inside one of its cases fell through to the generic compileStmtBreak/compileStmtContinue stubs, which always error "break/continue used outside of loop" — even though they plainly are inside one. Mirrors the same, separately-fixed gap in expr-for's own loop-body compiler.
+func TestSwitchWithBreakAndContinueInsideForLoop(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+fn run() -> Int {
+	var sum = 0
+	for x <- [1, 2, 3, 4, 5] {
+		switch x {
+		case is Int:
+			if x == 2 {
+				continue
+			}
+			if x == 4 {
+				break
+			}
+			sum = sum + x
+		case _:
+			panic("unreachable")
+		}
+	}
+	return sum
+}
+assertEqual(run(), 4, "FAIL: expected 1 + 3 (2 skipped via continue, loop stopped before 4 via break)")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+// TestExprForReferencesOuterScopeVariable is a regression test: any identifier referenced inside an expr-for body but declared in its enclosing function used to crash with "free variable ... not found in free mapping". The analyzer's generic SymbolTable.resolve() promotes any cross-table lookup to a FreeScope symbol (defineFree) whenever a name isn't found in the current table — including an expr-for body's own same-frame SymbolTable, which exists purely for lexical scoping, not because expr-for is an actual closure boundary (compileExprFor never calls enterScope). The compiler's free-symbol handling only ever jumped straight to symbol.Original(), which is only safe when no real closure boundary sits in between.
+func TestExprForReferencesOuterScopeVariable(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+fn run() -> [Int] {
+	const multiplier = 10
+	var flag = false
+	for x <- [1] {
+		flag = true
+	}
+	return for x <- [1, 2, 3] {
+		if flag { x * multiplier } else { 0 }
+	}
+}
+const r = run()
+assertEqual(r[0], 10, "FAIL: r[0] should reflect the outer const and the mutated outer var")
+assertEqual(r[1], 20, "FAIL: r[1] should reflect the outer const and the mutated outer var")
+assertEqual(r[2], 30, "FAIL: r[2] should reflect the outer const and the mutated outer var")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+// TestExprForInRealClosureStillCapturesGrandparentScope is a regression test guarding TestExprForReferencesOuterScopeVariable's fix against the one case it must NOT take a same-frame shortcut for: an expr-for nested inside a real closure (ExprFunc, which does call enterScope) referencing a variable from a scope further out still needs an actual runtime capture, not a direct same-frame local read (which would silently read the wrong frame's slot).
+func TestExprForInRealClosureStillCapturesGrandparentScope(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+fn outer() {
+	const x = 100
+	return fn() {
+		return for y <- [1, 2, 3] {
+			x + y
+		}
+	}
+}
+const inner = outer()
+const r = inner()
+assertEqual(r[0], 101, "FAIL: r[0] should be the captured outer const (100) + 1")
+assertEqual(r[1], 102, "FAIL: r[1] should be the captured outer const (100) + 2")
+assertEqual(r[2], 103, "FAIL: r[2] should be the captured outer const (100) + 3")
 `)
 
 	orch := newTestOrchestra(t, projectFS, "project")
@@ -797,5 +958,365 @@ func TestReadOnlyResolver(t *testing.T) {
 		t.Fatal("expected non-nil module")
 	} else if module.Decls.Parent == nil {
 		t.Fatal("expected prelude parent in read-only mode")
+	}
+}
+
+// TestTailIfAndSwitchImplicitlyReturnValue is a regression test: the parser only converts a function body into an implicit return when the body is a single bare expression statement (e.g. `fn f() { Ok(true) }`), not when it's an `if`/`switch` statement (e.g. `fn f() { if c { Ok(true) } else { Err() } }`) — even as the last statement of a multi-statement body, or inside a closure.
+// Those used to silently return Void.
+// Fixed at the compiler level (compileFuncBody/compileTailStmt in pkg/compiler), routing a trailing if/switch through the same value-producing path a trailing bare expression already used, recursively for nested branches.
+func TestTailIfAndSwitchImplicitlyReturnValue(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+fn ifTail(x) -> Int {
+	if x > 0 { 1 } else { -1 }
+}
+
+fn ifTailMultiStatement(x) -> Int {
+	const doubled = x * 2
+	if doubled > 0 { 1 } else { -1 }
+}
+
+fn switchTail(x) -> Int {
+	switch x {
+	case is Int:
+		1
+	case _:
+		-1
+	}
+}
+
+const closureIfTail = fn(x) -> Int {
+	if x > 0 { 1 } else { -1 }
+}
+
+assertEqual(ifTail(5), 1, "FAIL: bare if-statement as function tail should return its branch value")
+assertEqual(ifTail(-5), -1, "FAIL: bare if-statement as function tail should return its else value")
+assertEqual(ifTailMultiStatement(5), 1, "FAIL: trailing if in a multi-statement body should still return its value")
+assertEqual(switchTail(5), 1, "FAIL: bare switch-statement as function tail should return its matched case's value")
+assertEqual(closureIfTail(5), 1, "FAIL: bare if-statement as a closure's tail should return its branch value")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+// TestTailSwitchNoMatchingCaseDoesNotHaltProgram is a regression test for a bug introduced while fixing TestTailIfAndSwitchImplicitlyReturnValue: a trailing switch with no case matching the runtime value (no exhaustive `case _:` present) must still return (Void), not fall off the end of the function's instructions — which silently halted the VM's whole dispatch loop, not just that function call, leaving every statement after the call unexecuted with no error.
+func TestTailSwitchNoMatchingCaseDoesNotHaltProgram(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+union Ev {
+	data A {}
+	data B { x: Int }
+}
+
+fn handle(e: Ev) {
+	switch e {
+	case is A:
+		1
+	}
+}
+
+handle(A())
+handle(B(1))
+panic("reached end")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	err := orch.RunFile(context.Background(), "main.zirr")
+	if err == nil {
+		t.Fatal("expected the script to run to completion and panic, got nil error")
+	}
+	if !strings.Contains(err.Error(), "reached end") {
+		t.Fatalf("expected execution to continue past the unmatched tail switch case and reach the final panic, got: %v", err)
+	}
+}
+
+// TestStmtIfWithoutElseDoesNotInfiniteLoop is a regression test for a compiler bug: compileStmtIf's no-else branch tracked the trailing unconditional Jump it emits after the if-block (to skip a would-be else) in jumpEnds, then overwrote that same slot with jumpNext (the condition-false JumpFalse) instead of adding to it — losing track of the trailing Jump entirely.
+// Its operand was left at the placeholder address (math.MinInt), so whenever the condition was true, the VM jumped to a garbage/truncated address — here, one that looped backward, executing the whole test setup forever.
+// Only manifests when the if-block's last statement leaves something to Pop (e.g. a bare call), since that's what the vestigial "remove trailing pop" branch this replaced was (incompletely, buggily) reacting to.
+func TestStmtIfWithoutElseDoesNotInfiniteLoop(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+var calls = 0
+
+fn sideEffect() -> Int {
+	calls = calls + 1
+	return calls
+}
+
+fn maybe(cond) {
+	if cond {
+		sideEffect()
+	}
+}
+
+maybe(true)
+maybe(false)
+maybe(true)
+assertEqual(calls, 2, "FAIL: expected exactly 2 calls, no infinite loop or skipped calls")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+// TestMainPackageReflectionExcludesTheEntryModule is a regression test: the running script is itself a member of the project package, so materializing every module used to load the program a second time.
+// Depending on how the entry file was reached that either re-entered an initialization already in progress, which surfaced as "recursive initialization of global variable", or silently executed the whole script again.
+func TestMainPackageReflectionExcludesTheEntryModule(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "helper/helper.zirr", `mod helper
+
+fn value() { 7 }
+`)
+	writeFile(t, projectFS, "other/other.zirr", `mod other
+
+fn value() { 9 }
+`)
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+import pkgs = reflect.packages
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+const project = pkgs.mainPackage()
+
+var sawEntry = false
+for name <- project.moduleNames {
+	if name == "project" {
+		sawEntry = true
+	}
+}
+assertEqual(sawEntry, false, "FAIL: the entry module must not be listed")
+
+// Previously this re-entered the entry module's own initialization instead of completing.
+const loaded = pkgs.modulesExcept(project, [])
+assertEqual(len(loaded), 2, "FAIL: expected both project modules to load")
+
+assertEqual(len(pkgs.modulesExcept(project, ["project.other"])), 1, "FAIL: modulesExcept must skip the named module")
+assertEqual(len(pkgs.modulesExcept(project, ["project.helper", "project.other"])), 0, "FAIL: modulesExcept must skip every named module")
+
+const helpers = pkgs.modulesWhere(project, fn(name) { name == "project.helper" })
+assertEqual(len(helpers), 1, "FAIL: modulesWhere must keep only matching modules")
+assertEqual(len(pkgs.modulesWhere(project, fn(name) { false })), 0, "FAIL: modulesWhere must load nothing when the predicate rejects every name")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+// TestMainPackageReflectionSkipsShadowedModules is a regression test: reflect.packages compiles every module of the project package so that each has a global slot, and a project carrying its own directory named after a loaded standard library module used to get that copy compiled too.
+// For a module like prelude that declares the core types, the program then held two incompatible definitions of them, and something as ordinary as len() on a value produced by the first would fail to find @Countable via the second.
+// Such a module is unreachable anyway, since the bare name resolves to the loaded one, so it is left out entirely.
+func TestMainPackageReflectionSkipsShadowedModules(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "prelude/shadow.zirr", `mod prelude
+
+const shadowMarker = 1
+`)
+	writeFile(t, projectFS, "greeting/greeting.zirr", `mod greeting
+
+fn hello() { "hello" }
+`)
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+import pkgs = reflect.packages
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+const project = pkgs.mainPackage()
+
+// len() still resolves @Countable, which is what a second compiled prelude used to break.
+assertEqual(len(project.moduleNames) > 0, true, "FAIL: expected the project package to declare modules")
+
+var sawShadowedPrelude = false
+var sawGreeting = false
+for name <- project.moduleNames {
+	if name == "project.prelude" {
+		sawShadowedPrelude = true
+	}
+	if name == "project.greeting" {
+		sawGreeting = true
+	}
+}
+assertEqual(sawShadowedPrelude, false, "FAIL: the shadowed prelude copy must not be reported")
+assertEqual(sawGreeting, true, "FAIL: an ordinary project module must still be reported")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+// TestSequentialForLoopsMayReuseABindingName is a regression test: a statement-form `for x <- v` body shares the enclosing scope, and the binding was inserted there unconditionally, so a second loop binding the same name in the same function failed to compile with "symbol already defined".
+// A loop nested inside another that binds the same name is still rejected, since there the two bindings really are live at once.
+func TestSequentialForLoopsMayReuseABindingName(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+fn sums(v) {
+	var first = 0
+	for c <- v {
+		first = first + c
+	}
+	var second = 0
+	for c <- v {
+		second = second + c * 10
+	}
+	var third = 0
+	for c <- v {
+		third = third + c * 100
+	}
+	return [first, second, third]
+}
+
+fn nestedDistinct(v) {
+	var n = 0
+	for outer <- v {
+		for inner <- v {
+			n = n + 1
+		}
+	}
+	for inner <- v {
+		n = n + 100
+	}
+	return n
+}
+
+const totals = sums([1, 2, 3])
+assertEqual(totals[0], 6, "FAIL: first loop")
+assertEqual(totals[1], 60, "FAIL: second loop reusing the binding name")
+assertEqual(totals[2], 600, "FAIL: third loop reusing the binding name")
+assertEqual(nestedDistinct([1, 2]), 204, "FAIL: nested distinct names plus sequential reuse")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+// TestNestedForLoopsMayNotReuseABindingName guards the other half of TestSequentialForLoopsMayReuseABindingName: reuse is only safe once the earlier loop has finished, so an inner loop rebinding an enclosing loop's name must still be reported rather than silently sharing its slot.
+func TestNestedForLoopsMayNotReuseABindingName(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn f(v) {
+	var n = 0
+	for c <- v {
+		for c <- v {
+			n = n + 1
+		}
+	}
+	return n
+}
+
+f([1, 2])
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	err := orch.RunFile(context.Background(), "main.zirr")
+	if err == nil {
+		t.Fatal("expected a redeclaration error for a nested loop rebinding the same name")
+	}
+	if !strings.Contains(err.Error(), "symbol already defined") {
+		t.Fatalf("expected a redeclaration error, got: %v", err)
+	}
+}
+
+// TestStmtIfWithoutElseInsideForLoopDoesNotInfiniteLoop is a regression test for the exact same bug as TestStmtIfWithoutElseDoesNotInfiniteLoop, but in a second, independent copy of the buggy code: compileStmtIf's no-else jump-patching bug was duplicated (not shared) across compileStmtIfInLoop (statement-form `for x <- v {...}` bodies) and compileExprForIfInLoop (expr-form `for x <- v {...}` bodies, i.e. `for`-comprehensions) — fixing compileStmtIf alone left both of those still broken.
+// Found via the `arrays` module's `filter`, whose `for x <- v { if predicate(x) { append(...) } }` (if without else, last statement is a bare call) hit exactly this shape and hung forever.
+func TestStmtIfWithoutElseInsideForLoopDoesNotInfiniteLoop(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+fn filter(v, predicate) {
+	var result = []
+	for x <- v {
+		if predicate(x) {
+			result = append(result, x)
+		}
+	}
+	return result
+}
+
+const evens = filter([1, 2, 3, 4, 5, 6], fn(x) { x % 2 == 0 })
+assertEqual(len(evens), 3, "FAIL: expected exactly 3 matches, no infinite loop or skipped elements")
+assertEqual(evens[0], 2, "FAIL: first even")
+assertEqual(evens[2], 6, "FAIL: last even")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
+	}
+}
+
+// TestTopLevelConstCanReferenceImport is a regression test: a top-level (module-scope) `const`/`var` whose value expression references an imported module used to fail with "undefined identifier" for the import, even though the exact same reference worked fine as a bare statement or inside a function body.
+// Root cause: ast.DeclTable.Insert promotes an exported top-level const/var into the module's flattened symbol table (module.Decls.Symbols) rather than leaving it in its declaring file's own table — and analyzer.resolveIdentifiers resolved every promoted decl's body using that flattened module.Symbols table, which (unlike a file's own symbol table) never includes that file's imports, since imports are never promoted.
+// DeclFunc bodies were unaffected because they resolve using their own dedicated, correctly file-parented symbol table (n.Impl.Symbols) instead of whatever table the caller passed in — const and var had no equivalent, so this fix (symbolsForPromotedDecl in pkg/analyzer/resolve_identifiers.go) gives them one by matching the declaring file via source path, the same pattern compiler.sourceFileSymbols already uses elsewhere.
+func TestTopLevelConstCanReferenceImport(t *testing.T) {
+	projectFS := memfs.New()
+	writeFile(t, projectFS, "main.zirr", `mod main
+
+import fmt
+
+fn assertEqual(actual, expected, label) {
+	if actual != expected {
+		panic(label)
+	}
+}
+
+const greeting = fmt.sprint("hi")
+var farewell = fmt.sprint("bye")
+
+assertEqual(greeting, "hi", "FAIL: top-level const referencing an import")
+assertEqual(farewell, "bye", "FAIL: top-level var referencing an import")
+`)
+
+	orch := newTestOrchestra(t, projectFS, "project")
+	if err := orch.RunFile(context.Background(), "main.zirr"); err != nil {
+		t.Fatalf("run file: %v", err)
 	}
 }

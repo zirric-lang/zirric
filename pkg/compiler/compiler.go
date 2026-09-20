@@ -10,6 +10,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
+	"code.knabel.dev/zirric-lang/zirric/pkg/resolver"
 	"code.knabel.dev/zirric-lang/zirric/pkg/runtime"
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
 )
@@ -27,6 +28,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 
+		if c.entryModule == nil {
+			c.entryModule = node
+		}
 		moduleId := c.reserveGlobalModule(node.Name)
 		return c.compileContextModule(node, moduleId)
 	case *ast.SourceFile:
@@ -551,6 +555,86 @@ func (c *Compiler) compileBlock(block ast.Block) error {
 	return nil
 }
 
+// compileFuncBody compiles a function (or closure) body block, converting its tail statement into the function's return value and guaranteeing the block always ends in a Return.
+// A single trailing expression statement is already converted to an explicit `return` at parse time (see parser.go/pratt.go's parseFunctionDecl/parsePrattExprFnClosure), but that conversion only covers a single-statement body whose lone statement is a bare expression.
+// This covers the rest: a multi-statement body, and a trailing `if`/`switch` statement whose branches should likewise produce the return value — recursing so a nested trailing if/switch inside a branch is converted the same way.
+func (c *Compiler) compileFuncBody(block ast.Block) error {
+	for i, stmt := range block {
+		if i == len(block)-1 {
+			handled, err := c.compileTailStmt(stmt)
+			if err != nil {
+				return err
+			}
+			if handled {
+				return nil
+			}
+		}
+		if err := c.Compile(stmt); err != nil {
+			return err
+		}
+	}
+	if !c.isLastInstruction(op.Return) {
+		c.emit(op.ConstVoid)
+		c.emit(op.Return)
+	}
+	return nil
+}
+
+// compileTailStmt compiles stmt as a function body's tail position when it has an unambiguous value — a bare expression statement, or an if/switch whose every branch recursively does — emitting Return with that value and reporting handled=true.
+// Anything else reports handled=false so the caller falls back to compiling it as an ordinary statement (compileFuncBody then supplies an implicit Void return, matching prior behavior).
+func (c *Compiler) compileTailStmt(stmt ast.Statement) (bool, error) {
+	switch stmt := stmt.(type) {
+	case *ast.StmtExpr:
+		if err := c.Compile(stmt.Expr); err != nil {
+			return false, err
+		}
+		c.emit(op.Return)
+		return true, nil
+	case ast.StmtIf:
+		return c.compileTailStmtIf(stmt)
+	case ast.StmtSwitch:
+		return c.compileTailStmtSwitch(stmt)
+	default:
+		return false, nil
+	}
+}
+
+// compileTailStmtIf mirrors compileStmtIf, but routes each branch through compileFuncBody instead of compileBlock so branches produce the function's return value instead of discarding it.
+// An if with no else can't produce a value on every path, so it's left unhandled (falls back to Void).
+func (c *Compiler) compileTailStmtIf(node ast.StmtIf) (bool, error) {
+	if node.ElseBlock == nil {
+		return false, nil
+	}
+
+	if err := c.Compile(node.Condition); err != nil {
+		return false, err
+	}
+	jumpNext := c.emit(op.JumpFalse, placeholderJumpAddress)
+
+	if err := c.compileFuncBody(node.IfBlock); err != nil {
+		return false, err
+	}
+
+	for _, elseIf := range node.ElseIf {
+		c.changeOperand(jumpNext, len(c.currentInstructions()))
+
+		if err := c.Compile(elseIf.Condition); err != nil {
+			return false, err
+		}
+		jumpNext = c.emit(op.JumpFalse, placeholderJumpAddress)
+
+		if err := c.compileFuncBody(elseIf.Block); err != nil {
+			return false, err
+		}
+	}
+	c.changeOperand(jumpNext, len(c.currentInstructions()))
+
+	if err := c.compileFuncBody(node.ElseBlock); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (c *Compiler) compileStmtIf(node ast.StmtIf) error {
 	var (
 		jumpNext int
@@ -594,13 +678,9 @@ func (c *Compiler) compileStmtIf(node ast.StmtIf) error {
 			return err
 		}
 	} else {
-		lastIndex := len(jumpEnds) - 1
-
-		if c.isLastInstruction(op.Pop) {
-			c.removeLastInstruction()
-		}
-
-		jumpEnds[lastIndex] = jumpNext
+		// No else: the condition-false path also lands after the whole if-statement, alongside the if-block's own trailing Jump (emitted above to skip a would-be else).
+		// Both must be patched to endPos — jumpEnds already tracks the trailing Jump, so just add jumpNext rather than overwriting it, or that Jump keeps its placeholder operand (math.MinInt) forever, jumping to a garbage address whenever the condition is true.
+		jumpEnds = append(jumpEnds, jumpNext)
 	}
 
 	endPos = len(c.currentInstructions())
@@ -815,6 +895,11 @@ func (c *Compiler) compileLoopBlock(block ast.Block, continueJumps *[]int, break
 			if err != nil {
 				return err
 			}
+		case ast.StmtSwitch:
+			err := c.compileStmtSwitchInLoop(stmt, continueJumps, breakJumps)
+			if err != nil {
+				return err
+			}
 		default:
 			err := c.Compile(stmt)
 			if err != nil {
@@ -868,13 +953,10 @@ func (c *Compiler) compileStmtIfInLoop(node ast.StmtIf, continueJumps *[]int, br
 			return err
 		}
 	} else {
-		lastIndex := len(jumpEnds) - 1
-
-		if c.isLastInstruction(op.Pop) {
-			c.removeLastInstruction()
-		}
-
-		jumpEnds[lastIndex] = jumpNext
+		// No else: the condition-false path also lands after the whole if-statement, alongside the if-block's own trailing Jump (emitted above to skip a would-be else).
+		// Both must be patched to endPos — jumpEnds already tracks the trailing Jump, so just add jumpNext rather than overwriting it, or that Jump keeps its placeholder operand (math.MinInt) forever, jumping to a garbage address whenever the condition is true.
+		// Mirrors the same fix in compileStmtIf (pre-existing bug, not specific to loop bodies).
+		jumpEnds = append(jumpEnds, jumpNext)
 	}
 
 	endPos = len(c.currentInstructions())
@@ -1156,8 +1238,10 @@ func (c *Compiler) compileExprForStatement(stmt ast.Statement, arrayLocal int, c
 		return nil
 	case ast.StmtIf:
 		return c.compileExprForIfInLoop(stmt, arrayLocal, continueJumps, breakJumps)
+	case ast.StmtSwitch:
+		return c.compileExprForSwitchInLoop(stmt, arrayLocal, continueJumps, breakJumps)
 	default:
-		return fmt.Errorf("expr-for allows only expression, if, break, or continue statements")
+		return fmt.Errorf("expr-for allows only expression, if, switch, break, or continue statements")
 	}
 }
 
@@ -1214,13 +1298,8 @@ func (c *Compiler) compileExprForIfInLoop(node ast.StmtIf, arrayLocal int, conti
 			return err
 		}
 	} else {
-		lastIndex := len(jumpEnds) - 1
-
-		if c.isLastInstruction(op.Pop) {
-			c.removeLastInstruction()
-		}
-
-		jumpEnds[lastIndex] = jumpNext
+		// See the identical fix (and comment) in compileStmtIfInLoop: keep jumpNext alongside the tracked trailing Jump instead of overwriting it, or that Jump's placeholder operand is never patched.
+		jumpEnds = append(jumpEnds, jumpNext)
 	}
 
 	endPos = len(c.currentInstructions())
@@ -1601,13 +1680,9 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 				return err
 			}
 		}
-		err = c.compileBlock(decl.Impl.Impl)
+		err = c.compileFuncBody(decl.Impl.Impl)
 		if err != nil {
 			return err
-		}
-		if !c.isLastInstruction(op.Return) {
-			c.emit(op.ConstVoid)
-			c.emit(op.Return)
 		}
 		scope := c.leaveScope()
 
@@ -2679,4 +2754,98 @@ func (c *Compiler) ResolveModuleSymbol(moduleName string, symbolName string) *as
 		}
 	}
 	return nil
+}
+
+// MainPackageModules implements runtime.BindContext.
+// The result is memoized: the project package's identity does not change during a compilation, and recomputing it would restart the whole compile pass for every extern that asks.
+func (c *Compiler) MainPackageModules() (string, map[string]int) {
+	if c.mainPackage != nil {
+		return c.mainPackage.name, c.mainPackage.globals
+	}
+	lister, ok := c.resolver.(resolver.MainPackageLister)
+	if !ok || c.analyzer == nil {
+		return "", nil
+	}
+
+	info := &mainPackageModules{name: lister.MainPackageName(), globals: map[string]int{}}
+	// Published before any module is compiled, because compiling one can reach a module that binds these same externs — a project vendoring its own copy of reflect.packages — and that must observe this pass rather than start a competing one.
+	c.mainPackage = info
+
+	uris, err := lister.MainPackageModules(context.Background())
+	if err != nil {
+		return info.name, info.globals
+	}
+
+	// Every slot is reserved before anything is compiled, so the map a reentrant caller sees is already complete.
+	reserved := make([]registry.LogicalURI, 0, len(uris))
+	for _, uri := range uris {
+		module, err := c.resolver.ResolveModule(context.Background(), uri)
+		if err != nil || module == nil {
+			continue
+		}
+		canonical := module.Name
+		if c.isShadowedByLoadedModule(info.name, module) || c.isEntryModule(module) {
+			continue
+		}
+		id, ok := c.moduleGlobals[canonical]
+		if !ok {
+			id = c.analyzer.ReserveModuleGlobal(canonical)
+			c.moduleGlobals[canonical] = id
+		}
+		c.ensureGlobalSlot(id)
+		if _, seen := info.globals[string(canonical)]; seen {
+			continue
+		}
+		info.globals[string(canonical)] = id
+		reserved = append(reserved, canonical)
+	}
+
+	for _, canonical := range reserved {
+		// A package may legitimately contain modules that do not compile on their own — test fixtures and examples, say — and one of those must not break every program that merely asks what the package contains.
+		// Its slot stays reserved but empty, so it is dropped here rather than being offered as a module that cannot be loaded.
+		if err := c.compileModuleIfNeeded(canonical, info.globals[string(canonical)]); err != nil {
+			delete(info.globals, string(canonical))
+		}
+	}
+	return info.name, info.globals
+}
+
+// isShadowedByLoadedModule reports whether a package module is unreachable because its unqualified name resolves to a different module, as happens when a project carries its own copy of a standard library module.
+// Such a module can never be imported, and compiling it anyway is actively harmful when it redeclares core types, since the program would then hold two incompatible definitions of them.
+func (c *Compiler) isShadowedByLoadedModule(packageName string, module *ast.ContextModule) bool {
+	if module == nil || packageName == "" {
+		return false
+	}
+	unqualified := strings.TrimPrefix(string(module.Name), packageName+".")
+	if unqualified == string(module.Name) {
+		return false
+	}
+	// Asking the resolver rather than the compiler's own table keeps this independent of how far the current pass has progressed.
+	other, err := c.resolver.ResolveModule(context.Background(), registry.LogicalURI(unqualified))
+	if err != nil || other == nil {
+		return false
+	}
+	return other != module
+}
+
+// isEntryModule reports whether module is the program being run, either by name or because it was built from the same source file.
+// Such a module must never be loaded as a package member: the running script is already executing, so resolving its global would either re-enter an initialization in progress or, when the entry file also belongs to a directory module of its own, run the whole script a second time.
+func (c *Compiler) isEntryModule(module *ast.ContextModule) bool {
+	if c.entryModule == nil || module == nil {
+		return false
+	}
+	if module == c.entryModule || module.Name == c.entryModule.Name {
+		return true
+	}
+	for _, entryFile := range c.entryModule.Files {
+		if entryFile == nil || entryFile.Path == "" {
+			continue
+		}
+		for _, file := range module.Files {
+			if file != nil && file.Path == entryFile.Path {
+				return true
+			}
+		}
+	}
+	return false
 }

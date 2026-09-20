@@ -13,7 +13,7 @@ func (b Char) Inspect() string {
 
 // Lookup implements RuntimeValue.
 func (b Char) Lookup(name string) RuntimeValue {
-	panic("unimplemented")
+	return nil
 }
 
 // TypeConstantId implements RuntimeValue.

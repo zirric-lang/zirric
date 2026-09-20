@@ -15,30 +15,28 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 
 ## Proposals
 
-| Proposal                                                       | Title                               | Status      | Info     |
-| -------------------------------------------------------------- | ----------------------------------- | ----------- | -------- |
+| Proposal                                                       | Title                               | Status      | Info                        |
+| -------------------------------------------------------------- | ----------------------------------- | ----------- | --------------------------- |
 | [ZE-001](/proposals/ZE-001-base-language)                      | Base Language                       | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-002](/proposals/ZE-002-the-cavefile)                       | The Cavefile                        | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-003](/proposals/ZE-003-named-data-construction)            | Named Data Construction             | Rejected    |          |
-| [ZE-004](/proposals/ZE-004-Variadic-Arguments)                 | Variadic Arguments                  | Draft       | Outdated |
-| [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)            | Mixin Type Declarations             | Draft       | Outdated |
-| [ZE-006](/proposals/ZE-006-Attribute-Based-Parsing-System)     | Attribute-Based Parsing System      | Draft       | Outdated |
-| [ZE-007](/proposals/ZE-007-attribute-binding)                  | Attribute Binding                   | Draft       |          |
+| [ZE-003](/proposals/ZE-003-named-data-construction)            | Named Data Construction             | Rejected    |                             |
+| [ZE-004](/proposals/ZE-004-Variadic-Arguments)                 | Variadic Arguments                  | Draft       | Outdated                    |
+| [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)            | Mixin Type Declarations             | Draft       | Outdated                    |
+| [ZE-006](/proposals/ZE-006-Attribute-Based-Parsing-System)     | Attribute-Based Parsing System      | Draft       | Outdated                    |
+| [ZE-007](/proposals/ZE-007-attribute-binding)                  | Attribute Binding                   | Draft       |                             |
 | [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                      | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                       | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-010](/proposals/ZE-010-iterable)                           | Iterable                            | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                          | In Progress |          |
-| [ZE-012](/proposals/ZE-012-type-and-returns-sugar)             | Type and Returns Sugar              | Rejected    |          |
+| [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                          | In Progress |                             |
+| [ZE-012](/proposals/ZE-012-type-and-returns-sugar)             | Type and Returns Sugar              | Rejected    |                             |
 | [ZE-013](/proposals/ZE-013-mutability-and-constants)           | Mutability and Constants            | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-014](/proposals/ZE-014-attribute-and-declaration-keywords) | Attribute and Declaration Keywords  | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-015](/proposals/ZE-015-extern-type-constructors)           | Extern Type Constructors            | Draft       |          |
+| [ZE-015](/proposals/ZE-015-extern-type-constructors)           | Extern Type Constructors            | Draft       |                             |
 | [ZE-016](/proposals/ZE-016-closure-syntax)                     | Unified Function and Closure Syntax | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-017](/proposals/ZE-017-type-hints)                         | Type Hints and Type Matching        | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-018](/proposals/ZE-018-io-fmt-os)                          | I/O, Formatting, and OS             | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-019](/proposals/ZE-019-result-and-option-sugar)            | Result and Option Sugar             | Draft       |          |
-| [ZE-020](/proposals/ZE-020-capability-attributes-and-script)   | Capability Attributes and the `script` Module | Draft |    |
-| [ZE-021](/proposals/ZE-021-flow-architecture)                  | The `flow` Module: Model-Update-View Architecture | Draft |  |
-| [ZE-022](/proposals/ZE-022-export-declarations)                | Export Declarations                 | Draft       |          |
+| [ZE-019](/proposals/ZE-019-result-and-option-sugar)            | Result and Option Sugar             | Draft       |                             |
+| [ZE-020](/proposals/ZE-020-standard-library)                   | Standard Library                    | In Progress |                             |
 
 ## Submitting Proposals
 

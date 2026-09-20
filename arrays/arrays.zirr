@@ -1,0 +1,156 @@
+mod arrays
+
+import ranges
+
+// Returns the elements of v from start (inclusive) to end (exclusive).
+fn slice(v: [Any], start: Int, end: Int) -> [Any] {
+	if start < 0 || end > len(v) || start > end {
+		panic("slice bounds out of range ["+start+":"+end+"] with length "+len(v))
+	}
+	var result = []
+	for i <- Range(start, end) {
+		result = append(result, v[i])
+	}
+	return result
+}
+
+// Returns the elements of v selected by r.
+fn range(v: [Any], r: ranges.Like) -> [Any] {
+	switch r {
+	case is Range:
+		return slice(v, r.start, r.end)
+	case is ClosedRange:
+		return slice(v, r.start, r.end + 1)
+	case is OpenRange:
+		return slice(v, r.start + 1, r.end)
+	}
+}
+
+// Concatenates every array in parts into a single array, in order. Unlike
+// append(), which adds each argument as one new element, this flattens one
+// level — concat([[1, 2], [3]]) is [1, 2, 3], not [[1, 2], [3]].
+fn concat(parts: [[Any]]) -> [Any] {
+	var result = []
+	for part <- parts {
+		for x <- part {
+			result = append(result, x)
+		}
+	}
+	return result
+}
+
+// Returns v repeated n times, concatenated.
+fn repeat(v: [Any], n: Int) -> [Any] {
+	var result = []
+	var i = 0
+	for i < n {
+		for x <- v {
+			result = append(result, x)
+		}
+		i = i + 1
+	}
+	return result
+}
+
+// Returns v with its elements in reverse order.
+fn reverse(v: [Any]) -> [Any] {
+	var result = []
+	var i = len(v) - 1
+	for i >= 0 {
+		result = append(result, v[i])
+		i = i - 1
+	}
+	return result
+}
+
+// Returns whether v has no elements.
+fn isEmpty(v: [Any]) -> Bool {
+	len(v) == 0
+}
+
+// Returns v's first element, or None if v is empty.
+fn first(v: [Any]) -> Option {
+	if len(v) == 0 {
+		return None()
+	}
+	return Some(v[0])
+}
+
+// Returns v's last element, or None if v is empty.
+fn last(v: [Any]) -> Option {
+	if len(v) == 0 {
+		return None()
+	}
+	return Some(v[len(v) - 1])
+}
+
+// Returns whether value occurs anywhere in v.
+fn contains(v: [Any], value: Any) -> Bool {
+	firstIndexOf(v, value) is Some
+}
+
+// Returns the index of value's first occurrence in v, or None if absent.
+fn firstIndexOf(v: [Any], value: Any) -> Option {
+	var i = 0
+	for x <- v {
+		if x == value {
+			return Some(i)
+		}
+		i = i + 1
+	}
+	return None()
+}
+
+// Returns the index of value's last occurrence in v, or None if absent.
+fn lastIndexOf(v: [Any], value: Any) -> Option {
+	var i = len(v) - 1
+	for i >= 0 {
+		if v[i] == value {
+			return Some(i)
+		}
+		i = i - 1
+	}
+	return None()
+}
+
+// Returns a new array with transform applied to each element of v, in order.
+fn map(v: [Any], transform: fn(Any) -> Any) -> [Any] {
+	var result = []
+	for x <- v {
+		result = append(result, transform(x))
+	}
+	return result
+}
+
+// Returns a new array with transform applied to each element of v, flattening each resulting array one level into the result.
+fn flatMap(v: [Any], transform: fn(Any) -> [Any]) -> [Any] {
+	var result = []
+	for x <- v {
+		for y <- transform(x) {
+			result = append(result, y)
+		}
+	}
+	return result
+}
+
+// Returns a new array containing only the elements of v for which predicate
+// returns true, in order.
+fn filter(v: [Any], predicate: fn(Any) -> Bool) -> [Any] {
+	var result = []
+	for x <- v {
+		if predicate(x) {
+			result = append(result, x)
+		}
+	}
+	return result
+}
+
+// Combines v's elements into a single value, starting from initial and
+// applying combine(accumulator, element) left to right.
+fn reduce(v: [Any], initial: Any, combine: fn(Any, Any) -> Any) -> Any {
+	var acc = initial
+	for x <- v {
+		acc = combine(acc, x)
+	}
+	return acc
+}

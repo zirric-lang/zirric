@@ -21,7 +21,8 @@ const (
 	typeIdInt
 	typeIdModule
 	typeIdString
-	typeIdBytes
+	typeIdBinary
+	typeIdByte
 	typeIdVoid
 )
 
@@ -38,7 +39,8 @@ var allBuiltinTypeIds = []TypeId{
 	typeIdInt,
 	typeIdModule,
 	typeIdString,
-	typeIdBytes,
+	typeIdBinary,
+	typeIdByte,
 	typeIdVoid,
 }
 
@@ -60,7 +62,8 @@ var BuiltinTypeIds = map[string]TypeId{
 	"Int":    typeIdInt,
 	"Module": typeIdModule,
 	"String": typeIdString,
-	"Bytes":  typeIdBytes,
+	"Binary": typeIdBinary,
+	"Byte":   typeIdByte,
 	"Void":   typeIdVoid,
 }
 
@@ -71,7 +74,7 @@ type Prelude struct{}
 func (*Prelude) Module() string { return "prelude" }
 
 // Bind implements runtime.ExternPlugin.
-func (*Prelude) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol) RuntimeValue {
+func (p *Prelude) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol) RuntimeValue {
 	switch decl.Name {
 	case "Array":
 		return MakeBuiltinSimpleType(decl, typeIdArray)
@@ -91,8 +94,10 @@ func (*Prelude) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol)
 		return MakeBuiltinSimpleType(decl, typeIdModule)
 	case "String":
 		return MakeBuiltinSimpleType(decl, typeIdString)
-	case "Bytes":
-		return MakeBuiltinSimpleType(decl, typeIdBytes)
+	case "Binary":
+		return MakeBuiltinSimpleType(decl, typeIdBinary)
+	case "Byte":
+		return MakeBuiltinSimpleType(decl, typeIdByte)
 	case "Void":
 		return MakeBuiltinSimpleType(decl, typeIdVoid)
 	case "Any":
@@ -100,25 +105,8 @@ func (*Prelude) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol)
 	case "void":
 		return Void{}
 
-	case "bytesFromString": // TODO: remove this once there are extern constructors
-		return MakeExternFunc(decl, func(args []RuntimeValue) (RuntimeValue, error) {
-			if len(args) != 1 {
-				panic("expected exactly 1 argument")
-			}
-
-			switch v := args[0].(type) {
-			case String:
-				return Bytes(v), nil
-			case Bytes:
-				return v, nil
-			case Char:
-				return Bytes([]byte(string(v))), nil
-			default:
-				return nil, fmt.Errorf("expected argument of type String, got %T", args[0])
-			}
-		})
 	case "panic":
-		return MakeExternFunc(decl, func(args []RuntimeValue) (RuntimeValue, error) {
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			if len(args) != 1 {
 				return nil, fmt.Errorf("panic expects exactly 1 argument, got %d", len(args))
 			}
@@ -127,6 +115,56 @@ func (*Prelude) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol)
 				return nil, fmt.Errorf("panic expects a String argument, got %T", args[0])
 			}
 			return nil, fmt.Errorf("panic: %s", string(msg))
+		})
+	case "append":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			if len(args) < 2 {
+				return nil, fmt.Errorf("append expects at least 2 arguments, got %d", len(args))
+			}
+
+			switch v := args[0].(type) {
+			case Array:
+				return append(v, args[1:]...), nil
+			case Binary:
+				for _, arg := range args[1:] {
+					switch a := arg.(type) {
+					case Byte:
+						v = append(v, byte(a))
+					case Binary:
+						v = append(v, a...)
+					default:
+						return nil, fmt.Errorf("append to a Binary expects Byte or Binary, got %T", args[0])
+					}
+				}
+				return v, nil
+			default:
+				return nil, fmt.Errorf("append expects an Array argument, got %T", args[0])
+			}
+		})
+
+	case "_arrayLen":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			array := args[0].(Array)
+			return p.Int(int64(len(array))), nil
+		})
+	case "_strLen":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			str := args[0].(String)
+			return p.Int(int64(len(str))), nil
+		})
+	case "_dictLen":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			dict := args[0].(Dict)
+			return p.Int(int64(len(dict))), nil
+		})
+	case "_binaryLen":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			bytes := args[0].(Binary)
+			return p.Int(int64(len(bytes))), nil
+		})
+	case "_inspect":
+		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			return p.String(args[0].Inspect()), nil
 		})
 	}
 	return nil
@@ -139,5 +177,5 @@ func (p *Prelude) Dict(val map[RuntimeValue]RuntimeValue) Dict { return Dict(val
 func (p *Prelude) Float(val float64) Float                     { return Float(val) }
 func (p *Prelude) Int(val int64) Int                           { return Int(val) }
 func (p *Prelude) String(val string) String                    { return String(val) }
-func (p *Prelude) Bytes(val []byte) Bytes                      { return Bytes(val) }
+func (p *Prelude) Bytes(val []byte) Binary                     { return Binary(val) }
 func (p *Prelude) Void() Void                                  { return Void{} }

@@ -41,6 +41,14 @@ type Bytecode struct {
 	// MainLocals is the number of local slots required by the top-level script frame,
 	// including any temporaries allocated by the compiler.
 	MainLocals int
+	// ModuleGlobals maps each compiled module's URI to the global slot holding its ModuleValue, so the VM can reach a module's exports by name at runtime.
+	ModuleGlobals map[registry.LogicalURI]int
+}
+
+// mainPackageModules caches the project package's name and the global slot of each of its modules.
+type mainPackageModules struct {
+	name    string
+	globals map[string]int
 }
 
 type Compiler struct {
@@ -48,10 +56,13 @@ type Compiler struct {
 	globals         []*CompilationScope
 	moduleGlobals   map[registry.LogicalURI]int
 	compiledModules map[*ast.ContextModule]int
-	plugins         *runtime.ExternPluginRegistry
-	resolver        resolver.ModuleResolver
-	analyzer        *analyzer.Analyzer
-	analyzed        map[*ast.ContextModule]struct{}
+	mainPackage     *mainPackageModules
+	// entryModule is the module passed to Compile, i.e. the program being run, which reflect.packages must not offer as a loadable package member.
+	entryModule *ast.ContextModule
+	plugins     *runtime.ExternPluginRegistry
+	resolver    resolver.ModuleResolver
+	analyzer    *analyzer.Analyzer
+	analyzed    map[*ast.ContextModule]struct{}
 
 	scopes   []*CompilationScope
 	scopeIdx int
@@ -75,7 +86,7 @@ func NewWithAnalyzer(moduleResolver resolver.ModuleResolver, analysis *analyzer.
 		globals:         []*CompilationScope{},
 		moduleGlobals:   map[registry.LogicalURI]int{},
 		compiledModules: map[*ast.ContextModule]int{},
-		plugins:         runtime.NewExternPluginRegistry(&runtime.Prelude{}, &runtime.OSPlugin{}),
+		plugins:         runtime.NewExternPluginRegistry(&runtime.Prelude{}, &runtime.OSPlugin{}, &runtime.FmtPlugin{}, &runtime.BytesPlugin{}, &runtime.StringsPlugin{}, &runtime.ReflectPlugin{}, &runtime.ReflectPackagesPlugin{}, &runtime.MathPlugin{}),
 		resolver:        moduleResolver,
 		analyzer:        analysis,
 		analyzed:        map[*ast.ContextModule]struct{}{},
@@ -114,11 +125,16 @@ func (c *Compiler) lookupTypeSymbol(name string) *ast.Symbol {
 }
 
 func (c *Compiler) Bytecode() *Bytecode {
+	moduleGlobals := make(map[registry.LogicalURI]int, len(c.moduleGlobals))
+	for uri, id := range c.moduleGlobals {
+		moduleGlobals[uri] = id
+	}
 	return &Bytecode{
-		Instructions: c.currentInstructions(),
-		Constants:    c.constants,
-		Globals:      c.globals,
-		MainLocals:   c.scopes[0].LocalsCount(),
+		Instructions:  c.currentInstructions(),
+		Constants:     c.constants,
+		Globals:       c.globals,
+		MainLocals:    c.scopes[0].LocalsCount(),
+		ModuleGlobals: moduleGlobals,
 	}
 }
 
@@ -260,17 +276,4 @@ func (c *Compiler) isLastInstruction(opcodes ...op.Opcode) bool {
 	}
 
 	return false
-}
-
-func (c *Compiler) removeLastInstruction() emittedInstruction {
-	last := c.scopes[c.scopeIdx].lastInstruction
-	previous := c.scopes[c.scopeIdx].previousInstruction
-
-	old := c.currentInstructions()
-	new := old[:last.Position]
-
-	c.scopes[c.scopeIdx].Instructions = new
-	c.scopes[c.scopeIdx].lastInstruction = previous
-
-	return last
 }

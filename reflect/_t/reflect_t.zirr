@@ -1,0 +1,80 @@
+import tests { Test }
+import tests.assert
+
+import reflect
+import arrays
+import strings
+
+@Test()
+fn testModuleName() {
+	assert.equal(true, strings.hasSuffix(reflect.moduleName(arrays), "arrays"))
+}
+
+@Test()
+fn testMemberNames() {
+	const names = reflect.memberNames(arrays)
+	assert.all([
+		assert.equal(true, arrays.contains(names, "map")),
+		assert.equal(true, arrays.contains(names, "filter")),
+		assert.equal(true, arrays.contains(names, "reduce")),
+		assert.equal(false, arrays.contains(names, "nope")),
+	])
+}
+
+@Test()
+fn testMembersAlignWithNames() {
+	const names = reflect.memberNames(arrays)
+	const values = reflect.members(arrays)
+	var aligned = true
+	var i = 0
+	for i < len(names) {
+		if values[i].name != names[i] {
+			aligned = false
+		}
+		i = i + 1
+	}
+	assert.equal(true, aligned)
+}
+
+@Test()
+fn testMembersMatchNames() {
+	assert.equal(len(reflect.memberNames(arrays)), len(reflect.members(arrays)))
+}
+
+@Test()
+fn testMemberNamesExcludeInternal() {
+	// `_`-prefixed declarations are ExportScopeInternal and never reach the module value.
+	const names = reflect.memberNames(strings)
+	assert.all([
+		assert.equal(true, arrays.contains(names, "firstIndexOf")),
+		assert.equal(false, arrays.contains(names, "_firstIndexOf")),
+	])
+}
+
+@Test()
+fn testMember() {
+	assert.all([
+		assert.equal(true, reflect.member(arrays, "map") is Some),
+		assert.equal(true, reflect.member(arrays, "nope") is None),
+	])
+}
+
+@Test()
+fn testHasMember() {
+	assert.all([
+		assert.equal(true, reflect.hasMember(arrays, "reduce")),
+		assert.equal(false, reflect.hasMember(arrays, "nope")),
+	])
+}
+
+@Test()
+fn testMemberIsCallable() {
+	const mapped = reflect.member(arrays, "map").value([1, 2, 3], fn(x) { x * 2 })
+	assert.equal([2, 4, 6], mapped)
+}
+
+@Test()
+fn testMembersCarryNames() {
+	const found = arrays.filter(reflect.members(arrays), fn(m) { m.name == "reduce" })
+	assert.equal(1, len(found))
+}

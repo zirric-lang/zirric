@@ -1,0 +1,61 @@
+import tests { Test }
+import tests.assert
+import io
+import bytes
+
+import fmt { sprint, fprint, fprintln }
+
+@Printable(fn(v) { "custom: "+v.text })
+data _customPrintable { text }
+
+data _notPrintable { text }
+
+@Test()
+fn testSprint() {
+	assert.all([
+		assert.equal("", sprint("")),
+		assert.equal("1", sprint(1)),
+		assert.equal("2", sprint(2.0)),
+		assert.equal("2.1", sprint(2.1)),
+		assert.equal("true", sprint(true)),
+		assert.equal("false", sprint(false)),
+		assert.equal("h", sprint("hello".chars()[0])),
+		assert.equal("custom: example", sprint(_customPrintable("example"))),
+		assert.equal("_notPrintable(\"nested\")", sprint(_notPrintable("nested"))),
+		assert.equal("[:]", sprint([:])),
+		assert.equal("[\"hello\": 42]", sprint(["hello": 42])),
+		assert.equal("[]", sprint([])),
+		assert.equal("[42]", sprint([42])),
+		assert.equal("68656c6c6f", sprint(bytes.fromString("hello"))),
+	])
+}
+
+@Test()
+fn testFprint() {
+	var buf = bytes.fromString("")
+	const w = io.Writer(fn(chunk) {
+		buf = append(buf, chunk)
+		return len(chunk)
+	})
+
+	var num = fprint("42", w)
+	return assert.all([
+		assert.equal(2, num),
+		assert.equal(bytes.fromString("42"), buf),
+	])
+}
+
+@Test()
+fn testFprintln() {
+	var buf = bytes.fromString("")
+	const w = io.Writer(fn(chunk) {
+		buf = append(buf, chunk)
+		return len(chunk)
+	})
+
+	var num = fprintln("hello", w)
+	return assert.all([
+		assert.equal(6, num),
+		assert.equal(bytes.fromString("hello\n"), buf),
+	])
+}

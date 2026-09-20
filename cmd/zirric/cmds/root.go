@@ -22,6 +22,7 @@ func Execute() error {
 
 	cmdArgs = extractCavefileFlag(cmdArgs)
 	rootCmd.SetArgs(cmdArgs)
+	rootCmd.SilenceUsage = true
 
 	if err := loadCavefileIfNeeded(cmdArgs); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)

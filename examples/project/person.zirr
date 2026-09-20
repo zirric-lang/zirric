@@ -1,6 +1,6 @@
 mod example
 
-import fmt
+import scripts
 
 @Printable(fn(p) { p.name })
 data Person {
@@ -27,4 +27,4 @@ fn greet(person: SomePerson) -> String {
 	return "Hello " + name
 }
 
-fmt.println(greet(peter))
+scripts.println(greet(peter))

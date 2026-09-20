@@ -1,0 +1,150 @@
+mod runner
+
+import tests
+import tests.tap
+import reflect
+import pkgs = reflect.packages
+import strings
+import os
+
+// An event callback that discards everything, for runs without output.
+const ignoreEvents = fn(event: tests.TestEvent) {}
+
+// Runs test cases, emitting events, and returns a report.
+// This is the primitive the entry points below build on: it executes exactly the cases it is given and neither discovers nor reports anything itself.
+fn exec(discovered: [tests.TestCase], onEvent: fn(tests.TestEvent)) -> tests.TestReport {
+	const cases = _applyOnly(discovered)
+	onEvent(tests.Discovered(cases))
+
+	var passed = []
+	var failed = []
+	var todos = []
+	var skipped = []
+
+	for c <- cases {
+		if c.skipped {
+			onEvent(tests.Skipped(c))
+			skipped = append(skipped, c)
+			continue
+		}
+
+		onEvent(tests.Started(c))
+		var r = c.impl()
+		r = AnyResult(r).toResult(r)
+		onEvent(tests.Finished(c, r))
+
+		switch c.details {
+		case is tests.TestCaseDetailsTodo:
+			todos = append(todos, c)
+			continue
+		}
+
+		switch r {
+		case is Ok:
+			passed = append(passed, c)
+		case is Err:
+			failed = append(failed, tests.FailureRecord(c, r))
+		}
+	}
+
+	const report = tests.TestReport(passed, failed, skipped, todos)
+	onEvent(tests.Completed(report))
+
+	return report
+}
+
+fn _isOnly(c: tests.TestCase) -> Bool {
+	c.details is tests.TestCaseDetailsOnly
+}
+
+// Marks every case that is not @tests.Only as skipped, but only when at least one case is @tests.Only.
+// Applying this here rather than during discovery keeps the behaviour the same however the cases were collected.
+fn _applyOnly(cases: [tests.TestCase]) -> [tests.TestCase] {
+	var hasOnly = false
+	for c <- cases {
+		if _isOnly(c) {
+			hasOnly = true
+		}
+	}
+	if !hasOnly {
+		return cases
+	}
+
+	var result = []
+	for c <- cases {
+		if _isOnly(c) {
+			result = append(result, c)
+		} else {
+			result = append(result, tests.TestCase(c.name, c.impl, true, c.comment, c.details))
+		}
+	}
+	return result
+}
+
+// Every @tests.Test function declared in module, as runnable cases.
+fn discover(module: Module) -> [tests.TestCase] {
+	var cases = []
+	for member <- reflect.members(module) {
+		switch member {
+		case is @tests.Test:
+			cases = append(cases, _caseOf(module, member))
+		case _:
+			continue
+		}
+	}
+	return cases
+}
+
+// Every @tests.Test function declared in any of modules, as runnable cases.
+fn discoverAll(modules: [Module]) -> [tests.TestCase] {
+	var cases = []
+	for module <- modules {
+		for found <- discover(module) {
+			cases = append(cases, found)
+		}
+	}
+	return cases
+}
+
+// Every @tests.Test function declared in a project module whose name satisfies predicate.
+// Only the modules the predicate accepts are loaded, so the rest never run.
+fn discoverWhere(predicate: fn(String) -> Bool) -> [tests.TestCase] {
+	discoverAll(pkgs.modulesWhere(pkgs.mainPackage(), predicate))
+}
+
+fn _caseOf(module, impl) -> tests.TestCase {
+	const name = reflect.moduleName(module) + "." + impl.name
+	const comment = switch impl {
+	case is @tests.Comment:
+		tests.Comment(impl).text
+	case _:
+		""
+	}
+
+	switch impl {
+	case is @tests.Only:
+		tests.TestCase(name, impl, false, comment, tests.TestCaseDetailsOnly())
+	case is @tests.Skip:
+		tests.TestCase(name, impl, true, comment, tests.TestCaseDetailsSkip())
+	case is @tests.Todo:
+		tests.TestCase(name, impl, false, comment, tests.TestCaseDetailsTodo())
+	case _:
+		tests.TestCase(name, impl, false, comment, None())
+	}
+}
+
+// Runs every test in the project modules whose name satisfies predicate, reporting TAP to stdout.
+// Exits with a non-zero status when any test failed, so a task or CI step fails with the suite.
+fn runWhere(predicate: fn(String) -> Bool) -> tests.TestReport {
+	const report = exec(discoverWhere(predicate), tap.reporter(os.stdout()))
+	if len(report.fail) > 0 {
+		os.exit(1)
+	}
+	return report
+}
+
+// Runs every test in the project modules whose name ends with "_t", the convention this repository follows.
+// Both a `foo/_t` submodule and a sibling module named `foo_t` match.
+fn runT() -> tests.TestReport {
+	runWhere(fn(name) { strings.hasSuffix(name, "_t") })
+}

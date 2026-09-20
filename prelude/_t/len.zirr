@@ -1,0 +1,43 @@
+mod prelude_t
+
+import tests
+import tests.assert
+
+@tests.Test()
+fn testStrLen() -> Result {
+	assert.all([
+		assert.equal(0, len("")),
+		assert.equal(1, len("a")),
+		assert.equal(2, len("42")),
+		assert.equal(3, len("hi!")),
+		assert.equal(4, len("cafe")),
+		assert.equal(5, len("café")),
+	])
+}
+
+@tests.Test()
+fn testDictLen() -> Result {
+	assert.all([
+		assert.equal(0, len([:])),
+		assert.equal(1, len(["hello": "world"])),
+		assert.equal(2, len([1: "value", "second": 2])),
+		assert.equal(3, len([true: false, 42: 1, "hello": "world"])),
+	])
+}
+
+@tests.Test()
+fn testArrayLen() -> Result {
+	assert.all([
+		assert.equal(0, len([])),
+		assert.equal(1, len([""])),
+		assert.equal(2, len([1, 2])),
+		assert.equal(3, len([[], "", 42])),
+	])
+}
+
+@tests.Test()
+@tests.Skip()
+@tests.Comment("creating binary data is currently unsupported")
+fn testBinaryLen() -> Result {
+	assert.fail("unsupported")
+}

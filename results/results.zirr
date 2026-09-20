@@ -1,0 +1,113 @@
+mod results
+
+// Normalizes r to Result.
+fn from(r: @AnyResult) -> Result {
+	AnyResult(r).toResult(r)
+}
+
+// Returns whether r is Ok.
+fn isOk(r: @AnyResult) -> Bool {
+	from(r) is Ok
+}
+
+// Returns whether r is Err.
+fn isErr(r: @AnyResult) -> Bool {
+	from(r) is Err
+}
+
+// Returns a Result with transform applied to r's value, or r's error unchanged.
+fn map(r: @AnyResult, transform: fn(Any) -> Any) -> Result {
+	const result = from(r)
+	switch result {
+	case is Ok:
+		Ok(transform(result.value))
+	case is Err:
+		result
+	}
+}
+
+// Returns a Result with transform applied to r's error reason, or r's value unchanged.
+fn mapErr(r: @AnyResult, transform: fn(Any) -> Any) -> Result {
+	const result = from(r)
+	switch result {
+	case is Ok:
+		result
+	case is Err:
+		Err(transform(result.reason))
+	}
+}
+
+// Returns transform(r's value) normalized to Result, or r's error unchanged. Use this instead of map when transform can itself fail.
+fn flatMap(r: @AnyResult, transform: fn(Any) -> @AnyResult) -> Result {
+	const result = from(r)
+	switch result {
+	case is Ok:
+		from(transform(result.value))
+	case is Err:
+		result
+	}
+}
+
+// Returns transform(r's error reason) normalized to Result, or r's value unchanged. Use this instead of mapErr to recover with a value that might itself be an error.
+fn flatMapErr(r: @AnyResult, transform: fn(Any) -> @AnyResult) -> Result {
+	const result = from(r)
+	switch result {
+	case is Ok:
+		result
+	case is Err:
+		from(transform(result.reason))
+	}
+}
+
+// Recovers r's error by calling handler with its reason and wrapping the result as Ok, or returns r unchanged if it's already Ok.
+fn catch(r: @AnyResult, handler: fn(Any) -> Any) -> Result {
+	const result = from(r)
+	switch result {
+	case is Ok:
+		result
+	case is Err:
+		Ok(handler(result.reason))
+	}
+}
+
+// Recovers r's error by replacing it with Ok(default), or returns r unchanged if it's already Ok.
+fn catchTo(r: @AnyResult, default: Any) -> Result {
+	const result = from(r)
+	switch result {
+	case is Ok:
+		result
+	case is Err:
+		Ok(default)
+	}
+}
+
+// Combines ress into a single Result: Ok of every value if all are Ok, or Err of every reason if any are Err.
+fn all(ress: [@AnyResult]) -> Result {
+	const results = for r <- ress {
+		AnyResult(r).toResult(r)
+	}
+
+	const errs = for r <- results {
+		switch r {
+		case is Ok:
+			continue
+		case is Err:
+			r.reason
+		}
+	}
+
+	if len(errs) > 0 {
+		return Err(errs)
+	}
+
+	const oks = for r <- results {
+		switch r {
+		case is Ok:
+			r.value
+		case is Err:
+			break
+		}
+	}
+
+	return Ok(oks)
+}

@@ -1,0 +1,60 @@
+mod errors
+
+// Returns a debug string for err, via its @Error attribute.
+fn debug(err: @Error) -> String {
+	Error(err).debug(err)
+}
+
+// Returns an @Error combining every error in errs, or None if errs is empty.
+fn join(errs: [@Error]) -> Option {
+	switch len(errs) {
+	case 0:
+		None()
+	case 1:
+		Some(errs[0])
+	case _:
+		Some(_joined(errs))
+	}
+}
+
+// Returns an @Error that adds context to err, debugging as "<message>: <err>".
+fn wrap(err: @Error, message: String) -> @Error {
+	_wrapped(err, message)
+}
+
+// Returns the error wrap was called with, or err itself if it isn't wrapped.
+fn unwrap(err: @Error) -> @Error {
+	switch err {
+	case is _wrapped:
+		err.err
+	case _:
+		err
+	}
+}
+
+@Error(_debugJoined)
+data _joined {
+	errs: [@Error]
+}
+
+fn _debugJoined(j) {
+	var result = ""
+	for e <- j.errs {
+		if result == "" {
+			result = debug(e)
+		} else {
+			result = result + "\n" + debug(e)
+		}
+	}
+	return result
+}
+
+@Error(_debugWrapped)
+data _wrapped {
+	err: @Error
+	message: String
+}
+
+fn _debugWrapped(w) {
+	w.message + ": " + debug(w.err)
+}

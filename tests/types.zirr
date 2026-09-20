@@ -1,0 +1,43 @@
+mod tests
+
+attr Test {}
+attr Skip {}
+attr Only {}
+attr Todo {}
+attr Comment {
+	text: String
+}
+
+data TestCase {
+	name: String
+	impl: fn() -> Result
+	skipped: Bool
+	comment: String
+	details: TestCaseDetails
+}
+
+@AnyOption()
+union TestCaseDetails {
+	None
+
+	data TestCaseDetailsSkip {}
+	data TestCaseDetailsTodo {}
+	data TestCaseDetailsOnly {}
+}
+
+union TestEvent {
+	data Discovered { cases: [TestCase] }
+	data Skipped { test: TestCase }
+	data Started { test: TestCase }
+	data Finished { test: TestCase, outcome: Result }
+	data Completed { report: TestReport }
+}
+
+data TestReport {
+	pass: [TestCase]
+	fail: [FailureRecord]
+	skip: [TestCase]
+	todo: [TestCase]
+}
+
+data FailureRecord { test: TestCase, error: Err }

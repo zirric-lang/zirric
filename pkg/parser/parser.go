@@ -17,6 +17,8 @@ type Parser struct {
 	peekToken token.Token
 
 	curSymbolTable *ast.DeclTable
+	// activeForBindings names the statement-form for bindings whose body is currently being parsed, so that a loop nested inside another binding the same name is still reported as a redeclaration.
+	activeForBindings []string
 
 	prefixParsers map[token.TokenType]prefixParser
 	infixParsers  map[token.TokenType]infixParser
@@ -812,11 +814,13 @@ func (p *Parser) parseStatementFor(_ StatementPosition) ast.StmtFor {
 	if p.curIs(token.IDENT) && p.peekIs(token.LEFT_ARROW) {
 		identTok, _ := p.expect(token.IDENT)
 		ident := ast.MakeIdentifier(identTok)
-		p.curSymbolTable.Insert(ast.MakeDeclForBinding(identTok, ident))
+		p.declareForBinding(identTok, ident)
 		p.expect(token.LEFT_ARROW)
 		collectionExpr := p.parseExpr()
 		p.expect(token.LBRACE)
+		p.activeForBindings = append(p.activeForBindings, ident.Value)
 		block := p.parseStmtBlock(IN_FOR)
+		p.activeForBindings = p.activeForBindings[:len(p.activeForBindings)-1]
 		p.expect(token.RBRACE)
 		return ast.MakeStmtFor(forTok, nil, &ident, collectionExpr, block)
 	}
@@ -826,6 +830,17 @@ func (p *Parser) parseStatementFor(_ StatementPosition) ast.StmtFor {
 	block := p.parseStmtBlock(IN_FOR)
 	p.expect(token.RBRACE)
 	return ast.MakeStmtFor(forTok, cond, nil, nil, block)
+}
+
+// declareForBinding declares a statement-form for binding, letting sequential loops reuse a name but still rejecting one nested inside another loop already binding it.
+func (p *Parser) declareForBinding(tok token.Token, ident ast.Identifier) {
+	for _, active := range p.activeForBindings {
+		if active == ident.Value {
+			p.curSymbolTable.Insert(ast.MakeDeclForBinding(tok, ident))
+			return
+		}
+	}
+	p.curSymbolTable.InsertForBinding(ast.MakeDeclForBinding(tok, ident))
 }
 
 func (p *Parser) parseStatementIf(pos StatementPosition) ast.StmtIf {
@@ -942,6 +957,10 @@ func (p *Parser) parseExprForBlock(symbols *ast.DeclTable) ast.ExprForBody {
 		switch p.curToken.Type {
 		case token.IF:
 			stmts = append(stmts, p.parseStatementIf(IN_FOR))
+			seenStmt = true
+			continue
+		case token.SWITCH:
+			stmts = append(stmts, p.parseStatementSwitch(IN_FOR))
 			seenStmt = true
 			continue
 		case token.BREAK:

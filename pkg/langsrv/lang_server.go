@@ -36,6 +36,9 @@ type zirricLangserver struct {
 	diagURIs   map[protocol.DocumentUri]struct{}
 	openDocs   map[string]protocol.DocumentUri
 
+	// diagRunMu serializes runDiagnosticsPass invocations (refreshDiagnostics's background goroutine and refreshDiagnosticsSync's inline call can otherwise overlap) — without it, two passes' Analyze() calls can concurrently mutate the same shared, cached AST (e.g. the prelude module), racing.
+	diagRunMu sync.Mutex
+
 	// moduleCache caches parseModuleFiles results keyed by directory.
 	// It is invalidated (cleared) whenever documents change.
 	moduleCache   map[string]*moduleCacheEntry

@@ -1,0 +1,10 @@
+mod prelude
+
+fn len(v: @Countable) -> Int {
+  Countable(v).length(v)
+}
+
+extern fn _arrayLen(v: Array) -> Int
+extern fn _dictLen(v: Dict) -> Int
+extern fn _strLen(v: String) -> Int
+extern fn _binaryLen(v: Binary) -> Int

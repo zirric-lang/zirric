@@ -43,8 +43,8 @@ func TestDefinitionStdlibJumpTarget(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected *protocol.Location, got %T", result)
 	}
-	if !strings.HasSuffix(string(loc.URI), "shim.zirr") {
-		t.Errorf("expected jump target in fmt's shim.zirr, got %s", loc.URI)
+	if !strings.HasSuffix(string(loc.URI), "print.zirr") {
+		t.Errorf("expected jump target in fmt's print.zirr, got %s", loc.URI)
 	}
 
 	rawPath := strings.TrimPrefix(string(loc.URI), "file://")

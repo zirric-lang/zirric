@@ -15,7 +15,7 @@ func (b Bool) Inspect() string {
 
 // Lookup implements RuntimeValue.
 func (b Bool) Lookup(name string) RuntimeValue {
-	panic("unimplemented")
+	return nil
 }
 
 // TypeConstantId implements RuntimeValue.

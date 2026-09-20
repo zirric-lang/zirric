@@ -1,0 +1,81 @@
+import tests { Test }
+import tests.assert
+
+import results
+
+@Test()
+fn testFrom() {
+	assert.all([
+		assert.equal(true, results.from(Ok(1)) is Ok),
+		assert.equal(true, results.from(Err("boom")) is Err),
+		assert.equal(1, results.from(Ok(1)).value),
+	])
+}
+
+@Test()
+fn testIsOkIsErr() {
+	assert.all([
+		assert.equal(true, results.isOk(Ok(1))),
+		assert.equal(false, results.isErr(Ok(1))),
+		assert.equal(true, results.isErr(Err("boom"))),
+		assert.equal(false, results.isOk(Err("boom"))),
+	])
+}
+
+@Test()
+fn testMap() {
+	assert.all([
+		assert.equal(20, results.map(Ok(2), fn(v) { v * 10 }).value),
+		assert.equal("boom", results.map(Err("boom"), fn(v) { v * 10 }).reason),
+	])
+}
+
+@Test()
+fn testMapErr() {
+	assert.all([
+		assert.equal(2, results.mapErr(Ok(2), fn(e) { e + "!" }).value),
+		assert.equal("boom!", results.mapErr(Err("boom"), fn(e) { e + "!" }).reason),
+	])
+}
+
+@Test()
+fn testFlatMap() {
+	assert.all([
+		assert.equal(20, results.flatMap(Ok(2), fn(v) { Ok(v * 10) }).value),
+		assert.equal("bad", results.flatMap(Ok(2), fn(v) { Err("bad") }).reason),
+		assert.equal("boom", results.flatMap(Err("boom"), fn(v) { Ok(v) }).reason),
+	])
+}
+
+@Test()
+fn testFlatMapErr() {
+	assert.all([
+		assert.equal(2, results.flatMapErr(Ok(2), fn(e) { Ok(0) }).value),
+		assert.equal(0, results.flatMapErr(Err("boom"), fn(e) { Ok(0) }).value),
+		assert.equal("still", results.flatMapErr(Err("boom"), fn(e) { Err("still") }).reason),
+	])
+}
+
+@Test()
+fn testCatch() {
+	assert.all([
+		assert.equal(2, results.catch(Ok(2), fn(e) { 0 }).value),
+		assert.equal("recovered boom", results.catch(Err("boom"), fn(e) { "recovered " + e }).value),
+	])
+}
+
+@Test()
+fn testCatchTo() {
+	assert.all([
+		assert.equal(2, results.catchTo(Ok(2), 99).value),
+		assert.equal(99, results.catchTo(Err("boom"), 99).value),
+	])
+}
+
+@Test()
+fn testAll() {
+	assert.all([
+		assert.equal([1, 2], results.all([Ok(1), Ok(2)]).value),
+		assert.equal(["boom"], results.all([Ok(1), Err("boom")]).reason),
+	])
+}

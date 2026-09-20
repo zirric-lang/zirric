@@ -39,6 +39,14 @@ func attachExprForSymbols(table *ast.DeclTable) {
 	}
 	var parent *ast.SymbolTable
 	if table.Parent != nil {
+		// buildExprForSymbols runs before buildExprFuncSymbols, so an expr-for
+		// nested inside a closure literal has an unresolved parent (the
+		// closure's own DeclTable) at this point — build it eagerly instead
+		// of leaving this table parentless, mirroring buildExprFuncSymbols's
+		// own defensive handling of the same ordering gap.
+		if table.Parent.Resolved == nil {
+			buildSymbolTableFromDeclTable(table.Parent, resolveParentSymbolTable(table.Parent.Parent))
+		}
 		parent = table.Parent.Resolved
 	}
 	buildSymbolTableFromDeclTable(table, parent)

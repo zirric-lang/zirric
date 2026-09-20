@@ -1,0 +1,21 @@
+mod fmt
+
+import io { Writer }
+import bytes
+
+// Converts any value to its string representation. Prefers the value's
+// @Printable attribute when it has one, otherwise falls back to a trivial
+// conversion for builtin types (Int, Float, Char, Byte as hex, ...).
+extern fn sprint(value: Any) -> String
+
+// Writes the string representation of a printable value to a writer.
+fn fprint(value: @Printable, writer: Writer) -> Int {
+	const str = sprint(value)
+	return writer.write(bytes.fromString(str))
+}
+
+// Writes the string representation of a printable value followed by a newline to a writer.
+fn fprintln(value: @Printable, writer: Writer) -> Int {
+	const str = sprint(value) + "\n"
+	return writer.write(bytes.fromString(str))
+}

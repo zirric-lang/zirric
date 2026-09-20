@@ -10,6 +10,7 @@ import (
 
 func (vm *VM) Run() error {
 	var taskId = TaskId(rand.Uint64())
+	vm.taskId = taskId
 	return vm.runTask(taskId)
 }
 
@@ -37,8 +38,10 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			return nil
 		}
 		if resumeDepth >= 0 {
+			// framesIdx also drops below resumeDepth when a nested `for <-`'s op.CallIterate returns normally after callIterate absorbed an inner signal for a frame at or below this resumeDepth (e.g. two `for <-` loops sharing one frame).
+			// Re-raise with the state a matching makeIterYieldFunc already applied: framesIdx is the target depth, and the return value is still on top of the stack.
 			if vm.framesIdx < resumeDepth {
-				panic(iterReturnSignal{})
+				panic(iterReturnSignal{targetDepth: vm.framesIdx, ret: vm.stack[vm.sp-1]})
 			}
 			if vm.framesIdx == resumeDepth && fr.ip == endIp {
 				return nil
@@ -121,8 +124,8 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			case *runtime.UnionType:
 				result = runtime.Bool(tv.IsMember(v.TypeConstantId()))
 			case *runtime.AttributeType:
-				// Attribute check: does the value's type carry this attribute?
-				result = runtime.Bool(vm.hasAttribute(v.TypeConstantId(), tv.TypeConstantId()))
+				// Attribute check: does the value (or its type) carry this attribute?
+				result = runtime.Bool(vm.hasAttribute(v, tv.TypeConstantId()))
 			case runtime.SimpleType:
 				result = runtime.Bool(v.TypeConstantId() == tv.TypeConstantId())
 			case *runtime.DataType:
@@ -263,6 +266,18 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 				if err := vm.push(target[pos]); err != nil {
 					return err
 				}
+			case runtime.Binary:
+				idx, ok := index.(runtime.Int)
+				if !ok {
+					return fmt.Errorf("binary index must be Int (%T %q)", index, index.Inspect())
+				}
+				pos := int(idx)
+				if pos < 0 || pos >= len(target) {
+					return fmt.Errorf("binary index %d out of bounds", pos)
+				}
+				if err := vm.push(runtime.Byte(target[pos])); err != nil {
+					return err
+				}
 			case runtime.Dict:
 				val, ok := target[index]
 				if !ok {
@@ -281,16 +296,13 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 				}
 
 				pos := int(idx)
-				if pos < 0 {
+				if pos < 0 || pos >= len(target) {
 					return fmt.Errorf("string index %d out of bounds", pos)
 				}
 
-				char, ok := runeAt(string(target), pos)
-				if !ok {
-					return fmt.Errorf("string index %d out of bounds", pos)
-				}
+				byte := runtime.Byte(target[pos])
 
-				if err := vm.push(char); err != nil {
+				if err := vm.push(byte); err != nil {
 					return err
 				}
 
@@ -460,25 +472,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 				}
 				val := vm.pop()
 
-				var attrs map[runtime.TypeId]int
-				if a, ok := val.(runtime.Attributable); ok {
-					attrs = a.TypeAttributes()
-				} else {
-					tid := val.TypeConstantId()
-					if a, ok := vm.builtinTypes[tid]; ok {
-						attrs = a.TypeAttributes()
-					} else {
-						typeIdx := int(tid)
-						if typeIdx < 0 || typeIdx >= len(vm.constants) {
-							return fmt.Errorf("attribute lookup failed for type id %d", tid)
-						}
-						a, ok := vm.constants[typeIdx].(runtime.Attributable)
-						if !ok {
-							return fmt.Errorf("attribute lookup requires attributable type, got=%T", vm.constants[typeIdx])
-						}
-						attrs = a.TypeAttributes()
-					}
-				}
+				attrs := vm.AttributesOf(val)
 
 				if attrs == nil {
 					if err := vm.push(runtime.Void{}); err != nil {
@@ -508,7 +502,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 					args[i] = vm.pop()
 				}
 
-				result, err := callee.Impl(args)
+				result, err := callee.Impl(vm, args)
 				if err != nil {
 					return fmt.Errorf("error calling extern function: %w", err)
 				}
@@ -698,6 +692,11 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			frame := vm.popFrame()
 			vm.sp = frame.basep
 
+			// Popping below resumeDepth means frame itself is genuinely returning, not just this resumed chunk finishing, so raise it instead of taking the normal push-and-continue path.
+			if resumeDepth >= 0 && vm.framesIdx < resumeDepth {
+				panic(iterReturnSignal{targetDepth: frame.homeIdx, ret: ret})
+			}
+
 			if err := vm.push(ret); err != nil {
 				return err
 			}
@@ -728,35 +727,31 @@ func (vm *VM) pop() runtime.RuntimeValue {
 	return v
 }
 
-// runeAt returns the rune at character position pos in s, and whether pos was in range.
-func runeAt(s string, pos int) (runtime.Char, bool) {
-	i := 0
-	for _, r := range s {
-		if i == pos {
-			return runtime.Char(r), true
-		}
-		i++
-	}
-	return 0, false
-}
-
 func (vm *VM) numericBinaryOperation(operator op.Opcode) error {
-	switch rhs := vm.pop().(type) {
+	rhs := vm.pop()
+	lhs := vm.pop()
+
+	// String concatenation: one side is String, the other any trivially stringifiable value (Int, Float, Char, Byte, Bool, Void) — e.g. "count: " + 5 renders as "count: 5", not the Int reinterpreted as a Unicode codepoint.
+	if lhsStr, ok := lhs.(runtime.String); ok {
+		if rhsStr, ok := rhs.(runtime.String); ok {
+			if operator != op.Add {
+				return fmt.Errorf("unsupported operator %x for String", operator)
+			}
+			return vm.push(lhsStr + rhsStr)
+		}
+		return vm.concatString(operator, lhsStr, rhs, true)
+	}
+	if rhsStr, ok := rhs.(runtime.String); ok {
+		return vm.concatString(operator, rhsStr, lhs, false)
+	}
+
+	switch rhs := rhs.(type) {
 	case runtime.Int:
-		switch lhs := vm.pop().(type) {
+		switch lhs := lhs.(type) {
 		case runtime.Int:
 			return vm.numericBinaryOperationInt(operator, lhs, rhs)
 		case runtime.Float:
 			return vm.numericBinaryOperationFloat(operator, lhs, runtime.Float(rhs))
-		case runtime.String:
-			if operator != op.Add {
-				def, err := op.LookupDefinition(byte(operator))
-				if err != nil {
-					panic(fmt.Sprintf("unknown operator %x", operator))
-				}
-				return fmt.Errorf("unsupported operator %q for Float and String", def.Name)
-			}
-			return vm.push(runtime.String(lhs) + runtime.String(rune(rhs)))
 		default:
 			def, err := op.LookupDefinition(byte(operator))
 			if err != nil {
@@ -765,7 +760,7 @@ func (vm *VM) numericBinaryOperation(operator op.Opcode) error {
 			return fmt.Errorf("unsupported operator %q for Int and %T", def.Name, lhs)
 		}
 	case runtime.Float:
-		switch lhs := vm.pop().(type) {
+		switch lhs := lhs.(type) {
 		case runtime.Int:
 			return vm.numericBinaryOperationFloat(operator, runtime.Float(lhs), rhs)
 		case runtime.Float:
@@ -777,37 +772,35 @@ func (vm *VM) numericBinaryOperation(operator op.Opcode) error {
 			}
 			return fmt.Errorf("unsupported operator %q for Float and %T", def.Name, lhs)
 		}
-	case runtime.String:
-		switch lhs := vm.pop().(type) {
-		case runtime.String:
-			if operator != op.Add {
-				return fmt.Errorf("unsupported operator %x for String", operator)
-			}
-			return vm.push(lhs + rhs)
-		case runtime.Char:
-			if operator != op.Add {
-				return fmt.Errorf("unsupported operator %x for String and Char", operator)
-			}
-			return vm.push(runtime.String(lhs) + runtime.String(rhs))
-		case runtime.Int:
-			if operator != op.Add {
-				return fmt.Errorf("unsupported operator %x for String and Int", operator)
-			}
-			return vm.push(runtime.String(rune(lhs)) + runtime.String(rhs))
-		default:
-			def, err := op.LookupDefinition(byte(operator))
-			if err != nil {
-				panic(fmt.Sprintf("unknown operator %x", operator))
-			}
-			return fmt.Errorf("unsupported operator %q for String and %T", def.Name, lhs)
-		}
 	default:
 		def, err := op.LookupDefinition(byte(operator))
 		if err != nil {
 			panic(fmt.Sprintf("unknown operator %x", operator))
 		}
-		return fmt.Errorf("unsupported operator %q for types %T and %T", def.Name, rhs, vm.pop())
+		return fmt.Errorf("unsupported operator %q for types %T and %T", def.Name, lhs, rhs)
 	}
+}
+
+// concatString handles String + other / other + String for op.Add, where other is any trivially stringifiable value (Int, Float, Char, Byte, Bool, Void).
+// strFirst reports whether the String operand came first (left) so the result is concatenated in the right order.
+func (vm *VM) concatString(operator op.Opcode, str runtime.String, other runtime.RuntimeValue, strFirst bool) error {
+	if operator != op.Add {
+		if strFirst {
+			return fmt.Errorf("unsupported operator %x for String and %T", operator, other)
+		}
+		return fmt.Errorf("unsupported operator %x for %T and String", operator, other)
+	}
+	s, ok := runtime.TrivialString(other)
+	if !ok {
+		if strFirst {
+			return fmt.Errorf("unsupported operator + for String and %T", other)
+		}
+		return fmt.Errorf("unsupported operator + for %T and String", other)
+	}
+	if strFirst {
+		return vm.push(str + runtime.String(s))
+	}
+	return vm.push(runtime.String(s) + str)
 }
 
 func (vm *VM) numericBinaryOperationInt(operator op.Opcode, lhs, rhs runtime.Int) error {
@@ -862,44 +855,71 @@ func (vm *VM) numericBinaryOperationFloat(operator op.Opcode, lhs, rhs runtime.F
 func (vm *VM) isEqual() runtime.Bool {
 	rhs := vm.pop()
 	lhs := vm.pop()
+	return runtime.Bool(valuesEqual(lhs, rhs))
+}
 
+// valuesEqual compares two runtime values for deep equality, recursing into Array/Dict elements.
+// Unlike isEqual, this is a pure function with no VM stack access, so it can call itself for nested collections.
+func valuesEqual(lhs, rhs runtime.RuntimeValue) bool {
 	if lhs.TypeConstantId() != rhs.TypeConstantId() {
 		return false
 	}
 	switch lhs := lhs.(type) {
 	case runtime.Int:
 		rhs, ok := rhs.(runtime.Int)
-		if !ok {
-			return false
-		}
-		return lhs == rhs
+		return ok && lhs == rhs
 	case runtime.Float:
 		rhs, ok := rhs.(runtime.Float)
-		if !ok {
-			return false
-		}
-		return lhs == rhs
+		return ok && lhs == rhs
 	case runtime.Bool:
 		rhs, ok := rhs.(runtime.Bool)
-		if !ok {
-			return false
-		}
-		return lhs == rhs
+		return ok && lhs == rhs
 	case runtime.Char:
 		rhs, ok := rhs.(runtime.Char)
-		if !ok {
-			return false
-		}
-		return lhs == rhs
+		return ok && lhs == rhs
 	case runtime.String:
 		rhs, ok := rhs.(runtime.String)
-		if !ok {
+		return ok && lhs == rhs
+	case runtime.Byte:
+		rhs, ok := rhs.(runtime.Byte)
+		return ok && lhs == rhs
+	case runtime.Binary:
+		rhs, ok := rhs.(runtime.Binary)
+		if !ok || len(lhs) != len(rhs) {
 			return false
 		}
-		return lhs == rhs
+		for i := range lhs {
+			if lhs[i] != rhs[i] {
+				return false
+			}
+		}
+		return true
 	case runtime.Void:
 		_, ok := rhs.(runtime.Void)
-		return runtime.Bool(ok)
+		return ok
+	case runtime.Array:
+		rhs, ok := rhs.(runtime.Array)
+		if !ok || len(lhs) != len(rhs) {
+			return false
+		}
+		for i := range lhs {
+			if !valuesEqual(lhs[i], rhs[i]) {
+				return false
+			}
+		}
+		return true
+	case runtime.Dict:
+		rhs, ok := rhs.(runtime.Dict)
+		if !ok || len(lhs) != len(rhs) {
+			return false
+		}
+		for k, v := range lhs {
+			rv, found := rhs[k]
+			if !found || !valuesEqual(v, rv) {
+				return false
+			}
+		}
+		return true
 	}
 	panic(fmt.Sprintf("unknown type for equality check %T of %q", lhs, lhs.Inspect()))
 }

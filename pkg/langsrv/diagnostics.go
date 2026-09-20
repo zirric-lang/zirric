@@ -30,25 +30,42 @@ func (ls *zirricLangserver) refreshDiagnostics(ctx *glsp.Context) error {
 	if ctx == nil || ls.fs == nil {
 		return nil
 	}
+	diagCtx, openDocs, prevDiagURIs, current := ls.beginDiagnosticsPass()
 
-	// Cancel any in-progress diagnostics pass and snapshot shared state atomically.
+	// Run the slow parse/analyze work in the background so that other LSP
+	// requests (hover, completion, …) are not blocked while diagnostics compute.
+	go ls.runDiagnosticsPass(diagCtx, ctx, openDocs, prevDiagURIs, current)
+
+	return nil
+}
+
+// refreshDiagnosticsSync runs the full diagnostics pass synchronously. Used in tests.
+func (ls *zirricLangserver) refreshDiagnosticsSync(ctx *glsp.Context) error {
+	if ctx == nil || ls.fs == nil {
+		return nil
+	}
+	diagCtx, openDocs, prevDiagURIs, current := ls.beginDiagnosticsPass()
+	ls.runDiagnosticsPass(diagCtx, ctx, openDocs, prevDiagURIs, current)
+	return nil
+}
+
+// beginDiagnosticsPass cancels any in-progress pass, snapshots the state a new one needs, and invalidates cached parse results — shared setup for both refreshDiagnostics and refreshDiagnosticsSync, so a sync call started while an async pass is still running properly supersedes it instead of running concurrently against the same shared, mutable AST (see runDiagnosticsPass's diagRunMu for the other half of that guarantee).
+func (ls *zirricLangserver) beginDiagnosticsPass() (diagCtx context.Context, openDocs map[string]protocol.DocumentUri, prevDiagURIs map[protocol.DocumentUri]struct{}, current map[protocol.DocumentUri]struct{}) {
 	ls.mu.Lock()
 	if ls.diagCancel != nil {
 		ls.diagCancel()
 	}
 
-	var (
-		diagCtx, cancel = context.WithCancel(context.Background())
-		openDocs        = make(map[string]protocol.DocumentUri, len(ls.openDocs))
-		current         = make(map[protocol.DocumentUri]struct{}, len(openDocs))
-		prevDiagURIs    = ls.diagURIs
-	)
+	var cancel context.CancelFunc
+	diagCtx, cancel = context.WithCancel(context.Background())
+	openDocs = make(map[string]protocol.DocumentUri, len(ls.openDocs))
+	current = make(map[protocol.DocumentUri]struct{}, len(ls.openDocs))
+	prevDiagURIs = ls.diagURIs
 	ls.diagCancel = cancel
 
 	for k, v := range ls.openDocs {
 		openDocs[k] = v
 	}
-
 	for _, uri := range openDocs {
 		current[uri] = struct{}{}
 	}
@@ -64,45 +81,7 @@ func (ls *zirricLangserver) refreshDiagnostics(ctx *glsp.Context) error {
 		ls.resolver.InvalidateModules()
 	}
 
-	// Run the slow parse/analyze work in the background so that other LSP
-	// requests (hover, completion, …) are not blocked while diagnostics compute.
-	go ls.runDiagnosticsPass(diagCtx, ctx, openDocs, prevDiagURIs, current)
-
-	return nil
-}
-
-// refreshDiagnosticsSync runs the full diagnostics pass synchronously. Used in tests.
-func (ls *zirricLangserver) refreshDiagnosticsSync(ctx *glsp.Context) error {
-	if ctx == nil || ls.fs == nil {
-		return nil
-	}
-
-	ls.mu.Lock()
-	openDocs := make(map[string]protocol.DocumentUri, len(ls.openDocs))
-	for k, v := range ls.openDocs {
-		openDocs[k] = v
-	}
-
-	prevDiagURIs := ls.diagURIs
-	current := make(map[protocol.DocumentUri]struct{}, len(openDocs))
-	for _, uri := range openDocs {
-		current[uri] = struct{}{}
-	}
-
-	ls.diagURIs = current
-	ls.mu.Unlock()
-
-	// Invalidate the module cache for a fresh pass.
-	ls.moduleCacheMu.Lock()
-	ls.moduleCache = make(map[string]*moduleCacheEntry)
-	ls.moduleCacheMu.Unlock()
-
-	if ls.resolver != nil {
-		ls.resolver.InvalidateModules()
-	}
-
-	ls.runDiagnosticsPass(context.Background(), ctx, openDocs, prevDiagURIs, current)
-	return nil
+	return diagCtx, openDocs, prevDiagURIs, current
 }
 
 func (ls *zirricLangserver) runDiagnosticsPass(
@@ -112,6 +91,10 @@ func (ls *zirricLangserver) runDiagnosticsPass(
 	prevDiagURIs map[protocol.DocumentUri]struct{},
 	current map[protocol.DocumentUri]struct{},
 ) {
+	// Serializes against any other in-flight pass (refreshDiagnostics's background goroutine vs. refreshDiagnosticsSync's inline call, or two overlapping refreshDiagnostics calls): only one Analyze() over the shared, mutable AST may run at a time. beginDiagnosticsPass already cancelled whichever pass was running before this one, so a pass currently holding this lock will notice diagCtx.Err() on its next file and release it promptly.
+	ls.diagRunMu.Lock()
+	defer ls.diagRunMu.Unlock()
+
 	for path, uri := range openDocs {
 		if diagCtx.Err() != nil {
 			return

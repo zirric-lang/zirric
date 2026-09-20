@@ -45,12 +45,8 @@ func (c *Compiler) compileExprFunc(fn *ast.ExprFunc) error {
 		}
 	}
 
-	if err := c.compileBlock(fn.Impl); err != nil {
+	if err := c.compileFuncBody(fn.Impl); err != nil {
 		return err
-	}
-	if !c.isLastInstruction(op.Return) {
-		c.emit(op.ConstVoid)
-		c.emit(op.Return)
 	}
 
 	bodyScope := c.leaveScope()
@@ -143,8 +139,9 @@ func (c *Compiler) emitPushCapture(parentSym *ast.Symbol) error {
 
 // compileFreeIdentifier compiles a read of a FreeScope identifier. If the
 // original symbol is a module-level global or constant, the corresponding
-// GetGlobal/Const is emitted. Otherwise the value is read from the closure's
-// Free array, dereferencing an UpvalueCell for mutable var bindings.
+// GetGlobal/Const is emitted. Otherwise it walks one .Parent hop at a time
+// (see resolveFreeAccess) to find either a real closure capture or a
+// same-frame local, dereferencing an UpvalueCell for mutable var bindings.
 func (c *Compiler) compileFreeIdentifier(symbol *ast.Symbol) error {
 	orig := symbol.Original()
 
@@ -159,17 +156,23 @@ func (c *Compiler) compileFreeIdentifier(symbol *ast.Symbol) error {
 		return nil
 	}
 
-	currentScope := c.scopes[c.scopeIdx]
-	freeIdx, ok := currentScope.freeMapping[symbol.Index]
+	access, ok := c.resolveFreeAccess(symbol)
 	if !ok {
 		return fmt.Errorf("free variable %q (index %d) not found in free mapping", symbol.Name, symbol.Index)
 	}
-
-	// Mutable var bindings are wrapped in UpvalueCells; dereference them.
-	if _, isVar := symbol.Decl.(*ast.DeclVariable); isVar {
-		c.emit(op.GetFreeCell, freeIdx)
+	if access.isFree {
+		// Mutable var bindings are wrapped in UpvalueCells; dereference them.
+		if _, isVar := access.symbol.Decl.(*ast.DeclVariable); isVar {
+			c.emit(op.GetFreeCell, access.index)
+		} else {
+			c.emit(op.GetFree, access.index)
+		}
+		return nil
+	}
+	if _, isVar := access.symbol.Decl.(*ast.DeclVariable); isVar && access.symbol.IsCaptured {
+		c.emit(op.GetLocalCell, access.index)
 	} else {
-		c.emit(op.GetFree, freeIdx)
+		c.emit(op.GetLocal, access.index)
 	}
 	return nil
 }
@@ -177,11 +180,44 @@ func (c *Compiler) compileFreeIdentifier(symbol *ast.Symbol) error {
 // compileFreeAssign compiles an assignment to a FreeScope mutable variable.
 // The value to store must already be on top of the stack.
 func (c *Compiler) compileFreeAssign(symbol *ast.Symbol) error {
-	currentScope := c.scopes[c.scopeIdx]
-	freeIdx, ok := currentScope.freeMapping[symbol.Index]
+	access, ok := c.resolveFreeAccess(symbol)
 	if !ok {
 		return fmt.Errorf("free variable %q (index %d) not found in free mapping for assignment", symbol.Name, symbol.Index)
 	}
-	c.emit(op.SetFreeCell, freeIdx)
+	if access.isFree {
+		c.emit(op.SetFreeCell, access.index)
+		return nil
+	}
+	if _, isVar := access.symbol.Decl.(*ast.DeclVariable); isVar && access.symbol.IsCaptured {
+		c.emit(op.SetLocalCell, access.index)
+	} else {
+		c.emit(op.SetLocal, access.index)
+	}
 	return nil
+}
+
+// freeAccess describes how to reach a FreeScope symbol's value from the current compilation scope.
+type freeAccess struct {
+	symbol *ast.Symbol // the hop at which resolution stopped — a real capture (isFree) or an in-frame local
+	index  int         // free-array index (isFree) or local slot (!isFree)
+	isFree bool
+}
+
+// resolveFreeAccess walks symbol.Parent one hop at a time toward its Original(), stopping at the first hop that's either resolvable through the current scope's freeMapping (a real capture set up by an enclosing compileExprFunc) or already a local in the current frame.
+//
+// Jumping straight to symbol.Original() (as read/assign used to) is only correct when every hop in between crossed no real closure boundary: an expr-for body's own SymbolTable has a Parent link to its enclosing function purely for lexical (same-frame) scoping, and the analyzer's generic SymbolTable.resolve() promotes any cross-table lookup to a FreeScope symbol via defineFree — even for this same-frame case, since it has no way to tell "nested block scope" from "real closure boundary" apart. Original() would then reach past a genuine intermediate closure's own capture (silently reading the wrong frame's local slot) whenever an expr-for inside a real closure refers to a variable from further out. Stopping at the first resolvable hop — rather than the last one — avoids that.
+func (c *Compiler) resolveFreeAccess(symbol *ast.Symbol) (freeAccess, bool) {
+	currentScope := c.scopes[c.scopeIdx]
+	for s := symbol; s != nil; s = s.Parent {
+		if freeIdx, ok := currentScope.freeMapping[s.Index]; ok {
+			return freeAccess{symbol: s, index: freeIdx, isFree: true}, true
+		}
+		if s.LocalId != nil {
+			return freeAccess{symbol: s, index: *s.LocalId, isFree: false}, true
+		}
+		if s.Scope != ast.FreeScope {
+			break
+		}
+	}
+	return freeAccess{}, false
 }

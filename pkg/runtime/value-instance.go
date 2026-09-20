@@ -1,12 +1,18 @@
 package runtime
 
-import "fmt"
+import "strings"
 
 type DataValue struct {
 	TypeId TypeId
 	Attrs  map[TypeId]int
 	Values []RuntimeValue
 	Fields map[string]int
+
+	// TypeName is captured at construction time, from the DataType that
+	// created this value, purely for Inspect() — a DataValue otherwise has
+	// no way to reach its type's declared name later (TypeId is just a
+	// number).
+	TypeName string
 }
 
 func MakeDataValue(dt *DataType, values []RuntimeValue) *DataValue {
@@ -15,16 +21,29 @@ func MakeDataValue(dt *DataType, values []RuntimeValue) *DataValue {
 		fields[f.Name] = i
 	}
 	return &DataValue{
-		TypeId: TypeId(*dt.Symbol.ConstantId),
-		Attrs:  dt.Attributes,
-		Fields: fields,
-		Values: values,
+		TypeId:   TypeId(*dt.Symbol.ConstantId),
+		Attrs:    dt.Attributes,
+		Fields:   fields,
+		Values:   values,
+		TypeName: dt.Symbol.Decl.DeclName().Value,
 	}
 }
 
 // Inspect implements RuntimeValue.
+// Mirrors the constructor-call syntax used to build the value, e.g.
+// _notPrintable("nested") for `data _notPrintable { text }`.
 func (dv *DataValue) Inspect() string {
-	return fmt.Sprintf("data #%d { %+v }", dv.TypeId, dv.Fields)
+	var b strings.Builder
+	b.WriteString(dv.TypeName)
+	b.WriteByte('(')
+	for i, v := range dv.Values {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(v.Inspect())
+	}
+	b.WriteByte(')')
+	return b.String()
 }
 
 // Lookup implements RuntimeValue.

@@ -1,0 +1,7 @@
+mod fmt
+
+import io
+
+// fn scan(r: io.Reader) {
+// 	r.read()
+// }

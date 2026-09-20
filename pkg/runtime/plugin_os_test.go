@@ -19,6 +19,10 @@ func (m *mockBindContext) ResolveModuleSymbol(moduleName string, symbolName stri
 	return nil
 }
 
+func (m *mockBindContext) MainPackageModules() (string, map[string]int) {
+	return "", nil
+}
+
 func makeDataSymbol(name string, constantId int) *ast.Symbol {
 	ident := ast.MakeIdentifier(token.Token{Literal: name})
 	decl := ast.MakeDeclData(token.Token{}, ident)
@@ -60,7 +64,7 @@ func TestOSPluginBindStdout(t *testing.T) {
 	}
 
 	// Call the extern fn to get a Writer DataValue.
-	result, err := ef.Impl([]RuntimeValue{})
+	result, err := ef.Impl(nil, []RuntimeValue{})
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -100,7 +104,7 @@ func TestOSPluginBindStdin(t *testing.T) {
 		t.Fatal("Bind returned nil for stdin")
 	}
 	ef := val.(*ExternFunc)
-	result, err := ef.Impl([]RuntimeValue{})
+	result, err := ef.Impl(nil, []RuntimeValue{})
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -147,7 +151,7 @@ func TestOSPluginBindEnv(t *testing.T) {
 	}
 	ef := val.(*ExternFunc)
 	// Call with a known env variable.
-	result, err := ef.Impl([]RuntimeValue{String("PATH")})
+	result, err := ef.Impl(nil, []RuntimeValue{String("PATH")})
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -167,7 +171,7 @@ func TestOSPluginBindArgs(t *testing.T) {
 		t.Fatal("Bind returned nil for args")
 	}
 	ef := val.(*ExternFunc)
-	result, err := ef.Impl([]RuntimeValue{})
+	result, err := ef.Impl(nil, []RuntimeValue{})
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}

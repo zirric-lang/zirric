@@ -1,0 +1,56 @@
+mod options
+
+// Normalizes o to Option: None stays None, an existing Some stays as it is, and any other value is lifted into Some(o).
+fn from(o) -> Option {
+	switch o {
+	case is None:
+		o
+	case is Some:
+		o
+	case _:
+		Some(o)
+	}
+}
+
+// Returns whether o is present.
+fn isSome(o) -> Bool {
+	from(o) is Some
+}
+
+// Returns whether o is absent.
+fn isNone(o) -> Bool {
+	from(o) is None
+}
+
+// Returns a Some with transform applied to o's value, or None unchanged.
+fn map(o, transform: fn(Any) -> Any) -> Option {
+	const option = from(o)
+	switch option {
+	case is Some:
+		Some(transform(option.value))
+	case is None:
+		option
+	}
+}
+
+// Returns transform(o's value) normalized to Option, or None unchanged. Use this instead of map when transform can itself be absent.
+fn flatMap(o, transform: fn(Any) -> @AnyOption) -> Option {
+	const option = from(o)
+	switch option {
+	case is Some:
+		from(transform(option.value))
+	case is None:
+		option
+	}
+}
+
+// Returns o's value, or default if o is absent.
+fn or(o, default: Any) -> Any {
+	const option = from(o)
+	switch option {
+	case is Some:
+		option.value
+	case is None:
+		default
+	}
+}

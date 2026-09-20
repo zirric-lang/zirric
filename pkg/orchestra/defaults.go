@@ -1,17 +1,30 @@
 package orchestra
 
 import (
+	arraysfs "code.knabel.dev/zirric-lang/zirric/arrays"
+	bytesfs "code.knabel.dev/zirric-lang/zirric/bytes"
 	cavefs "code.knabel.dev/zirric-lang/zirric/cave"
+	dictsfs "code.knabel.dev/zirric-lang/zirric/dicts"
+	errorsfs "code.knabel.dev/zirric-lang/zirric/errors"
 	fmtfs "code.knabel.dev/zirric-lang/zirric/fmt"
+	funfs "code.knabel.dev/zirric-lang/zirric/fun"
 	futurefs "code.knabel.dev/zirric-lang/zirric/future"
 	iofs "code.knabel.dev/zirric-lang/zirric/io"
+	mathfs "code.knabel.dev/zirric-lang/zirric/math"
+	optionsfs "code.knabel.dev/zirric-lang/zirric/options"
 	osfs "code.knabel.dev/zirric-lang/zirric/os"
 	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/pkgmanager"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/embedreg"
 	"code.knabel.dev/zirric-lang/zirric/pkg/version"
 	preludefs "code.knabel.dev/zirric-lang/zirric/prelude"
+	rangesfs "code.knabel.dev/zirric-lang/zirric/ranges"
+	reflectfs "code.knabel.dev/zirric-lang/zirric/reflect"
+	resultsfs "code.knabel.dev/zirric-lang/zirric/results"
+	scriptsfs "code.knabel.dev/zirric-lang/zirric/scripts"
+	stringsfs "code.knabel.dev/zirric-lang/zirric/strings"
 	tasksfs "code.knabel.dev/zirric-lang/zirric/tasks"
+	testsfs "code.knabel.dev/zirric-lang/zirric/tests"
 	"github.com/go-git/go-billy/v5"
 )
 
@@ -44,6 +57,19 @@ func DefaultStdlibProvider() (*embedreg.EmbedRegistry, error) {
 		embedreg.FSConfig{Name: "io", FS: iofs.FS},
 		embedreg.FSConfig{Name: "fmt", FS: fmtfs.FS},
 		embedreg.FSConfig{Name: "os", FS: osfs.FS},
+		embedreg.FSConfig{Name: "scripts", FS: scriptsfs.FS},
+		embedreg.FSConfig{Name: "bytes", FS: bytesfs.FS},
+		embedreg.FSConfig{Name: "ranges", FS: rangesfs.FS},
+		embedreg.FSConfig{Name: "strings", FS: stringsfs.FS},
+		embedreg.FSConfig{Name: "arrays", FS: arraysfs.FS},
+		embedreg.FSConfig{Name: "dicts", FS: dictsfs.FS},
+		embedreg.FSConfig{Name: "fun", FS: funfs.FS},
+		embedreg.FSConfig{Name: "options", FS: optionsfs.FS},
+		embedreg.FSConfig{Name: "results", FS: resultsfs.FS},
+		embedreg.FSConfig{Name: "errors", FS: errorsfs.FS},
+		embedreg.FSConfig{Name: "reflect", FS: reflectfs.FS},
+		embedreg.FSConfig{Name: "tests", FS: testsfs.FS},
+		embedreg.FSConfig{Name: "math", FS: mathfs.FS},
 	)
 }
 

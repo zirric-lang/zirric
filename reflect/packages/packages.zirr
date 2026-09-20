@@ -1,0 +1,57 @@
+mod packages
+
+import arrays
+
+// A package and the modules it declares.
+data Package {
+	name: String
+	moduleNames: [String]
+}
+
+extern fn _mainPackageName() -> String
+extern fn _mainPackageModuleNames() -> [String]
+extern fn _moduleNamed(name: String) -> Any
+
+// The package the running project itself declares.
+// Importing this module compiles every module in that package, including ones no import reaches, so that they can be looked up by name later.
+// Left out are the entry module, since the running program cannot be loaded again, and any module whose unqualified name is already taken by a loaded module, since it could never be imported anyway.
+fn mainPackage() -> Package {
+	Package(_mainPackageName(), _mainPackageModuleNames())
+}
+
+// The module of p called name, or None if p declares no such module.
+// Loading a module runs its top-level code the first time it is reached.
+fn module(p: Package, name: String) -> Option {
+	const value = _moduleNamed(name)
+	switch value {
+	case is Void:
+		None()
+	case _:
+		Some(value)
+	}
+}
+
+// Every module of p whose name satisfies predicate.
+// Each name is tested before its module is loaded, so a module the predicate rejects never runs.
+fn modulesWhere(p: Package, predicate: fn(String) -> Bool) -> [Module] {
+	var result = []
+	for name <- p.moduleNames {
+		if !predicate(name) {
+			continue
+		}
+		const found = module(p, name)
+		switch found {
+		case is Some:
+			result = append(result, found.value)
+		case is None:
+			continue
+		}
+	}
+	return result
+}
+
+// Every module of p except those named.
+// Loading a module runs its top-level code, so naming the ones to leave out is the point: there is deliberately no way to ask for all of them without saying so.
+fn modulesExcept(p: Package, names: [String]) -> [Module] {
+	modulesWhere(p, fn(name) { !arrays.contains(names, name) })
+}

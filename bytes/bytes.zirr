@@ -1,0 +1,111 @@
+mod bytes
+
+import ranges
+
+// A single byte or a sequence of bytes.
+union Like {
+	Byte
+	Binary
+}
+
+// Normalizes a Byte or Binary to Binary.
+extern fn from(v: Like) -> Binary
+
+// Returns the UTF-8 byte representation of str.
+extern fn fromString(str: String) -> Binary
+
+// Returns the UTF-8 byte representation of c. A Char can be 1-4 bytes.
+extern fn fromChar(c: Char) -> Binary
+
+// Reinterprets v's bytes as a String.
+extern fn toString(v: Like) -> String
+
+// Returns v's hex representation, two lowercase digits per byte.
+extern fn toHex(v: Like) -> String
+
+// Decodes a hex string (two digits per byte, either case) into Binary.
+extern fn fromHex(str: String) -> Binary
+
+// Returns the bytes of v from start (inclusive) to end (exclusive).
+extern fn slice(v: Like, start: Int, end: Int) -> Binary
+
+// Returns the bytes of v selected by r.
+fn range(v: Like, r: ranges.Like) -> Binary {
+	switch r {
+	case is Range:
+		return slice(v, r.start, r.end)
+	case is ClosedRange:
+		return slice(v, r.start, r.end + 1)
+	case is OpenRange:
+		return slice(v, r.start + 1, r.end)
+	}
+}
+
+extern fn _firstIndexOf(v: Like, needle: Like) -> Int
+extern fn _lastIndexOf(v: Like, needle: Like) -> Int
+
+// Returns the index of needle's first occurrence in v, or None if absent.
+fn firstIndexOf(v: Like, needle: Like) -> Option {
+	const idx = _firstIndexOf(v, needle)
+	if idx == -1 {
+		None()
+	} else {
+		Some(idx)
+	}
+}
+
+// Returns the index of needle's last occurrence in v, or None if absent.
+fn lastIndexOf(v: Like, needle: Like) -> Option {
+	const idx = _lastIndexOf(v, needle)
+	if idx == -1 {
+		None()
+	} else {
+		Some(idx)
+	}
+}
+
+// Returns whether needle occurs anywhere in v.
+fn contains(v: Like, needle: Like) -> Bool {
+	firstIndexOf(v, needle) is Some
+}
+
+// Returns whether v starts with prefix.
+fn hasPrefix(v: Like, prefix: Like) -> Bool {
+	const value = from(v)
+	const needle = from(prefix)
+	if len(needle) > len(value) {
+		return false
+	}
+	return slice(value, 0, len(needle)) == needle
+}
+
+// Returns whether v ends with suffix.
+fn hasSuffix(v: Like, suffix: Like) -> Bool {
+	const value = from(v)
+	const needle = from(suffix)
+	if len(needle) > len(value) {
+		return false
+	}
+	return slice(value, len(value) - len(needle), len(value)) == needle
+}
+
+// Concatenates every part into a single Binary, in order.
+fn concat(parts: [Like]) -> Binary {
+	var result = fromString("")
+	for p <- parts {
+		result = append(result, from(p))
+	}
+	return result
+}
+
+// Returns v repeated n times.
+fn repeat(v: Like, n: Int) -> Binary {
+	const value = from(v)
+	var result = fromString("")
+	var i = 0
+	for i < n {
+		result = append(result, value)
+		i = i + 1
+	}
+	return result
+}

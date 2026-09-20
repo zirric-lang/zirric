@@ -1,0 +1,159 @@
+import tests { Test }
+import tests.assert
+import fmt { sprint }
+
+import bytes
+
+@Test()
+fn testFromString() {
+	assert.all([
+		assert.equal("", sprint(bytes.fromString(""))),
+		assert.equal("68656c6c6f", sprint(bytes.fromString("hello"))),
+	])
+}
+
+@Test()
+fn testFromChar() {
+	assert.all([
+		// 'a' is a single-byte UTF-8 char.
+		assert.equal("61", sprint(bytes.fromChar('a'))),
+		// 'é' (U+00E9) is a 2-byte UTF-8 char — must not be truncated to 1 byte.
+		assert.equal("c3a9", sprint(bytes.fromChar('é'))),
+	])
+}
+
+@Test()
+fn testFrom() {
+	assert.all([
+		// from(Byte) wraps a single byte.
+		assert.equal(bytes.fromString("a"), bytes.from("a"[0])),
+		// from(Binary) is the identity.
+		assert.equal(bytes.fromString("hello"), bytes.from(bytes.fromString("hello"))),
+	])
+}
+
+@Test()
+fn testBinaryEquality() {
+	assert.all([
+		assert.equal(true, bytes.fromString("hello") == bytes.fromString("hello")),
+		assert.equal(true, bytes.fromString("") == bytes.fromString("")),
+		assert.equal(false, bytes.fromString("hello") == bytes.fromString("world")),
+		// Different lengths must not be considered equal.
+		assert.equal(false, bytes.fromString("hi") == bytes.fromString("hii")),
+		assert.equal(false, bytes.fromString("hii") == bytes.fromString("hi")),
+	])
+}
+
+@Test()
+fn testToString() {
+	assert.all([
+		assert.equal("", bytes.toString(bytes.fromString(""))),
+		assert.equal("hello", bytes.toString(bytes.fromString("hello"))),
+		// Round-trips through a multi-byte char.
+		assert.equal("é", bytes.toString(bytes.fromChar('é'))),
+	])
+}
+
+@Test()
+fn testToHex() {
+	assert.all([
+		assert.equal("", bytes.toHex(bytes.fromString(""))),
+		assert.equal("68656c6c6f", bytes.toHex(bytes.fromString("hello"))),
+		assert.equal("61", bytes.toHex("a"[0])),
+	])
+}
+
+@Test()
+fn testFromHex() {
+	assert.all([
+		assert.equal(bytes.fromString(""), bytes.fromHex("")),
+		assert.equal(bytes.fromString("hello"), bytes.fromHex("68656c6c6f")),
+		// Uppercase hex digits are accepted too.
+		assert.equal(bytes.fromString("hello"), bytes.fromHex("68656C6C6F")),
+	])
+}
+
+@Test()
+fn testSlice() {
+	assert.all([
+		assert.equal(bytes.fromString("ell"), bytes.slice(bytes.fromString("hello"), 1, 4)),
+		assert.equal(bytes.fromString(""), bytes.slice(bytes.fromString("hello"), 2, 2)),
+		assert.equal(bytes.fromString("hello"), bytes.slice(bytes.fromString("hello"), 0, 5)),
+	])
+}
+
+@Test()
+fn testRange() {
+	assert.all([
+		assert.equal(bytes.fromString("ell"), bytes.range(bytes.fromString("hello"), Range(1, 4))),
+		assert.equal(bytes.fromString("ell"), bytes.range(bytes.fromString("hello"), ClosedRange(1, 3))),
+		assert.equal(bytes.fromString("ell"), bytes.range(bytes.fromString("hello"), OpenRange(0, 4))),
+	])
+}
+
+@Test()
+fn testConcat() {
+	assert.all([
+		assert.equal(bytes.fromString(""), bytes.concat([])),
+		assert.equal(bytes.fromString("abc"), bytes.concat([
+			bytes.fromString("a"),
+			bytes.fromString("b"),
+			"c"[0],
+		])),
+	])
+}
+
+@Test()
+fn testHasPrefix() {
+	assert.all([
+		assert.equal(true, bytes.hasPrefix(bytes.fromString("hello"), bytes.fromString("he"))),
+		assert.equal(true, bytes.hasPrefix(bytes.fromString("hello"), bytes.fromString(""))),
+		assert.equal(false, bytes.hasPrefix(bytes.fromString("hello"), bytes.fromString("lo"))),
+		// A prefix longer than the value itself can never match.
+		assert.equal(false, bytes.hasPrefix(bytes.fromString("hi"), bytes.fromString("hello"))),
+	])
+}
+
+@Test()
+fn testHasSuffix() {
+	assert.all([
+		assert.equal(true, bytes.hasSuffix(bytes.fromString("hello"), bytes.fromString("lo"))),
+		assert.equal(true, bytes.hasSuffix(bytes.fromString("hello"), bytes.fromString(""))),
+		assert.equal(false, bytes.hasSuffix(bytes.fromString("hello"), bytes.fromString("he"))),
+		assert.equal(false, bytes.hasSuffix(bytes.fromString("hi"), bytes.fromString("hello"))),
+	])
+}
+
+@Test()
+fn testContains() {
+	assert.all([
+		assert.equal(true, bytes.contains(bytes.fromString("hello"), bytes.fromString("ell"))),
+		assert.equal(true, bytes.contains(bytes.fromString("hello"), bytes.fromString(""))),
+		assert.equal(false, bytes.contains(bytes.fromString("hello"), bytes.fromString("xyz"))),
+	])
+}
+
+@Test()
+fn testFirstIndexOf() {
+	assert.all([
+		assert.equal(2, bytes.firstIndexOf(bytes.fromString("hello"), bytes.fromString("l")).value),
+		assert.equal(true, bytes.firstIndexOf(bytes.fromString("hello"), bytes.fromString("xyz")) is None),
+	])
+}
+
+@Test()
+fn testLastIndexOf() {
+	assert.all([
+		assert.equal(3, bytes.lastIndexOf(bytes.fromString("hello"), bytes.fromString("l")).value),
+		assert.equal(true, bytes.lastIndexOf(bytes.fromString("hello"), bytes.fromString("xyz")) is None),
+	])
+}
+
+@Test()
+fn testRepeat() {
+	assert.all([
+		assert.equal(bytes.fromString(""), bytes.repeat(bytes.fromString("ab"), 0)),
+		assert.equal(bytes.fromString("ababab"), bytes.repeat(bytes.fromString("ab"), 3)),
+		assert.equal(bytes.fromString("xxxx"), bytes.repeat("x"[0], 4)),
+	])
+}

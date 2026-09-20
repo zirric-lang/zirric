@@ -47,8 +47,11 @@ func (c CompiledFunction) Inspect() string {
 
 // Lookup implements CallableRuntimeValue.
 func (c CompiledFunction) Lookup(name string) RuntimeValue {
-	if name == "arity" {
+	switch name {
+	case "arity":
 		return Int(c.Arity())
+	case "name":
+		return String(c.Symbol.Name)
 	}
 	return nil
 }

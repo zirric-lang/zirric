@@ -174,6 +174,53 @@ case _:
 	}
 }
 
+// TestParseExprForSwitchWithBreakAndContinue is a regression test: parseExprForBlock's top-level statement dispatch only special-cased if/break/continue, so a `switch` inside an expr-for body fell through to parseExpr, parsing it as an ExprSwitch whose case bodies require a single expression — break/continue can't appear there at all, so this used to fail with a syntax error.
+func TestParseExprForSwitchWithBreakAndContinue(t *testing.T) {
+	srcFile := prepareSourceFileParsing(t, `(for x <- items {
+switch x {
+case is Int:
+continue
+case is String:
+break
+case _:
+x
+}
+})`)
+	if len(srcFile.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(srcFile.Statements))
+	}
+	stmt, ok := srcFile.Statements[0].(*ast.StmtExpr)
+	if !ok {
+		t.Fatalf("expected *ast.StmtExpr, got %T", srcFile.Statements[0])
+	}
+	forExpr, ok := stmt.Expr.(ast.ExprFor)
+	if !ok {
+		t.Fatalf("expected ast.ExprFor, got %T", stmt.Expr)
+	}
+	if len(forExpr.Body.Stmts) != 1 {
+		t.Fatalf("expected 1 statement in the for-expr body, got %d", len(forExpr.Body.Stmts))
+	}
+	sw, ok := forExpr.Body.Stmts[0].(ast.StmtSwitch)
+	if !ok {
+		t.Fatalf("expected ast.StmtSwitch, got %T", forExpr.Body.Stmts[0])
+	}
+	if len(sw.Cases) != 3 {
+		t.Fatalf("expected 3 cases, got %d", len(sw.Cases))
+	}
+	if len(sw.Cases[0].Body) != 1 {
+		t.Fatalf("case 0 (continue): expected 1 body stmt, got %d", len(sw.Cases[0].Body))
+	}
+	if _, ok := sw.Cases[0].Body[0].(ast.StmtContinue); !ok {
+		t.Errorf("case 0: expected ast.StmtContinue, got %T", sw.Cases[0].Body[0])
+	}
+	if len(sw.Cases[1].Body) != 1 {
+		t.Fatalf("case 1 (break): expected 1 body stmt, got %d", len(sw.Cases[1].Body))
+	}
+	if _, ok := sw.Cases[1].Body[0].(ast.StmtBreak); !ok {
+		t.Errorf("case 1: expected ast.StmtBreak, got %T", sw.Cases[1].Body[0])
+	}
+}
+
 func TestParseStmtSwitchWithReturn(t *testing.T) {
 	// return is allowed inside a switch when the switch is inside a function
 	srcFile := prepareSourceFileParsing(t, `fn example(x) {

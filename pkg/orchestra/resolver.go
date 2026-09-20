@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 
@@ -60,7 +61,55 @@ func NewModuleResolver(pm *pkgmanager.PackageManager, cave cavefile.Cavefile, op
 	return r, nil
 }
 
-var _ resolver.ModuleResolver = (*ModuleResolver)(nil)
+var (
+	_ resolver.ModuleResolver    = (*ModuleResolver)(nil)
+	_ resolver.MainPackageLister = (*ModuleResolver)(nil)
+)
+
+func (r *ModuleResolver) MainPackageName() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.cave.Name
+}
+
+// MainPackageModules returns every module URI belonging to the project's own package, sorted.
+// Membership is decided by URI prefix rather than by identifying the package object, since the project is installed as its own package whose Source() is a filesystem path that need not match the Cavefile.
+func (r *ModuleResolver) MainPackageModules(ctx context.Context) ([]registry.LogicalURI, error) {
+	if _, err := r.EnsureInstalled(ctx); err != nil {
+		return nil, err
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	base := registry.LogicalURI(r.cave.Name)
+	if base == "" {
+		return nil, nil
+	}
+	prefix := string(base) + "."
+
+	seen := map[registry.LogicalURI]struct{}{}
+	uris := make([]registry.LogicalURI, 0)
+	for _, pkg := range r.installed {
+		mods, err := pkg.ResolveModules()
+		if err != nil {
+			continue
+		}
+		for _, mod := range mods {
+			uri := mod.URI()
+			if uri != base && !strings.HasPrefix(string(uri), prefix) {
+				continue
+			}
+			if _, ok := seen[uri]; ok {
+				continue
+			}
+			seen[uri] = struct{}{}
+			uris = append(uris, uri)
+		}
+	}
+	sort.Slice(uris, func(i, j int) bool { return uris[i] < uris[j] })
+	return uris, nil
+}
 
 func (r *ModuleResolver) RegisterModule(uri registry.LogicalURI, module *ast.ContextModule) {
 	r.mu.Lock()

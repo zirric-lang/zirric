@@ -1,0 +1,55 @@
+mod math
+
+// The ratio of a circle's circumference to its diameter.
+extern const pi: Float
+
+// Euler's number, the base of the natural logarithm.
+extern const e: Float
+
+// Returns v as a Float.
+extern fn toFloat(v: Number) -> Float
+
+// Returns v as an Int, discarding any fractional part rather than rounding.
+extern fn toInt(v: Number) -> Int
+
+// Returns v without its sign, as the same type it was given.
+extern fn abs(v: Number) -> Number
+
+// Returns whichever of a and b is smaller, as the type it was given.
+extern fn min(a: Number, b: Number) -> Number
+
+// Returns whichever of a and b is larger, as the type it was given.
+extern fn max(a: Number, b: Number) -> Number
+
+// Returns whether v is not a number, as produced by an undefined operation such as 0.0 / 0.0 or the square root of a negative. An Int is never NaN.
+// NaN is equal to nothing, itself included, so this is the only way to detect it.
+extern fn isNaN(v: Number) -> Bool
+
+// Returns whether v is positive or negative infinity, as produced by dividing a non-zero Float by zero. An Int is never infinite, and NaN is not infinite either.
+extern fn isInfinite(v: Number) -> Bool
+
+// Returns -1, 0 or 1 according to whether v is negative, zero or positive.
+extern fn sign(v: Number) -> Int
+
+// Returns the greatest whole number not above v.
+extern fn floor(v: Number) -> Float
+
+// Returns the least whole number not below v.
+extern fn ceil(v: Number) -> Float
+
+// Returns v rounded to the nearest whole number, halves away from zero.
+extern fn round(v: Number) -> Float
+
+// Returns v with its fractional part discarded, rounding toward zero.
+extern fn trunc(v: Number) -> Float
+
+// Returns the square root of v.
+extern fn sqrt(v: Number) -> Float
+
+// Returns base raised to the power of exponent.
+extern fn pow(base: Number, exponent: Number) -> Float
+
+// Returns v limited to the range from low to high, as the type it was given.
+fn clamp(v: Number, low: Number, high: Number) -> Number {
+	min(max(v, low), high)
+}

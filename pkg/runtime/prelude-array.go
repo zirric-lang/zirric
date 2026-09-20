@@ -1,20 +1,27 @@
 package runtime
 
+import "strings"
+
 var _ RuntimeValue = Array{}
 
 type Array []RuntimeValue
 
 // Inspect implements RuntimeValue.
 func (a Array) Inspect() string {
-	panic("unimplemented")
+	var b strings.Builder
+	b.WriteByte('[')
+	for i, v := range a {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(v.Inspect())
+	}
+	b.WriteByte(']')
+	return b.String()
 }
 
 // Lookup implements RuntimeValue.
 func (a Array) Lookup(name string) RuntimeValue {
-	switch name {
-	case "length":
-		return Int(len(a))
-	}
 	return nil
 }
 

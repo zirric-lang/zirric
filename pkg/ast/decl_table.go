@@ -93,13 +93,24 @@ func (dt *DeclTable) SetExportScopeLevel(scope ExportScope) {
 }
 
 func (dt *DeclTable) Insert(decl Decl) *DeclSymbol {
+	return dt.insert(decl, false)
+}
+
+// InsertForBinding inserts a `for x <- …` binding, reusing an existing binding of the same name in the same scope rather than reporting a redeclaration.
+// A statement-form for body shares the enclosing scope, so two sequential loops binding the same name would otherwise collide even though neither can observe the other's value.
+// The caller is responsible for rejecting a loop nested inside another that binds the same name, which is a genuine shadowing conflict.
+func (dt *DeclTable) InsertForBinding(decl Decl) *DeclSymbol {
+	return dt.insert(decl, true)
+}
+
+func (dt *DeclTable) insert(decl Decl, reuseForBinding bool) *DeclSymbol {
 	dt.mu.Lock()
 	defer dt.mu.Unlock()
 
 	scope := decl.ExportScope()
 	if dt.exportScopeLevel >= scope && dt.Parent != nil {
 		if _, ok := dt.OpenedBy.(*ContextModule); !ok {
-			sym := dt.Parent.Insert(decl)
+			sym := dt.Parent.insert(decl, reuseForBinding)
 			usageSymbol, ok := dt.Symbols[decl.DeclName().Value]
 			if !ok {
 				return sym
@@ -111,6 +122,9 @@ func (dt *DeclTable) Insert(decl Decl) *DeclSymbol {
 
 	name := decl.DeclName().Value
 	if sym, ok := dt.Symbols[name]; ok {
+		if _, isForBinding := sym.Decl.(*DeclForBinding); reuseForBinding && isForBinding {
+			return sym
+		}
 		sym.Errs = append(sym.Errs, errors.New("symbol already defined"))
 		return sym
 	}

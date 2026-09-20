@@ -195,6 +195,8 @@ func (l *Lexer) parseString() string {
 			switch ch {
 			case 'n':
 				out.WriteByte('\n')
+			case 't':
+				out.WriteByte('\t')
 			case '\\':
 				out.WriteByte('\\')
 			case '"':
@@ -231,7 +233,7 @@ func (l *Lexer) parseChar() (string, bool) {
 			l.peekPos = l.currPos
 			return "", false
 		}
-		if l.ch == '\n' || l.ch == '\r' {
+		if l.ch == '\n' || l.ch == '\r' || l.ch == '\t' {
 			l.peekPos = l.currPos
 			return "", false
 		}

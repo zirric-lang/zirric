@@ -76,24 +76,24 @@ The CLI should only read arguments and flags until `--`. Remaining arguments are
 
 `--cavefile <path>` overrides autodetection of the project's Cavefile and must precede the subcommand: several task commands disable their own flag parsing so a task's own arguments pass through untouched, which means a `--cavefile` placed after the subcommand would never be recognized.
 
-| Command      | Requires Cavefile? | Why?                         |
-| ------------ | ------------------ | ---------------------------- |
-| root command | Yes                | For help                     |
-| `run`        | Lazy               | For dependencies             |
-| `repl`       | Lazy               | For dependencies             |
-| `init`       | No                 | Generates it                 |
-| `install`    | Lazy               | For dependencies             |
-| `cavefile`   | Lazy               | To show it                   |
-| `task *`     | Yes                | For tasks                    |
-| `x`          | Yes                | For tasks                    |
-| `test`       | Yes                | For tasks and flags          |
-| `lint`       | Yes                | For tasks and flags          |
-| `fmt`        | Yes                | For tasks and flags          |
-| `docs`       | Yes                | For tasks and flags          |
-| `lsp *`      | No                 | Managed by LSP               |
-| `version`    | No                 | Irrelevant                   |
-| `help`       | Yes                | For tasks                    |
-| `completion` | No                 | Irrelevant                   |
+| Command      | Requires Cavefile? | Why?                |
+| ------------ | ------------------ | ------------------- |
+| root command | Yes                | For help            |
+| `run`        | Lazy               | For dependencies    |
+| `repl`       | Lazy               | For dependencies    |
+| `init`       | No                 | Generates it        |
+| `install`    | Lazy               | For dependencies    |
+| `cavefile`   | Lazy               | To show it          |
+| `task *`     | Yes                | For tasks           |
+| `x`          | Yes                | For tasks           |
+| `test`       | Yes                | For tasks and flags |
+| `lint`       | Yes                | For tasks and flags |
+| `fmt`        | Yes                | For tasks and flags |
+| `docs`       | Yes                | For tasks and flags |
+| `lsp *`      | No                 | Managed by LSP      |
+| `version`    | No                 | Irrelevant          |
+| `help`       | Yes                | For tasks           |
+| `completion` | No                 | Irrelevant          |
 
 ## Changes to the Standard Library
 

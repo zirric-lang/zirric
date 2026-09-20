@@ -386,6 +386,9 @@ func (p *Parser) parsePrattExprCall(fn ast.Expr) ast.Expr {
 
 	for p.curIs(token.COMMA) {
 		p.nextToken()
+		if p.curIs(token.RPAREN) {
+			break
+		}
 		fnExpr.AddArgument(p.parsePrattExpr(LOWEST))
 	}
 
@@ -490,9 +493,15 @@ func (p *Parser) parseExprListOrDict() ast.Expr {
 }
 
 func (p *Parser) parsePrattExprArrayElements() []ast.Expr {
-	var elements []ast.Expr
+	// Non-nil so a solitary trailing comma (e.g. `[a,]`, no further
+	// elements) isn't mistaken by the caller for a parse error — nil is
+	// reserved for actual failures below.
+	elements := []ast.Expr{}
 	for p.curIs(token.COMMA) {
 		p.nextToken()
+		if p.curIs(token.RBRACKET) {
+			break
+		}
 
 		expr := p.parsePrattExpr(LOWEST)
 		if expr == nil {
@@ -504,9 +513,14 @@ func (p *Parser) parsePrattExprArrayElements() []ast.Expr {
 }
 
 func (p *Parser) parsePrattExprDictEntries() []ast.ExprDictEntry {
-	var elements []ast.ExprDictEntry
+	// Non-nil for the same reason as parsePrattExprArrayElements: a
+	// solitary trailing comma must not look like a parse error to the caller.
+	elements := []ast.ExprDictEntry{}
 	for p.curIs(token.COMMA) {
 		p.nextToken()
+		if p.curIs(token.RBRACKET) {
+			break
+		}
 
 		key := p.parsePrattExpr(LOWEST)
 		if key == nil {

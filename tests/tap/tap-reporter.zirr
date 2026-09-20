@@ -1,0 +1,83 @@
+mod tap
+
+import io { Writer }
+import tests { TestEvent }
+import fmt
+
+fn reporter(writer: Writer) -> fn(TestEvent) {
+	var i = 0
+	return fn(ev: TestEvent) {
+		switch ev {
+		case is tests.Discovered:
+			fmt.fprintln("TAP version 14", writer)
+			fmt.fprintln("1.."+len(ev.cases), writer)
+		case is tests.Skipped:
+			i += 1
+
+			fmt.fprint("ok "+i+" "+ev.test.name, writer)
+			fmt.fprintln(_sprintDirective(ev.test), writer)
+
+		case is tests.Finished:
+			i += 1
+
+			switch ev.outcome {
+			case is Ok:
+				fmt.fprint("ok "+i+" "+ev.test.name, writer)
+				fmt.fprintln(_sprintDirective(ev.test), writer)
+			case is Err:
+				fmt.fprint("not ok "+i+" - "+ev.test.name, writer)
+				fmt.fprintln(_sprintDirective(ev.test), writer)
+				fmt.fprintln("# "+Error(ev.outcome).debug(ev.outcome), writer)
+			}
+		case is tests.Completed:
+			fmt.fprintln("", writer)
+			fmt.fprint("# PASS", writer)
+			fmt.fprint('\t', writer)
+			fmt.fprint("FAIL", writer)
+			fmt.fprint('\t', writer)
+			fmt.fprint("SKIP", writer)
+			fmt.fprint('\t', writer)
+			fmt.fprintln("TODO", writer)
+
+			fmt.fprint("# ", writer)
+			fmt.fprint(len(ev.report.pass), writer)
+			fmt.fprint('\t', writer)
+			fmt.fprint(len(ev.report.fail), writer)
+			fmt.fprint('\t', writer)
+			fmt.fprint(len(ev.report.skip), writer)
+			fmt.fprint('\t', writer)
+			fmt.fprint(len(ev.report.todo), writer)
+			fmt.fprint("\t", writer)
+			fmt.fprintln("", writer)
+			fmt.fprintln("", writer)
+			if len(ev.report.fail) > 0 {
+				fmt.fprintln("# FAILED!", writer)
+			} else {
+				fmt.fprintln("# PASSED!", writer)
+			}
+		}
+	}
+}
+
+fn _sprintDirective(tc: tests.TestCase) -> String {
+	const comment = if tc.comment != "" {
+		": "+tc.comment
+	} else {
+		""
+	}
+
+	if tc.skipped {
+		return " # SKIP"+comment
+	}
+
+	switch tc.details {
+	case is tests.TestCaseDetailsOnly:
+		return "\n# ONLY"+comment
+	case is tests.TestCaseDetailsSkip:
+		return " # SKIP"+comment
+	case is tests.TestCaseDetailsTodo:
+		return " # TODO"+comment
+	case _:
+		return ""
+	}
+}

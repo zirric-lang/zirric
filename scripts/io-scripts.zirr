@@ -1,0 +1,24 @@
+mod scripts
+
+import fmt
+import os
+
+// Prints the string representation of a printable value followed by a newline to stdout.
+fn println(value: @Printable) {
+	return fmt.fprintln(value, os.stdout())
+}
+
+// Prints the string representation of a printable value followed by a newline to stdout.
+fn print(value: @Printable) {
+	return fmt.fprint(value, os.stdout())
+}
+
+// Prints the string representation of a printable value followed by a newline to stderr.
+fn eprintln(value: @Printable) {
+	return fmt.fprintln(value, os.stderr())
+}
+
+// Prints the string representation of a printable value followed by a newline to stderr.
+fn eprint(value: @Printable) {
+	return fmt.fprint(value, os.stderr())
+}

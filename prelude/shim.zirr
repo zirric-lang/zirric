@@ -15,39 +15,37 @@ extern type Module {}
 // All module types are of type `ModuleType`.
 extern type ModuleType {}
 
+extern fn append(Array, Any) -> Array
+
 // A finite list of values.
-@Countable(fn(v: Array) -> Int { v.length })
+@Countable(_arrayLen)
 @Iterable(_arrayIterate)
-extern type Array {
-  // The length of the array.
-  length: Int
-}
+extern type Array {}
 
 const true = 0 == 0
 const false = 0 != 0
 
 // Represents boolean values like `True` and `False`.
 // Typically used for conditionals and flags.
-extern type Bool {
-  // Negates a boolean value.
-  toggle() -> Bool
-}
+extern type Bool {}
 
 // A single character from a string.
 extern type Char {}
 
 // An associative array of keys and their values.
-@Countable(fn(v: Dict) -> Int { v.length })
+// Can be indexed by keys.
+// Iterates over Pair.
+@Countable(_dictLen)
 @Iterable(_dictIterate)
 extern type Dict {
-  // The length of the dictionary.
-  length: Int
   // The dictionary's keys, in unspecified order.
-  keys: Array
+  keys() -> Array
 }
 
 // A callable function.
 extern type Func {
+  // The name of the function. Might be non-deterministic for closures.
+  name: String
   // The amount of function parameters to be passed.
   arity: Int
 }
@@ -65,23 +63,24 @@ union Number {
   Int
 }
 
+// A regular String.
+// Can be indexed to get the Byte.
+// Iterates over Char.
 @Printable(fn(s: String) -> String { return s })
-@Countable(fn(v: String) -> Int { v.length })
+@Countable(_strLen)
 @Iterable(_stringIterate)
 extern type String {
-  length: Int
-  chars: [Char]
+  chars() -> [Char]
 }
 
 // A sequence of raw bytes.
-extern type Bytes {
-  // The number of bytes in the sequence.
-  length: Int
-}
+// Can be indexed and iterates over Byte.
+@Countable(_binaryLen)
+@Iterable(_binaryIterate)
+extern type Binary {}
 
-// Converts a String to Bytes.
-@Deprecated("Bytes will receive a constructor via ZE-015")
-extern fn bytesFromString(str: String) -> Bytes
+// A single byte.
+extern type Byte {}
 
 // Represents the absence of a value.
 extern const void: Void
@@ -90,3 +89,8 @@ extern type Void {}
 
 // Terminates execution with the given message.
 extern fn panic(message: String) -> Void
+
+// Returns a debug string representation of any value, regardless of whether
+// it has a @Printable attribute. Intended for diagnostics/debugging, not
+// user-facing output — see fmt.sprint for that.
+extern fn _inspect(v: Any) -> String

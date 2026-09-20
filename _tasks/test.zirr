@@ -1,0 +1,3 @@
+import runner = tests.runner
+
+runner.runT()

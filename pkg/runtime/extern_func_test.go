@@ -9,7 +9,7 @@ import (
 
 func TestMakeNativeFunc(t *testing.T) {
 	t.Run("creates callable with correct arity", func(t *testing.T) {
-		fn := MakeNativeFunc("write", 1, func(args []RuntimeValue) (RuntimeValue, error) {
+		fn := MakeNativeFunc("write", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			return Int(len(args)), nil
 		})
 		if fn.Arity() != 1 {
@@ -18,7 +18,7 @@ func TestMakeNativeFunc(t *testing.T) {
 	})
 
 	t.Run("inspect includes name and arity", func(t *testing.T) {
-		fn := MakeNativeFunc("read", 2, func(args []RuntimeValue) (RuntimeValue, error) {
+		fn := MakeNativeFunc("read", 2, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			return Void{}, nil
 		})
 		expected := "extern read(#2)"
@@ -28,12 +28,12 @@ func TestMakeNativeFunc(t *testing.T) {
 	})
 
 	t.Run("impl is invokable", func(t *testing.T) {
-		fn := MakeNativeFunc("add", 2, func(args []RuntimeValue) (RuntimeValue, error) {
+		fn := MakeNativeFunc("add", 2, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			a := args[0].(Int)
 			b := args[1].(Int)
 			return a + b, nil
 		})
-		result, err := fn.Impl([]RuntimeValue{Int(3), Int(7)})
+		result, err := fn.Impl(nil, []RuntimeValue{Int(3), Int(7)})
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -43,7 +43,7 @@ func TestMakeNativeFunc(t *testing.T) {
 	})
 
 	t.Run("type constant id is Func", func(t *testing.T) {
-		fn := MakeNativeFunc("test", 0, func(args []RuntimeValue) (RuntimeValue, error) {
+		fn := MakeNativeFunc("test", 0, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			return Void{}, nil
 		})
 		if fn.TypeConstantId() != BuiltinTypeIds["Func"] {
@@ -52,7 +52,7 @@ func TestMakeNativeFunc(t *testing.T) {
 	})
 
 	t.Run("has no symbol", func(t *testing.T) {
-		fn := MakeNativeFunc("test", 0, func(args []RuntimeValue) (RuntimeValue, error) {
+		fn := MakeNativeFunc("test", 0, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			return Void{}, nil
 		})
 		if fn.symbol != nil {
@@ -64,7 +64,7 @@ func TestMakeNativeFunc(t *testing.T) {
 func TestMakeExternFunc(t *testing.T) {
 	t.Run("creates from symbol with correct arity", func(t *testing.T) {
 		sym := makeExternFuncSymbol("greet", 1)
-		fn := MakeExternFunc(sym, func(args []RuntimeValue) (RuntimeValue, error) {
+		fn := MakeExternFunc(sym, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			return String("hello"), nil
 		})
 		if fn.Arity() != 1 {
@@ -85,7 +85,7 @@ func TestMakeExternFunc(t *testing.T) {
 			Name: "bad",
 			Decl: ast.MakeDeclData(token.Token{}, ast.MakeIdentifier(token.Token{Literal: "bad"})),
 		}
-		MakeExternFunc(sym, func(args []RuntimeValue) (RuntimeValue, error) {
+		MakeExternFunc(sym, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			return Void{}, nil
 		})
 	})

@@ -37,7 +37,7 @@ Constructors also serve as the natural place to define conversion semantics betw
 The following extern types in `prelude/shim.zirr` gain constructors:
 
 | Type     | Constructor                           | Behaviour                                         |
-| -------- | -------------------------------------- | ------------------------------------------------- |
+| -------- | ------------------------------------- | ------------------------------------------------- |
 | `Array`  | `Array(iterable: @Iterable)`          | Collect any iterable into a new array             |
 | `Bool`   | `Bool(value: Any)`                    | Test a value for truthiness                       |
 | `Bytes`  | `Bytes(str: String)`                  | Convert a string to its byte representation       |

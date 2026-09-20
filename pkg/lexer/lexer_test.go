@@ -595,6 +595,17 @@ func TestAllTokens(t *testing.T) {
 			},
 		},
 		{
+			name:  "string escaped tab",
+			input: "\"\\t\"",
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.STRING, "\t"},
+				{token.EOF, ""},
+			},
+		},
+		{
 			name:  "string escaped quote",
 			input: "\"\\\"\"",
 			expected: []struct {
@@ -635,6 +646,17 @@ func TestAllTokens(t *testing.T) {
 				expectedLiteral string
 			}{
 				{token.CHAR, "\\n"},
+				{token.EOF, ""},
+			},
+		},
+		{
+			name:  "char escaped tab",
+			input: `'\t'`,
+			expected: []struct {
+				expectedType    token.TokenType
+				expectedLiteral string
+			}{
+				{token.CHAR, "\\t"},
 				{token.EOF, ""},
 			},
 		},

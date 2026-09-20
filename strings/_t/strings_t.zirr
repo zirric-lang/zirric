@@ -1,0 +1,189 @@
+import tests { Test }
+import tests.assert
+
+import strings
+
+@Test()
+fn testFrom() {
+	assert.all([
+		assert.equal("a", strings.from('a')),
+		assert.equal("hello", strings.from("hello")),
+	])
+}
+
+@Test()
+fn testCount() {
+	assert.all([
+		assert.equal(0, strings.count("")),
+		assert.equal(5, strings.count("hello")),
+		// count counts characters, not bytes — len() counts bytes.
+		assert.equal(4, strings.count("café")),
+		assert.equal(5, len("café")),
+	])
+}
+
+@Test()
+fn testCharAt() {
+	assert.all([
+		assert.equal('h', strings.charAt("hello", 0)),
+		assert.equal('o', strings.charAt("hello", 4)),
+		// Character index, not byte index — é is 2 bytes but 1 character.
+		assert.equal('l', strings.charAt("héllo", 2)),
+	])
+}
+
+@Test()
+fn testSlice() {
+	assert.all([
+		assert.equal("ell", strings.slice("hello", 1, 4)),
+		assert.equal("", strings.slice("hello", 2, 2)),
+		assert.equal("hello", strings.slice("hello", 0, 5)),
+		// Character-based, doesn't split the multi-byte é.
+		assert.equal("éll", strings.slice("héllo", 1, 4)),
+	])
+}
+
+@Test()
+fn testRange() {
+	assert.all([
+		assert.equal("ell", strings.range("hello", Range(1, 4))),
+		assert.equal("ell", strings.range("hello", ClosedRange(1, 3))),
+		assert.equal("ell", strings.range("hello", OpenRange(0, 4))),
+	])
+}
+
+@Test()
+fn testIsEmpty() {
+	assert.all([
+		assert.equal(true, strings.isEmpty("")),
+		assert.equal(false, strings.isEmpty("x")),
+	])
+}
+
+@Test()
+fn testContains() {
+	assert.all([
+		assert.equal(true, strings.contains("hello", "ell")),
+		assert.equal(true, strings.contains("hello", "")),
+		assert.equal(false, strings.contains("hello", "xyz")),
+	])
+}
+
+@Test()
+fn testHasPrefix() {
+	assert.all([
+		assert.equal(true, strings.hasPrefix("hello", "he")),
+		assert.equal(false, strings.hasPrefix("hello", "lo")),
+	])
+}
+
+@Test()
+fn testHasSuffix() {
+	assert.all([
+		assert.equal(true, strings.hasSuffix("hello", "lo")),
+		assert.equal(false, strings.hasSuffix("hello", "he")),
+	])
+}
+
+@Test()
+fn testFirstIndexOf() {
+	assert.all([
+		assert.equal(2, strings.firstIndexOf("hello", "l").value),
+		// Character index, not byte index — the é before it is 2 bytes.
+		assert.equal(2, strings.firstIndexOf("héllo", "l").value),
+		assert.equal(true, strings.firstIndexOf("hello", "xyz") is None),
+	])
+}
+
+@Test()
+fn testLastIndexOf() {
+	assert.all([
+		assert.equal(3, strings.lastIndexOf("hello", "l").value),
+		assert.equal(true, strings.lastIndexOf("hello", "xyz") is None),
+	])
+}
+
+@Test()
+fn testReplace() {
+	assert.all([
+		assert.equal("bonono", strings.replace("banana", "a", "o")),
+		assert.equal("hello", strings.replace("hello", "xyz", "o")),
+	])
+}
+
+@Test()
+fn testReplaceFirst() {
+	assert.equal("bonana", strings.replaceFirst("banana", "a", "o"))
+}
+
+@Test()
+fn testReplaceLast() {
+	assert.equal("banano", strings.replaceLast("banana", "a", "o"))
+}
+
+@Test()
+fn testSplit() {
+	const parts = strings.split("a,b,c", ",")
+	assert.all([
+		assert.equal(3, len(parts)),
+		assert.equal("a", parts[0]),
+		assert.equal("b", parts[1]),
+		assert.equal("c", parts[2]),
+	])
+}
+
+@Test()
+fn testJoin() {
+	assert.all([
+		assert.equal("a, b, c", strings.join(["a", "b", "c"], ", ")),
+		assert.equal("", strings.join([], ", ")),
+	])
+}
+
+@Test()
+fn testConcat() {
+	assert.all([
+		assert.equal("", strings.concat([])),
+		assert.equal("abc", strings.concat(["a", "b", 'c'])),
+	])
+}
+
+@Test()
+fn testRepeat() {
+	assert.all([
+		assert.equal("", strings.repeat("ab", 0)),
+		assert.equal("ababab", strings.repeat("ab", 3)),
+	])
+}
+
+@Test()
+fn testToUpperToLower() {
+	assert.all([
+		assert.equal("HELLO", strings.toUpper("Hello")),
+		assert.equal("hello", strings.toLower("Hello")),
+		// toUpper/toLower preserve whether the argument was a Char or a String.
+		assert.equal(true, strings.toUpper('a') == 'A' && strings.toUpper("aa") == strings.toUpper("AA")),
+		assert.equal(true, strings.toUpper('a') is Char),
+		assert.equal(true, strings.toUpper("a") is String),
+		assert.equal('a', strings.toLower('A')),
+		assert.equal("a", strings.toLower("A")),
+	])
+}
+
+@Test()
+fn testTrim() {
+	assert.all([
+		assert.equal("hi", strings.trim("  hi  ")),
+		assert.equal("hi", strings.trim("hi")),
+	])
+}
+
+@Test()
+fn testTrimPrefixSuffix() {
+	assert.all([
+		assert.equal("llo", strings.trimPrefix("hello", "he")),
+		assert.equal("hello", strings.trimPrefix("hello", "xyz")),
+		assert.equal("hel", strings.trimSuffix("hello", "lo")),
+		assert.equal("hello", strings.trimSuffix("hello", "xyz")),
+	])
+}

@@ -33,8 +33,14 @@ func (c *Closure) Inspect() string {
 
 // Lookup implements CallableRuntimeValue.
 func (c *Closure) Lookup(name string) RuntimeValue {
-	if name == "arity" {
+	switch name {
+	case "arity":
 		return Int(c.Arity())
+	case "name":
+		if c.Fn.Symbol != nil && c.Fn.Symbol.Decl != nil {
+			return String(c.Fn.Symbol.Decl.DeclName().String())
+		}
+		return String(c.Inspect())
 	}
 	return nil
 }

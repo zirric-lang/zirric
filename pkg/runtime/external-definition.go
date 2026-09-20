@@ -13,6 +13,10 @@ type BindContext interface {
 	// ResolveModuleSymbol looks up a symbol by name in the given module's symbol table.
 	// Returns the original symbol (with ConstantId set) or nil if not found.
 	ResolveModuleSymbol(moduleName string, symbolName string) *ast.Symbol
+	// MainPackageModules returns the project package's name and the global slot each of its modules will occupy.
+	// Compiling those modules is forced here, since a module no import reaches would otherwise never be assigned a slot; execution stays lazy because globals initialize on first access.
+	// Returns an empty map when the resolver cannot enumerate the package.
+	MainPackageModules() (string, map[string]int)
 }
 
 type ExternPlugin interface {

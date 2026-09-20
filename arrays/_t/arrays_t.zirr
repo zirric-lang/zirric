@@ -1,0 +1,113 @@
+import tests { Test }
+import tests.assert
+
+import arrays
+
+@Test()
+fn testSlice() {
+	assert.all([
+		assert.equal([2, 3, 4], arrays.slice([1, 2, 3, 4, 5], 1, 4)),
+		assert.equal([], arrays.slice([1, 2, 3], 1, 1)),
+		assert.equal([1, 2, 3], arrays.slice([1, 2, 3], 0, 3)),
+	])
+}
+
+@Test()
+fn testRange() {
+	assert.all([
+		assert.equal([2, 3, 4], arrays.range([1, 2, 3, 4, 5], Range(1, 4))),
+		assert.equal([2, 3, 4], arrays.range([1, 2, 3, 4, 5], ClosedRange(1, 3))),
+		assert.equal([2, 3, 4], arrays.range([1, 2, 3, 4, 5], OpenRange(0, 4))),
+	])
+}
+
+@Test()
+fn testConcat() {
+	assert.all([
+		assert.equal([], arrays.concat([])),
+		assert.equal([1, 2, 3, 4, 5], arrays.concat([[1, 2], [3], [4, 5]])),
+		// Flattens one level only — append() would nest [3] as a single element instead.
+		assert.equal([1, 2, 3], arrays.concat([[1], [2], [3]])),
+	])
+}
+
+@Test()
+fn testRepeat() {
+	assert.all([
+		assert.equal([], arrays.repeat([1, 2], 0)),
+		assert.equal([1, 2, 1, 2, 1, 2], arrays.repeat([1, 2], 3)),
+	])
+}
+
+@Test()
+fn testReverse() {
+	assert.all([
+		assert.equal([], arrays.reverse([])),
+		assert.equal([3, 2, 1], arrays.reverse([1, 2, 3])),
+	])
+}
+
+@Test()
+fn testIsEmpty() {
+	assert.all([
+		assert.equal(true, arrays.isEmpty([])),
+		assert.equal(false, arrays.isEmpty([1])),
+	])
+}
+
+@Test()
+fn testFirstLast() {
+	assert.all([
+		assert.equal(true, arrays.first([]) is None),
+		assert.equal(1, arrays.first([1, 2, 3]).value),
+		assert.equal(true, arrays.last([]) is None),
+		assert.equal(3, arrays.last([1, 2, 3]).value),
+	])
+}
+
+@Test()
+fn testContains() {
+	assert.all([
+		assert.equal(true, arrays.contains([1, 2, 3], 2)),
+		assert.equal(false, arrays.contains([1, 2, 3], 9)),
+		// Deep equality — works for nested arrays too, not just primitives.
+		assert.equal(true, arrays.contains([[1, 2], [3, 4]], [3, 4])),
+	])
+}
+
+@Test()
+fn testFirstIndexOfLastIndexOf() {
+	assert.all([
+		assert.equal(1, arrays.firstIndexOf([1, 2, 3, 2], 2).value),
+		assert.equal(3, arrays.lastIndexOf([1, 2, 3, 2], 2).value),
+		assert.equal(true, arrays.firstIndexOf([1, 2, 3], 9) is None),
+		assert.equal(true, arrays.lastIndexOf([1, 2, 3], 9) is None),
+	])
+}
+
+@Test()
+fn testMap() {
+	assert.equal([2, 4, 6], arrays.map([1, 2, 3], fn(x) { x * 2 }))
+}
+
+@Test()
+fn testFlatMap() {
+	assert.all([
+		assert.equal([1, 10, 2, 20], arrays.flatMap([1, 2], fn(x) { [x, x * 10] })),
+		assert.equal([], arrays.flatMap([], fn(x) { [x] })),
+		assert.equal([], arrays.flatMap([1, 2], fn(x) { [] })),
+	])
+}
+
+@Test()
+fn testFilter() {
+	assert.equal([3, 4, 5], arrays.filter([1, 2, 3, 4, 5], fn(x) { x > 2 }))
+}
+
+@Test()
+fn testReduce() {
+	assert.all([
+		assert.equal(10, arrays.reduce([1, 2, 3, 4], 0, fn(acc, x) { acc + x })),
+		assert.equal(0, arrays.reduce([], 0, fn(acc, x) { acc + x })),
+	])
+}

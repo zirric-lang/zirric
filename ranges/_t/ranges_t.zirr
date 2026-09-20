@@ -1,0 +1,62 @@
+import tests { Test }
+import tests.assert
+
+import ranges
+
+@Test()
+fn testContains() {
+	assert.all([
+		assert.equal(true, ranges.contains(Range(1, 4), 1)),
+		assert.equal(true, ranges.contains(Range(1, 4), 3)),
+		assert.equal(false, ranges.contains(Range(1, 4), 4)),
+		assert.equal(true, ranges.contains(ClosedRange(1, 4), 4)),
+		assert.equal(false, ranges.contains(ClosedRange(1, 4), 5)),
+		assert.equal(false, ranges.contains(OpenRange(1, 4), 1)),
+		assert.equal(true, ranges.contains(OpenRange(1, 4), 2)),
+		assert.equal(false, ranges.contains(OpenRange(1, 4), 4)),
+	])
+}
+
+@Test()
+fn testToClosedRange() {
+	assert.all([
+		assert.equal(1, ranges.toClosedRange(Range(1, 5)).value.start),
+		assert.equal(4, ranges.toClosedRange(Range(1, 5)).value.end),
+		assert.equal(true, ranges.toClosedRange(Range(4, 4)) is None),
+		assert.equal(2, ranges.toClosedRange(OpenRange(1, 4)).value.start),
+		assert.equal(3, ranges.toClosedRange(OpenRange(1, 4)).value.end),
+		assert.equal(true, ranges.toClosedRange(OpenRange(1, 2)) is None),
+	])
+}
+
+@Test()
+fn testOverlap() {
+	assert.all([
+		assert.equal(true, ranges.overlap(ClosedRange(1, 5), ClosedRange(4, 8))),
+		assert.equal(false, ranges.overlap(ClosedRange(1, 3), ClosedRange(10, 20))),
+		assert.equal(true, ranges.overlap(Range(1, 5), OpenRange(0, 3))),
+		// Touching but not sharing a value: [1,3] and Range(3,6) = [3,5] share 3.
+		assert.equal(true, ranges.overlap(ClosedRange(1, 3), Range(3, 6))),
+	])
+}
+
+@Test()
+fn testIntersect() {
+	assert.all([
+		assert.equal(4, ranges.intersect(ClosedRange(1, 5), ClosedRange(4, 8)).value.start),
+		assert.equal(5, ranges.intersect(ClosedRange(1, 5), ClosedRange(4, 8)).value.end),
+		assert.equal(true, ranges.intersect(ClosedRange(1, 3), ClosedRange(10, 20)) is None),
+	])
+}
+
+@Test()
+fn testMerge() {
+	assert.all([
+		assert.equal(1, ranges.merge(ClosedRange(1, 3), ClosedRange(4, 6)).value.start),
+		assert.equal(6, ranges.merge(ClosedRange(1, 3), ClosedRange(4, 6)).value.end),
+		assert.equal(1, ranges.merge(ClosedRange(1, 5), ClosedRange(3, 8)).value.start),
+		assert.equal(8, ranges.merge(ClosedRange(1, 5), ClosedRange(3, 8)).value.end),
+		// A gap between the two ranges means they can't merge into one.
+		assert.equal(true, ranges.merge(ClosedRange(1, 3), ClosedRange(10, 12)) is None),
+	])
+}

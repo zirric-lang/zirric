@@ -13,3 +13,10 @@ type ModuleResolver interface {
 	MainModule() *ast.ContextModule
 	ResolveModule(ctx context.Context, name registry.LogicalURI) (*ast.ContextModule, error)
 }
+
+// MainPackageLister is an optional ModuleResolver capability for enumerating every module the project's own package declares, including ones no import reaches.
+// It is optional so the stub resolvers used in tests need not implement it; reflect reports an empty package for resolvers that do not.
+type MainPackageLister interface {
+	MainPackageName() string
+	MainPackageModules(ctx context.Context) ([]registry.LogicalURI, error)
+}

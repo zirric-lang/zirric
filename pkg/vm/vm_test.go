@@ -233,7 +233,7 @@ func (p *testExternPlugin) Module() string { return "" }
 func (p *testExternPlugin) Bind(ctx runtime.BindContext, module *ast.SymbolTable, decl *ast.Symbol) runtime.RuntimeValue {
 	switch decl.Name {
 	case "greet":
-		return runtime.MakeExternFunc(decl, func(args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
+		return runtime.MakeExternFunc(decl, func(_ runtime.VMCaller, args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
 			return runtime.String("hello"), nil
 		})
 	case "Void":
@@ -2508,7 +2508,7 @@ func (p *crossModuleTestPlugin) Bind(ctx runtime.BindContext, module *ast.Symbol
 	switch decl.Name {
 	case "wrap":
 		wrapperSym := ctx.ResolveModuleSymbol("io", "Wrapper")
-		return runtime.MakeExternFunc(decl, func(args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
+		return runtime.MakeExternFunc(decl, func(_ runtime.VMCaller, args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
 			if wrapperSym == nil || wrapperSym.ConstantId == nil {
 				return nil, fmt.Errorf("Wrapper type not resolved")
 			}
@@ -2520,4 +2520,61 @@ func (p *crossModuleTestPlugin) Bind(ctx runtime.BindContext, module *ast.Symbol
 		})
 	}
 	return nil
+}
+
+// TestResolveModuleMemberYieldsAConstructibleType covers why VMCaller can reach a module's members at all: an extern plugin has no way to obtain a declared type, and a DataValue built by hand carries no attributes, so a Result made that way would silently lack @AnyResult.
+// Resolving the type and going through MakeDataValue keeps the attributes, which is what lets a plugin return a value the rest of the language treats as genuine.
+func TestResolveModuleMemberYieldsAConstructibleType(t *testing.T) {
+	moduleA := prepareContextModuleParsing(t, "foo.a", `
+		mod a
+		attr Marker {}
+
+		@Marker()
+		data Thing { value }
+	`)
+	mainModule, program := prepareSourceFileParsing(t, `
+		import a = foo.a
+		a.Thing(1)
+	`)
+	resolver := newTestModuleResolverWithModules(mainModule, map[registry.LogicalURI]*ast.ContextModule{
+		moduleA.Name: moduleA,
+	})
+
+	comp := compiler.New(resolver)
+	if err := comp.Compile(program); err != nil {
+		t.Fatalf("compiler error: %s", err)
+	}
+	vmInstance := vm.New(comp.Bytecode())
+	if err := vmInstance.Run(); err != nil {
+		t.Fatalf("vm error: %s", err)
+	}
+
+	member, err := vmInstance.ResolveModuleMember("a", "Thing")
+	if err != nil {
+		t.Fatalf("resolve module member: %v", err)
+	}
+	dataType, ok := member.(*runtime.DataType)
+	if !ok {
+		t.Fatalf("expected a *runtime.DataType, got %T", member)
+	}
+
+	built := runtime.MakeDataValue(dataType, []runtime.RuntimeValue{runtime.Int(7)})
+	if got := len(vmInstance.AttributesOf(built)); got == 0 {
+		t.Fatal("expected a value built from the resolved type to carry its type's attributes")
+	}
+	if built.TypeConstantId() != vmInstance.LastPoppedStackElem().TypeConstantId() {
+		t.Fatal("expected the same type as the one the program itself constructed")
+	}
+
+	byHand := &runtime.DataValue{TypeId: built.TypeId, Fields: built.Fields, Values: built.Values}
+	if got := len(vmInstance.AttributesOf(byHand)); got != 0 {
+		t.Fatalf("expected a hand-built DataValue to carry no attributes, got %d — the hazard this API exists to avoid", got)
+	}
+
+	if _, err := vmInstance.ResolveModuleMember("a", "Missing"); err == nil {
+		t.Fatal("expected an error for a member the module does not export")
+	}
+	if _, err := vmInstance.ResolveModuleMember("nope", "Thing"); err == nil {
+		t.Fatal("expected an error for a module that is not part of the program")
+	}
 }

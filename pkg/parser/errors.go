@@ -17,7 +17,10 @@ type ParseError struct {
 
 // Error implements error.
 func (e ParseError) Error() string {
-	return fmt.Sprintf("syntax error: %s, %s", e.Summary, e.Details)
+	if e.Token.Source == nil {
+		return fmt.Sprintf("%s: %s", e.Summary, e.Details)
+	}
+	return fmt.Sprintf("%s:%d: %s: %s", e.Token.Source.File, e.Token.Source.Offset, e.Summary, e.Details)
 }
 
 // ParseErrors is a collection of parse errors that implements the error
@@ -102,6 +105,7 @@ func (p *Parser) errStatementMisplaced(pos StatementPosition) {
 		Details: details,
 	})
 }
+
 func (p *Parser) errCannotBeAnnotated() {
 	p.detectError(ParseError{
 		Token:   p.curToken,

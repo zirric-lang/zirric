@@ -8,7 +8,7 @@ import (
 
 var _ CallableRuntimeValue = &ExternFunc{}
 
-type ExternFuncImpl func(args []RuntimeValue) (RuntimeValue, error)
+type ExternFuncImpl func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error)
 
 type ExternFunc struct {
 	name            string
@@ -54,9 +54,11 @@ func (ef ExternFunc) Inspect() string {
 
 // Lookup implements CallableRuntimeValue.
 func (ef ExternFunc) Lookup(name string) RuntimeValue {
-	if name == "arity" {
-		// return ef.arity
-		panic("unimplemented: how to create ints?")
+	switch name {
+	case "arity":
+		return Int(ef.Arity())
+	case "name":
+		return String(ef.name)
 	}
 	return nil
 }

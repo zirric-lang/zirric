@@ -1,11 +1,12 @@
 import tasks
 import fmt
+import os
 
 @tasks.Name("build")
 @tasks.Alias(["b"])
 @tasks.Help("Builds the project")
 @tasks.Call(fn(opts: BuildTask) {
-  fmt.println(opts.target)
+  fmt.fprintln(opts.target, os.stdout())
 })
 data BuildTask {
   @tasks.Flag()

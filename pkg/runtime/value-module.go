@@ -1,6 +1,9 @@
 package runtime
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 var _ RuntimeValue = &ModuleValue{}
 
@@ -35,4 +38,18 @@ func (m *ModuleValue) Lookup(name string) RuntimeValue {
 // TypeConstantId implements RuntimeValue.
 func (m *ModuleValue) TypeConstantId() TypeId {
 	return typeIdModule
+}
+
+func (m *ModuleValue) Name() string {
+	return m.name
+}
+
+// MemberNames returns the module's public member names in sorted order, matching the order compileModuleValue emits them in.
+func (m *ModuleValue) MemberNames() []string {
+	names := make([]string, 0, len(m.exports))
+	for name := range m.exports {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }

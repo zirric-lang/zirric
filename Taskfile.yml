@@ -11,20 +11,38 @@ includes:
 tasks:
   build:
     desc: Build all Go packages
+    run: when_changed
+    method: timestamp
+    sources:
+      - "**/*.go"
+      - "**/*.zirr"
+      - exclude: Cavefile
+      - exclude: examples/
+      - exclude: _tasks/
+      - exclude: "**/_t"
+      - go.mod
+      - go.sum
+    generates:
+      - zirric
     cmds:
       - go build -v ./...
+      - go build ./cmd/zirric
 
   test:
     desc: Run all tests (Go + CLI)
     cmds:
       - task: test:go
       - task: test:cli
+      - task: test:stdlib
 
   test:go:
     desc: Run all Go tests
     sources:
       - "**/*.go"
       - "**/*.zirr"
+      - exclude: Cavefile
+      - exclude: examples/
+      - exclude: _tasks/
       - go.mod
       - go.sum
     cmds:
@@ -32,9 +50,28 @@ tasks:
 
   test:cli:
     desc: Run CLI integration tests (bats)
+    run: when_changed
+    method: timestamp
+    deps:
+      - build
+    sources:
+      - testing/
+      - zirric
     cmds:
-      - go build -o zirric ./cmd/zirric
       - bats testing
+
+  test:stdlib:
+    desc: Run Zirric Stdlib tests
+    run: always
+    method: timestamp
+    deps:
+      - build
+    sources:
+      - zirric
+      - "**/*.zirr"
+      - Cavefile
+    cmds:
+      - ./zirric task run test
 
   bench:
     desc: Run all Benchmarks

@@ -9,22 +9,37 @@ attr Error {
 // Marks a union as a result type.
 // Types annotated with `@AnyResult` are expected to be unions
 // that follow the Ok/Err pattern.
-attr AnyResult {}
+attr AnyResult {
+	toResult(self) -> Result
+}
 
 // A result type that can be either Ok or Err.
 // Used for functions that can fail.
-@AnyResult()
+@AnyResult(fn(r) { r })
 union Result {
 	// The successful result.
+	@AnyResult(fn(r) { r })
     data Ok {
     	// The value of the successful result.
 		value
 	}
 
 	// The error result.
-	@Error(fn(err) { return err.error.debug(err.error) })
+	@AnyResult(fn(r) { r })
+	@Error(fn(err) {
+		switch err.reason {
+		case is String:
+			err.reason
+		case is @Error:
+			Error(err.reason).debug(err.reason)
+		case is @Printable:
+			Printable(err.reason).toString(err.reason)
+		case _:
+			_inspect(err.reason)
+		}
+	})
     data Err {
-    	// The error of the result. Must be a type annotated with `@Error`.
-		error: @Error
+    	// The failure reason
+		reason
 	}
 }

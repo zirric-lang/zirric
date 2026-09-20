@@ -1,0 +1,136 @@
+import tests { Test }
+import tests.assert
+
+import math
+
+@Test()
+fn testConstants() {
+	assert.all([
+		assert.equal(true, math.pi > 3.14),
+		assert.equal(true, math.pi < 3.15),
+		assert.equal(true, math.e > 2.71),
+		assert.equal(true, math.e < 2.72),
+	])
+}
+
+@Test()
+fn testToFloat() {
+	assert.all([
+		assert.equal(3.0, math.toFloat(3)),
+		assert.equal(2.5, math.toFloat(2.5)),
+	])
+}
+
+@Test()
+fn testToInt() {
+	assert.all([
+		assert.equal(2, math.toInt(2.9)),
+		assert.equal(-2, math.toInt(-2.9)),
+		assert.equal(3, math.toInt(3)),
+	])
+}
+
+@Test()
+fn testAbsPreservesType() {
+	assert.all([
+		assert.equal(3, math.abs(-3)),
+		assert.equal(3, math.abs(3)),
+		assert.equal(2.5, math.abs(-2.5)),
+		assert.equal(0, math.abs(0)),
+	])
+}
+
+@Test()
+fn testMinMaxPreserveType() {
+	assert.all([
+		assert.equal(2, math.min(2, 5)),
+		assert.equal(5, math.max(2, 5)),
+		assert.equal(-4, math.min(-4, 1)),
+		assert.equal(1.5, math.min(1.5, 2.5)),
+		assert.equal(2.5, math.max(1.5, 2.5)),
+	])
+}
+
+@Test()
+fn testMinMaxAcrossTypes() {
+	assert.all([
+		assert.equal(2, math.min(2, 2.5)),
+		assert.equal(2.5, math.max(2, 2.5)),
+	])
+}
+
+@Test()
+fn testSign() {
+	assert.all([
+		assert.equal(1, math.sign(42)),
+		assert.equal(-1, math.sign(-42)),
+		assert.equal(0, math.sign(0)),
+		assert.equal(-1, math.sign(-0.5)),
+	])
+}
+
+@Test()
+fn testRoundingFamily() {
+	assert.all([
+		assert.equal(2.0, math.floor(2.7)),
+		assert.equal(-3.0, math.floor(-2.7)),
+		assert.equal(3.0, math.ceil(2.1)),
+		assert.equal(-2.0, math.ceil(-2.7)),
+		assert.equal(3.0, math.round(2.5)),
+		assert.equal(-3.0, math.round(-2.5)),
+		assert.equal(2.0, math.trunc(2.7)),
+		assert.equal(-2.0, math.trunc(-2.7)),
+	])
+}
+
+@Test()
+fn testSqrt() {
+	assert.all([
+		assert.equal(3.0, math.sqrt(9)),
+		assert.equal(2.0, math.sqrt(4.0)),
+		assert.equal(0.0, math.sqrt(0)),
+	])
+}
+
+@Test()
+fn testPow() {
+	assert.all([
+		assert.equal(8.0, math.pow(2, 3)),
+		assert.equal(1.0, math.pow(5, 0)),
+		assert.equal(0.25, math.pow(2, -2)),
+	])
+}
+
+@Test()
+fn testClamp() {
+	assert.all([
+		assert.equal(5, math.clamp(5, 1, 10)),
+		assert.equal(1, math.clamp(-3, 1, 10)),
+		assert.equal(10, math.clamp(42, 1, 10)),
+		assert.equal(2.5, math.clamp(2.5, 1.0, 10.0)),
+	])
+}
+
+@Test()
+fn testIsNaN() {
+	assert.all([
+		assert.equal(true, math.isNaN(0.0 / 0.0)),
+		assert.equal(true, math.isNaN(math.sqrt(-1))),
+		assert.equal(false, math.isNaN(1.5)),
+		assert.equal(false, math.isNaN(3)),
+		assert.equal(false, math.isNaN(1.0 / 0.0)),
+		// NaN compares unequal to everything including itself, which is why isNaN has to exist.
+		assert.equal(false, (0.0 / 0.0) == (0.0 / 0.0)),
+	])
+}
+
+@Test()
+fn testIsInfinite() {
+	assert.all([
+		assert.equal(true, math.isInfinite(1.0 / 0.0)),
+		assert.equal(true, math.isInfinite(-1.0 / 0.0)),
+		assert.equal(false, math.isInfinite(1.5)),
+		assert.equal(false, math.isInfinite(3)),
+		assert.equal(false, math.isInfinite(0.0 / 0.0)),
+	])
+}

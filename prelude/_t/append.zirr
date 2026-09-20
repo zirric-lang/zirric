@@ -1,0 +1,30 @@
+import tests
+import tests.assert
+import bytes
+
+@tests.Test()
+fn testAppendArray() {
+	assert.all([
+		assert.equal([1], append([], 1)),
+		assert.equal([1, 2, 3], append([1, 2], 3)),
+	])
+}
+
+@tests.Test()
+fn testAppendBinary() {
+	assert.all([
+		assert.equal(bytes.fromString(""), append(
+			bytes.fromString(""),
+			bytes.fromString(""),
+		)),
+		assert.equal(bytes.fromString("hello"), append(
+			bytes.fromString(""),
+			bytes.fromString("hello"),
+		)),
+		assert.equal(bytes.fromString("1"), append(
+			bytes.fromString(""),
+			"1"[0],
+		)),
+	])
+}
+

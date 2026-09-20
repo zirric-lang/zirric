@@ -1,2 +1,8 @@
 // Cavefile for code.knabel.dev.zirric_lang.zirric
 mod cave
+
+import tasks
+
+@tasks.Name("test")
+@tasks.Exec("_tasks/test.zirr")
+data TestPrelude {}

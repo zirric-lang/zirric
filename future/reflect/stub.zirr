@@ -8,7 +8,7 @@ data Field {
 
 data Attribute {
     attributeType: AnyAttribute
-    args: Array
+    args: [String: Any]
 }
 
 attr Name {
