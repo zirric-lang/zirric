@@ -39,6 +39,9 @@ type Config struct {
 }
 
 type Orchestra struct {
+	// ReportWarnings is called with the diagnostics that do not stop a build, so that the caller decides how to show them. Nil means they are not reported at all.
+	ReportWarnings func(analyzer.AnalysisErrors)
+
 	cave           cavefile.Cavefile
 	cavefilePath   string
 	projectFS      billy.Filesystem
@@ -175,8 +178,15 @@ func (o *Orchestra) ParseModule(ctx context.Context, mod registry.ResolvedModule
 func (o *Orchestra) Compile(module *ast.ContextModule, resolver *ModuleResolver) (*compiler.Bytecode, error) {
 	// Orchestra owns analysis and passes the analyzer into the compiler.
 	analysis := analyzer.New(resolver)
-	if errs, _ := analysis.Analyze(module, true); len(errs) > 0 {
-		return nil, fmt.Errorf("%s", errs[0].Error())
+	found, _ := analysis.Analyze(module, true)
+	diagnostics := analyzer.AnalysisErrors(found)
+	// Warnings describe something worth saying rather than something that stops a build, so they are reported and then stepped over.
+	if warnings := diagnostics.Warnings(); len(warnings) > 0 && o.ReportWarnings != nil {
+		o.ReportWarnings(warnings)
+	}
+	// Everything else, and as it is: analysis finds all of it in one pass, and each carries the position a renderer needs to show the line it refers to.
+	if failing := diagnostics.Failing(); len(failing) > 0 {
+		return nil, failing
 	}
 	comp := compiler.NewWithAnalyzer(resolver, analysis)
 	if err := comp.Compile(module); err != nil {

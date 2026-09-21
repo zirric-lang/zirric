@@ -535,14 +535,14 @@ fn f() {
 	const x = 5
 	x = 10
 }`,
-			err: `cannot assign to const "x"`,
+			err: `testing:///test/test.zirr:4:2: cannot assign to a constant: x was declared with const`,
 		},
 		{
 			label: "const global rebind is a compile error",
 			input: `
 const x = 5
 x = 10`,
-			err: `cannot assign to const "x"`,
+			err: `testing:///test/test.zirr:3:1: cannot assign to a constant: x was declared with const`,
 		},
 		{
 			label: "parameter rebind is a compile error",
@@ -550,7 +550,7 @@ x = 10`,
 fn f(x) {
 	x = 10
 }`,
-			err: `cannot assign to parameter "x"`,
+			err: `testing:///test/test.zirr:3:2: cannot assign to a parameter: x`,
 		},
 
 		// Compound assignment operators

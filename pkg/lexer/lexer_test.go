@@ -1250,3 +1250,61 @@ func TestDecorativeLexer(t *testing.T) {
 		})
 	}
 }
+
+func TestTokenPositionsAreLinesAndColumns(t *testing.T) {
+	// An offset alone sends a reader to the wrong place when it is printed where a line number belongs, so every token carries both.
+	const input = "mod a\n\nfn greet() {\n\tconst x = 1\n}\n"
+	l, err := lexer.New(staticmodule.NewSourceString("testing:///test/test.zirr", input))
+	if err != nil {
+		t.Fatalf("lexer: %s", err)
+	}
+
+	want := []struct {
+		literal string
+		line    int
+		column  int
+	}{
+		{"mod", 1, 1},
+		{"a", 1, 5},
+		{"fn", 3, 1},
+		{"greet", 3, 4},
+	}
+
+	for _, expected := range want {
+		tok := l.NextToken()
+		if tok.Literal != expected.literal {
+			t.Fatalf("expected literal %q, got %q", expected.literal, tok.Literal)
+		}
+		if tok.Source == nil {
+			t.Fatalf("token %q carries no source", tok.Literal)
+		}
+		if tok.Source.Line != expected.line || tok.Source.Column != expected.column {
+			t.Errorf("token %q: expected %d:%d, got %d:%d", tok.Literal, expected.line, expected.column, tok.Source.Line, tok.Source.Column)
+		}
+		// The offset has to keep pointing at the same byte, since slicing the source still depends on it.
+		if got := input[tok.Source.Offset : tok.Source.Offset+len(tok.Literal)]; got != expected.literal {
+			t.Errorf("token %q: offset %d points at %q", tok.Literal, tok.Source.Offset, got)
+		}
+	}
+}
+
+func TestPositionsAfterATabIndentedLine(t *testing.T) {
+	// A column counts bytes from the start of the line, so an indented token must not report column 1.
+	l, err := lexer.New(staticmodule.NewSourceString("testing:///test/test.zirr", "fn f() {\n\treturn 1\n}"))
+	if err != nil {
+		t.Fatalf("lexer: %s", err)
+	}
+	var tok token.Token
+	for {
+		tok = l.NextToken()
+		if tok.Literal == "return" || tok.Type == token.EOF {
+			break
+		}
+	}
+	if tok.Type == token.EOF {
+		t.Fatal("never reached the return token")
+	}
+	if tok.Source.Line != 2 || tok.Source.Column != 2 {
+		t.Errorf("expected return at 2:2, got %d:%d", tok.Source.Line, tok.Source.Column)
+	}
+}

@@ -50,7 +50,7 @@ module.exports = {
   },
   plugins: {
     seo: {
-      defaultDescription: "Documentation built with docmd.",
+      defaultDescription: "Language documentation of Zirric.",
       openGraph: {
         defaultImage: "/assets/images/logo@512x.png"
       }
@@ -301,6 +301,11 @@ module.exports = {
           icon: "circle-dot",
           title: "ZE-21 Encoding and Decoding",
           path: "/proposals/ZE-021-encoding-and-decoding"
+        },
+        {
+          icon: "circle-dot",
+          title: "ZE-22 Static Checks",
+          path: "/proposals/ZE-022-static-checks"
         }
       ]
     },

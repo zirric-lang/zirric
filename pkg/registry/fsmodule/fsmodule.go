@@ -83,6 +83,9 @@ func DiscoverModules(base registry.LogicalURI, fs billy.Filesystem) ([]*FSModule
 	return mods, nil
 }
 
+// cavefileName is the file that marks a directory as its own package.
+const cavefileName = "Cavefile"
+
 func recursiveGlob(fsys billy.Filesystem, maxDepth int) ([]string, error) {
 	var (
 		sources []string
@@ -102,6 +105,10 @@ func recursiveGlob(fsys billy.Filesystem, maxDepth int) ([]string, error) {
 			if !ok {
 				return filepath.SkipDir
 			}
+			// A directory with a Cavefile of its own is a project of its own, so its modules belong to it rather than to the package being walked. Examples and test fixtures live this way, and they resolve their own dependencies, which the enclosing package knows nothing about.
+			if hasOwnCavefile(fsys, path) {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 
@@ -115,4 +122,10 @@ func recursiveGlob(fsys billy.Filesystem, maxDepth int) ([]string, error) {
 		return nil, err
 	}
 	return sources, nil
+}
+
+// hasOwnCavefile reports whether a directory declares a package of its own.
+func hasOwnCavefile(fsys billy.Filesystem, dir string) bool {
+	info, err := fsys.Stat(filepath.Join(dir, cavefileName))
+	return err == nil && !info.IsDir()
 }

@@ -5,6 +5,9 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strings"
+
+	"code.knabel.dev/zirric-lang/zirric/pkg/diag"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -23,13 +26,44 @@ func Execute() error {
 	cmdArgs = extractCavefileFlag(cmdArgs)
 	rootCmd.SetArgs(cmdArgs)
 	rootCmd.SilenceUsage = true
+	// Errors are printed here rather than by cobra, so that one carrying a position can be shown with the line it refers to.
+	rootCmd.SilenceErrors = true
 
 	if err := loadCavefileIfNeeded(cmdArgs); err != nil {
-		fmt.Fprintln(os.Stderr, "Error:", err)
+		reportError(err)
 		return err
 	}
 
-	return rootCmd.Execute()
+	if err := rootCmd.Execute(); err != nil {
+		reportError(err)
+		return err
+	}
+	return nil
+}
+
+// reportError writes an error to stderr, with the source line it refers to when it names one.
+func reportError(err error) {
+	fmt.Fprintln(os.Stderr, "Error:", diag.Render(err, readSourceForDiagnostic))
+}
+
+// readSourceForDiagnostic reads the file an error's position names.
+//
+// A position carries a logical module URI rather than a path — "myproject/main.zirr" for a file that sits at "main.zirr" — so the leading segments are dropped one at a time until something reads. This is best effort by design: the excerpt is an extra, and an error that cannot find its source still prints its message and position.
+func readSourceForDiagnostic(file string) ([]byte, error) {
+	path := file
+	if idx := strings.Index(path, "://"); idx >= 0 {
+		path = path[idx+3:]
+	}
+	for {
+		if content, err := os.ReadFile(path); err == nil {
+			return content, nil
+		}
+		idx := strings.Index(path, "/")
+		if idx < 0 {
+			return nil, fmt.Errorf("no file found for %q", file)
+		}
+		path = path[idx+1:]
+	}
 }
 
 var skipCavefileFetchForCmds = map[string]bool{}

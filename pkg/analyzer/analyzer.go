@@ -16,6 +16,12 @@ type Analyzer struct {
 	moduleGlobals map[registry.LogicalURI]int
 	nextGlobal    int
 	nextConstant  int
+
+	// inferring guards against a constant whose value refers back to itself while its type is being worked out.
+	inferring map[*ast.Symbol]struct{}
+
+	// variableAssignments holds what every var in the module being checked was found to hold, gathered before checking so that an assignment further down is taken into account.
+	variableAssignments map[*ast.Symbol][]ast.Expr
 }
 
 func New(resolver resolver.ModuleResolver) *Analyzer {
@@ -115,6 +121,7 @@ func (a *Analyzer) Analyze(module *ast.ContextModule, reserveModule bool) ([]Ana
 
 	errs := a.validateStaticRefs(module)
 	errs = append(errs, collectSymbolErrors(module.Symbols)...)
+	errs = append(errs, a.checkTypes(module)...)
 	return errs, module
 }
 

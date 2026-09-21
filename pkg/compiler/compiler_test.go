@@ -2,6 +2,7 @@ package compiler_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -2461,4 +2462,55 @@ func (p *resolverTestPlugin) Bind(ctx runtime.BindContext, module *ast.SymbolTab
 // They begin after the builtin type ids, so expressing them relatively keeps these expectations correct when a builtin type is added.
 func userConst(n int) int {
 	return runtime.NumBuiltinTypeIds + n
+}
+
+// TestUndefinedTypeInSwitchCaseIsReported pins that a type a switch case cannot resolve stops compilation.
+// Skipping the check instead would emit no comparison at all, which leaves the case matching every value, so a misspelled type quietly becomes the branch that always runs.
+func TestUndefinedTypeInSwitchCaseIsReported(t *testing.T) {
+	module := prepareContextModuleParsing(t, "module.test", `
+		data Thing { a }
+		fn check(value) {
+			switch value {
+			case is Thnig:
+				1
+			case _:
+				2
+			}
+		}
+	`)
+	resolver := newTestModuleResolver(module, nil)
+
+	err := compiler.New(resolver).Compile(module)
+	if err == nil {
+		t.Fatal("expected an error for the undefined type Thnig")
+	}
+	if !strings.Contains(err.Error(), "Thnig") {
+		t.Errorf("error does not name the type that was not found: %s", err)
+	}
+}
+
+// TestCompileErrorCarriesItsPosition pins that a compile error says where it is, as a line and column rather than a byte offset.
+func TestCompileErrorCarriesItsPosition(t *testing.T) {
+	module := prepareContextModuleParsing(t, "module.test", "data Thing { a }\nfn check(value) {\n\tvalue is Thnig\n}\n")
+	resolver := newTestModuleResolver(module, nil)
+
+	err := compiler.New(resolver).Compile(module)
+	if err == nil {
+		t.Fatal("expected an error for the undefined type Thnig")
+	}
+	var compileErr *compiler.CompileError
+	if !errors.As(err, &compileErr) {
+		t.Fatalf("expected a *compiler.CompileError, got %T: %s", err, err)
+	}
+	source := compileErr.Node.TokenLiteral().Source
+	if source == nil {
+		t.Fatal("the error carries no source")
+	}
+	// `value is Thnig` is on the third line, with Thnig one tab plus "value is " in.
+	if source.Line != 3 || source.Column != 11 {
+		t.Errorf("expected the error at 3:11, got %d:%d", source.Line, source.Column)
+	}
+	if !strings.Contains(err.Error(), ":3:11:") {
+		t.Errorf("the message does not read as a position: %s", err)
+	}
 }

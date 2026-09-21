@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"code.knabel.dev/zirric-lang/zirric/pkg/analyzer"
+	"code.knabel.dev/zirric-lang/zirric/pkg/diag"
 	"code.knabel.dev/zirric-lang/zirric/pkg/orchestra"
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/osfs"
@@ -19,12 +21,20 @@ func newOrchestra(projectFS billy.Filesystem, packageName string) (*orchestra.Or
 		return nil, err
 	}
 
-	return orchestra.New(orchestra.Config{
+	orch, err := orchestra.New(orchestra.Config{
 		ProjectFS:    projectFS,
 		RegistryFS:   registryFS,
 		PackageName:  packageName,
 		CavefilePath: cavefilePath,
 	})
+	if err != nil {
+		return nil, err
+	}
+	// A warning does not stop a build, but it still has to be seen, so it is written where errors go rather than mixed into a program's own output.
+	orch.ReportWarnings = func(warnings analyzer.AnalysisErrors) {
+		fmt.Fprintln(os.Stderr, "Warning:", diag.Render(warnings, readSourceForDiagnostic))
+	}
+	return orch, nil
 }
 
 // cwdFS returns a filesystem rooted at the current working directory's absolute path.

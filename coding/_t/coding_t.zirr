@@ -257,13 +257,18 @@ fn testUnionMembersWithUntypedFieldsAreStillToldApart() {
 	])
 }
 
+// Declared without a type hint on purpose, so a value a tree cannot hold can be put in one without the declaration promising otherwise.
+data Unhintable {
+	anything
+}
+
 @Test()
 fn testEncodeRefusesWhatATreeCannotHold() {
 	// Refused by coding rather than left for the format, so the error can name the field it came from.
 	assert.all([
 		assert.equal(true, results.isErr(coding.encode('c'))),
 		assert.equal(true, results.isErr(coding.encode(fn(x) { x }))),
-		assert.equal(true, strings.contains(coding.encode(Address("a", 'x')).reason, "Address.zip")),
-		assert.equal(true, strings.contains(coding.encode(Address("a", 'x')).reason, "Char")),
+		assert.equal(true, strings.contains(coding.encode(Unhintable('x')).reason, "Unhintable.anything")),
+		assert.equal(true, strings.contains(coding.encode(Unhintable('x')).reason, "Char")),
 	])
 }

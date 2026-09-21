@@ -2,11 +2,13 @@ package compiler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
 	"strings"
 
+	"code.knabel.dev/zirric-lang/zirric/pkg/analyzer"
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
@@ -32,7 +34,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.entryModule = node
 		}
 		moduleId := c.reserveGlobalModule(node.Name)
-		return c.compileContextModule(node, moduleId)
+		if err := c.compileContextModule(node, moduleId); err != nil {
+			return err
+		}
+		// A module of this package that failed to compile is reported here rather than leaving the program to run with part of its own package missing.
+		return errors.Join(c.mainPackageErrs...)
 	case *ast.SourceFile:
 		if err := c.ensureAnalyzed(node.Decls.Module(), false); err != nil {
 			return err
@@ -43,7 +49,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 					continue
 				}
 				if _, ok := sym.Decl.(*ast.DeclModule); ok {
-					return fmt.Errorf("module declaration requires context module")
+					return errInvariant(sym.Decl, "a module declaration can only be compiled as part of a context module")
 				}
 			}
 		}
@@ -52,14 +58,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 		for _, sym := range node.Symbols.Symbols {
 			if sym.Decl == nil {
-				return fmt.Errorf("undeclared symbol %q at %s:%d", sym.Name, sym.Usages[0].Node.TokenLiteral().Source.File, sym.Usages[0].Node.TokenLiteral().Source.Offset)
+				return errUndeclaredSymbol(sym)
 			}
 		}
 
 		fileSymbols := c.sourceFileSymbols(node)
 		for _, sym := range fileSymbols {
 			if sym.Decl == nil {
-				return fmt.Errorf("undeclared symbol %q at %s:%d", sym.Name, sym.Usages[0].Node.TokenLiteral().Source.File, sym.Usages[0].Node.TokenLiteral().Source.Offset)
+				return errUndeclaredSymbol(sym)
 			}
 			err := c.reserveSymbol(sym)
 			if err != nil {
@@ -69,7 +75,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 		for _, sym := range fileSymbols {
 			if sym.Decl == nil {
-				return fmt.Errorf("undeclared symbol %q at %s:%d", sym.Name, sym.Usages[0].Node.TokenLiteral().Source.File, sym.Usages[0].Node.TokenLiteral().Source.Offset)
+				return errUndeclaredSymbol(sym)
 			}
 			err := c.compileSymbol(sym)
 			if err != nil {
@@ -103,11 +109,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.DeclVariable, *ast.DeclConstant, *ast.DeclFunc:
 		symbols := c.currentSymbols()
 		if symbols == nil {
-			return fmt.Errorf("missing symbols for declaration %T", node)
+			return errInvariant(node, "%T is being compiled with no symbols in scope", node)
 		}
 		sym := symbols.LookupIdentifier(node.(ast.Decl).DeclName())
 		if sym == nil || sym.Decl == nil {
-			return fmt.Errorf("declaration %q not registered by analyzer", node.(ast.Decl).DeclName().Value)
+			return errInvariant(node, "%s was never registered by the analyzer, which records every declaration before compilation", node.(ast.Decl).DeclName().Value)
 		}
 		return c.compileSymbol(sym)
 
@@ -127,9 +133,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case ast.StmtFor:
 		return c.compileStmtFor(node)
 	case ast.StmtBreak:
-		return c.compileStmtBreak()
+		return c.compileStmtBreak(node)
 	case ast.StmtContinue:
-		return c.compileStmtContinue()
+		return c.compileStmtContinue(node)
 
 	case ast.ExprIf:
 		return c.compileExprIf(node)
@@ -211,12 +217,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if symbol == nil {
 			symbols := c.currentSymbols()
 			if symbols == nil {
-				return fmt.Errorf("undefined identifier %q", node.Name)
+				return errUndefinedIdentifier(node)
 			}
 			symbol = symbols.LookupIdentifier(node.Name)
 		}
 		if symbol == nil || symbol.Decl == nil {
-			return fmt.Errorf("undefined identifier %q", node.Name)
+			return errUndefinedIdentifier(node)
 		}
 		switch symbol.Decl.(type) {
 		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclExternValue, *ast.DeclAttr:
@@ -237,7 +243,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return nil
 			}
 			if sym.ConstantId == nil {
-				return fmt.Errorf("identifier %q has no constant id", node.Name)
+				return errInvariant(node, "%s was never given a constant slot, which the analyzer assigns before compilation", node.Name)
 			}
 			c.emit(op.Const, *sym.ConstantId)
 			return nil
@@ -276,7 +282,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return nil
 			}
 
-			return fmt.Errorf("variable %q has no local or global id", node.Name)
+			return errInvariant(node, "%s was never given a local or global slot, which the analyzer assigns before compilation", node.Name)
 
 		case *ast.DeclParameter:
 			if symbol.Scope == ast.FreeScope && symbol.LocalId == nil {
@@ -288,14 +294,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 		case *ast.DeclImport:
 			sym := symbol.Original()
 			if sym.GlobalId == nil {
-				return fmt.Errorf("module %q has no global id", node.Name)
+				return errInvariant(node, "the module %s was never given a global slot, which the analyzer assigns before compilation", node.Name)
 			}
 			c.emit(op.GetGlobal, *sym.GlobalId)
 			return nil
 		case *ast.DeclModule:
 			sym := symbol.Original()
 			if sym.GlobalId == nil {
-				return fmt.Errorf("module %q has no global id", node.Name)
+				return errInvariant(node, "the module %s was never given a global slot, which the analyzer assigns before compilation", node.Name)
 			}
 			c.emit(op.GetGlobal, *sym.GlobalId)
 			return nil
@@ -303,13 +309,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 		case ast.DeclImportMember:
 			sym := symbol.Original()
 			if sym.GlobalId == nil {
-				return fmt.Errorf("import member %q has no global id", node.Name)
+				return errInvariant(node, "the imported member %s was never given a global slot, which the analyzer assigns before compilation", node.Name)
 			}
 			c.emit(op.GetGlobal, *sym.GlobalId)
 			return nil
 
 		default:
-			return fmt.Errorf("identifier %q has unknown declaration type %T", node.Name, symbol.Decl)
+			return errUnimplemented(node, "%s is a %T, which is not handled when compiling an identifier", node.Name, symbol.Decl)
 		}
 
 	case *ast.ExprMemberAccess:
@@ -367,7 +373,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return nil
 
 	default:
-		return fmt.Errorf("unknown ast node %T", node)
+		return errUnimplemented(node, "%T is not handled when compiling", node)
 	}
 }
 
@@ -375,7 +381,7 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 	switch decl := sym.Decl.(type) {
 	case *ast.DeclFunc:
 		if sym.ConstantId == nil {
-			return fmt.Errorf("function %q has no constant id", decl.Name.Value)
+			return errInvariant(sym.Decl, "the function %s was never given a constant slot, which the analyzer assigns before compilation", decl.Name.Value)
 		}
 		c.ensureConstantSlot(*sym.ConstantId)
 		return nil
@@ -384,47 +390,47 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 		switch decl.ExportScope() {
 		case ast.ExportScopeInternal, ast.ExportScopePublic:
 			if sym.GlobalId == nil {
-				return fmt.Errorf("global %q has no global id", decl.Name.Value)
+				return errInvariant(sym.Decl, "the global %s was never given a global slot, which the analyzer assigns before compilation", decl.Name.Value)
 			}
 			c.ensureGlobalSlot(*sym.GlobalId)
 			return nil
 
 		case ast.ExportScopeLocal:
 			if sym.LocalId == nil {
-				return fmt.Errorf("local %q has no local id", decl.Name.Value)
+				return errInvariant(sym.Decl, "the local %s was never given a local slot, which the analyzer assigns before compilation", decl.Name.Value)
 			}
 			c.ensureLocalSlot(*sym.LocalId)
 			c.scopes[c.scopeIdx].locals[*sym.LocalId] = sym
 			return nil
 
 		default:
-			return fmt.Errorf("unknown variable scope %v", sym.Scope)
+			return errUnimplemented(sym.Decl, "variable scope %v is not handled when reserving slots", sym.Scope)
 		}
 
 	case *ast.DeclConstant:
 		switch decl.ExportScope() {
 		case ast.ExportScopeInternal, ast.ExportScopePublic:
 			if sym.GlobalId == nil {
-				return fmt.Errorf("global %q has no global id", decl.Name.Value)
+				return errInvariant(sym.Decl, "the global %s was never given a global slot, which the analyzer assigns before compilation", decl.Name.Value)
 			}
 			c.ensureGlobalSlot(*sym.GlobalId)
 			return nil
 
 		case ast.ExportScopeLocal:
 			if sym.LocalId == nil {
-				return fmt.Errorf("local %q has no local id", decl.Name.Value)
+				return errInvariant(sym.Decl, "the local %s was never given a local slot, which the analyzer assigns before compilation", decl.Name.Value)
 			}
 			c.ensureLocalSlot(*sym.LocalId)
 			c.scopes[c.scopeIdx].locals[*sym.LocalId] = sym
 			return nil
 
 		default:
-			return fmt.Errorf("unknown variable scope %v", sym.Scope)
+			return errUnimplemented(sym.Decl, "variable scope %v is not handled when reserving slots", sym.Scope)
 		}
 
 	case *ast.DeclParameter:
 		if sym.LocalId == nil {
-			return fmt.Errorf("parameter %q has no local id", decl.Name.Value)
+			return errInvariant(sym.Decl, "the parameter %s was never given a local slot, which the analyzer assigns before compilation", decl.Name.Value)
 		}
 		c.ensureLocalSlot(*sym.LocalId)
 		c.scopes[c.scopeIdx].locals[*sym.LocalId] = sym
@@ -432,7 +438,7 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 
 	case *ast.DeclForBinding:
 		if sym.LocalId == nil {
-			return fmt.Errorf("binding %q has no local id", decl.Name.Value)
+			return errInvariant(sym.Decl, "the loop binding %s was never given a local slot, which the analyzer assigns before compilation", decl.Name.Value)
 		}
 		c.ensureLocalSlot(*sym.LocalId)
 		c.scopes[c.scopeIdx].locals[*sym.LocalId] = sym
@@ -440,14 +446,14 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 
 	case *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclExternValue, *ast.DeclAttr:
 		if sym.ConstantId == nil {
-			return fmt.Errorf("declaration %q has no constant id", sym.Name)
+			return errInvariant(sym.Decl, "the declaration %s was never given a constant slot, which the analyzer assigns before compilation", sym.Name)
 		}
 		c.ensureConstantSlot(*sym.ConstantId)
 		return nil
 
 	case *ast.DeclModule:
 		if sym.GlobalId == nil {
-			return fmt.Errorf("module %q has no global id", decl.Name.Value)
+			return errInvariant(sym.Decl, "the module %s was never given a global slot, which the analyzer assigns before compilation", decl.Name.Value)
 		}
 		c.ensureGlobalSlot(*sym.GlobalId)
 		c.moduleGlobals[c.currentSymbols().Module().Name] = *sym.GlobalId
@@ -455,7 +461,7 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 
 	case *ast.DeclImport:
 		if sym.GlobalId == nil {
-			return fmt.Errorf("import %q has no global id", decl.ModuleName)
+			return errInvariant(sym.Decl, "the import of %s was never given a global slot, which the analyzer assigns before compilation", decl.ModuleName)
 		}
 		c.ensureGlobalSlot(*sym.GlobalId)
 		c.moduleGlobals[decl.ModuleName.URI()] = *sym.GlobalId
@@ -463,19 +469,19 @@ func (c *Compiler) reserveSymbol(sym *ast.Symbol) error {
 
 	case ast.DeclImportMember:
 		if sym.GlobalId == nil {
-			return fmt.Errorf("import member %q has no global id", decl.Name.Value)
+			return errInvariant(sym.Decl, "the imported member %s was never given a global slot, which the analyzer assigns before compilation", decl.Name.Value)
 		}
 		c.ensureGlobalSlot(*sym.GlobalId)
 		return nil
 
 	default:
-		return fmt.Errorf("unknown declaration %T", decl)
+		return errUnimplemented(sym.Decl, "%T is not handled when reserving slots", decl)
 	}
 }
 
 func (c *Compiler) ensureAnalyzed(module *ast.ContextModule, reserveModule bool) error {
 	if module == nil {
-		return fmt.Errorf("analysis error: module is nil")
+		return errInvariant(nil, "a module was analyzed without being loaded first")
 	}
 	if _, ok := c.analyzed[module]; ok {
 		return nil
@@ -488,11 +494,12 @@ func (c *Compiler) ensureAnalyzed(module *ast.ContextModule, reserveModule bool)
 	if c.resolver != nil && c.resolver.MainModule() == module && c.scopes[0].symbols == nil {
 		c.scopes[0].symbols = module.Symbols
 	}
-	if len(errs) == 0 {
+	// Only diagnostics that stop a build are returned; a warning is the caller's to report, not the compiler's to fail on.
+	failing := analyzer.AnalysisErrors(errs).Failing()
+	if len(failing) == 0 {
 		return nil
 	}
-	err := errs[0]
-	return fmt.Errorf("%s", err.Error())
+	return failing
 }
 
 func (c *Compiler) sourceFileSymbols(file *ast.SourceFile) []*ast.Symbol {
@@ -730,15 +737,15 @@ func (c *Compiler) compileStmtFor(node ast.StmtFor) error {
 
 func (c *Compiler) compileStmtForCollection(node ast.StmtFor) error {
 	if node.CollectionIdent == nil || node.CollectionExpr == nil {
-		return fmt.Errorf("collection for loops require binding and collection")
+		return errInvariant(node, "a collection for loop was compiled without a binding or a collection")
 	}
 	symbols := c.currentSymbols()
 	if symbols == nil {
-		return fmt.Errorf("collection binding %q missing symbols", node.CollectionIdent.Value)
+		return errInvariant(node, "the binding %s is being compiled with no symbols in scope", node.CollectionIdent.Value)
 	}
 	sym := symbols.LookupIdentifier(*node.CollectionIdent)
 	if sym == nil {
-		return fmt.Errorf("collection binding %q missing symbol", node.CollectionIdent.Value)
+		return errInvariant(node, "the binding %s was never registered by the analyzer", node.CollectionIdent.Value)
 	}
 	bindingLocal, err := c.requireLocalId(sym)
 	if err != nil {
@@ -752,7 +759,7 @@ func (c *Compiler) compileStmtForCollection(node ast.StmtFor) error {
 	}
 	c.emit(op.SetLocal, collectionLocal)
 
-	arrayConstId, err := c.resolveBuiltinTypeConstantId("Array", symbols)
+	arrayConstId, err := c.resolveBuiltinTypeConstantId(node, "Array", symbols)
 	if err != nil {
 		return err
 	}
@@ -766,7 +773,7 @@ func (c *Compiler) compileStmtForCollection(node ast.StmtFor) error {
 	endJump := c.emit(op.Jump, placeholderJumpAddress)
 
 	c.changeOperand(genericJump, len(c.currentInstructions()))
-	if err := c.compileIterableForLoop(node.Body, collectionLocal, bindingLocal, symbols); err != nil {
+	if err := c.compileIterableForLoop(node, node.Body, collectionLocal, bindingLocal, symbols); err != nil {
 		return err
 	}
 
@@ -819,8 +826,9 @@ func (c *Compiler) compileArrayForLoop(body ast.Block, collectionLocal, bindingL
 	return nil
 }
 
-func (c *Compiler) compileIterableForLoop(body ast.Block, collectionLocal, bindingLocal int, symbols *ast.SymbolTable) error {
-	iterableConstId, err := c.resolveBuiltinTypeConstantId("Iterable", symbols)
+// node is the loop being compiled, carried only so that anything reported here can say where it came from.
+func (c *Compiler) compileIterableForLoop(node ast.Node, body ast.Block, collectionLocal, bindingLocal int, symbols *ast.SymbolTable) error {
+	iterableConstId, err := c.resolveBuiltinTypeConstantId(node, "Iterable", symbols)
 	if err != nil {
 		return err
 	}
@@ -829,7 +837,7 @@ func (c *Compiler) compileIterableForLoop(body ast.Block, collectionLocal, bindi
 	c.emit(op.IsType, iterableConstId)
 	okJump := c.emit(op.JumpTrue, placeholderJumpAddress)
 
-	panicConstId, err := c.resolveBuiltinTypeConstantId("panic", symbols)
+	panicConstId, err := c.resolveBuiltinTypeConstantId(node, "panic", symbols)
 	if err != nil {
 		return err
 	}
@@ -1029,15 +1037,15 @@ func (c *Compiler) compileExprFor(node ast.ExprFor) error {
 
 func (c *Compiler) compileExprForCollection(node ast.ExprFor, arrayLocal int) error {
 	if node.CollectionIdent == nil || node.CollectionExpr == nil {
-		return fmt.Errorf("collection for expressions require binding and collection")
+		return errInvariant(node, "a collection for expression was compiled without a binding or a collection")
 	}
 	symbols := c.currentSymbols()
 	if symbols == nil {
-		return fmt.Errorf("collection binding %q missing symbols", node.CollectionIdent.Value)
+		return errInvariant(node, "the binding %s is being compiled with no symbols in scope", node.CollectionIdent.Value)
 	}
 	sym := symbols.LookupIdentifier(*node.CollectionIdent)
 	if sym == nil {
-		return fmt.Errorf("collection binding %q missing symbol", node.CollectionIdent.Value)
+		return errInvariant(node, "the binding %s was never registered by the analyzer", node.CollectionIdent.Value)
 	}
 	bindingLocal, err := c.requireLocalId(sym)
 	if err != nil {
@@ -1051,7 +1059,7 @@ func (c *Compiler) compileExprForCollection(node ast.ExprFor, arrayLocal int) er
 	}
 	c.emit(op.SetLocal, collectionLocal)
 
-	arrayConstId, err := c.resolveBuiltinTypeConstantId("Array", symbols)
+	arrayConstId, err := c.resolveBuiltinTypeConstantId(node, "Array", symbols)
 	if err != nil {
 		return err
 	}
@@ -1065,7 +1073,7 @@ func (c *Compiler) compileExprForCollection(node ast.ExprFor, arrayLocal int) er
 	endJump := c.emit(op.Jump, placeholderJumpAddress)
 
 	c.changeOperand(genericJump, len(c.currentInstructions()))
-	if err := c.compileGenericIterableForExprLoop(node.Body, collectionLocal, bindingLocal, arrayLocal, symbols); err != nil {
+	if err := c.compileGenericIterableForExprLoop(node, node.Body, collectionLocal, bindingLocal, arrayLocal, symbols); err != nil {
 		return err
 	}
 
@@ -1119,8 +1127,9 @@ func (c *Compiler) compileArrayForExprLoop(body ast.ExprForBody, collectionLocal
 	return nil
 }
 
-func (c *Compiler) compileGenericIterableForExprLoop(body ast.ExprForBody, collectionLocal, bindingLocal, arrayLocal int, symbols *ast.SymbolTable) error {
-	iterableConstId, err := c.resolveBuiltinTypeConstantId("Iterable", symbols)
+// node is the loop being compiled, carried only so that anything reported here can say where it came from.
+func (c *Compiler) compileGenericIterableForExprLoop(node ast.Node, body ast.ExprForBody, collectionLocal, bindingLocal, arrayLocal int, symbols *ast.SymbolTable) error {
+	iterableConstId, err := c.resolveBuiltinTypeConstantId(node, "Iterable", symbols)
 	if err != nil {
 		return err
 	}
@@ -1129,7 +1138,7 @@ func (c *Compiler) compileGenericIterableForExprLoop(body ast.ExprForBody, colle
 	c.emit(op.IsType, iterableConstId)
 	okJump := c.emit(op.JumpTrue, placeholderJumpAddress)
 
-	panicConstId, err := c.resolveBuiltinTypeConstantId("panic", symbols)
+	panicConstId, err := c.resolveBuiltinTypeConstantId(node, "panic", symbols)
 	if err != nil {
 		return err
 	}
@@ -1183,13 +1192,13 @@ func (c *Compiler) compileGenericIterableForExprLoop(body ast.ExprForBody, colle
 func (c *Compiler) compileExprForBlock(body ast.ExprForBody, arrayLocal int, continueJumps *[]int, breakJumps *[]int) error {
 	symbols := c.currentSymbols()
 	if symbols == nil {
-		return fmt.Errorf("expr-for body missing symbols")
+		return errInvariant(nil, "a for expression body is being compiled with no symbols in scope")
 	}
 	for _, decl := range body.Decls {
 		name := decl.DeclName()
 		sym := symbols.LookupIdentifier(name)
 		if sym == nil {
-			return fmt.Errorf("expr-for declaration %q missing symbol", name.Value)
+			return errInvariant(decl, "the declaration %s was never registered by the analyzer", name.Value)
 		}
 		local, err := c.requireLocalId(sym)
 		if err != nil {
@@ -1241,7 +1250,7 @@ func (c *Compiler) compileExprForStatement(stmt ast.Statement, arrayLocal int, c
 	case ast.StmtSwitch:
 		return c.compileExprForSwitchInLoop(stmt, arrayLocal, continueJumps, breakJumps)
 	default:
-		return fmt.Errorf("expr-for allows only expression, if, switch, break, or continue statements")
+		return errAt(stmt, "not allowed in a for expression", "only an expression, if, switch, break or continue may appear here")
 	}
 }
 
@@ -1309,12 +1318,12 @@ func (c *Compiler) compileExprForIfInLoop(node ast.StmtIf, arrayLocal int, conti
 	return nil
 }
 
-func (c *Compiler) compileStmtBreak() error {
-	return fmt.Errorf("break used outside of loop")
+func (c *Compiler) compileStmtBreak(node ast.Node) error {
+	return errAt(node, "break outside a loop", "there is nothing here to break out of")
 }
 
-func (c *Compiler) compileStmtContinue() error {
-	return fmt.Errorf("continue used outside of loop")
+func (c *Compiler) compileStmtContinue(node ast.Node) error {
+	return errAt(node, "continue outside a loop", "there is nothing here to continue")
 }
 
 func (c *Compiler) compileExprIf(node ast.ExprIf) error {
@@ -1382,7 +1391,7 @@ func (c *Compiler) compileExprOperatorUnary(node *ast.ExprOperatorUnary) error {
 		c.emit(op.Negate)
 		return nil
 	default:
-		return fmt.Errorf("unknown prefix operator %q", node.Operator.Literal)
+		return errAt(node, "unknown prefix operator", "%s", node.Operator.Literal)
 	}
 }
 func (c *Compiler) compileExprOperatorBinary(node *ast.ExprOperatorBinary) error {
@@ -1496,7 +1505,7 @@ func (c *Compiler) compileExprOperatorBinary(node *ast.ExprOperatorBinary) error
 		c.emit(op.LessThanOrEqual)
 		return nil
 	default:
-		return fmt.Errorf("unknown infix operator %q", node.Operator.Literal)
+		return errAt(node, "unknown infix operator", "%s", node.Operator.Literal)
 	}
 }
 
@@ -1590,7 +1599,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 
 		val := c.plugins.Bind(c, c.currentSymbols(), sym)
 		if val == nil {
-			return fmt.Errorf("extern value %q has no runtime binding", sym.Name)
+			return errAt(sym.Decl, "extern value has no binding", "nothing in the runtime provides %s", sym.Name)
 		}
 		c.constants[*sym.ConstantId] = val
 		return nil
@@ -1613,12 +1622,12 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 
 		fn := c.plugins.Bind(c, c.currentSymbols(), sym)
 		if fn == nil {
-			return fmt.Errorf("extern fn %q has no runtime binding", sym.Name)
+			return errAt(sym.Decl, "extern fn has no binding", "nothing in the runtime provides %s", sym.Name)
 		}
 
 		extfn, ok := fn.(*runtime.ExternFunc)
 		if !ok {
-			return fmt.Errorf("extern fn %s is %T, not a function", sym.Name, fn)
+			return errInvariant(sym.Decl, "%s is declared as an extern fn, but the runtime binds it to a %T rather than to a function", sym.Name, fn)
 		}
 
 		extfn.Attributes = attributes
@@ -1701,7 +1710,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		// resolve_identifiers (before assignModuleIDs) have nil ConstantId.
 		origSym := sym.Original()
 		if origSym.ConstantId == nil {
-			return fmt.Errorf("internal: DeclFunc %q has no ConstantId", sym.Name)
+			return errInvariant(sym.Decl, "the function %s was never given a constant slot, which the analyzer assigns before compilation", sym.Name)
 		}
 		c.ensureConstantSlot(*origSym.ConstantId)
 		c.constants[*origSym.ConstantId] = function
@@ -1750,7 +1759,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 
 		case ast.ExportScopeLocal:
 			if sym.LocalId == nil {
-				return fmt.Errorf("local %q has no local id", decl.Name.Value)
+				return errInvariant(sym.Decl, "the local %s was never given a local slot, which the analyzer assigns before compilation", decl.Name.Value)
 			}
 			err := c.Compile(decl.Value)
 			if err != nil {
@@ -1771,7 +1780,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return nil
 
 		default:
-			return fmt.Errorf("unknown variable scope %v", sym.Scope)
+			return errUnimplemented(sym.Decl, "variable scope %v is not handled when compiling a variable", sym.Scope)
 		}
 
 	case *ast.DeclConstant:
@@ -1798,7 +1807,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 
 		case ast.ExportScopeLocal:
 			if sym.LocalId == nil {
-				return fmt.Errorf("local %q has no local id", decl.Name.Value)
+				return errInvariant(sym.Decl, "the local %s was never given a local slot, which the analyzer assigns before compilation", decl.Name.Value)
 			}
 			err := c.Compile(decl.Value)
 			if err != nil {
@@ -1813,7 +1822,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return nil
 
 		default:
-			return fmt.Errorf("unknown variable scope %v", sym.Scope)
+			return errUnimplemented(sym.Decl, "variable scope %v is not handled when compiling a constant", sym.Scope)
 		}
 
 	case *ast.DeclParameter:
@@ -1827,12 +1836,12 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 
 	case *ast.DeclImport:
 		if c.resolver == nil {
-			return fmt.Errorf("module resolver is required to compile imports")
+			return errInvariant(sym.Decl, "imports cannot be compiled without a module resolver, which the compiler is always built with")
 		}
 
 		uri := decl.ModuleName.URI()
 		if sym.GlobalId == nil {
-			return fmt.Errorf("import %q has no global id", decl.ModuleName)
+			return errInvariant(sym.Decl, "the import of %s was never given a global slot, which the analyzer assigns before compilation", decl.ModuleName)
 		}
 		c.ensureGlobalSlot(*sym.GlobalId)
 
@@ -1842,10 +1851,10 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		moduleURI := decl.ModuleName.URI()
 		moduleGlobalId, ok := c.moduleGlobals[moduleURI]
 		if !ok {
-			return fmt.Errorf("import member %q: module %q not indexed", decl.Name.Value, moduleURI)
+			return errInvariant(sym.Decl, "%s is imported from %s, which was never given a global slot, so its members cannot be reached", decl.Name.Value, moduleURI)
 		}
 		if sym.GlobalId == nil {
-			return fmt.Errorf("import member %q has no global id", decl.Name.Value)
+			return errInvariant(sym.Decl, "the imported member %s was never given a global slot, which the analyzer assigns before compilation", decl.Name.Value)
 		}
 
 		// Create an init scope that loads the module and gets the member.
@@ -1859,7 +1868,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		return nil
 
 	default:
-		return fmt.Errorf("unknown declaration %T", decl)
+		return errUnimplemented(sym.Decl, "%T is not handled when compiling a declaration", decl)
 	}
 }
 
@@ -1979,14 +1988,14 @@ func (c *Compiler) compileSourceFileDecls(node *ast.SourceFile) error {
 
 	for _, sym := range node.Symbols.Symbols {
 		if sym.Decl == nil {
-			return fmt.Errorf("undeclared symbol %q at %s:%d", sym.Name, sym.Usages[0].Node.TokenLiteral().Source.File, sym.Usages[0].Node.TokenLiteral().Source.Offset)
+			return errUndeclaredSymbol(sym)
 		}
 	}
 
 	fileSymbols := c.sourceFileSymbols(node)
 	for _, sym := range fileSymbols {
 		if sym.Decl == nil {
-			return fmt.Errorf("undeclared symbol %q at %s:%d", sym.Name, sym.Usages[0].Node.TokenLiteral().Source.File, sym.Usages[0].Node.TokenLiteral().Source.Offset)
+			return errUndeclaredSymbol(sym)
 		}
 		if err := c.reserveSymbol(sym); err != nil {
 			c.leaveScope()
@@ -2057,7 +2066,7 @@ func (c *Compiler) compileInitFunction(statements []ast.Statement, symbols *ast.
 // The caller is responsible for ensuring the source file is analyzed before calling this.
 func (c *Compiler) CompileSourceFileIncremental(node *ast.SourceFile) (int, error) {
 	if node.Symbols == nil {
-		return -1, fmt.Errorf("source file has no symbol table: ensure it is analyzed before compiling")
+		return -1, errInvariant(nil, "a source file is being compiled before it was analyzed, so it carries no symbol table")
 	}
 
 	// Snapshot slice lengths so we can roll back on any compile error.
@@ -2074,7 +2083,7 @@ func (c *Compiler) CompileSourceFileIncremental(node *ast.SourceFile) (int, erro
 	for _, sym := range node.Symbols.Symbols {
 		if sym.Decl == nil {
 			c.leaveScope()
-			return fail(fmt.Errorf("undeclared symbol %q", sym.Name))
+			return fail(errUndeclaredSymbol(sym))
 		}
 	}
 
@@ -2082,7 +2091,7 @@ func (c *Compiler) CompileSourceFileIncremental(node *ast.SourceFile) (int, erro
 	for _, sym := range fileSymbols {
 		if sym.Decl == nil {
 			c.leaveScope()
-			return fail(fmt.Errorf("undeclared symbol %q", sym.Name))
+			return fail(errUndeclaredSymbol(sym))
 		}
 		if err := c.reserveSymbol(sym); err != nil {
 			c.leaveScope()
@@ -2169,20 +2178,20 @@ func (c *Compiler) emitModuleExport(sym *ast.Symbol) error {
 	switch sym.Decl.(type) {
 	case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclExternValue, *ast.DeclAttr:
 		if sym.ConstantId == nil {
-			return fmt.Errorf("identifier %q has no constant id", sym.Name)
+			return errInvariant(sym.Decl, "the export %s was never given a constant slot, which the analyzer assigns before compilation", sym.Name)
 		}
 		c.emit(op.Const, *sym.ConstantId)
 		return nil
 
 	case *ast.DeclVariable, *ast.DeclConstant:
 		if sym.GlobalId == nil {
-			return fmt.Errorf("variable %q has no global id", sym.Name)
+			return errInvariant(sym.Decl, "the export %s was never given a global slot, which the analyzer assigns before compilation", sym.Name)
 		}
 		c.emit(op.GetGlobal, *sym.GlobalId)
 		return nil
 
 	default:
-		return fmt.Errorf("unsupported module export %q (%T)", sym.Name, sym.Decl)
+		return errUnimplemented(sym.Decl, "%s is a %T, which is not handled when exporting a module member", sym.Name, sym.Decl)
 	}
 }
 
@@ -2200,7 +2209,7 @@ func (c *Compiler) compileAttributeChain(chain ast.AttributeChain, symbols *ast.
 			return nil, err
 		}
 		if annoSym.ConstantId == nil {
-			return nil, fmt.Errorf("attribute %q has no constant id", annoSym.Name)
+			return nil, errInvariant(annoSym.Decl, "the attribute %s was never given a constant slot, which the analyzer assigns before compilation", annoSym.Name)
 		}
 		c.ensureConstantSlot(*annoSym.ConstantId)
 		globalId, err := c.compileAttributeInstance(inst, annoSym, symbols)
@@ -2341,13 +2350,13 @@ func (c *Compiler) validateFieldAttributes(fields []ast.DeclField, symbols *ast.
 
 func (c *Compiler) compileAttributeInstance(inst *ast.DeclAttrInstance, sym *ast.Symbol, symbols *ast.SymbolTable) (int, error) {
 	if inst == nil {
-		return 0, fmt.Errorf("attribute instance is nil")
+		return 0, errInvariant(nil, "an attribute instance was compiled without a declaration")
 	}
 	if sym == nil {
-		return 0, fmt.Errorf("attribute symbol is nil")
+		return 0, errInvariant(inst, "an attribute instance was compiled without a resolved symbol")
 	}
 	if sym.ConstantId == nil {
-		return 0, fmt.Errorf("attribute %q has no constant id", sym.Name)
+		return 0, errInvariant(inst, "the attribute %s was never given a constant slot, which the analyzer assigns before compilation", sym.Name)
 	}
 
 	c.enterScope(symbols)
@@ -2381,43 +2390,43 @@ func (c *Compiler) addGlobalScope(scope *CompilationScope) int {
 
 func (c *Compiler) resolveAttributeReference(ref ast.StaticReference, symbols *ast.SymbolTable) (*ast.Symbol, error) {
 	if len(ref) == 0 {
-		return nil, fmt.Errorf("attribute reference is empty")
+		return nil, errInvariant(nil, "an attribute was compiled with an empty reference")
 	}
 	if symbols == nil {
-		return nil, fmt.Errorf("missing symbols for attribute reference %q", ref.String())
+		return nil, errAt(ref, "unknown attribute", "%s: no symbols are in scope here", ref.String())
 	}
 	if len(ref) == 1 {
 		sym := c.lookupAttributeSymbol(ref[0].Value, symbols)
 		if sym == nil {
-			return nil, fmt.Errorf("unknown attribute %q", ref.String())
+			return nil, errAt(ref, "unknown attribute", "%s", ref.String())
 		}
 		// If the symbol is an import member, resolve the actual attribute
 		// from the imported module.
 		if member, ok := sym.Original().Decl.(ast.DeclImportMember); ok {
-			return c.resolveAttributeFromModuleName(member.ModuleName, ast.StaticReference{ref[0]}, ref.String())
+			return c.resolveAttributeFromModuleName(member.ModuleName, ast.StaticReference{ref[0]}, ref)
 		}
-		return requireAttributeSymbol(sym, ref.String())
+		return requireAttributeSymbol(sym, ref)
 	}
 
 	head := ref[0]
 	if sym := c.lookupAttributeSymbol(head.Value, symbols); sym != nil {
 		if decl, ok := sym.Decl.(*ast.DeclImport); ok {
-			return c.resolveAttributeFromImport(decl, ref[1:], ref.String())
+			return c.resolveAttributeFromImport(decl, ref[1:], ref)
 		}
 		if sym.ChildTable != nil {
 			found, err := resolveStaticRefInTable(sym.ChildTable, ref[1:], false)
 			if err != nil {
 				return nil, err
 			}
-			return requireAttributeSymbol(found, ref.String())
+			return requireAttributeSymbol(found, ref)
 		}
 	}
 
 	if moduleName := c.findImportedModuleByPrefix(symbols.Module(), ref); moduleName != nil {
-		return c.resolveAttributeFromModuleName(moduleName, ref[len(moduleName):], ref.String())
+		return c.resolveAttributeFromModuleName(moduleName, ref[len(moduleName):], ref)
 	}
 
-	return nil, fmt.Errorf("unknown attribute %q", ref.String())
+	return nil, errAt(ref, "unknown attribute", "%s", ref.String())
 }
 
 // lookupAttributeSymbol finds a symbol by name for attribute resolution.
@@ -2447,26 +2456,26 @@ func (c *Compiler) lookupAttributeSymbol(name string, symbols *ast.SymbolTable) 
 	return nil
 }
 
-func (c *Compiler) resolveAttributeFromImport(decl *ast.DeclImport, tail ast.StaticReference, refName string) (*ast.Symbol, error) {
+func (c *Compiler) resolveAttributeFromImport(decl *ast.DeclImport, tail ast.StaticReference, ref ast.StaticReference) (*ast.Symbol, error) {
 	if decl == nil {
-		return nil, fmt.Errorf("unknown attribute %q", refName)
+		return nil, errAt(ref, "unknown attribute", "%s", ref.String())
 	}
-	return c.resolveAttributeFromModuleName(decl.ModuleName, tail, refName)
+	return c.resolveAttributeFromModuleName(decl.ModuleName, tail, ref)
 }
 
-func (c *Compiler) resolveAttributeFromModuleName(moduleName ast.ModuleName, tail ast.StaticReference, refName string) (*ast.Symbol, error) {
+func (c *Compiler) resolveAttributeFromModuleName(moduleName ast.ModuleName, tail ast.StaticReference, ref ast.StaticReference) (*ast.Symbol, error) {
 	if c.resolver == nil {
-		return nil, fmt.Errorf("module resolver is required for attribute %q", refName)
+		return nil, errAt(ref, "unknown attribute", "%s cannot be looked up without a module resolver", ref.String())
 	}
 	resolved, err := c.resolver.ResolveModule(context.Background(), moduleName.URI())
 	if err != nil || resolved == nil {
-		return nil, fmt.Errorf("unknown attribute %q", refName)
+		return nil, errAt(ref, "unknown attribute", "%s names the module %s, which was not found", ref.String(), moduleName)
 	}
 	if err := c.ensureAnalyzed(resolved, true); err != nil {
 		return nil, err
 	}
 	if _, ok := c.moduleGlobals[moduleName.URI()]; !ok {
-		return nil, fmt.Errorf("module %q is not reserved", moduleName.URI())
+		return nil, errAt(ref, "module not loaded", "%s is not part of this program", moduleName.URI())
 	}
 	if err := c.compileModuleIfNeeded(moduleName.URI(), c.moduleGlobals[moduleName.URI()]); err != nil {
 		return nil, err
@@ -2475,37 +2484,37 @@ func (c *Compiler) resolveAttributeFromModuleName(moduleName ast.ModuleName, tai
 	if err != nil {
 		return nil, err
 	}
-	return requireAttributeSymbol(found, refName)
+	return requireAttributeSymbol(found, ref)
 }
 
-func requireAttributeSymbol(sym *ast.Symbol, refName string) (*ast.Symbol, error) {
+func requireAttributeSymbol(sym *ast.Symbol, ref ast.StaticReference) (*ast.Symbol, error) {
 	if sym == nil || sym.Decl == nil {
-		return nil, fmt.Errorf("unknown attribute %q", refName)
+		return nil, errAt(ref, "unknown attribute", "%s", ref.String())
 	}
 	sym = sym.Original()
 	if _, ok := sym.Decl.(*ast.DeclAttr); !ok {
-		return nil, fmt.Errorf("attribute %q does not refer to attribute type", refName)
+		return nil, errAt(ref, "not an attribute", "%s is a %T, which cannot be written with @", ref.String(), sym.Decl)
 	}
 	return sym, nil
 }
 
 func resolveStaticRefInTable(table *ast.SymbolTable, ref ast.StaticReference, requireExport bool) (*ast.Symbol, error) {
 	if table == nil || len(ref) == 0 {
-		return nil, fmt.Errorf("invalid reference %q", ref.String())
+		return nil, errAt(ref, "invalid reference", "%s names nothing to look in", ref.String())
 	}
 	cur := table
 	for i := range ref {
 		part := ref[i]
 		sym := cur.Symbols[part.Value]
 		if sym == nil || sym.Decl == nil {
-			return nil, fmt.Errorf("unknown reference %q", ref.String())
+			return nil, errAt(ref, "unknown reference", "%s", ref.String())
 		}
 		if requireExport && sym.Decl.ExportScope() != ast.ExportScopePublic {
-			return nil, fmt.Errorf("unknown reference %q", ref.String())
+			return nil, errAt(ref, "unknown reference", "%s", ref.String())
 		}
 		if i+1 < len(ref) {
 			if sym.ChildTable == nil {
-				return nil, fmt.Errorf("unknown reference %q", ref.String())
+				return nil, errAt(ref, "unknown reference", "%s", ref.String())
 			}
 			cur = sym.ChildTable
 		}
@@ -2513,32 +2522,32 @@ func resolveStaticRefInTable(table *ast.SymbolTable, ref ast.StaticReference, re
 			return sym.Original(), nil
 		}
 	}
-	return nil, fmt.Errorf("unknown reference %q", ref.String())
+	return nil, errAt(ref, "unknown reference", "%s", ref.String())
 }
 
 // resolveUnionMemberTypeIds resolves the member type constant IDs for a union declaration.
 func (c *Compiler) resolveUnionMemberTypeIds(decl *ast.DeclUnion) ([]runtime.TypeId, error) {
 	symbols := c.currentSymbols()
 	if symbols == nil {
-		return nil, fmt.Errorf("missing symbols for union %q", decl.Name)
+		return nil, errInvariant(decl, "the union %s is being compiled with no symbols in scope", decl.Name)
 	}
 	memberTypeIds := make([]runtime.TypeId, 0, len(decl.Members))
 	for _, member := range decl.Members {
 		memberSym := symbols.LookupRef(member.Member)
 		if memberSym == nil || memberSym.Decl == nil {
-			return nil, fmt.Errorf("unresolved union member %q", member.Member.String())
+			return nil, errAt(member.Member, "unknown union member", "%s", member.Member.String())
 		}
 		memberSym = memberSym.Original()
 		// If the symbol is a DeclImportMember, resolve the actual type from the imported module.
 		if importMember, ok := memberSym.Decl.(ast.DeclImportMember); ok {
 			resolved, err := c.resolveTypeSymbolFromImport(importMember)
 			if err != nil {
-				return nil, fmt.Errorf("union member %q: %w", member.Member.String(), err)
+				return nil, errAt(member.Member, "unknown union member", "%s: %s", member.Member.String(), err)
 			}
 			memberSym = resolved
 		}
 		if memberSym.ConstantId == nil {
-			return nil, fmt.Errorf("union member %q has no constant id", member.Member.String())
+			return nil, errInvariant(member.Member, "the union member %s was never given a constant slot, which the analyzer assigns before compilation", member.Member.String())
 		}
 		memberTypeIds = append(memberTypeIds, runtime.TypeId(*memberSym.ConstantId))
 	}
@@ -2549,11 +2558,11 @@ func (c *Compiler) resolveUnionMemberTypeIds(decl *ast.DeclUnion) ([]runtime.Typ
 // module and returns it. The module is analyzed if not yet analyzed.
 func (c *Compiler) resolveTypeSymbolFromImport(importMember ast.DeclImportMember) (*ast.Symbol, error) {
 	if c.resolver == nil {
-		return nil, fmt.Errorf("module resolver required")
+		return nil, errInvariant(importMember, "an imported type cannot be resolved without a module resolver, which the compiler is always built with")
 	}
 	module, err := c.resolver.ResolveModule(context.Background(), importMember.ModuleName.URI())
 	if err != nil || module == nil {
-		return nil, fmt.Errorf("cannot resolve module %q", importMember.ModuleName)
+		return nil, errAt(importMember, "unknown module", "%s", importMember.ModuleName)
 	}
 	if err := c.ensureAnalyzed(module, true); err != nil {
 		return nil, err
@@ -2561,7 +2570,7 @@ func (c *Compiler) resolveTypeSymbolFromImport(importMember ast.DeclImportMember
 	ref := ast.StaticReference{importMember.Name}
 	sym, err := resolveStaticRefInTable(module.Symbols, ref, true)
 	if err != nil {
-		return nil, fmt.Errorf("cannot resolve %q: %w", importMember.Name.Value, err)
+		return nil, errAt(importMember, "unknown import", "%s: %s", importMember.Name.Value, err)
 	}
 	return sym, nil
 }
@@ -2627,7 +2636,7 @@ func (c *Compiler) compileStmtAssign(node *ast.StmtAssign) error {
 	case *ast.ExprIndexAccess:
 		return c.compileIndexAssign(target, node.Op, node.Value)
 	default:
-		return fmt.Errorf("unsupported lvalue type %T", node.Target)
+		return errAt(node, "cannot be assigned to", "%T is not something a value can be stored in", node.Target)
 	}
 }
 
@@ -2642,14 +2651,14 @@ func (c *Compiler) compileIdentAssign(target *ast.ExprIdentifier, augOp token.To
 		}
 	}
 	if symbol == nil || symbol.Decl == nil {
-		return fmt.Errorf("undefined identifier %q", target.Name)
+		return errUndefinedIdentifier(target)
 	}
 
 	switch symbol.Decl.(type) {
 	case *ast.DeclConstant:
-		return fmt.Errorf("cannot assign to const %q", target.Name)
+		return errAt(target, "cannot assign to a constant", "%s was declared with const", target.Name)
 	case *ast.DeclParameter:
-		return fmt.Errorf("cannot assign to parameter %q", target.Name)
+		return errAt(target, "cannot assign to a parameter", "%s", target.Name)
 	}
 
 	if augOp != "" {
@@ -2660,7 +2669,7 @@ func (c *Compiler) compileIdentAssign(target *ast.ExprIdentifier, augOp token.To
 		if err := c.Compile(value); err != nil {
 			return err
 		}
-		if err := c.emitBinaryOp(augOp); err != nil {
+		if err := c.emitBinaryOp(value, augOp); err != nil {
 			return err
 		}
 	} else {
@@ -2704,11 +2713,11 @@ func (c *Compiler) compileIdentAssign(target *ast.ExprIdentifier, augOp token.To
 			c.emit(op.SetGlobal, *sym.GlobalId)
 			return nil
 		}
-		return fmt.Errorf("variable %q has no local or global id", target.Name)
+		return errAt(target, "unresolved variable", "%s has no storage assigned to it", target.Name)
 	case *ast.DeclImport, *ast.DeclModule, ast.DeclImportMember:
-		return fmt.Errorf("cannot assign to import/module %q", target.Name)
+		return errAt(target, "cannot assign to a module", "%s names an import", target.Name)
 	default:
-		return fmt.Errorf("cannot assign to %T %q", symbol.Decl, target.Name)
+		return errAt(target, "cannot be assigned to", "%s is a %T", target.Name, symbol.Decl)
 	}
 }
 
@@ -2731,7 +2740,7 @@ func (c *Compiler) compileMemberAssign(target *ast.ExprMemberAccess, augOp token
 		if err := c.Compile(value); err != nil {
 			return err
 		}
-		if err := c.emitBinaryOp(augOp); err != nil {
+		if err := c.emitBinaryOp(value, augOp); err != nil {
 			return err
 		}
 		// Push cached obj for the write: [..., result, obj]
@@ -2772,7 +2781,7 @@ func (c *Compiler) compileIndexAssign(target *ast.ExprIndexAccess, augOp token.T
 		if err := c.Compile(value); err != nil {
 			return err
 		}
-		if err := c.emitBinaryOp(augOp); err != nil {
+		if err := c.emitBinaryOp(value, augOp); err != nil {
 			return err
 		}
 		// Push cached target and index for the write
@@ -2795,7 +2804,8 @@ func (c *Compiler) compileIndexAssign(target *ast.ExprIndexAccess, augOp token.T
 }
 
 // emitBinaryOp emits the opcode for an arithmetic binary operator.
-func (c *Compiler) emitBinaryOp(op_ token.TokenType) error {
+// node is the value being combined, carried so that an operator this cannot emit says where it was written.
+func (c *Compiler) emitBinaryOp(node ast.Node, op_ token.TokenType) error {
 	switch op_ {
 	case token.PLUS:
 		c.emit(op.Add)
@@ -2808,7 +2818,7 @@ func (c *Compiler) emitBinaryOp(op_ token.TokenType) error {
 	case token.PERCENT:
 		c.emit(op.Mod)
 	default:
-		return fmt.Errorf("unsupported augmented assignment operator %q", op_)
+		return errUnimplemented(node, "the augmented assignment operator %s is not handled", op_)
 	}
 	return nil
 }
@@ -2881,13 +2891,20 @@ func (c *Compiler) MainPackageModules() (string, map[string]int) {
 	}
 
 	for _, canonical := range reserved {
-		// A package may legitimately contain modules that do not compile on their own — test fixtures and examples, say — and one of those must not break every program that merely asks what the package contains.
-		// Its slot stays reserved but empty, so it is dropped here rather than being offered as a module that cannot be loaded.
+		// A module of this package that does not compile is not offered, since it could never be loaded, and the failure is remembered so that it is reported rather than quietly leaving a hole in what the package contains.
 		if err := c.compileModuleIfNeeded(canonical, info.globals[string(canonical)]); err != nil {
 			delete(info.globals, string(canonical))
+			c.mainPackageErrs = append(c.mainPackageErrs, fmt.Errorf("module %s of this package does not compile: %w", canonical, err))
 		}
 	}
 	return info.name, info.globals
+}
+
+// MainPackageErrors returns the failures met while compiling the modules of the project's own package.
+//
+// Asking what a package contains compiles every module in it, and one that does not compile used to be dropped without a word — leaving a program running against a package quietly missing part of itself. They are reported instead, and compiling fails.
+func (c *Compiler) MainPackageErrors() []error {
+	return c.mainPackageErrs
 }
 
 // isShadowedByLoadedModule reports whether a package module is unreachable because its unqualified name resolves to a different module, as happens when a project carries its own copy of a standard library module.

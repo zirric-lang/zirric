@@ -62,7 +62,9 @@ Type expressions come in four forms:
 
 ### Type Hints
 
-Type hints use `: TypeExpr` for values and `-> TypeExpr` for return types. **All type hints are optional.** Zirric remains a dynamically typed language — type hints serve as documentation, tooling hints, and optional runtime checks, but omitting them is perfectly valid.
+Type hints use `: TypeExpr` for values and `-> TypeExpr` for return types. **All type hints are optional.** Zirric remains a dynamically typed language, and omitting a hint is perfectly valid.
+
+> Amended by [ZE-022](/proposals/ZE-022-static-checks): a hint that _is_ written is checked during analysis. It was originally documentation only.
 
 ```zirric
 // With type hints
@@ -137,7 +139,9 @@ value is @Iterable @Countable
 value is @prelude.Iterable
 ```
 
-For composite types, `is` checks the **container type** at runtime. Since Zirric is dynamically typed, element/key/value/parameter types in composite expressions are documentation — they are not verified at runtime. So `x is [Int]` and `x is [String]` both check that `x` is an `Array`.
+For composite types, `is` checks the **container type** at runtime, so `x is [Int]` and `x is [String]` both check that `x` is an `Array`.
+
+> Amended by [ZE-022](/proposals/ZE-022-static-checks): element, key and value types are checked during analysis where they are known, even though `is` still compares only the container.
 
 ### `is` in Switch Cases
 

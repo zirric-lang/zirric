@@ -38,6 +38,7 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 | [ZE-019](/proposals/ZE-019-result-and-option-sugar)            | Result and Option Sugar             | Draft       |                             |
 | [ZE-020](/proposals/ZE-020-standard-library)                   | Standard Library                    | In Progress |                             |
 | [ZE-021](/proposals/ZE-021-encoding-and-decoding)              | Encoding and Decoding               | In Progress |                             |
+| [ZE-022](/proposals/ZE-022-static-checks)                      | Static Checks                       | In Progress |                             |
 
 ## Submitting Proposals
 

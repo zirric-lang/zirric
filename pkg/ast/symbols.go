@@ -241,6 +241,51 @@ func (st *SymbolTable) defineFree(sym *Symbol) *Symbol {
 	return free
 }
 
+// Find looks a name up without changing anything.
+//
+// Every other lookup here has side effects: a miss defines a phantom symbol, a hit records a usage, and resolving a name that lives in an enclosing scope registers it as a free variable of this one. Those are what building the symbol tables needs; a pass that only reads them must not do any of it, which is what Find is for.
+func (st *SymbolTable) Find(name string) *Symbol {
+	for cur := st; cur != nil; cur = cur.Parent {
+		cur.mu.Lock()
+		sym, ok := cur.Symbols[name]
+		cur.mu.Unlock()
+		if ok {
+			return sym
+		}
+	}
+	return nil
+}
+
+// FindMember looks a name up in this table alone, without walking out to enclosing scopes and without changing anything.
+func (st *SymbolTable) FindMember(name string) *Symbol {
+	if st == nil {
+		return nil
+	}
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	return st.Symbols[name]
+}
+
+// FindRef follows a qualified reference without changing anything, descending through each segment's own members.
+// It gives up rather than guessing when a segment cannot be followed, since a reader that cannot see something should report nothing about it.
+func (st *SymbolTable) FindRef(ref StaticReference) *Symbol {
+	if len(ref) == 0 {
+		return nil
+	}
+	sym := st.Find(ref[0].Value)
+	for i := 1; i < len(ref); i++ {
+		if sym == nil {
+			return nil
+		}
+		sym = sym.Original()
+		if sym == nil || sym.ChildTable == nil {
+			return nil
+		}
+		sym = sym.ChildTable.FindMember(ref[i].Value)
+	}
+	return sym
+}
+
 func (st *SymbolTable) Lookup(name string, fromNode Node, requirements ...SymbolRequirement) *Symbol {
 	st.mu.Lock()
 	defer st.mu.Unlock()

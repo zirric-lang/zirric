@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"context"
-	"fmt"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
@@ -77,7 +76,8 @@ func (c *Compiler) compileMultiAttrCheck(attrs ast.TypeExprAttrs) error {
 // compileSwitchIsTypeCheck emits type expression checks for a switch case.
 // Loads value from tempLocal, checks each attribute (for multi-attr) or single type.
 // Returns the JumpFalse addresses that need patching to the next case.
-func (c *Compiler) compileSwitchIsTypeCheck(tempLocal int, typeExpr ast.TypeExpr) []int {
+// A type that does not resolve is reported rather than skipped: emitting no check at all would leave the case matching everything, so a misspelled type would silently become the branch that always runs.
+func (c *Compiler) compileSwitchIsTypeCheck(tempLocal int, typeExpr ast.TypeExpr) ([]int, error) {
 	// Multi-attribute type expression: need per-attr checks
 	if attrs, ok := typeExpr.(ast.TypeExprAttrs); ok {
 		var jumpNexts []int
@@ -85,22 +85,22 @@ func (c *Compiler) compileSwitchIsTypeCheck(tempLocal int, typeExpr ast.TypeExpr
 			c.emit(op.GetLocal, tempLocal)
 			attrConstId, err := c.resolveTypeConstantId(attr)
 			if err != nil {
-				continue
+				return nil, err
 			}
 			c.emit(op.IsType, attrConstId)
 			jumpNexts = append(jumpNexts, c.emit(op.JumpFalse, placeholderJumpAddress))
 		}
-		return jumpNexts
+		return jumpNexts, nil
 	}
 
 	// Single type expression
 	c.emit(op.GetLocal, tempLocal)
 	typeConstId, err := c.resolveTypeConstantId(typeExpr)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	c.emit(op.IsType, typeConstId)
-	return []int{c.emit(op.JumpFalse, placeholderJumpAddress)}
+	return []int{c.emit(op.JumpFalse, placeholderJumpAddress)}, nil
 }
 
 func (c *Compiler) compileExprSwitch(node *ast.ExprSwitch) error {
@@ -123,9 +123,12 @@ func (c *Compiler) compileExprSwitch(node *ast.ExprSwitch) error {
 			}
 
 		case ast.SwitchCaseIsType:
-			jumpNexts := c.compileSwitchIsTypeCheck(tempLocal, cs.TypeRef)
+			jumpNexts, err := c.compileSwitchIsTypeCheck(tempLocal, cs.TypeRef)
+			if err != nil {
+				return err
+			}
 
-			err := c.Compile(cs.Body)
+			err = c.Compile(cs.Body)
 			if err != nil {
 				return err
 			}
@@ -183,7 +186,10 @@ func (c *Compiler) compileTailStmtSwitch(node ast.StmtSwitch) (bool, error) {
 			}
 
 		case ast.SwitchCaseIsType:
-			jumpNexts := c.compileSwitchIsTypeCheck(tempLocal, cs.TypeRef)
+			jumpNexts, err := c.compileSwitchIsTypeCheck(tempLocal, cs.TypeRef)
+			if err != nil {
+				return false, err
+			}
 
 			if err := c.compileFuncBody(cs.Body); err != nil {
 				return false, err
@@ -235,9 +241,12 @@ func (c *Compiler) compileStmtSwitch(node ast.StmtSwitch) error {
 			}
 
 		case ast.SwitchCaseIsType:
-			jumpNexts := c.compileSwitchIsTypeCheck(tempLocal, cs.TypeRef)
+			jumpNexts, err := c.compileSwitchIsTypeCheck(tempLocal, cs.TypeRef)
+			if err != nil {
+				return err
+			}
 
-			err := c.compileBlock(cs.Body)
+			err = c.compileBlock(cs.Body)
 			if err != nil {
 				return err
 			}
@@ -297,9 +306,12 @@ func (c *Compiler) compileExprForSwitchInLoop(node ast.StmtSwitch, arrayLocal in
 			}
 
 		case ast.SwitchCaseIsType:
-			jumpNexts := c.compileSwitchIsTypeCheck(tempLocal, cs.TypeRef)
+			jumpNexts, err := c.compileSwitchIsTypeCheck(tempLocal, cs.TypeRef)
+			if err != nil {
+				return err
+			}
 
-			err := c.compileExprForStatementBlock(cs.Body, arrayLocal, continueJumps, breakJumps)
+			err = c.compileExprForStatementBlock(cs.Body, arrayLocal, continueJumps, breakJumps)
 			if err != nil {
 				return err
 			}
@@ -359,9 +371,12 @@ func (c *Compiler) compileStmtSwitchInLoop(node ast.StmtSwitch, continueJumps *[
 			}
 
 		case ast.SwitchCaseIsType:
-			jumpNexts := c.compileSwitchIsTypeCheck(tempLocal, cs.TypeRef)
+			jumpNexts, err := c.compileSwitchIsTypeCheck(tempLocal, cs.TypeRef)
+			if err != nil {
+				return err
+			}
 
-			err := c.compileLoopBlock(cs.Body, continueJumps, breakJumps)
+			err = c.compileLoopBlock(cs.Body, continueJumps, breakJumps)
 			if err != nil {
 				return err
 			}
@@ -406,7 +421,7 @@ func (c *Compiler) compileStmtSwitchInLoop(node ast.StmtSwitch, continueJumps *[
 func (c *Compiler) resolveTypeConstantId(typeExpr ast.TypeExpr) (int, error) {
 	symbols := c.currentSymbols()
 	if symbols == nil {
-		return 0, fmt.Errorf("undefined type in type check")
+		return 0, errAt(typeExpr, "undefined type", "no symbols are in scope here")
 	}
 
 	switch e := typeExpr.(type) {
@@ -419,33 +434,33 @@ func (c *Compiler) resolveTypeConstantId(typeExpr ast.TypeExpr) (int, error) {
 		if sym, err := c.resolveQualifiedTypeSymbol(e.Reference, symbols); err == nil {
 			origSym, err := c.resolveThroughImportMember(sym.Original())
 			if err != nil {
-				return 0, fmt.Errorf("type %q: %w", e.Reference.String(), err)
+				return 0, errAt(e, "undefined type", "%s: %s", e.Reference.String(), err)
 			}
 			if origSym.ConstantId == nil {
-				return 0, fmt.Errorf("type %q has no constant id", e.Reference.String())
+				return 0, errAt(e, "not a type", "%s cannot be used in a type check", e.Reference.String())
 			}
 			return *origSym.ConstantId, nil
 		}
 		sym := symbols.LookupRef(e.Reference)
 		if sym == nil || sym.Decl == nil {
-			return 0, fmt.Errorf("undefined type %q in type check", e.Reference.String())
+			return 0, errAt(e, "undefined type", "%s", e.Reference.String())
 		}
 		origSym, err := c.resolveThroughImportMember(sym.Original())
 		if err != nil {
-			return 0, fmt.Errorf("type %q: %w", e.Reference.String(), err)
+			return 0, errAt(e, "undefined type", "%s: %s", e.Reference.String(), err)
 		}
 		if origSym.ConstantId == nil {
-			return 0, fmt.Errorf("type %q has no constant id", e.Reference.String())
+			return 0, errAt(e, "not a type", "%s cannot be used in a type check", e.Reference.String())
 		}
 		return *origSym.ConstantId, nil
 	case ast.TypeExprArray:
-		return c.resolveBuiltinTypeConstantId("Array", symbols)
+		return c.resolveBuiltinTypeConstantId(e, "Array", symbols)
 	case ast.TypeExprDict:
-		return c.resolveBuiltinTypeConstantId("Dict", symbols)
+		return c.resolveBuiltinTypeConstantId(e, "Dict", symbols)
 	case ast.TypeExprFunc:
-		return c.resolveBuiltinTypeConstantId("Func", symbols)
+		return c.resolveBuiltinTypeConstantId(e, "Func", symbols)
 	default:
-		return 0, fmt.Errorf("unsupported type expression %T in type check", typeExpr)
+		return 0, errAt(typeExpr, "unsupported type", "%s cannot be used in a type check", typeExpr.TypeExpression())
 	}
 }
 
@@ -453,7 +468,7 @@ func (c *Compiler) resolveTypeConstantId(typeExpr ast.TypeExpr) (int, error) {
 // Mirrors resolveAttributeReference's cross-module handling but doesn't require the result to be a *ast.DeclAttr, since it's also used for plain type checks like `case is pkg.SomeType`.
 func (c *Compiler) resolveQualifiedTypeSymbol(ref ast.StaticReference, symbols *ast.SymbolTable) (*ast.Symbol, error) {
 	if len(ref) < 2 {
-		return nil, fmt.Errorf("reference %q is not qualified", ref.String())
+		return nil, errAt(ref, "not a qualified reference", "%s names no module to look in", ref.String())
 	}
 	head := ref[0]
 	if sym := c.lookupAttributeSymbol(head.Value, symbols); sym != nil {
@@ -467,17 +482,17 @@ func (c *Compiler) resolveQualifiedTypeSymbol(ref ast.StaticReference, symbols *
 	if moduleName := c.findImportedModuleByPrefix(symbols.Module(), ref); moduleName != nil {
 		return c.resolveSymbolInModule(moduleName, ref[len(moduleName):])
 	}
-	return nil, fmt.Errorf("unknown reference %q", ref.String())
+	return nil, errAt(ref, "unknown reference", "%s", ref.String())
 }
 
 // resolveSymbolInModule resolves tail within moduleName's own exported symbol table, ensuring the module is analyzed first so ConstantId/GlobalId assignment has already happened.
 func (c *Compiler) resolveSymbolInModule(moduleName ast.ModuleName, tail ast.StaticReference) (*ast.Symbol, error) {
 	if c.resolver == nil {
-		return nil, fmt.Errorf("module resolver is required to resolve %q", moduleName)
+		return nil, errInvariant(tail, "%s cannot be resolved without a module resolver, which the compiler is always built with", moduleName)
 	}
 	resolved, err := c.resolver.ResolveModule(context.Background(), moduleName.URI())
 	if err != nil || resolved == nil {
-		return nil, fmt.Errorf("unknown module %q", moduleName)
+		return nil, errAt(tail, "unknown module", "%s", moduleName)
 	}
 	if err := c.ensureAnalyzed(resolved, true); err != nil {
 		return nil, err
@@ -501,29 +516,30 @@ func (c *Compiler) resolveThroughImportMember(sym *ast.Symbol) (*ast.Symbol, err
 func (c *Compiler) resolveIdentifierConstantId(name ast.Identifier, symbols *ast.SymbolTable) (int, error) {
 	symbol := symbols.LookupIdentifier(name)
 	if symbol == nil || symbol.Decl == nil {
-		return 0, fmt.Errorf("undefined type %q in type check", name.Value)
+		return 0, errAt(name, "undefined type", "%s", name.Value)
 	}
 	origSym, err := c.resolveThroughImportMember(symbol.Original())
 	if err != nil {
-		return 0, fmt.Errorf("type %q: %w", name.Value, err)
+		return 0, errAt(name, "undefined type", "%s: %s", name.Value, err)
 	}
 	if origSym.ConstantId == nil {
-		return 0, fmt.Errorf("type %q has no constant id", name.Value)
+		return 0, errAt(name, "not a type", "%s cannot be used in a type check", name.Value)
 	}
 	return *origSym.ConstantId, nil
 }
 
-func (c *Compiler) resolveBuiltinTypeConstantId(name string, symbols *ast.SymbolTable) (int, error) {
+// resolveBuiltinTypeConstantId resolves one of the prelude types a composite type expression stands for, taking the expression itself so that a missing prelude still reports where it was needed.
+func (c *Compiler) resolveBuiltinTypeConstantId(node ast.Node, name string, symbols *ast.SymbolTable) (int, error) {
 	symbol := symbols.Lookup(name, nil)
 	if symbol == nil || symbol.Decl == nil {
-		return 0, fmt.Errorf("undefined built-in type %q in type check", name)
+		return 0, errAt(node, "undefined built-in type", "%s is not in scope, which usually means prelude was not imported", name)
 	}
 	origSym, err := c.resolveThroughImportMember(symbol.Original())
 	if err != nil {
-		return 0, fmt.Errorf("built-in type %q: %w", name, err)
+		return 0, errAt(node, "undefined built-in type", "%s: %s", name, err)
 	}
 	if origSym.ConstantId == nil {
-		return 0, fmt.Errorf("built-in type %q has no constant id", name)
+		return 0, errAt(node, "not a type", "the built-in %s cannot be used in a type check", name)
 	}
 	return *origSym.ConstantId, nil
 }

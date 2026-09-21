@@ -1,8 +1,6 @@
 package compiler
 
 import (
-	"fmt"
-
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
 	"code.knabel.dev/zirric-lang/zirric/pkg/runtime"
@@ -112,7 +110,7 @@ func (c *Compiler) emitPushCapture(parentSym *ast.Symbol) error {
 		// Default empty scope means the symbol is local to its owning
 		// SymbolTable (same frame). Push its value/cell via GetLocal.
 		if parentSym.LocalId == nil {
-			return fmt.Errorf("captured symbol %q has no local id", parentSym.Name)
+			return errInvariant(parentSym.Decl, "the captured %s was never given a local slot, which the analyzer assigns before compilation", parentSym.Name)
 		}
 		// GetLocal pushes the raw value for const/param captures,
 		// or the *UpvalueCell pointer for var captures (already wrapped).
@@ -128,12 +126,12 @@ func (c *Compiler) emitPushCapture(parentSym *ast.Symbol) error {
 		currentScope := c.scopes[c.scopeIdx]
 		freeIdx, ok := currentScope.freeMapping[parentSym.Index]
 		if !ok {
-			return fmt.Errorf("captured symbol %q (free index %d) not in current scope's free mapping", parentSym.Name, parentSym.Index)
+			return errInvariant(parentSym.Decl, "the captured %s is recorded as free variable %d, which this scope does not have a mapping for", parentSym.Name, parentSym.Index)
 		}
 		c.emit(op.GetFree, freeIdx)
 		return nil
 	default:
-		return fmt.Errorf("unexpected scope %s for captured symbol %q", parentSym.Scope, parentSym.Name)
+		return errUnimplemented(parentSym.Decl, "scope %s is not handled when capturing %s", parentSym.Scope, parentSym.Name)
 	}
 }
 
@@ -158,7 +156,7 @@ func (c *Compiler) compileFreeIdentifier(symbol *ast.Symbol) error {
 
 	access, ok := c.resolveFreeAccess(symbol)
 	if !ok {
-		return fmt.Errorf("free variable %q (index %d) not found in free mapping", symbol.Name, symbol.Index)
+		return errInvariant(symbol.Decl, "%s is recorded as free variable %d, which this scope does not have a mapping for", symbol.Name, symbol.Index)
 	}
 	if access.isFree {
 		// Mutable var bindings are wrapped in UpvalueCells; dereference them.
@@ -182,7 +180,7 @@ func (c *Compiler) compileFreeIdentifier(symbol *ast.Symbol) error {
 func (c *Compiler) compileFreeAssign(symbol *ast.Symbol) error {
 	access, ok := c.resolveFreeAccess(symbol)
 	if !ok {
-		return fmt.Errorf("free variable %q (index %d) not found in free mapping for assignment", symbol.Name, symbol.Index)
+		return errInvariant(symbol.Decl, "%s is recorded as free variable %d, which this scope does not have a mapping for, so it cannot be assigned to", symbol.Name, symbol.Index)
 	}
 	if access.isFree {
 		c.emit(op.SetFreeCell, access.index)

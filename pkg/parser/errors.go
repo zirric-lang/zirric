@@ -20,12 +20,29 @@ func (e ParseError) Error() string {
 	if e.Token.Source == nil {
 		return fmt.Sprintf("%s: %s", e.Summary, e.Details)
 	}
-	return fmt.Sprintf("%s:%d: %s: %s", e.Token.Source.File, e.Token.Source.Offset, e.Summary, e.Details)
+	if e.Details == "" {
+		return fmt.Sprintf("%s: %s", e.Token.Source.String(), e.Summary)
+	}
+	return fmt.Sprintf("%s: %s: %s", e.Token.Source.String(), e.Summary, e.Details)
+}
+
+// Position implements diag.Positioned, so a renderer can show the line this refers to.
+func (e ParseError) Position() *token.Source {
+	return e.Token.Source
 }
 
 // ParseErrors is a collection of parse errors that implements the error
 // interface. Callers can unwrap it via errors.As to access individual errors.
 type ParseErrors []ParseError
+
+// Unwrap implements the convention for an error holding several errors, which is what lets errors.As reach an individual ParseError and what a renderer walks to show each one.
+func (e ParseErrors) Unwrap() []error {
+	errs := make([]error, len(e))
+	for i := range e {
+		errs[i] = e[i]
+	}
+	return errs
+}
 
 func (e ParseErrors) Error() string {
 	msgs := make([]string, len(e))

@@ -184,7 +184,25 @@ func (p *Parser) parseUnionDecl(pos StatementPosition, annos ast.AttributeChain)
 
 	var childDecls []ast.StatementDeclaration
 	for !p.curIs(token.RBRACE) {
+		if p.curIs(token.EOF) {
+			p.errUnexpectedToken(token.RBRACE)
+			break
+		}
+		// Members may be written one per line or separated by commas, and a trailing comma is allowed.
+		if p.curIs(token.COMMA) {
+			p.expect(token.COMMA)
+			continue
+		}
+
+		before := p.curToken.Source
 		unionMember, children := p.parseUnionDeclMember(pos)
+		if unionMember == nil {
+			// The member could not be parsed and the error is already reported. Something has to be consumed before trying again, or a token nothing accepts would be offered to the same parse forever.
+			if p.curToken.Source == before {
+				p.nextToken()
+			}
+			continue
+		}
 		childDecls = append(childDecls, children...)
 		union.AddMember(unionMember)
 	}

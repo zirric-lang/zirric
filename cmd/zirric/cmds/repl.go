@@ -64,8 +64,9 @@ var replCmd = &cobra.Command{
 		}
 
 		analysis := analyzer.New(resolver)
-		if errs, _ := analysis.Analyze(module, true); len(errs) > 0 {
-			return fmt.Errorf("%s", errs[0].Error())
+		found, _ := analysis.Analyze(module, true)
+		if failing := analyzer.AnalysisErrors(found).Failing(); len(failing) > 0 {
+			return failing
 		}
 
 		comp := compiler.NewWithAnalyzer(resolver, analysis)
@@ -167,9 +168,9 @@ func replEvalLine(state *replState, line string) (runtime.RuntimeValue, error) {
 		state.analysis.Restore(analyzerSnap)
 	}
 
-	if errs := state.analysis.AnalyzeSourceFile(state.module, file); len(errs) > 0 {
+	if failing := analyzer.AnalysisErrors(state.analysis.AnalyzeSourceFile(state.module, file)).Failing(); len(failing) > 0 {
 		rollback()
-		return nil, fmt.Errorf("%s", errs[0].Error())
+		return nil, failing
 	}
 
 	prevGlobalsLen := len(state.comp.Bytecode().Globals)

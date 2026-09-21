@@ -26,7 +26,7 @@ func TestNonAttributeTypeRejectedOnDataField(t *testing.T) {
 					flag
 				}
 			`,
-			wantErr: `"Bool" does not refer to attribute type`,
+			wantErr: `not an attribute: Bool is a`,
 		},
 		{
 			name: "String on field",
@@ -37,7 +37,7 @@ func TestNonAttributeTypeRejectedOnDataField(t *testing.T) {
 					name
 				}
 			`,
-			wantErr: `"String" does not refer to attribute type`,
+			wantErr: `not an attribute: String is a`,
 		},
 		{
 			name: "data type on field",
@@ -48,7 +48,7 @@ func TestNonAttributeTypeRejectedOnDataField(t *testing.T) {
 					field
 				}
 			`,
-			wantErr: `"Bar" does not refer to attribute type`,
+			wantErr: `not an attribute: Bar is a`,
 		},
 		{
 			name: "union type on field",
@@ -61,7 +61,7 @@ func TestNonAttributeTypeRejectedOnDataField(t *testing.T) {
 					field
 				}
 			`,
-			wantErr: `"AB" does not refer to attribute type`,
+			wantErr: `not an attribute: AB is a`,
 		},
 		{
 			name: "non-attr on constant",
@@ -70,7 +70,7 @@ func TestNonAttributeTypeRejectedOnDataField(t *testing.T) {
 				@Bool()
 				const flag = 0 == 0
 			`,
-			wantErr: `"Bool" does not refer to attribute type`,
+			wantErr: `not an attribute: Bool is a`,
 		},
 		{
 			name: "non-attr on variable",
@@ -81,7 +81,7 @@ func TestNonAttributeTypeRejectedOnDataField(t *testing.T) {
 					var x = 42
 				}
 			`,
-			wantErr: `"Int" does not refer to attribute type`,
+			wantErr: `not an attribute: Int is a`,
 		},
 		{
 			name: "non-attr on extern type field",
@@ -92,7 +92,7 @@ func TestNonAttributeTypeRejectedOnDataField(t *testing.T) {
 					length
 				}
 			`,
-			wantErr: `"Int" does not refer to attribute type`,
+			wantErr: `not an attribute: Int is a`,
 		},
 		{
 			name: "non-attr on attr field",
@@ -103,7 +103,7 @@ func TestNonAttributeTypeRejectedOnDataField(t *testing.T) {
 					description
 				}
 			`,
-			wantErr: `"String" does not refer to attribute type`,
+			wantErr: `not an attribute: String is a`,
 		},
 		{
 			name: "valid attr on field accepted",

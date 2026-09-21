@@ -3,6 +3,7 @@ package analyzer_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/analyzer"
@@ -14,7 +15,7 @@ import (
 
 func TestAnalyzerResolvesIdentifierFreeSymbols(t *testing.T) {
 	module := parseModule(t, "test", `
-		module test
+		mod test
 		const x = 1
 		fn example() {
 			return x
@@ -50,7 +51,7 @@ func TestAnalyzerResolvesIdentifierFreeSymbols(t *testing.T) {
 
 func TestAnalyzerResolvesAttributeReferences(t *testing.T) {
 	module := parseModule(t, "test", `
-		module test
+		mod test
 		attr Attr { value }
 		data String { value }
 		@Attr(String)
@@ -83,7 +84,7 @@ func TestAnalyzerResolvesAttributeReferences(t *testing.T) {
 
 func TestAnalyzerValidatesImports(t *testing.T) {
 	module := parseModule(t, "test", `
-		module test
+		mod test
 		import missing
 	`)
 	a := analyzer.New(stubResolver{})
@@ -98,7 +99,7 @@ func TestAnalyzerValidatesImports(t *testing.T) {
 
 func TestAnalyzerValidatesUnionMemberStaticRefs(t *testing.T) {
 	module := parseModule(t, "test", `
-		module test
+		mod test
 		union Optional { Missing }
 	`)
 	a := analyzer.New(nil)
@@ -107,17 +108,20 @@ func TestAnalyzerValidatesUnionMemberStaticRefs(t *testing.T) {
 		t.Fatal("expected an analysis error for missing union member")
 	}
 	if errs[0].Summary != "unknown reference" {
-		t.Fatalf("expected unknown reference error, got %q", errs[0].Summary)
+		t.Fatalf("expected an unknown reference error, got %q: %s", errs[0].Summary, errs[0].Error())
+	}
+	if !strings.Contains(errs[0].Error(), "Missing") {
+		t.Errorf("the error does not name the reference: %s", errs[0].Error())
 	}
 }
 
 func TestAnalyzerResolvesImportedModulePrefixes(t *testing.T) {
 	imported := parseModule(t, "foo.bar", `
-		module bar
+		mod bar
 		data Value { field }
 	`)
 	module := parseModule(t, "test", `
-		module test
+		mod test
 		import foo.bar
 		union Example { foo.bar.Value }
 	`)
@@ -132,11 +136,11 @@ func TestAnalyzerResolvesImportedModulePrefixes(t *testing.T) {
 
 func TestAnalyzerRejectsDeepImportedRefs(t *testing.T) {
 	imported := parseModule(t, "foo.bar", `
-		module bar
+		mod bar
 		data Value { field }
 	`)
 	module := parseModule(t, "test", `
-		module test
+		mod test
 		import foo.bar
 		union Example { foo.bar.Value.field }
 	`)
@@ -147,8 +151,12 @@ func TestAnalyzerRejectsDeepImportedRefs(t *testing.T) {
 	if len(errs) == 0 {
 		t.Fatal("expected analysis errors for deep imported reference")
 	}
-	if errs[0].Summary != "unknown reference" {
-		t.Fatalf("expected unknown reference error, got %q", errs[0].Summary)
+	// A field is not something that can be exported, so the message must not suggest exporting it.
+	if errs[0].Summary != "not referenceable" {
+		t.Fatalf("expected a not referenceable error, got %q: %s", errs[0].Summary, errs[0].Error())
+	}
+	if !strings.Contains(errs[0].Error(), "foo.bar.Value.field") {
+		t.Errorf("the error does not name the reference: %s", errs[0].Error())
 	}
 }
 
@@ -207,7 +215,7 @@ func walkNode(node ast.Node, visit func(ast.Node)) {
 
 func TestAnalyzerRejectsDefaultCaseNotLast(t *testing.T) {
 	module := parseModule(t, "test", `
-		module test
+		mod test
 		fn example() {
 			switch 1 {
 				case _: 0
@@ -234,7 +242,7 @@ func TestAnalyzerRejectsDefaultCaseNotLast(t *testing.T) {
 
 func TestAnalyzerAcceptsDefaultCaseLast(t *testing.T) {
 	module := parseModule(t, "test", `
-		module test
+		mod test
 		fn example() {
 			switch 1 {
 				case 1: 1

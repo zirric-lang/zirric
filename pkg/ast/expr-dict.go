@@ -14,8 +14,9 @@ type ExprDict struct {
 }
 
 // TokenLiteral implements Expr.
-func (ExprDict) TokenLiteral() token.Token {
-	return token.Token{}
+// The opening bracket is the dict's position; returning an empty token would leave anything reported about a dict literal with nowhere to point.
+func (e ExprDict) TokenLiteral() token.Token {
+	return e.Token
 }
 
 // EnumerateChildNodes implements Expr.

@@ -3,8 +3,6 @@ package analyzer
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/pkgmanager"
@@ -49,18 +47,9 @@ func (a *Analyzer) validateImport(module *ast.ContextModule, decl *ast.DeclImpor
 	if err != nil || resolved == nil {
 		var notInstalled *pkgmanager.DependencyNotInstalledError
 		if errors.As(err, &notInstalled) {
-			return []AnalysisError{{
-				Token:    decl.TokenLiteral(),
-				Summary:  "dependency not installed",
-				Details:  fmt.Sprintf("run 'zirric install' to install %s", strings.Join(notInstalled.Names, ", ")),
-				Severity: AnalysisSeverityWarning,
-			}}
+			return []AnalysisError{*errDependencyNotInstalled(decl.TokenLiteral(), notInstalled.Names)}
 		}
-		return []AnalysisError{{
-			Token:   decl.TokenLiteral(),
-			Summary: "unknown module",
-			Details: fmt.Sprintf("module %q could not be resolved", decl.ModuleName),
-		}}
+		return []AnalysisError{*errUnknownModule(decl.TokenLiteral(), decl.ModuleName)}
 	}
 	_, _ = a.Analyze(resolved, true)
 
@@ -71,20 +60,12 @@ func (a *Analyzer) validateImport(module *ast.ContextModule, decl *ast.DeclImpor
 	for i := range decl.Members {
 		member := decl.Members[i]
 		if resolved.Symbols == nil {
-			errs = append(errs, AnalysisError{
-				Token:   member.TokenLiteral(),
-				Summary: "unknown import member",
-				Details: fmt.Sprintf("module %q has no exported member %q", decl.ModuleName, member.Name.Value),
-			})
+			errs = append(errs, *errUnknownImportMember(member.TokenLiteral(), decl.ModuleName, member.Name.Value))
 			continue
 		}
 		sym := resolved.Symbols.Symbols[member.Name.Value]
 		if sym == nil || sym.Decl == nil || sym.Decl.ExportScope() != ast.ExportScopePublic {
-			errs = append(errs, AnalysisError{
-				Token:   member.TokenLiteral(),
-				Summary: "unknown import member",
-				Details: fmt.Sprintf("module %q has no exported member %q", decl.ModuleName, member.Name.Value),
-			})
+			errs = append(errs, *errUnknownImportMember(member.TokenLiteral(), decl.ModuleName, member.Name.Value))
 		}
 	}
 	return errs
@@ -92,39 +73,23 @@ func (a *Analyzer) validateImport(module *ast.ContextModule, decl *ast.DeclImpor
 
 func (a *Analyzer) validateStaticRef(module *ast.ContextModule, ref ast.StaticReference, tok token.Token) *AnalysisError {
 	if len(ref) == 0 {
-		return &AnalysisError{
-			Token:   tok,
-			Summary: "invalid reference",
-			Details: "reference is empty",
-		}
+		return errInvalidReference(tok, "the reference is empty")
 	}
 	head := ref[0].Value
 	if len(ref) == 1 {
 		if sym := findSymbolByName(module, head); sym != nil && sym.Decl != nil {
 			return nil
 		}
-		return &AnalysisError{
-			Token:   ref.TokenLiteral(),
-			Summary: "unknown reference",
-			Details: fmt.Sprintf("reference %q could not be resolved", ref.String()),
-		}
+		return errUnknownReference(ref.TokenLiteral(), ref)
 	}
 	if sym := findSymbolByName(module, head); sym != nil && sym.Decl != nil {
 		if decl, ok := sym.Decl.(*ast.DeclImport); ok {
 			if a.resolver == nil {
-				return &AnalysisError{
-					Token:   ref.TokenLiteral(),
-					Summary: "unknown reference",
-					Details: fmt.Sprintf("reference %q could not be resolved", ref.String()),
-				}
+				return errUnknownReference(ref.TokenLiteral(), ref)
 			}
 			resolved, err := a.resolver.ResolveModule(context.Background(), decl.ModuleName.URI())
 			if err != nil || resolved == nil || resolved.Symbols == nil {
-				return &AnalysisError{
-					Token:   ref.TokenLiteral(),
-					Summary: "unknown reference",
-					Details: fmt.Sprintf("reference %q could not be resolved", ref.String()),
-				}
+				return errUnknownReference(ref.TokenLiteral(), ref)
 			}
 			_, _ = a.Analyze(resolved, true)
 			return resolveStaticRefInTable(resolved.Symbols, ref[1:], ref, true)
@@ -132,79 +97,46 @@ func (a *Analyzer) validateStaticRef(module *ast.ContextModule, ref ast.StaticRe
 		if sym.ChildTable != nil {
 			return resolveStaticRefInTable(sym.ChildTable, ref[1:], ref, false)
 		}
-		return &AnalysisError{
-			Token:   ref.TokenLiteral(),
-			Summary: "unknown reference",
-			Details: fmt.Sprintf("reference %q could not be resolved", ref.String()),
-		}
+		return errUnknownReference(ref.TokenLiteral(), ref)
 	}
 	if imported := a.findImportedModuleByPrefix(module, ref); imported != nil {
 		if a.resolver == nil {
-			return &AnalysisError{
-				Token:   ref.TokenLiteral(),
-				Summary: "unknown reference",
-				Details: fmt.Sprintf("reference %q could not be resolved", ref.String()),
-			}
+			return errUnknownReference(ref.TokenLiteral(), ref)
 		}
 		resolved, err := a.resolver.ResolveModule(context.Background(), imported.URI())
 		if err != nil || resolved == nil || resolved.Symbols == nil {
-			return &AnalysisError{
-				Token:   ref.TokenLiteral(),
-				Summary: "unknown reference",
-				Details: fmt.Sprintf("reference %q could not be resolved", ref.String()),
-			}
+			return errUnknownReference(ref.TokenLiteral(), ref)
 		}
 		_, _ = a.Analyze(resolved, true)
 		rest := ref[len(imported):]
 		if len(rest) == 0 {
-			return &AnalysisError{
-				Token:   ref.TokenLiteral(),
-				Summary: "unknown reference",
-				Details: fmt.Sprintf("reference %q could not be resolved", ref.String()),
-			}
+			return errUnknownReference(ref.TokenLiteral(), ref)
 		}
 		return resolveStaticRefInTable(resolved.Symbols, rest, ref, true)
 	}
-	return &AnalysisError{
-		Token:   ref.TokenLiteral(),
-		Summary: "unknown reference",
-		Details: fmt.Sprintf("reference %q could not be resolved", ref.String()),
-	}
+	return errUnknownReference(ref.TokenLiteral(), ref)
 }
 
 func resolveStaticRefInTable(table *ast.SymbolTable, ref ast.StaticReference, full ast.StaticReference, requireExport bool) *AnalysisError {
 	if table == nil {
-		return &AnalysisError{
-			Token:   full.TokenLiteral(),
-			Summary: "unknown reference",
-			Details: fmt.Sprintf("reference %q could not be resolved", full.String()),
-		}
+		return errUnknownReference(full.TokenLiteral(), full)
 	}
 	cur := table
 	for i := range ref {
 		part := ref[i]
 		sym := cur.Symbols[part.Value]
 		if sym == nil || sym.Decl == nil {
-			return &AnalysisError{
-				Token:   part.TokenLiteral(),
-				Summary: "unknown reference",
-				Details: fmt.Sprintf("reference %q could not be resolved", full.String()),
-			}
+			return errUnknownReference(part.TokenLiteral(), full)
 		}
 		if requireExport && sym.Decl.ExportScope() != ast.ExportScopePublic {
-			return &AnalysisError{
-				Token:   part.TokenLiteral(),
-				Summary: "unknown reference",
-				Details: fmt.Sprintf("reference %q could not be resolved", full.String()),
+			if _, isField := sym.Decl.(ast.DeclField); isField {
+				return errNotReferenceable(part.TokenLiteral(), full, part.Value)
 			}
+			return errNotExported(part.TokenLiteral(), full, part.Value)
 		}
 		if i+1 < len(ref) {
 			if sym.ChildTable == nil {
-				return &AnalysisError{
-					Token:   part.TokenLiteral(),
-					Summary: "unknown reference",
-					Details: fmt.Sprintf("reference %q could not be resolved", full.String()),
-				}
+				return errHasNoMembers(part.TokenLiteral(), full, part.Value)
 			}
 			cur = sym.ChildTable
 		}
@@ -213,11 +145,7 @@ func resolveStaticRefInTable(table *ast.SymbolTable, ref ast.StaticReference, fu
 		last := ref[len(ref)-1]
 		sym := cur.Symbols[last.Value]
 		if sym == nil || sym.Decl == nil {
-			return &AnalysisError{
-				Token:   last.TokenLiteral(),
-				Summary: "unknown reference",
-				Details: fmt.Sprintf("reference %q could not be resolved", full.String()),
-			}
+			return errUnknownReference(last.TokenLiteral(), full)
 		}
 	}
 	return nil

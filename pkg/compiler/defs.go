@@ -1,8 +1,6 @@
 package compiler
 
 import (
-	"fmt"
-
 	"code.knabel.dev/zirric-lang/zirric/pkg/analyzer"
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
@@ -57,6 +55,8 @@ type Compiler struct {
 	moduleGlobals   map[registry.LogicalURI]int
 	compiledModules map[*ast.ContextModule]int
 	mainPackage     *mainPackageModules
+	// mainPackageErrs holds the failures met while compiling the project's own modules, so they can be reported instead of silently dropping a module.
+	mainPackageErrs []error
 	// entryModule is the module passed to Compile, i.e. the program being run, which reflect.packages must not offer as a loadable package member.
 	entryModule *ast.ContextModule
 	plugins     *runtime.ExternPluginRegistry
@@ -210,11 +210,11 @@ func (c *Compiler) allocateTempLocal() int {
 
 func (c *Compiler) requireLocalId(sym *ast.Symbol) (int, error) {
 	if sym == nil {
-		return 0, fmt.Errorf("missing symbol for local")
+		return 0, errInvariant(nil, "a local was compiled without a resolved symbol")
 	}
 	sym = sym.Original()
 	if sym.LocalId == nil {
-		return 0, fmt.Errorf("symbol %q has no local id", sym.Name)
+		return 0, errInvariant(sym.Decl, "the local %s was never given a local slot, which the analyzer assigns before compilation", sym.Name)
 	}
 	idx := *sym.LocalId
 	c.ensureLocalSlot(idx)

@@ -6,12 +6,14 @@ import (
 )
 
 type Lexer struct {
-	src      registry.Source
-	input    string
-	startPos int  // start position of this token
-	peekPos  int  // current reading position in input (after current char)
-	currPos  int  // current position in input (points to current char)
-	ch       byte // current char under examination
+	src       registry.Source
+	input     string
+	startPos  int  // start position of this token
+	peekPos   int  // current reading position in input (after current char)
+	currPos   int  // current position in input (points to current char)
+	ch        byte // current char under examination
+	line      int  // 1-based line of currPos
+	lineStart int  // offset of the first byte of that line, which is what turns an offset into a column
 }
 
 func New(src registry.Source) (*Lexer, error) {
@@ -22,6 +24,7 @@ func New(src registry.Source) (*Lexer, error) {
 	l := &Lexer{
 		src:   src,
 		input: string(raw),
+		line:  1,
 	}
 	l.advance()
 	return l, nil
@@ -32,7 +35,8 @@ func (l *Lexer) NextToken() token.Token {
 
 	tok.Leading = l.parseLeadingDecorations()
 	l.startPos = l.currPos
-	tok.Source = token.MakeSource(string(l.src.URI()), l.currPos)
+	tokLine, tokColumn := l.position()
+	tok.Source = token.MakeSource(string(l.src.URI()), l.currPos, tokLine, tokColumn)
 
 	switch l.ch {
 	case '!': // BANG, NEQ
@@ -235,6 +239,11 @@ func (l *Lexer) parseChar() (string, bool) {
 }
 
 func (l *Lexer) advance() {
+	// Every cursor move goes through here, one byte at a time, so counting newlines here is what keeps the line and column of any offset known without rescanning the file.
+	if l.ch == '\n' {
+		l.line += 1
+		l.lineStart = l.peekPos
+	}
 	if l.peekPos >= len(l.input) {
 		l.ch = 0
 	} else {
@@ -242,6 +251,11 @@ func (l *Lexer) advance() {
 	}
 	l.currPos = l.peekPos
 	l.peekPos += 1
+}
+
+// position is the location of the cursor, as a reader would count it.
+func (l *Lexer) position() (line int, column int) {
+	return l.line, l.currPos - l.lineStart + 1
 }
 
 func (l *Lexer) peekChar() byte {
@@ -344,6 +358,12 @@ func (l *Lexer) newToken(tokenType token.TokenType, ch byte) token.Token {
 	return token.Token{
 		Type:    tokenType,
 		Literal: string(ch),
-		Source:  token.MakeSource(string(l.src.URI()), l.currPos),
+		Source:  l.sourceHere(),
 	}
+}
+
+// sourceHere is the location of the cursor, for a token built away from NextToken's own bookkeeping.
+func (l *Lexer) sourceHere() *token.Source {
+	line, column := l.position()
+	return token.MakeSource(string(l.src.URI()), l.currPos, line, column)
 }

@@ -13,7 +13,12 @@ data Sample {
 	tags: [String]
 	scores: [String: Int]
 	parse: fn(String) -> Int
-	nested: Sample
+	nested: Option
+}
+
+// Declared only so that a hint naming the type it is declared on has something to resolve against.
+data SelfRef {
+	child: SelfRef
 }
 
 fn fieldNamed(name: String) -> reflect.Field {
@@ -62,10 +67,10 @@ fn testANamedHintResolvesToItsType() {
 
 @Test()
 fn testAHintCanNameTheTypeItIsDeclaredOn() {
-	const declared = fieldNamed("nested").declaredType
+	const declared = reflect.fieldsOf(SelfRef)[0].declaredType
 	assert.all([
-		assert.equal("Sample", declared.name),
-		assert.equal("Sample", reflect.typeName(declared.resolved.value)),
+		assert.equal("SelfRef", declared.name),
+		assert.equal("SelfRef", reflect.typeName(declared.resolved.value)),
 	])
 }
 
@@ -116,7 +121,7 @@ fn testUnionMembersAreItsMemberTypes() {
 
 @Test()
 fn testTypeOfFindsTheTypeAValueWasBuiltFrom() {
-	const value = Sample(1, "a", [], [:], fn(text) { 0 }, void)
+	const value = Sample(1, "a", [], [:], fn(text) { 0 }, None())
 	const found = reflect.typeOf(value)
 	assert.all([
 		assert.equal(true, found is Some),
@@ -129,7 +134,7 @@ fn testTypeOfFindsTheTypeAValueWasBuiltFrom() {
 
 @Test()
 fn testFieldValuesAlignWithFields() {
-	const value = Sample(1, "a", ["t"], ["k": 2], fn(text) { 0 }, void)
+	const value = Sample(1, "a", ["t"], ["k": 2], fn(text) { 0 }, None())
 	assert.all([
 		assert.equal(
 			["plain", "name", "tags", "scores", "parse", "nested"],
@@ -164,7 +169,7 @@ fn testConstructRefusesTheWrongNumberOfFields() {
 
 @Test()
 fn testIsInstanceDecidesAsTheIsOperatorDoes() {
-	const value = Sample(1, "a", [], [:], void, void)
+	const value = Sample(1, "a", [], [:], fn(text) { 0 }, None())
 	assert.all([
 		assert.equal(true, reflect.isInstance(value, Sample)),
 		assert.equal(false, reflect.isInstance(42, Sample)),
@@ -196,7 +201,7 @@ fn testTypesCompareByIdentity() {
 		assert.equal(true, String == String),
 		assert.equal(false, String == Int),
 		// The type reflection hands back is the same value as the one written in source.
-		assert.equal(true, reflect.typeOf(Sample(1, "a", [], [:], void, void)).value == Sample),
+		assert.equal(true, reflect.typeOf(Sample(1, "a", [], [:], fn(text) { 0 }, None())).value == Sample),
 		// Comparing a type with something that is not one is simply false.
 		assert.equal(false, Sample == 42),
 	])
