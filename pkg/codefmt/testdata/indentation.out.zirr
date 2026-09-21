@@ -1,0 +1,6 @@
+mod sample
+
+fn add(a: Int, b: Int) -> Int {
+	const sum = a + b
+	return sum
+}

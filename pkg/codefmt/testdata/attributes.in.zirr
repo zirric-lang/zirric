@@ -1,0 +1,6 @@
+@Countable(_arrayLen)
+@Iterable(_arrayIterate)
+@json.HasKey("user_name")
+extern type Array {}
+
+attr Marker {}

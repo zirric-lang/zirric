@@ -10,6 +10,7 @@ Zirric tooling is focused on editor support, documentation, and experimenting wi
 ## Editor support
 
 - [Editor Support](/tooling/editor-support) with Tree-sitter and LSP for modern editors.
+- [Formatter](/tooling/formatter) for `zirric fmt` and the canonical source layout.
 
 ## Language implementation
 

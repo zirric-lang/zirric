@@ -16,6 +16,9 @@ type Cavefile struct {
 
 	// The tasks declared in the Cavefile
 	Tasks []Task
+
+	// Path patterns from @cave.FormattingExcludes, relative to the package root.
+	FormattingExcludes []string
 }
 
 type Dependency struct {

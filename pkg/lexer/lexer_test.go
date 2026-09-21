@@ -1129,8 +1129,8 @@ func TestDecorativeLexer(t *testing.T) {
 				{
 					token.EOF, "", []deco{
 						{token.DECO_MULTI, "\t\n"},
-						{token.DECO_COMMENT, "hello"},
-						{token.DECO_INLINE, "\t"},
+						{token.DECO_COMMENT, "// hello"},
+						{token.DECO_MULTI, "\n\t"},
 					},
 				},
 			},
@@ -1140,7 +1140,7 @@ func TestDecorativeLexer(t *testing.T) {
 			"#!/usr/bin/env zirric",
 			[]tok{
 				{token.EOF, "", []deco{
-					{token.DECO_COMMENT, "!/usr/bin/env zirric"},
+					{token.DECO_COMMENT, "#!/usr/bin/env zirric"},
 				}},
 			},
 		},
@@ -1150,7 +1150,8 @@ func TestDecorativeLexer(t *testing.T) {
 			[]tok{
 				{
 					token.DATA, "data", []deco{
-						{token.DECO_COMMENT, "cool stuff"},
+						{token.DECO_COMMENT, "// cool stuff"},
+						{token.DECO_MULTI, "\n"},
 					},
 				},
 			},
@@ -1162,7 +1163,7 @@ func TestDecorativeLexer(t *testing.T) {
 				{token.DATA, "data", nil},
 				{token.EOF, "", []deco{
 					{token.DECO_INLINE, " "},
-					{token.DECO_COMMENT, "cool stuff"},
+					{token.DECO_COMMENT, "// cool stuff"},
 				}},
 			},
 		},
@@ -1173,8 +1174,8 @@ func TestDecorativeLexer(t *testing.T) {
 				{token.DATA, "data", nil},
 				{token.EOF, "", []deco{
 					{token.DECO_INLINE, " "},
-					{token.DECO_COMMENT, "cool stuff"},
-					{token.DECO_INLINE, "\t"},
+					{token.DECO_COMMENT, "// cool stuff"},
+					{token.DECO_MULTI, "\n\t"},
 				}},
 			},
 		},
@@ -1185,9 +1186,9 @@ func TestDecorativeLexer(t *testing.T) {
 				{token.DATA, "data", nil},
 				{token.EOF, "", []deco{
 					{token.DECO_INLINE, " "},
-					{token.DECO_COMMENT, "cool stuff"},
-					{token.DECO_MULTI, "\n\t"},
-					{token.DECO_COMMENT, "hello"},
+					{token.DECO_COMMENT, "// cool stuff"},
+					{token.DECO_MULTI, "\n\n\t"},
+					{token.DECO_COMMENT, "// hello"},
 				}},
 			},
 		},
@@ -1198,10 +1199,10 @@ func TestDecorativeLexer(t *testing.T) {
 				{token.DATA, "data", nil},
 				{token.EOF, "", []deco{
 					{token.DECO_INLINE, " "},
-					{token.DECO_COMMENT, "cool stuff"},
+					{token.DECO_COMMENT, "// cool stuff"},
+					{token.DECO_MULTI, "\n\n\t"},
+					{token.DECO_COMMENT, "// hello"},
 					{token.DECO_MULTI, "\n\t"},
-					{token.DECO_COMMENT, "hello"},
-					{token.DECO_INLINE, "\t"},
 				}},
 			},
 		},

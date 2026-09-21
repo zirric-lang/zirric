@@ -77,6 +77,7 @@ func init() {
 		TextDocumentHover:          ls.textDocumentHover,
 		TextDocumentDefinition:     ls.textDocumentDefinition,
 		TextDocumentDocumentSymbol: ls.textDocumentDocumentSymbol,
+		TextDocumentFormatting:     ls.textDocumentFormatting,
 		WorkspaceSymbol:            ls.workspaceSymbol,
 		TextDocumentSignatureHelp:  ls.textDocumentSignatureHelp,
 		TextDocumentReferences:     ls.textDocumentReferences,

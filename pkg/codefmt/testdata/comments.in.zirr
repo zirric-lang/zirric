@@ -1,0 +1,8 @@
+const x = 1 // why one
+// own line
+const y = 2
+
+
+
+// after many blanks
+const z = 3 // trailing

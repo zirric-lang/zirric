@@ -1,18 +1,18 @@
 mod xreflect
 
 data Field {
-    name: String
-    type: AnyType
-    attributes: [Attribute]
+	name: String
+	type: AnyType
+	attributes: [Attribute]
 }
 
 data Attribute {
-    attributeType: AnyAttribute
-    args: [String: Any]
+	attributeType: AnyAttribute
+	args: [String: Any]
 }
 
 attr Name {
-    name: String
+	name: String
 }
 
 fn typeOf(value: Any) -> AnyType {}

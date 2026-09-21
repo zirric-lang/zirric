@@ -1,0 +1,12 @@
+fn classify(v) {
+switch v {
+case is String:
+return "text"
+case is Int:
+return "number"
+case 0:
+return "zero"
+case _:
+return "other"
+}
+}

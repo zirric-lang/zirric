@@ -1,0 +1,5 @@
+#!/usr/bin/env zirric
+mod script
+
+// a note
+fn main() {}

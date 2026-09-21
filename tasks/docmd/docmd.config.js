@@ -121,6 +121,11 @@ module.exports = {
           icon: "dna"
         },
         {
+          title: "Formatter",
+          path: "/tooling/formatter",
+          icon: "align-left"
+        },
+        {
           title: "Package Manager",
           path: "/tooling/package-manager",
           icon: "box"
@@ -306,6 +311,11 @@ module.exports = {
           icon: "circle-dot",
           title: "ZE-22 Static Checks",
           path: "/proposals/ZE-022-static-checks"
+        },
+        {
+          icon: "circle-check",
+          title: "ZE-23 Code Formatting",
+          path: "/proposals/ZE-023-code-formatting"
         }
       ]
     },

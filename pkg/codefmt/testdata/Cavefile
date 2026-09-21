@@ -1,0 +1,2 @@
+// Marks this directory as a package of its own, so the enclosing project does not compile these fixtures.
+// They are deliberately partial snippets, and several are deliberately misformatted.

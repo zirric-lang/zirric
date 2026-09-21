@@ -19,8 +19,8 @@ attr AnyResult {
 union Result {
 	// The successful result.
 	@AnyResult(fn(r) { r })
-    data Ok {
-    	// The value of the successful result.
+	data Ok {
+		// The value of the successful result.
 		value
 	}
 
@@ -38,8 +38,8 @@ union Result {
 			_inspect(err.reason)
 		}
 	})
-    data Err {
-    	// The failure reason
+	data Err {
+		// The failure reason
 		reason
 	}
 }

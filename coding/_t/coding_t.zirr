@@ -183,7 +183,6 @@ fn testATreeSurvivesRealJSONText() {
 	])
 }
 
-
 @AnyOption()
 union Maybe {
 	data Just { value }

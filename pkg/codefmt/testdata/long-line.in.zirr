@@ -1,0 +1,3 @@
+fn wrap() {
+	const long = someCall(withAFairlyLongArgument, andAnotherOne, andAThird, andAFourthOne, five)
+}

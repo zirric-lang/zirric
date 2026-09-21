@@ -1,0 +1,10 @@
+fn classify(v) {
+	switch v {
+	// A string is returned as-is.
+	case is String:
+		return v
+	// Everything else is inspected.
+	case _:
+		return _inspect(v)
+	}
+}

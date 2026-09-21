@@ -45,11 +45,12 @@ func (ls *zirricLangserver) initialize(ctx *glsp.Context, params *protocol.Initi
 			CompletionProvider: &protocol.CompletionOptions{
 				TriggerCharacters: []string{"@", "."},
 			},
-			HoverProvider:           true,
-			DefinitionProvider:      &protocol.DefinitionOptions{},
-			DocumentSymbolProvider:  &protocol.DocumentSymbolOptions{},
-			WorkspaceSymbolProvider: &protocol.WorkspaceSymbolOptions{},
-			ReferencesProvider:      &protocol.ReferenceOptions{},
+			HoverProvider:              true,
+			DefinitionProvider:         &protocol.DefinitionOptions{},
+			DocumentSymbolProvider:     &protocol.DocumentSymbolOptions{},
+			DocumentFormattingProvider: &protocol.DocumentFormattingOptions{},
+			WorkspaceSymbolProvider:    &protocol.WorkspaceSymbolOptions{},
+			ReferencesProvider:         &protocol.ReferenceOptions{},
 			RenameProvider: &protocol.RenameOptions{
 				PrepareProvider: &protocol.True,
 			},

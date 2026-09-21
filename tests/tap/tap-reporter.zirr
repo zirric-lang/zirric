@@ -10,11 +10,11 @@ fn reporter(writer: @io.Writer) -> fn(TestEvent) {
 		switch ev {
 		case is tests.Discovered:
 			fmt.fprintln("TAP version 14", writer)
-			fmt.fprintln("1.."+len(ev.cases), writer)
+			fmt.fprintln("1.." + len(ev.cases), writer)
 		case is tests.Skipped:
 			i += 1
 
-			fmt.fprint("ok "+i+" "+ev.test.name, writer)
+			fmt.fprint("ok " + i + " " + ev.test.name, writer)
 			fmt.fprintln(_sprintDirective(ev.test), writer)
 
 		case is tests.Finished:
@@ -22,12 +22,12 @@ fn reporter(writer: @io.Writer) -> fn(TestEvent) {
 
 			switch ev.outcome {
 			case is Ok:
-				fmt.fprint("ok "+i+" "+ev.test.name, writer)
+				fmt.fprint("ok " + i + " " + ev.test.name, writer)
 				fmt.fprintln(_sprintDirective(ev.test), writer)
 			case is Err:
-				fmt.fprint("not ok "+i+" - "+ev.test.name, writer)
+				fmt.fprint("not ok " + i + " - " + ev.test.name, writer)
 				fmt.fprintln(_sprintDirective(ev.test), writer)
-				fmt.fprintln("# "+Error(ev.outcome).debug(ev.outcome), writer)
+				fmt.fprintln("# " + Error(ev.outcome).debug(ev.outcome), writer)
 			}
 		case is tests.Completed:
 			fmt.fprintln("", writer)
@@ -61,22 +61,22 @@ fn reporter(writer: @io.Writer) -> fn(TestEvent) {
 
 fn _sprintDirective(tc: tests.TestCase) -> String {
 	const comment = if tc.comment != "" {
-		": "+tc.comment
+		": " + tc.comment
 	} else {
 		""
 	}
 
 	if tc.skipped {
-		return " # SKIP"+comment
+		return " # SKIP" + comment
 	}
 
 	switch tc.details {
 	case is tests.TestCaseDetailsOnly:
-		return "\n# ONLY"+comment
+		return "\n# ONLY" + comment
 	case is tests.TestCaseDetailsSkip:
-		return " # SKIP"+comment
+		return " # SKIP" + comment
 	case is tests.TestCaseDetailsTodo:
-		return " # TODO"+comment
+		return " # TODO" + comment
 	case _:
 		return ""
 	}

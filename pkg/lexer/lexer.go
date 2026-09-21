@@ -37,6 +37,8 @@ func (l *Lexer) NextToken() token.Token {
 	l.startPos = l.currPos
 	tokLine, tokColumn := l.position()
 	tok.Source = token.MakeSource(string(l.src.URI()), l.currPos, tokLine, tokColumn)
+	// Several branches below replace tok wholesale with a composite literal, dropping these; restore them after the switch.
+	leading, src := tok.Leading, tok.Source
 
 	switch l.ch {
 	case '!': // BANG, NEQ
@@ -178,6 +180,10 @@ func (l *Lexer) NextToken() token.Token {
 		}
 	}
 
+	tok.Leading = leading
+	if tok.Source == nil {
+		tok.Source = src
+	}
 	l.advance()
 	return tok
 }

@@ -172,7 +172,6 @@ GitHub Actions workflow (`.github/workflows/go.yml`):
 ├── README.md                   # Project documentation
 ├── LICENSE                     # Mozilla Public License 2.0
 ├── go.mod                      # Go module definition
-├── grammar.ebnf                # Formal grammar specification
 ├── docs/                       # Language documentation
 │   ├── tooling/compiler.md     # Bytecode & VM architecture
 │   ├── specification/          # Language specification docs
@@ -225,6 +224,7 @@ GitHub Actions workflow (`.github/workflows/go.yml`):
 - **Compiler tests**: `compiler/compiler_test.go` - bytecode validation
 - **Parser tests**: `parser/*_test.go` - AST validation
 - **Integration**: Through VM execution tests
+- **Golden files**: `pkg/codefmt/testdata/NAME.in.zirr` paired with `NAME.out.zirr`. Regenerate with `task gen:golden`, then **read the regenerated output** - the goldens are the reviewable artifact, not a formality. A `testdata` directory is skipped by `zirric fmt`, so fixtures may be deliberately misformatted.
 
 ### Dependencies (Not Obvious)
 

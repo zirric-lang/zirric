@@ -1,0 +1,11 @@
+const a = 1 - 2
+const b = -1
+const c = f(-1)
+const d = [1, -2]
+const e = a * -b
+const g = -a - -b
+fn h() {
+	return -1
+}
+const i = !ok
+const j = a + +b

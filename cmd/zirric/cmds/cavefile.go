@@ -41,6 +41,8 @@ type cavefileDoc struct {
 	Source       string          `yaml:"source,omitempty" json:"source,omitempty"`
 	Dependencies []dependencyDoc `yaml:"dependencies,omitempty" json:"dependencies,omitempty"`
 	Tasks        []taskDoc       `yaml:"tasks,omitempty" json:"tasks,omitempty"`
+
+	FormattingExcludes []string `yaml:"formattingExcludes,omitempty" json:"formattingExcludes,omitempty"`
 }
 
 type dependencyDoc struct {
@@ -155,7 +157,7 @@ func printCavefile(w io.Writer, cave cavefile.Cavefile, format string) error {
 		}
 	}
 
-	doc := cavefileDoc{Name: cave.Name, Source: cave.Source, Dependencies: deps, Tasks: tasks}
+	doc := cavefileDoc{Name: cave.Name, Source: cave.Source, Dependencies: deps, Tasks: tasks, FormattingExcludes: cave.FormattingExcludes}
 
 	switch format {
 	case "yaml":

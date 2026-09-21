@@ -3,19 +3,19 @@ import tasks
 
 @cave.Dependencies()
 data Dependencies {
-  // Standard library packages are available by default
-  @cave.Stdlib("tests")
-  tests // this will be the name of the import
+	// Standard library packages are available by default
+	@cave.Stdlib("tests")
+	tests // this will be the name of the import
 
-  @cave.Stdlib("prelude") // this is optional, as prelude is always included
-  prelude
+	@cave.Stdlib("prelude") // this is optional, as prelude is always included
+	prelude
 
-  @cave.Local("../some-local-package")
-  helpers // importable as helpers
+	@cave.Local("../some-local-package")
+	helpers // importable as helpers
 
-  @cave.Git("https://code.knabel.dev/zirric-lang/zirric")
-  @cave.Version("latest")
-  zirric // importable as zirric
+	@cave.Git("https://code.knabel.dev/zirric-lang/zirric")
+	@cave.Version("latest")
+	zirric // importable as zirric
 }
 
 // Define a task named "generate" with a help description and specify the script to run.

@@ -38,16 +38,16 @@ extern type Char {}
 @Countable(_dictLen)
 @Iterable(_dictIterate)
 extern type Dict {
-  // The dictionary's keys, in unspecified order.
-  keys() -> Array
+	// The dictionary's keys, in unspecified order.
+	keys() -> Array
 }
 
 // A callable function.
 extern type Func {
-  // The name of the function. Might be non-deterministic for closures.
-  name: String
-  // The amount of function parameters to be passed.
-  arity: Int
+	// The name of the function. Might be non-deterministic for closures.
+	name: String
+	// The amount of function parameters to be passed.
+	arity: Int
 }
 
 // A floating point number.
@@ -59,8 +59,8 @@ extern type Float {}
 extern type Int {}
 
 union Number {
-  Float
-  Int
+	Float
+	Int
 }
 
 // A regular String.
@@ -70,7 +70,7 @@ union Number {
 @Countable(_strLen)
 @Iterable(_stringIterate)
 extern type String {
-  chars() -> [Char]
+	chars() -> [Char]
 }
 
 // A sequence of raw bytes.

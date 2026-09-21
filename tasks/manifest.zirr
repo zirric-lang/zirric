@@ -1,7 +1,7 @@
 mod tasks
 
 import future {
-  Proposal
+	Proposal
 }
 
 // ZE-002: Error Handling
@@ -13,51 +13,51 @@ const ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
 // Exactly one of @Exec or @Call is required.
 @Proposal(ZE_002)
 union Task {
-  Exec
-  Call
+	Exec
+	Call
 }
 
 // Indicates that this task is implemented in an external file.
 @Proposal(ZE_002)
 attr Exec {
-  // The file that contains the implementation of the task.
-  file: String
+	// The file that contains the implementation of the task.
+	file: String
 }
 
 // Indicates that this task is implemented by a function.
 @Proposal(ZE_002)
 attr Call {
-  // The function to run for the task.
-  function: Function
+	// The function to run for the task.
+	function: Function
 }
 
 // Renames the task, flag or argument.
 @Proposal(ZE_002)
 attr Name {
-  // The new name.
-  name: String
+	// The new name.
+	name: String
 }
 
 // Provides alternative names for the task, flag or argument.
 @Proposal(ZE_002)
 attr Alias {
-  // Alternative names.
-  alias: Array
+	// Alternative names.
+	alias: Array
 }
 
 // Provides a short name for the flag.
 // Not applicable to arguments.
 @Proposal(ZE_002)
 attr Short {
-  // The short name of the flag.
-  short: Char
+	// The short name of the flag.
+	short: Char
 }
 
 // A short help text for the task, flag or argument.
 @Proposal(ZE_002)
 attr Help {
-  // A short help text.
-  help: String
+	// A short help text.
+	help: String
 }
 
 // Marks this field as a commandline flag.

@@ -6,13 +6,13 @@ import os
 @tasks.Alias(["b"])
 @tasks.Help("Builds the project")
 @tasks.Call(fn(opts: BuildTask) {
-  fmt.fprintln(opts.target, os.stdout())
+	fmt.fprintln(opts.target, os.stdout())
 })
 data BuildTask {
-  @tasks.Flag()
-  @tasks.Short('d')
-  dry: Bool
+	@tasks.Flag()
+	@tasks.Short('d')
+	dry: Bool
 
-  @tasks.Flag()
-  target: String
+	@tasks.Flag()
+	target: String
 }

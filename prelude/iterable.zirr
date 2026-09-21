@@ -4,142 +4,141 @@ mod prelude
 @Countable(_rangeCount)
 @Iterable(_rangeIterate)
 data Range {
-  start: Int
-  end: Int
+	start: Int
+	end: Int
 }
 
 // Represents a closed range of integers from start (inclusive) to end (inclusive).
 @Countable(_closedRangeCount)
 @Iterable(_closedRangeIterate)
 data ClosedRange {
-  start: Int
-  end: Int
+	start: Int
+	end: Int
 }
 
 // Represents an open range of integers strictly between start and end (both exclusive).
 @Countable(_openRangeCount)
 @Iterable(_openRangeIterate)
 data OpenRange {
-  start: Int
-  end: Int
+	start: Int
+	end: Int
 }
 
 // A key/value pair, as yielded when iterating a Dict.
 data Pair {
-  key
-  value
+	key
+	value
 }
 
-
 fn _rangeCount(v) {
-  if v.start >= v.end {
-    return 0
-  }
-  return v.end - v.start
+	if v.start >= v.end {
+		return 0
+	}
+	return v.end - v.start
 }
 
 fn _rangeIterate(v, yield) {
-  var i = v.start
-  for {
-    if i >= v.end {
-      return
-    }
-    if !yield(i) {
-      break
-    }
-    i = i + 1
-  }
+	var i = v.start
+	for {
+		if i >= v.end {
+			return
+		}
+		if !yield(i) {
+			break
+		}
+		i = i + 1
+	}
 }
 
 fn _closedRangeCount(v) {
-  if v.start > v.end {
-    return 0
-  }
-  return v.end - v.start + 1
+	if v.start > v.end {
+		return 0
+	}
+	return v.end - v.start + 1
 }
 
 fn _closedRangeIterate(v, yield) {
-  var i = v.start
-  for {
-    if i > v.end {
-      return
-    }
-    if !yield(i) {
-      break
-    }
-    i = i + 1
-  }
+	var i = v.start
+	for {
+		if i > v.end {
+			return
+		}
+		if !yield(i) {
+			break
+		}
+		i = i + 1
+	}
 }
 
 fn _openRangeCount(v) {
-  if v.start + 1 >= v.end {
-    return 0
-  }
-  return v.end - v.start - 1
+	if v.start + 1 >= v.end {
+		return 0
+	}
+	return v.end - v.start - 1
 }
 
 fn _openRangeIterate(v, yield) {
-  var i = v.start + 1
-  for {
-    if i >= v.end {
-      return
-    }
-    if !yield(i) {
-      break
-    }
-    i = i + 1
-  }
+	var i = v.start + 1
+	for {
+		if i >= v.end {
+			return
+		}
+		if !yield(i) {
+			break
+		}
+		i = i + 1
+	}
 }
 
 fn _arrayIterate(v, yield) {
-  var i = 0
-  const l = len(v)
-  for {
-    if i >= l {
-      return
-    }
-    if !yield(v[i]) {
-      break
-    }
-    i = i + 1
-  }
+	var i = 0
+	const l = len(v)
+	for {
+		if i >= l {
+			return
+		}
+		if !yield(v[i]) {
+			break
+		}
+		i = i + 1
+	}
 }
 
 fn _dictIterate(v, yield) {
-  const keys = v.keys()
-  var i = 0
-  const l = len(keys)
-  for {
-    if i >= l {
-      return
-    }
-    const key = keys[i]
-    if !yield(Pair(key, v[key])) {
-      break
-    }
-    i = i + 1
-  }
+	const keys = v.keys()
+	var i = 0
+	const l = len(keys)
+	for {
+		if i >= l {
+			return
+		}
+		const key = keys[i]
+		if !yield(Pair(key, v[key])) {
+			break
+		}
+		i = i + 1
+	}
 }
 
 fn _stringIterate(v, yield) {
-  // Delegates to `.chars()` (decoded once) instead of indexing character-by-character, which is O(n) per index.
-  for c <- v.chars() {
-    if !yield(c) {
-      break
-    }
-  }
+	// Delegates to `.chars()` (decoded once) instead of indexing character-by-character, which is O(n) per index.
+	for c <- v.chars() {
+		if !yield(c) {
+			break
+		}
+	}
 }
 
 fn _binaryIterate(v, yield) {
-  var i = 0
-  const l = len(v)
-  for {
-    if i >= l {
-      return
-    }
-    if !yield(v[i]) {
-      break
-    }
-    i = i + 1
-  }
+	var i = 0
+	const l = len(v)
+	for {
+		if i >= l {
+			return
+		}
+		if !yield(v[i]) {
+			break
+		}
+		i = i + 1
+	}
 }

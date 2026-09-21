@@ -1,0 +1,4 @@
+const greeting = "line one
+line two
+	indented inside"
+const ch = '\t'

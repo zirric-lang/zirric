@@ -79,11 +79,14 @@ LBRACKET = "[";     RBRACKET = "]";
 ### Comments
 
 ```ebnf
-line_comment  = "//", {any_char}, newline;
-block_comment = "/*", {any_char}, "*/";
+line_comment = ("//" | "#"), {any_char}, newline;
 ```
 
-Block comments may nest.
+Comments run to the end of the line. Both markers are equivalent to the compiler; `//` is conventional, and `#` additionally allows a `#!` shebang on the first line of an executable script.
+
+A comment immediately preceding a declaration documents it, by convention written with `//`.
+
+There are no block comments.
 
 ## Operator Precedence
 

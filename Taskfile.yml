@@ -73,6 +73,11 @@ tasks:
     cmds:
       - ./zirric task run test
 
+  gen:golden:
+    desc: Regenerate formatter golden files
+    cmds:
+      - go test ./pkg/codefmt -update
+
   bench:
     desc: Run all Benchmarks
     sources:
@@ -85,15 +90,21 @@ tasks:
 
   fmt:
     desc: Format
+    deps:
+      - build
     cmds:
       - gofmt -w .
       - dprint fmt --config dprint.json
+      - ./zirric fmt .
 
   check:
     desc: Full validation (format, vet, build, test)
+    deps:
+      - build
     cmds:
       - gofmt -l .
       - dprint check --config dprint.json
+      - ./zirric fmt --check .
       - golangci-lint run
       - go vet ./...
       - goreleaser check

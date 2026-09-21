@@ -550,7 +550,7 @@ func (p *Parser) parseImportDecl(pos StatementPosition, annos ast.AttributeChain
 		return importDecl
 	}
 	p.expect(token.LBRACE)
-	for !p.curIs(token.RBRACE) {
+	for !p.curIs(token.RBRACE, token.EOF) {
 		memberTok, _ := p.expect(token.IDENT)
 		member := ast.MakeDeclImportMember(memberTok, importDecl.ModuleName, ast.MakeIdentifier(memberTok))
 		importDecl.AddMember(member)
@@ -599,7 +599,8 @@ func (p *Parser) parseVariableDecl(pos StatementPosition, annos ast.AttributeCha
 func (p *Parser) parsePropertyDeclarationList() []ast.DeclField {
 	var fields []ast.DeclField
 	for {
-		if p.curToken.Type == token.RBRACE {
+		// EOF terminates as well as RBRACE: an unterminated body would otherwise spin forever, since nextToken cannot advance past EOF.
+		if p.curToken.Type == token.RBRACE || p.curToken.Type == token.EOF {
 			return fields
 		}
 		beforeSource, beforeType := p.curToken.Source, p.curToken.Type
@@ -899,8 +900,13 @@ func (p *Parser) parseStatementElseIf(pos StatementPosition) ast.StmtElseIf {
 
 func (p *Parser) parseExprArgumentList() []ast.Expr {
 	var args []ast.Expr
-	for !p.curIs(token.RPAREN) {
-		args = append(args, p.parseExpr())
+	for !p.curIs(token.RPAREN, token.EOF) {
+		arg := p.parseExpr()
+		if arg == nil {
+			// A malformed argument produces no expression; storing nil would panic every AST walker.
+			return args
+		}
+		args = append(args, arg)
 		if !p.curIs(token.COMMA) {
 			return args
 		}

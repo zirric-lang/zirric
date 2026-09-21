@@ -1,0 +1,8 @@
+union Result {
+	data Ok {
+		value
+	}
+    data Err {
+    	reason
+    }
+}

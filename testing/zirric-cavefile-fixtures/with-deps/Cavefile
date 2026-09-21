@@ -2,6 +2,6 @@ import cave
 
 @cave.Dependencies()
 data Dependencies {
-  @cave.Stdlib("io")
-  io
+	@cave.Stdlib("io")
+	io
 }

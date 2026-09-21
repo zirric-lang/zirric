@@ -2,7 +2,7 @@ import cave
 
 @cave.Dependencies()
 data Dependencies {
-  @cave.Git("https://example.com/example/example")
-  @cave.Version("^1.2.3")
-  example
+	@cave.Git("https://example.com/example/example")
+	@cave.Version("^1.2.3")
+	example
 }

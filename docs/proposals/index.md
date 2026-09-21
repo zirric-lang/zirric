@@ -39,6 +39,7 @@ or addition to the Zirric language or ecosystem. Take care to notice the status 
 | [ZE-020](/proposals/ZE-020-standard-library)                   | Standard Library                    | In Progress |                             |
 | [ZE-021](/proposals/ZE-021-encoding-and-decoding)              | Encoding and Decoding               | In Progress |                             |
 | [ZE-022](/proposals/ZE-022-static-checks)                      | Static Checks                       | In Progress |                             |
+| [ZE-023](/proposals/ZE-023-code-formatting)                    | Code Formatting                     | Implemented | [v0.1.0](/changelog/v0.1.0) |
 
 ## Submitting Proposals
 

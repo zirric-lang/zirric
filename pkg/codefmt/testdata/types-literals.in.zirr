@@ -1,0 +1,8 @@
+const a: [Int] = [1, 2, 3]
+const b: [String: Int] = ["one": 1]
+const c: fn(Any, Any) -> Any = fn(x, y) { x }
+const d: @Countable @Iterable = a
+const e = a[0]
+const f = b["one"]
+const g = [ ]
+const h = [:]

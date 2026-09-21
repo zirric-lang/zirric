@@ -5,7 +5,7 @@ import bytes
 
 import fmt { sprint, fprint, fprintln }
 
-@Printable(fn(v) { "custom: "+v.text })
+@Printable(fn(v) { "custom: " + v.text })
 data _customPrintable { text }
 
 data _notPrintable { text }

@@ -168,3 +168,5 @@ union Maybe {
 - Group imports together near the top of the file.
 - Keep one declaration per block to make attributes and docs obvious.
 - Prefer blank lines to separate logical sections.
+
+Whitespace is not a matter of taste: run [`zirric fmt`](/tooling/formatter), which writes the canonical layout and has no style options. It leaves your line breaks alone, so how you group arguments and chain calls is still yours to decide.

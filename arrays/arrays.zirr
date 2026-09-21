@@ -5,7 +5,7 @@ import ranges
 // Returns the elements of v from start (inclusive) to end (exclusive).
 fn slice(v: [Any], start: Int, end: Int) -> [Any] {
 	if start < 0 || end > len(v) || start > end {
-		panic("slice bounds out of range ["+start+":"+end+"] with length "+len(v))
+		panic("slice bounds out of range [" + start + ":" + end + "] with length " + len(v))
 	}
 	var result = []
 	for i <- Range(start, end) {

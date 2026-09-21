@@ -32,6 +32,7 @@ func Parse(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, tasksMod 
 	}
 
 	deps := extractDependencies(cavefileMod, caveMod, aliasMap, projectDir)
+	excludes := extractFormattingExcludes(cavefileMod, caveMod, aliasMap)
 
 	var tasks []Task
 	if tasksMod != nil {
@@ -39,10 +40,49 @@ func Parse(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, tasksMod 
 	}
 
 	return Cavefile{
-		Package:      Package{Name: pkgName, Source: pkgSource},
-		Dependencies: deps,
-		Tasks:        tasks,
+		Package:            Package{Name: pkgName, Source: pkgSource},
+		Dependencies:       deps,
+		Tasks:              tasks,
+		FormattingExcludes: excludes,
 	}
+}
+
+// extractFormattingExcludes collects every @cave.FormattingExcludes. The attribute may sit on any declaration, so a Cavefile needs no placeholder type to carry it.
+func extractFormattingExcludes(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) []string {
+	var patterns []string
+	collect := func(attrs ast.AttributeChain) {
+		for _, attr := range attrs {
+			if isFutureCaveAttr(attr, "FormattingExcludes", caveMod, aliasMap) {
+				patterns = append(patterns, stringArrayArgs(attr)...)
+			}
+		}
+	}
+
+	for _, file := range cavefileMod.Files {
+		if file == nil {
+			continue
+		}
+		for _, sym := range file.Decls.Symbols {
+			if sym == nil || sym.Decl == nil {
+				continue
+			}
+			if mod, ok := sym.Decl.(*ast.DeclModule); ok {
+				collect(mod.Attributes)
+			}
+		}
+	}
+	for _, sym := range cavefileMod.Decls.Symbols {
+		if sym == nil || sym.Decl == nil {
+			continue
+		}
+		switch decl := sym.Decl.(type) {
+		case *ast.DeclData:
+			collect(decl.Attributes)
+		case *ast.DeclUnion:
+			collect(decl.Attributes)
+		}
+	}
+	return patterns
 }
 
 // extractPackageSource finds the @cave.Package("url") attribute on the mod declaration

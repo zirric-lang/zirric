@@ -1,0 +1,9 @@
+@Error(fn(err) {
+switch err.reason {
+case is String:
+err.reason
+case _:
+_inspect(err.reason)
+}
+})
+data Err { reason }

@@ -26,7 +26,6 @@ func (l *Lexer) parseDecorativeToken() *token.DecorativeToken {
 	case l.ch == '/': // eventually COMMENT
 		if l.peekChar() == '/' {
 			tok.Type = token.DECO_COMMENT
-			l.advance()
 			tok.Literal = l.parseInlineComment()
 		} else {
 			return nil
@@ -39,20 +38,14 @@ func (l *Lexer) parseDecorativeToken() *token.DecorativeToken {
 	return &tok
 }
 
+// parseInlineComment returns the comment verbatim, marker included, stopping before the newline so every byte belongs to exactly one token or decoration.
 func (l *Lexer) parseInlineComment() string {
-	if l.peekChar() == ' ' {
-		l.advance()
-	}
-	position := l.currPos + 1
+	position := l.currPos
 	for {
-		l.advance()
-		if l.ch == '\n' {
-			l.advance()
-			return l.input[position : l.currPos-1]
-		}
-		if l.ch == 0 {
+		if l.ch == '\n' || l.ch == 0 {
 			return l.input[position:l.currPos]
 		}
+		l.advance()
 	}
 }
 

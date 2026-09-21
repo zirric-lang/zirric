@@ -14,7 +14,7 @@ const ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-attribute-binding"
 //     @Bound()
 //     debug(err) -> String
 //   }
-//   
+//
 //   @Error(fn(err) { return err.message })
 //   data MessageError {
 //     message: String

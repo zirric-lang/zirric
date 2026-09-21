@@ -1,7 +1,7 @@
 mod prelude
 
 fn len(v: @Countable) -> Int {
-  Countable(v).length(v)
+	Countable(v).length(v)
 }
 
 extern fn _arrayLen(v: Array) -> Int

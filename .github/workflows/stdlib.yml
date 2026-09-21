@@ -24,5 +24,8 @@ jobs:
       - name: Build zirric
         run: go build -o zirric ./cmd/zirric
 
+      - name: Check formatting
+        run: ./zirric fmt --check .
+
       - name: Run CLI tests
         run: ./zirric task run test

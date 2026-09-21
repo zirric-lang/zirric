@@ -3,42 +3,42 @@ mod prelude
 // Transparently indicates the assumed default value of a parameter or field.
 // Can be used by tooling and libraries.
 attr Default {
-  // The default value for a parameter.
-  value
+	// The default value for a parameter.
+	value
 }
 
 // Provides access to the documentation string of a declaration.
 attr Doc {
-  // The documentation string without leading comment markers and whitespace.
-  description: String
+	// The documentation string without leading comment markers and whitespace.
+	description: String
 }
 
 // Marks a declaration as deprecated with a reason.
 // IDEs and other tools can use this information to warn users about deprecated declarations.
 attr Deprecated {
-  @Default("without alternative") reason: String
+	@Default("without alternative") reason: String
 }
 
 // Marks a declaration as numeric, providing a way to convert it to a number.
 attr Numeric {
-  // A function to convert the value to a number.
-  toNumber(value: @Numeric) -> Number
+	// A function to convert the value to a number.
+	toNumber(value: @Numeric) -> Number
 }
 
 // Marks a type as printable, providing a way to convert it to a string.
 attr Printable {
-  // A function to convert the value to a string.
-  toString(self: @Printable) -> String
+	// A function to convert the value to a string.
+	toString(self: @Printable) -> String
 }
 
 // Marks a type as countable, providing a way to get its length.
 attr Countable {
-  // Returns the length of a value.
-  length(value: @Countable) -> Int
+	// Returns the length of a value.
+	length(value: @Countable) -> Int
 }
 
 // Marks a type as iterable, allowing `for element <- value`.
 attr Iterable {
-  // Calls `yield` with each element, stopping early if `yield` returns `false`.
-  iterate(value: @Iterable, yield: fn(Any) -> Bool)
+	// Calls `yield` with each element, stopping early if `yield` returns `false`.
+	iterate(value: @Iterable, yield: fn(Any) -> Bool)
 }

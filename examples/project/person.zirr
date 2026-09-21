@@ -23,7 +23,7 @@ fn greet(person: SomePerson) -> String {
 	case _:
 		"World"
 	}
-	
+
 	return "Hello " + name
 }
 
