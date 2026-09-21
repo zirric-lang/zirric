@@ -6,8 +6,7 @@ description: "A canonical whitespace layout for Zirric source, enforced by `zirr
 # Code Formatting
 
 ::: callout tip Implemented
-This proposal has been accepted and implemented.
-You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
+This proposal has been accepted and implemented. You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
 :::
 
 ## Introduction
@@ -81,7 +80,7 @@ Formatting is verified rather than assumed: the formatter checks that its output
 
 `zirric fmt` rewrites sources in place, and offers `--check`, `--list`, `--diff` and `--stdin` for scripting. Directory walks cover `.zirr` files and `Cavefile`s; a path named explicitly is always formatted. Editors need no configuration beyond enabling format-on-save, and produce identical results to the command line.
 
-See [Formatter](/tooling/formatter) for usage.
+See [Code Formatter](/tooling/code-formatter) for usage.
 
 ## Changes to the Standard Library
 

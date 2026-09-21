@@ -48,7 +48,7 @@ count = count + 1
 
 ```zirric
 fn greet(name) {
-    "Hello, " + name
+	"Hello, " + name
 }
 ```
 
@@ -56,7 +56,7 @@ fn greet(name) {
 
 ```zirric
 fn add(a: Int, b: Int) -> Int {
-    a + b
+	a + b
 }
 ```
 
@@ -76,8 +76,8 @@ Functions are first-class values. A declared function can be passed as an argume
 
 ```zirric
 data Person {
-    name
-    age
+	name
+	age
 }
 
 const alice = Person("Alice", 30)
@@ -93,15 +93,15 @@ data None
 
 ```zirric
 data Greetable {
-    greeting(ofValue)
+	greeting(ofValue)
 }
 ```
 
 **Field access.** Fields are accessed with `.`:
 
 ```zirric
-alice.name   // "Alice"
-alice.age    // 30
+alice.name // "Alice"
+alice.age // 30
 ```
 
 **Scoping.** `data` can only appear at the top level or nested inside a `union`. It cannot be declared inside a function body.
@@ -118,13 +118,13 @@ alice.age    // 30
 
 ```zirric
 union Option {
-    data Some { value }
-    data None
+	data Some { value }
+	data None
 }
 
 union StringOption {
-    String
-    None
+	String
+	None
 }
 ```
 
@@ -145,11 +145,11 @@ union StringOption {
 
 ```zirric
 attr Deprecated {
-    reason: String
+	reason: String
 }
 
 attr Doc {
-    description: String
+	description: String
 }
 ```
 
@@ -175,7 +175,7 @@ Attributes attach metadata to declarations and fields using the `@Name(args)` sy
 ```zirric
 @Deprecated("use newGreet instead")
 fn oldGreet(name) {
-    "Hi, " + name
+	"Hi, " + name
 }
 ```
 
@@ -205,8 +205,8 @@ Multiple attributes may be stacked on a single declaration or field:
 @Doc("The user's full name")
 @Deprecated("use displayName")
 data LegacyUser {
-    @Doc("First and last name")
-    name: String
+	@Doc("First and last name")
+	name: String
 }
 ```
 
@@ -231,7 +231,7 @@ Declares an opaque type whose implementation is in the runtime. Fields may be de
 
 ```zirric
 extern type String {
-    length: Int
+	length: Int
 }
 ```
 
@@ -304,7 +304,7 @@ Parameters appear in `fn`, closures, `extern fn`, and function-style data fields
 
 ```zirric
 fn greet(name: String) -> String {
-    "Hello, " + name
+	"Hello, " + name
 }
 ```
 
@@ -324,4 +324,4 @@ Type hints can appear in several positions on declarations:
 
 Type hints are documentation and tooling aids. They communicate the intended type to readers, editors, and the language server. The compiler records them for runtime `is` checks and `switch` matching, but Zirric does not perform static type checking — values may still flow dynamically.
 
-For the full type hint grammar and composite forms (`[T]`, `[K: V]`, `fn(P) -> R`, `@Attr`), see [Syntax § Type Hints](/specification/syntax#type-hints) and [Type System § Type Hints](/specification/typesystem#type-hints).
+For the full type hint grammar and composite forms (`[T]`, `[K: V]`, `fn(P) -> R`, `@Attr`), see [Syntax § Type Expressions](/specification/syntax#type-expressions) and [Type System § Type Hints](/specification/typesystem#type-hints).

@@ -1,9 +1,9 @@
 ---
-title: Formatter
+title: Code Formatter
 description: "zirric fmt writes Zirric's canonical layout, in the terminal and in your editor."
 ---
 
-# Formatter
+# Code Formatter
 
 `zirric fmt` writes Zirric's canonical layout. Editors apply the same layout on save, so the terminal and your editor never disagree.
 
@@ -21,6 +21,8 @@ zirric fmt --stdin             # format stdin to stdout
 zirric fmt --no-excludes       # ignore the project's formatting excludes
 ```
 
+`--stdin-filepath` names the file that `--stdin` diagnostics refer to, which is what editors pass when formatting an unsaved buffer.
+
 With no arguments it rewrites every `.zirr` file and every `Cavefile` below the current directory, skipping `.git`, `node_modules`, `site` and `testdata`. A path you name explicitly is always formatted, whatever it is called.
 
 Use `--check` in continuous integration:
@@ -30,7 +32,7 @@ Use `--check` in continuous integration:
   run: go run ./cmd/zirric fmt --check .
 ```
 
-In editors, enable format-on-save. There is nothing else to configure.
+In editors, enable format-on-save. The [Language Server](/tooling/language-server) implements `textDocument/formatting`, so any LSP client gets the same result without a separate formatter binary — see [Editor Configuration](/tooling/editor-configuration).
 
 ## The style
 

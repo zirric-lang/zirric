@@ -5,8 +5,7 @@ description: A collection of Zirric Evolution Proposals (ZEPs) documenting chang
 
 # Zirric Evolution Proposals (ZE)
 
-This directory contains Zirric Evolution Proposals. Each proposal documents a change
-or addition to the Zirric language or ecosystem. Take care to notice the status of each proposal.
+This directory contains Zirric Evolution Proposals. Each proposal documents a change or addition to the Zirric language or ecosystem. Take care to notice the status of each proposal.
 
 - **Draft**: The proposal is in an early stage and may undergo significant changes.
 - **In Progress**: The proposal is being actively worked on and refined.
@@ -57,7 +56,6 @@ Please note that proposals are subject to change and may not be implemented as i
 
 The presented EBNF grammar snippets are only used for illustration purposes and may not reflect the final syntax of the language. They are intended to convey the general structure and ideas of the proposals, rather than serving as exact specifications. In the end, the parser implementation is the single source of truth for the language syntax, while the [tree-sitter grammar](https://code.knabel.dev/zirric-lang/tree-sitter-zirric) serves as a more compact reference for the structure of the language, while not being an exact specification.
 
-When Zirric undergoes significant changes, existing proposals will most likely not be updated.
-Only in rare cases, existing proposals might be updated to avoid confusion. This effort will only be made for important or related proposals.
+When Zirric undergoes significant changes, existing proposals will most likely not be updated. Only in rare cases, existing proposals might be updated to avoid confusion. This effort will only be made for important or related proposals.
 
 In the end, proposals are a witness of their time and should be treated as such. They provide insight into the evolution of the language and the rationale behind certain design decisions, but they are not necessarily indicative of the current state or future direction of the language.

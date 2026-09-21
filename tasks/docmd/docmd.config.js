@@ -75,7 +75,10 @@ module.exports = {
       ],
     }
   },
-  redirects: [],
+  redirects: {
+    "/tooling/editor-support": "/tooling/editor-configuration",
+    "/tooling/formatter": "/tooling/code-formatter"
+  },
   notFound: {
     title: 'Page Not Found', 
     content: 'Oops! This page has moved.'
@@ -116,13 +119,28 @@ module.exports = {
       collapsible: true,
       children: [
         {
-          title: "Editor Support",
-          path: "/tooling/editor-support",
-          icon: "dna"
+          title: "Zirric CLI",
+          path: "/tooling/zirric-cli",
+          icon: "terminal"
         },
         {
-          title: "Formatter",
-          path: "/tooling/formatter",
+          title: "Editor Configuration",
+          path: "/tooling/editor-configuration",
+          icon: "settings"
+        },
+        {
+          title: "Compiler",
+          path: "/tooling/compiler",
+          icon: "cpu"
+        },
+        {
+          title: "Language Server",
+          path: "/tooling/language-server",
+          icon: "server"
+        },
+        {
+          title: "Code Formatter",
+          path: "/tooling/code-formatter",
           icon: "align-left"
         },
         {
@@ -131,9 +149,10 @@ module.exports = {
           icon: "box"
         },
         {
-          title: "Compiler",
-          path: "/tooling/compiler",
-          icon: "cpu"
+          title: "Tree Sitter",
+          path: "https://code.knabel.dev/zirric-lang/tree-sitter-zirric",
+          icon: "dna",
+          external: true
         }
       ]
     },
@@ -144,37 +163,267 @@ module.exports = {
       collapsible: true,
       children: [
         {
-          title: "Prelude",
-          path: "/stdlib/prelude",
-          icon: "sparkles"
-        },
-        {
-          title: "Cave",
-          path: "/stdlib/cave",
-          icon: "package"
-        },
-        {
-          title: "Tasks",
-          path: "/stdlib/tasks",
-          icon: "check-square"
-        },
-        {
-          title: "Future",
-          path: "/stdlib/future",
-          icon: "flask-conical",
+          title: "Core",
+          icon: "sparkles",
           collapsible: true,
           children: [
             {
               title: "Prelude",
+              path: "/stdlib/prelude",
+              icon: "sparkles"
+            },
+            {
+              title: "Options",
+              path: "/stdlib/options",
+              icon: "circle-help"
+            },
+            {
+              title: "Results",
+              path: "/stdlib/results",
+              icon: "circle-check"
+            },
+            {
+              title: "Errors",
+              path: "/stdlib/errors",
+              icon: "circle-alert"
+            }
+          ]
+        },
+        {
+          title: "Data",
+          icon: "database",
+          collapsible: true,
+          children: [
+            {
+              title: "Arrays",
+              path: "/stdlib/arrays",
+              icon: "list"
+            },
+            {
+              title: "Dicts",
+              path: "/stdlib/dicts",
+              icon: "table-2"
+            },
+            {
+              title: "Strings",
+              path: "/stdlib/strings",
+              icon: "type"
+            },
+            {
+              title: "Bytes",
+              path: "/stdlib/bytes",
+              icon: "binary"
+            },
+            {
+              title: "Ranges",
+              path: "/stdlib/ranges",
+              icon: "ruler"
+            },
+            {
+              title: "Math",
+              path: "/stdlib/math",
+              icon: "sigma"
+            },
+            {
+              title: "Fun",
+              path: "/stdlib/fun",
+              icon: "workflow"
+            }
+          ]
+        },
+        {
+          title: "System",
+          icon: "monitor",
+          collapsible: true,
+          children: [
+            {
+              title: "OS",
+              path: "/stdlib/os",
+              icon: "monitor"
+            },
+            {
+              title: "IO",
+              path: "/stdlib/io",
+              icon: "arrow-left-right"
+            },
+            {
+              title: "Fmt",
+              path: "/stdlib/fmt",
+              icon: "text"
+            },
+            {
+              title: "FS",
+              path: "/stdlib/fs",
+              icon: "folder"
+            },
+            {
+              title: "Paths",
+              path: "/stdlib/paths",
+              icon: "route"
+            },
+            {
+              title: "Clock",
+              path: "/stdlib/clock",
+              icon: "clock"
+            },
+            {
+              title: "Time",
+              path: "/stdlib/time",
+              icon: "calendar"
+            },
+            {
+              title: "Random",
+              path: "/stdlib/random",
+              icon: "dices"
+            },
+            {
+              title: "Scripts",
+              path: "/stdlib/scripts",
+              icon: "scroll"
+            }
+          ]
+        },
+        {
+          title: "Serialization",
+          icon: "arrow-right-left",
+          collapsible: true,
+          children: [
+            {
+              title: "Coding",
+              path: "/stdlib/coding",
+              icon: "arrow-right-left"
+            },
+            {
+              title: "JSON",
+              path: "/stdlib/json",
+              icon: "braces"
+            },
+            {
+              title: "YAML",
+              path: "/stdlib/yaml",
+              icon: "file-code"
+            }
+          ]
+        },
+        {
+          title: "Reflection",
+          icon: "scan",
+          collapsible: true,
+          children: [
+            {
+              title: "Reflect",
+              path: "/stdlib/reflect",
+              icon: "scan"
+            },
+            {
+              title: "Reflect.Packages",
+              path: "/stdlib/reflect/packages",
+              icon: "boxes"
+            }
+          ]
+        },
+        {
+          title: "Testing",
+          icon: "flask-conical",
+          collapsible: true,
+          children: [
+            {
+              title: "Tests",
+              path: "/stdlib/tests",
+              icon: "flask-conical"
+            },
+            {
+              title: "Tests.Assert",
+              path: "/stdlib/tests/assert",
+              icon: "check-check"
+            },
+            {
+              title: "Tests.Runner",
+              path: "/stdlib/tests/runner",
+              icon: "play"
+            },
+            {
+              title: "Tests.TAP",
+              path: "/stdlib/tests/tap",
+              icon: "receipt"
+            }
+          ]
+        },
+        {
+          title: "Manifests",
+          icon: "package",
+          collapsible: true,
+          children: [
+            {
+              title: "Cave",
+              path: "/stdlib/cave",
+              icon: "package"
+            },
+            {
+              title: "Tasks",
+              path: "/stdlib/tasks",
+              icon: "check-square"
+            }
+          ]
+        },
+        {
+          title: "Future",
+          icon: "circle-dashed",
+          collapsible: true,
+          children: [
+            {
+              title: "Future",
+              path: "/stdlib/future",
+              icon: "flask-conical"
+            },
+            {
+              title: "Future.Prelude",
               path: "/stdlib/future/prelude",
               icon: "sparkles"
             },
             {
-              title: "Reflect",
+              title: "Future.Reflect",
               path: "/stdlib/future/reflect",
               icon: "scan"
             }
           ]
+        }
+      ]
+    },
+    {
+      title: "External Packages",
+      icon: "blocks",
+      collapsible: true,
+      children: [
+        {
+          title: "Colors",
+          path: "https://zirric-colors.knabel.dev",
+          icon: "palette",
+          external: true
+        },
+        {
+          title: "UI",
+          path: "https://zirric-ui.knabel.dev",
+          icon: "app-window",
+          external: true
+        },
+        {
+          title: "HTML",
+          path: "https://code.knabel.dev/zirric-lang/html",
+          icon: "code-xml",
+          external: true
+        },
+        {
+          title: "MD",
+          path: "https://code.knabel.dev/zirric-lang/md",
+          icon: "file-text",
+          external: true
+        },
+        {
+          title: "Term",
+          path: "https://code.knabel.dev/zirric-lang/term",
+          icon: "terminal",
+          external: true
         }
       ]
     },
@@ -248,7 +497,7 @@ module.exports = {
           path: "/proposals/ZE-009-option-values"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-10 Iterable",
           path: "/proposals/ZE-010-iterable"
         },
@@ -351,12 +600,6 @@ module.exports = {
       title: "Repository",
       path: "https://code.knabel.dev/zirric-lang/zirric",
       icon: "git-graph",
-      external: true
-    },
-    {
-      title: "Tree-Sitter-Zirric",
-      path: "https://code.knabel.dev/zirric-lang/tree-sitter-zirric",
-      icon: "git-branch",
       external: true
     }
   ]

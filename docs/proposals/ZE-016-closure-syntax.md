@@ -6,29 +6,23 @@ description: Unify the syntax of closures and named functions by using the fn ke
 # Unified Function and Closure Syntax
 
 ::: callout tip Implemented
-This proposal has been accepted and implemented.
-You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
+This proposal has been accepted and implemented. You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
 :::
 
 ## Introduction
 
-This proposal replaces the brace-arrow closure syntax `{ args -> body }` with a `fn`-based syntax `fn(args) { body }`, making closures and named functions share the same structural shape.
-All other shorthand forms for function literals are discontinued. This mostly affects function declarations.
+This proposal replaces the brace-arrow closure syntax `{ args -> body }` with a `fn`-based syntax `fn(args) { body }`, making closures and named functions share the same structural shape. All other shorthand forms for function literals are discontinued. This mostly affects function declarations.
 
 ## Motivation
 
-The current closure syntax `{ a, b -> a + b }` differs significantly from named function declarations `fn add(a, b) { ... }`.
-This creates two distinct mental models for the same concept and introduces ambiguity with `Dict` literals (both start with `{`).
+The current closure syntax `{ a, b -> a + b }` differs significantly from named function declarations `fn add(a, b) { ... }`. This creates two distinct mental models for the same concept and introduces ambiguity with `Dict` literals (both start with `{`).
 
 The new unified syntax:
 
 - **Reduces cognitive load**: one syntactic pattern for all functions.
-- **Removes parser ambiguity**: `{` always introduces a block, never a function
-  literal.
-- **Improves readability**: closures are immediately recognisable by the `fn`
-  keyword.
-- **Simplifies the grammar**: a single production covers both named and anonymous
-  functions.
+- **Removes parser ambiguity**: `{` always introduces a block, never a function literal.
+- **Improves readability**: closures are immediately recognisable by the `fn` keyword.
+- **Simplifies the grammar**: a single production covers both named and anonymous functions.
 - **Feels more consistent**: Zirric prefers keywords over punctuation and a minimal syntax set.
 
 ## Proposed Solution
@@ -97,22 +91,18 @@ Both productions share the `"fn", "(", params, ")", block` core; the only differ
 ### Parser changes
 
 1. Remove the `fn_literal` rule that starts with `{` and uses `->`.
-2. When the parser encounters `fn` followed by `(`, it produces an anonymous function node.
-   When followed by an identifier and then `(`, it produces a named function declaration as today.
-3. `{` in expression position no longer needs to disambiguate between closures and dict literals.
-   It is always a dict (or a block in statement position).
+2. When the parser encounters `fn` followed by `(`, it produces an anonymous function node. When followed by an identifier and then `(`, it produces a named function declaration as today.
+3. `{` in expression position no longer needs to disambiguate between closures and dict literals. It is always a dict (or a block in statement position).
 
 ### AST impact
 
-The existing AST node for function literals already stores a parameter list and a body.
-The only structural change is that the source representation changes while the AST shape remains the same.
+The existing AST node for function literals already stores a parameter list and a body. The only structural change is that the source representation changes while the AST shape remains the same.
 
 Named functions continue to carry an additional name field.
 
 ### Interaction with ZE-012 (Type and Returns Sugar)
 
-[ZE-012 — Type and Returns Sugar](/proposals/ZE-012-type-and-returns-sugar) introduces `: Type` parameter attributes and `-> ReturnType` return attributes as sugar for `@Type` and `@Returns`.
-In case both proposals are accepted, the full signature syntax becomes:
+[ZE-012 — Type and Returns Sugar](/proposals/ZE-012-type-and-returns-sugar) introduces `: Type` parameter attributes and `-> ReturnType` return attributes as sugar for `@Type` and `@Returns`. In case both proposals are accepted, the full signature syntax becomes:
 
 ```zirric
 // Named function with type sugar
@@ -148,8 +138,7 @@ The standard library (`prelude/`, `future/`) will need its closure usages update
 
 ## Alternatives Considered
 
-- **Keep both syntaxes**: Allow `{ a -> ... }` alongside `fn(a) { ... }`.
-  Rejected because it preserves the ambiguity and cognitive overhead this proposal aims to eliminate.
+- **Keep both syntaxes**: Allow `{ a -> ... }` alongside `fn(a) { ... }`. Rejected because it preserves the ambiguity and cognitive overhead this proposal aims to eliminate.
 - **Status quo**: The brace-arrow form is already implemented but conflicts with the dict literal syntax and diverges from named function declarations.
 
 ## Acknowledgements

@@ -6,9 +6,7 @@ description: "Planning document for the Zirric Command Line Interface (CLI)"
 # Zirric CLI Design
 
 ::: callout warning In Progress
-This proposal has been accepted in principle.
-It is currently under active development.
-Parts might be incomplete or missing in Zirric.
+This proposal has been accepted in principle. It is currently under active development. Parts might be incomplete or missing in Zirric.
 :::
 
 ## Introduction
@@ -69,8 +67,7 @@ $ zirric completion
 
 ## Detailed Design
 
-When starting the `zirric` CLI, it needs to determine which command is being invoked before passing it to the appropriate handler.
-If the `Cavefile` needs to be parsed for the command to come, this needs to be done first.
+When starting the `zirric` CLI, it needs to determine which command is being invoked before passing it to the appropriate handler. If the `Cavefile` needs to be parsed for the command to come, this needs to be done first.
 
 The CLI should only read arguments and flags until `--`. Remaining arguments are passed to the executed command or task as-is.
 

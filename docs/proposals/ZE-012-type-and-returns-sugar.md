@@ -13,18 +13,11 @@ This proposal has been rejected and will not be implemented.
 
 ## Introduction
 
-This proposal introduces a compact signature syntax that desugars to existing annotations:
-`greet(name: String) -> String` becomes `@Returns(String) greet(@String name)`.
-The goal is to reduce annotation noise while staying fully compatible with the
-attr system.
+This proposal introduces a compact signature syntax that desugars to existing annotations: `greet(name: String) -> String` becomes `@Returns(String) greet(@String name)`. The goal is to reduce annotation noise while staying fully compatible with the attr system.
 
 ## Motivation
 
-Zirric uses `@Type` and `@Returns` to describe function signatures. While explicit
-annotations are flexible, simple signatures are verbose to write and read,
-especially in data and annotation declarations where signatures serve as
-documentation. A concise syntax improves readability without changing runtime
-semantics.
+Zirric uses `@Type` and `@Returns` to describe function signatures. While explicit annotations are flexible, simple signatures are verbose to write and read, especially in data and annotation declarations where signatures serve as documentation. A concise syntax improves readability without changing runtime semantics.
 
 ## Proposed Solution
 
@@ -83,13 +76,9 @@ attr Formatter {
 
 ### Scope and limitations
 
-- The `:` and `->` syntax is sugar only; it has no runtime effect beyond the
-  existing annotations it produces.
-- If both the sugar and explicit annotations specify the same data (e.g.,
-  `@Returns` and `->`), the compiler should report a duplicate/ambiguous annotation
-  error to avoid hidden conflicts.
-- The type reference after `:` or `->` uses the same rules as `@Type`, so
-  `String`, `module.Type`, and other static references are valid.
+- The `:` and `->` syntax is sugar only; it has no runtime effect beyond the existing annotations it produces.
+- If both the sugar and explicit annotations specify the same data (e.g., `@Returns` and `->`), the compiler should report a duplicate/ambiguous annotation error to avoid hidden conflicts.
+- The type reference after `:` or `->` uses the same rules as `@Type`, so `String`, `module.Type`, and other static references are valid.
 
 ## Changes to the Standard Library
 

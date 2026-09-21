@@ -1,26 +1,30 @@
 ---
 title: Tooling
-description: "Editors, generators, and developer tooling for Zirric."
+description: "The zirric CLI, editor setup, language server, formatter, package manager, and compiler."
 ---
 
 # Tooling
 
-Zirric tooling is focused on editor support, documentation, and experimenting with the language implementation. This section collects the available pieces.
+The whole toolchain is one binary. The compiler, language server, formatter, and package manager are subcommands of `zirric` rather than separate downloads.
 
-## Editor support
+- [Zirric CLI](/tooling/zirric-cli) — every command, and how a project is run.
 
-- [Editor Support](/tooling/editor-support) with Tree-sitter and LSP for modern editors.
-- [Formatter](/tooling/formatter) for `zirric fmt` and the canonical source layout.
+## Working in an editor
+
+- [Editor Configuration](/tooling/editor-configuration) — per-editor setup for Helix, Neovim, and any other LSP client.
+- [Language Server](/tooling/language-server) — `zirric lsp`, its transports, and the features it provides.
+- [Code Formatter](/tooling/code-formatter) — `zirric fmt` and the canonical source layout.
+- [Tree Sitter](https://code.knabel.dev/zirric-lang/tree-sitter-zirric) — the grammar repository behind syntax highlighting.
 
 ## Language implementation
 
-- [Package Manager](/tooling/package-manager) for Cavefile structure and registry layout.
-- [Compiler](/tooling/compiler) for bytecode and runtime architecture.
+- [Package Manager](/tooling/package-manager) — Cavefile structure, module discovery, and registry layout.
+- [Compiler](/tooling/compiler) — bytecode and runtime architecture.
 
 ## Documentation pipeline
 
-The documentation site is generated with docmd, configured in `tasks/docs/docmd.config.js`. Markdown sources live under `docs/` and output to `site/`.
+The documentation site is generated with docmd, configured in `tasks/docmd/docmd.config.js`. Markdown sources live under `docs/` and output to `site/`.
 
 ::: callout tip Contributing docs
-When adding a new page, also add it to `tasks/docs/docmd.config.js` so it appears in navigation.
+When adding a new page, also add it to `tasks/docmd/docmd.config.js` so it appears in navigation.
 :::

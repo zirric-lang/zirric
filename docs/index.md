@@ -20,23 +20,23 @@ Zirric is a compact language that favors declarations, readable data modeling, a
 
 ```zirric
 attr Countable {
-    length(value: @Countable) -> Int
+	length(value: @Countable) -> Int
 }
 
 @Countable(fn(v) { return v.length })
 data Bag {
-    items
-    length
+	items
+	length
 }
 
 fn summarize(bag: Bag) -> Result {
-    const length = Countable(bag).length(bag)
+	const length = Countable(bag).length(bag)
 
-    return if length > 0 {
-        Ok(length)
-    } else {
-        Err("empty")
-    }
+	return if length > 0 {
+		Ok(length)
+	} else {
+		Err("empty")
+	}
 }
 ```
 

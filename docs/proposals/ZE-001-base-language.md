@@ -6,15 +6,12 @@ description: Defines the base language features of Zirric.
 # Base Language
 
 ::: callout tip Implemented
-This proposal has been accepted and implemented.
-You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
+This proposal has been accepted and implemented. You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
 :::
 
 ## Introduction
 
-Zirric is an experimental programming language designed to bridge the gap between scripting languages and full-fledged programming languages while keeping its own identity.
-Zirric is dynamically, but strongly typed. It aims to be simple yet have batteries included.
-Possible long term use cases are all terminal related stuff and text UI applications that might spread to other domains.
+Zirric is an experimental programming language designed to bridge the gap between scripting languages and full-fledged programming languages while keeping its own identity. Zirric is dynamically, but strongly typed. It aims to be simple yet have batteries included. Possible long term use cases are all terminal related stuff and text UI applications that might spread to other domains.
 
 In this proposal we define the base language features in detail. All other proposals will build on top of this one.
 
@@ -51,9 +48,7 @@ Additionally there will be a few ideas that worked great in Lithia, but won't in
 
 ## Non-Goals
 
-Zirric explicitly does not implement generics, interfaces or inheritance.
-Zirric does not try to be an embedded or systems language. Competing with other scripting languages in terms of performance is not a goal.
-It is not built to mirror existing languages, but tries to find its own way by combining a few concepts to form something larger.
+Zirric explicitly does not implement generics, interfaces or inheritance. Zirric does not try to be an embedded or systems language. Competing with other scripting languages in terms of performance is not a goal. It is not built to mirror existing languages, but tries to find its own way by combining a few concepts to form something larger.
 
 ## Proposed Solution
 
@@ -81,8 +76,7 @@ Besides that there are a few control flow structures:
 
 ## Detailed Design
 
-Zirric is a dynamically typed language, but strict when it comes to conversions.
-The following sections will all include requirements, examples and EBNF snippets to describe the syntax. The EBNF snippets are not complete and only show the relevant parts.
+Zirric is a dynamically typed language, but strict when it comes to conversions. The following sections will all include requirements, examples and EBNF snippets to describe the syntax. The EBNF snippets are not complete and only show the relevant parts.
 
 In general Zirric might introduce type checks at run- or compile time. In these cases these are not considered a breaking change as they replace undefined behavior.
 
@@ -136,11 +130,7 @@ false              // Bool
 > [ZE-013 Mutability and Constants](./ZE-013-mutability-and-constants.md) replaces `let` variables into `var` and `const`.
 > This section is kept for historical reasons.
 
-Variables can be declared with the `let` keyword.
-Variables are only valid within their scope and nested scopes.
-Variables don't have types.
-Variables can be annotated.
-At runtime the values of a variable may be changed.
+Variables can be declared with the `let` keyword. Variables are only valid within their scope and nested scopes. Variables don't have types. Variables can be annotated. At runtime the values of a variable may be changed.
 
 ```zirric
 let x = 42
@@ -181,8 +171,7 @@ decl_data = "data", type_identifier, [ "{", { decl_field }, "}" ] ;
 
 #### Fields
 
-Fields are the building blocks of data types. They are defined by their name and optionally attributes.
-To increase the expressiveness, function fields can be defined by adding a function signature after the field name.
+Fields are the building blocks of data types. They are defined by their name and optionally attributes. To increase the expressiveness, function fields can be defined by adding a function signature after the field name.
 
 In practice this serves just as documentation, as fields can store any value.
 
@@ -224,9 +213,7 @@ union_member = ( static_reference | decl_data ) ;
 
 ### Attribute types
 
-Attributes are metadata that can be attached to declarations like `let`, `fn`, `data`, `union`, `extern` and `mod`.
-Instantiations of attribute types can only be created at compile time.
-As syntactic sugar non-attribute types can be used as attributes. In this case an attribute of type `Type` will be created with the type as argument. Attributes that are actual attribute types require parentheses.
+Attributes are metadata that can be attached to declarations like `let`, `fn`, `data`, `union`, `extern` and `mod`. Instantiations of attribute types can only be created at compile time. As syntactic sugar non-attribute types can be used as attributes. In this case an attribute of type `Type` will be created with the type as argument. Attributes that are actual attribute types require parentheses.
 
 ```zirric
 @OtherAttribute()
@@ -301,8 +288,7 @@ extern type String {
 }
 ```
 
-Each extern type behaves slightly different in terms of how it is created and accessed.
-Many types like `String`, `Int`, `Float` and `Dict` will be created by literals, types like `Func` and `Module` by declarations. `Any` on the other hand is more like an `union` containing all types.
+Each extern type behaves slightly different in terms of how it is created and accessed. Many types like `String`, `Int`, `Float` and `Dict` will be created by literals, types like `Func` and `Module` by declarations. `Any` on the other hand is more like an `union` containing all types.
 
 ```ebnf
 decl_extern_type = "extern", "type", type_identifier, [ "{", { decl_field }, "}" ] ;
@@ -488,8 +474,7 @@ expr_for_block = { decl }, ( "break" | "continue" | expression ) ;
 
 ### Modules
 
-Modules are defined by the folder structure on the file system. Each folder is a module. The root module is defined by the folder containing the `Cavefile`.
-Each module has a corresponding value of type `Module` that can be accessed by the `mod` declaration. That way it can also be annotated with attributes.
+Modules are defined by the folder structure on the file system. Each folder is a module. The root module is defined by the folder containing the `Cavefile`. Each module has a corresponding value of type `Module` that can be accessed by the `mod` declaration. That way it can also be annotated with attributes.
 
 Declarations that precede with `_` are treated as private and cannot be accessed from other modules. The same applies to nested declarations, imports and module-self references.
 

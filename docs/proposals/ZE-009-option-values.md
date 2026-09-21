@@ -6,8 +6,7 @@ description: "Introduce a standard option type for values that may be present or
 # Option Values
 
 ::: callout tip Implemented
-This proposal has been accepted and implemented.
-You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
+This proposal has been accepted and implemented. You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
 :::
 
 ## Introduction

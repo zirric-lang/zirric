@@ -6,8 +6,7 @@ description: Replace `let` with `const` and `var` to make mutability explicit at
 # Mutability and Constants
 
 ::: callout tip Implemented
-This proposal has been accepted and implemented.
-You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
+This proposal has been accepted and implemented. You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
 :::
 
 ## Introduction

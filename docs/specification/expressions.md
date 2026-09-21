@@ -9,17 +9,17 @@ For the grammar of each form, see [Syntax § Expressions](/specification/syntax#
 Zirric supports the following literal forms. Each produces a value of the corresponding built-in type.
 
 ```zirric
-42                 // Int
-3.14               // Float
-0x8899aa           // Int (hexadecimal)
-0o777              // Int (octal)
-0b101010           // Int (binary)
-1e10               // Float (scientific)
-true               // Bool
-false              // Bool
-"Hello, World!"    // String
-[1, 2, 3]          // Array
-["key": "value"]   // Dict
+42 // Int
+3.14 // Float
+0x8899aa // Int (hexadecimal)
+0 o777 // Int (octal)
+0b101010 // Int (binary)
+1e10 // Float (scientific)
+true // Bool
+false // Bool
+"Hello, World!" // String
+[1, 2, 3] // Array
+["key": "value"] // Dict
 ```
 
 **Array literals** create a new `Array` value. Elements are evaluated left to right.
@@ -74,7 +74,7 @@ const p = Person("Alice", 30)
 The `.` operator accesses a field of a `data` instance, `extern type`, or module.
 
 ```zirric
-p.name       // field of a data instance
+p.name // field of a data instance
 strings.join // member of a module
 ```
 
@@ -86,10 +86,10 @@ The `[]` operator accesses elements by index (`Array`, `String`) or by key (`Dic
 
 ```zirric
 const arr = [10, 20, 30]
-arr[0]           // 10
+arr[0] // 10
 
 const dict = ["a": 1]
-dict["a"]        // 1
+dict["a"] // 1
 ```
 
 ## Assignment
@@ -108,10 +108,10 @@ Closures are anonymous functions written with `fn(params) { body }`. They share 
 
 ```zirric
 const add = fn(a, b) {
-    return a + b
+	return a + b
 }
 const double = fn(x) {
-    return x * 2
+	return x * 2
 }
 ```
 
@@ -125,18 +125,18 @@ Closures capture variables from enclosing scopes. How a variable is captured dep
 
 ```zirric
 fn makeCounter() {
-    var count = 0
-    const increment = fn() {
-        count = count + 1
-        count
-    }
+	var count = 0
+	const increment = fn() {
+		count = count + 1
+		count
+	}
 
-    return increment
+	return increment
 }
 
 const counter = makeCounter()
-counter()  // 1
-counter()  // 2
+counter() // 1
+counter() // 2
 ```
 
 ### Return type hints
@@ -145,7 +145,7 @@ Closures may declare a return type hint with `->`:
 
 ```zirric
 const toStr = fn(x: Bool) -> String {
-    return if x { "true" } else { "false" }
+	return if x { "true" } else { "false" }
 }
 ```
 
@@ -159,9 +159,9 @@ An `if` expression produces a value. Each branch contains exactly one expression
 
 ```zirric
 const label = if answer == 42 {
-    "yes"
+	"yes"
 } else {
-    "no"
+	"no"
 }
 ```
 
@@ -173,11 +173,11 @@ An `if` statement executes a branch for its side effects and produces no value. 
 
 ```zirric
 if answer == 42 {
-    print("yes")
+	print("yes")
 } else if answer == 0 {
-    print("zero")
+	print("zero")
 } else {
-    print("no")
+	print("no")
 }
 ```
 
@@ -187,18 +187,17 @@ Both forms support chaining with `else if`:
 
 ```zirric
 const tier = if score > 90 {
-    "A"
+	"A"
 } else if score > 80 {
-    "B"
+	"B"
 } else {
-    "C"
+	"C"
 }
 ```
 
 ## For
 
-`for` loops come in three variants and two forms (expression and statement).
-Statements can be used for side effects, while expressions collect values into an array.
+`for` loops come in three variants and two forms (expression and statement). Statements can be used for side effects, while expressions collect values into an array.
 
 ### Collection iteration
 
@@ -206,7 +205,7 @@ Iterates over a collection using `<-`. The binding variable receives each elemen
 
 ```zirric
 for item <- [1, 2, 3] {
-    print(item)
+	print(item)
 }
 ```
 
@@ -218,7 +217,7 @@ Evaluates a condition each iteration and continues while it is `true`.
 
 ```zirric
 for ready {
-    doWork()
+	doWork()
 }
 ```
 
@@ -228,9 +227,9 @@ A `for` with no binding and no condition runs indefinitely until a `break` is re
 
 ```zirric
 for {
-    if shouldStop {
-        break
-    }
+	if shouldStop {
+		break
+	}
 }
 ```
 
@@ -240,16 +239,16 @@ A `for` expression collects the values produced by its body into an `Array`. The
 
 ```zirric
 const doubled = for n <- [1, 2, 3] {
-    n * 2
+	n * 2
 }
 // doubled is [2, 4, 6]
 
 const odds = for n <- [1, 2, 3, 4] {
-    if n % 2 != 0 {
-        n
-    } else {
-        continue
-    }
+	if n % 2 != 0 {
+		n
+	} else {
+		continue
+	}
 }
 // odds is [1, 3]
 ```
@@ -274,13 +273,13 @@ Each `case` matches against one of:
 ```zirric
 switch value {
 case 1:
-    print("one")
+	print("one")
 case is String:
-    print("a string")
+	print("a string")
 case is @Iterable:
-    print("iterable")
+	print("iterable")
 case _:
-    print("other")
+	print("other")
 }
 ```
 
@@ -293,11 +292,11 @@ A `switch` expression produces a value. Each case body is a single expression. A
 ```zirric
 const label = switch code {
 case 200:
-    "ok"
+	"ok"
 case 404:
-    "not found"
+	"not found"
 case _:
-    "unknown"
+	"unknown"
 }
 ```
 
@@ -310,9 +309,9 @@ A `switch` statement executes for side effects. Case bodies may contain multiple
 The `is` operator tests whether a value belongs to a type or carries an attribute. It produces a `Bool`.
 
 ```zirric
-value is String        // true if value is a String
-value is Option        // true if value is a member of the Option union
-value is @Countable    // true if value's type has the @Countable attribute
+value is String // true if value is a String
+value is Option // true if value is a member of the Option union
+value is @Countable // true if value's type has the @Countable attribute
 ```
 
 `is` checks work with all [type hint forms](/specification/typesystem#type-hints): named types, union types, and attribute types. See [Type System § Type Checking](/specification/typesystem#type-checking-with-is) for the matching rules.
@@ -325,12 +324,12 @@ Exits the enclosing function immediately, optionally with a value. If no value i
 
 ```zirric
 fn find(items, target) {
-    for item <- items {
-        if item == target {
-            return item
-        }
-    }
-    return void
+	for item <- items {
+		if item == target {
+			return item
+		}
+	}
+	return void
 }
 ```
 

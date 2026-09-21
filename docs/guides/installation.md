@@ -15,8 +15,7 @@ These packages may lag behind main and may change their version scheme.
 
 ### Arch (btw)
 
-Package index:
-https://code.knabel.dev/zirric-lang/-/packages/arch/zirric
+Package index: https://code.knabel.dev/zirric-lang/-/packages/arch/zirric
 
 1. Add the repository signing key:
 
@@ -40,13 +39,11 @@ Server = https://code.knabel.dev/api/packages/zirric-lang/arch/extras/$arch
 sudo pacman -Sy zirric
 ```
 
-For more details, see the Forgejo Arch registry documentation:
-https://forgejo.org/docs/latest/user/packages/arch/
+For more details, see the Forgejo Arch registry documentation: https://forgejo.org/docs/latest/user/packages/arch/
 
 ### Alpine
 
-Package index:
-https://code.knabel.dev/zirric-lang/-/packages/alpine/zirric
+Package index: https://code.knabel.dev/zirric-lang/-/packages/alpine/zirric
 
 1. Add the registry URL to `/etc/apk/repositories`:
 
@@ -67,13 +64,11 @@ sudo mv key /etc/apk/keys/zirric-lang.rsa.pub
 sudo apk add zirric
 ```
 
-For more details, see the Forgejo Alpine registry documentation:
-https://forgejo.org/docs/latest/user/packages/alpine/
+For more details, see the Forgejo Alpine registry documentation: https://forgejo.org/docs/latest/user/packages/alpine/
 
 ### Debian
 
-Package index:
-https://code.knabel.dev/zirric-lang/-/packages/debian/zirric
+Package index: https://code.knabel.dev/zirric-lang/-/packages/debian/zirric
 
 1. Add the repository signing key and source:
 
@@ -92,8 +87,7 @@ sudo apt update
 sudo apt install zirric
 ```
 
-For more details, see the Forgejo Debian registry documentation:
-https://forgejo.org/docs/latest/user/packages/debian/
+For more details, see the Forgejo Debian registry documentation: https://forgejo.org/docs/latest/user/packages/debian/
 
 ### Linuxbrew
 
@@ -119,8 +113,7 @@ brew install zirric
 
 ### asdf
 
-Install the asdf plugin from
-[asdf-zirric](https://code.knabel.dev/zirric-lang/asdf-zirric.git):
+Install the asdf plugin from [asdf-zirric](https://code.knabel.dev/zirric-lang/asdf-zirric.git):
 
 ```bash
 asdf plugin add zirric https://code.knabel.dev/zirric-lang/asdf-zirric.git

@@ -6,19 +6,15 @@ description: "Template for Zirric Enhancement Proposals"
 # Template Proposal
 
 ::: callout draft Draft
-This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design.
-Features described here may not be implemented as described and cannot be used right now.
+This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design. Features described here may not be implemented as described and cannot be used right now.
 :::
 
 ::: callout warning In Progress
-This proposal has been accepted in principle.
-It is currently under active development.
-Parts might be incomplete or missing in Zirric.
+This proposal has been accepted in principle. It is currently under active development. Parts might be incomplete or missing in Zirric.
 :::
 
 ::: callout tip Implemented
-This proposal has been accepted and implemented.
-You can use this feature since Zirric [vX.Y.Z](/changelog/vX.Y.Z).
+This proposal has been accepted and implemented. You can use this feature since Zirric [vX.Y.Z](/changelog/vX.Y.Z).
 :::
 
 ::: callout danger Rejected

@@ -23,8 +23,8 @@ Data types are the most common types in Zirric. They store structured data as na
 
 ```zirric
 data Person {
-    name: String
-    age: Int
+	name: String
+	age: Int
 }
 ```
 
@@ -39,7 +39,7 @@ const alice = Person("Alice", 30)
 **Field access.** Fields are accessed with `.`:
 
 ```zirric
-alice.name  // "Alice"
+alice.name // "Alice"
 ```
 
 **Equality.** Two `data` instances are equal (`==`) if they have the same type and all fields are equal.
@@ -50,8 +50,8 @@ Union types declare that a value may be one of a fixed set of member types. Memb
 
 ```zirric
 union Option {
-    data Some { value }
-    data None
+	data Some { value }
+	data None
 }
 ```
 
@@ -59,8 +59,8 @@ union Option {
 
 ```zirric
 const x = Some(42)
-x is Option    // true — Some is a member of Option
-x is Some      // true — x is directly a Some
+x is Option // true — Some is a member of Option
+x is Some // true — x is directly a Some
 ```
 
 **Nested declarations.** `data` types declared inside a `union` body are hoisted to module scope. They exist as standalone types and as union members simultaneously.
@@ -69,14 +69,14 @@ x is Some      // true — x is directly a Some
 
 ```zirric
 fn unwrap(opt: Option) {
-    switch opt {
-    case is Some:
-        opt.value
-    case is None:
-        void
-    case _:
-        void
-    }
+	switch opt {
+	case is Some:
+		opt.value
+	case is None:
+		void
+	case _:
+		void
+	}
 }
 ```
 
@@ -112,7 +112,7 @@ Attribute types are declared with `attr` and follow the same field syntax as `da
 
 ```zirric
 attr Doc {
-    description: String
+	description: String
 }
 
 @Doc("A person record")
@@ -129,11 +129,11 @@ A common pattern in Zirric is to use attributes to describe type capabilities, s
 
 ```zirric
 attr Countable {
-    length(value: @Countable) -> Int
+	length(value: @Countable) -> Int
 }
 
 attr Iterable {
-    iterate(value: @Iterable, yield: Func) -> Void
+	iterate(value: @Iterable, yield: Func) -> Void
 }
 ```
 
@@ -143,7 +143,7 @@ Types opt into a protocol by applying the attribute with a function implementati
 @Countable(fn(v) { return v.length })
 @Iterable(_arrayIterate)
 extern type Array {
-    length: Int
+	length: Int
 }
 ```
 
@@ -157,8 +157,8 @@ extern type Array {
 
 ```zirric
 const items = [1, 2, 3]
-items is @Iterable       // true — Array has @Iterable
-items is @Countable      // true — Array has @Countable
+items is @Iterable // true — Array has @Iterable
+items is @Countable // true — Array has @Countable
 ```
 
 This also works in `switch`:
@@ -166,9 +166,9 @@ This also works in `switch`:
 ```zirric
 switch value {
 case is @Iterable:
-    // value's type has @Iterable
+// value's type has @Iterable
 case _:
-    // fallback
+	// fallback
 }
 ```
 
@@ -190,12 +190,12 @@ Type hints annotate declarations and parameters with type information. They appe
 
 ```zirric
 fn greet(name: String) -> String {
-    "Hello, " + name
+	"Hello, " + name
 }
 
 data Pair {
-    first: Int
-    second: Int
+	first: Int
+	second: Int
 }
 
 const x: Int = 42
@@ -221,13 +221,13 @@ Beyond simple type references, type hints support composite forms:
 
 ```zirric
 fn transform(items: [Int], f: fn(Int) -> String) -> [String] {
-    return for item <- items {
-        f(item)
-    }
+	return for item <- items {
+		f(item)
+	}
 }
 
 fn process(value: @Countable @Iterable) {
-    // value's type must have both attributes
+	// value's type must have both attributes
 }
 ```
 
@@ -248,10 +248,10 @@ The `is` operator and `switch case is` patterns perform runtime type checks. The
 `is` always produces a `Bool`. In a `switch`, the matching case's body is executed.
 
 ```zirric
-42 is Int           // true
-42 is Number        // true (Number is union { Int, Float })
-42 is String        // false
-42 is @Numeric      // true (Int has @Numeric)
+42 is Int // true
+42 is Number // true (Number is union { Int, Float })
+42 is String // false
+42 is @Numeric // true (Int has @Numeric)
 ```
 
 ## Common Prelude Types
@@ -262,8 +262,8 @@ The prelude defines a small set of types and unions available without explicit i
 
 ```zirric
 union Number {
-    Int
-    Float
+	Int
+	Float
 }
 ```
 

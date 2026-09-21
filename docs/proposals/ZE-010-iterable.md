@@ -6,14 +6,12 @@ description: "Define Countable and Iterable attributes and iteration protocols."
 # Iterable
 
 ::: callout tip Implemented
-This proposal has been accepted and implemented.
-You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
+This proposal has been accepted and implemented. You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
 :::
 
 ## Introduction
 
-This proposal introduces standard `@Countable` and `@Iterable` attributes for collection-like types, which is used by `for ... <- ...` loops.
-Also introduces `Range` and `ClosedRange` data types as examples of countable and iterable.
+This proposal introduces standard `@Countable` and `@Iterable` attributes for collection-like types, which is used by `for ... <- ...` loops. Also introduces `Range` and `ClosedRange` data types as examples of countable and iterable.
 
 ## Motivation
 
@@ -63,8 +61,7 @@ data ClosedRange {
 ## Detailed Design
 
 - `@Countable.length` returns the length of a value.
-- `@Iterable.iterate` receives the value and a `yield` function, returning when
-  iteration completes or `yield` returns false.
+- `@Iterable.iterate` receives the value and a `yield` function, returning when iteration completes or `yield` returns false.
 - The `for element <- value` syntax invokes `iterate` under the hood.
 
 The internally used `yield` function has the type:
@@ -73,10 +70,7 @@ The internally used `yield` function has the type:
 yield: fn(Any) -> Bool
 ```
 
-When starting the loop, the `iterate` function of the `@Iterable` attribute is extracted.
-Then `iterate` is called. The `yield` function passed to `iterate` will execute the body of the loop.
-When leaving the loop early via `break` or `return`, `yield` will return `false`, causing `iterate` to stop iteration early.
-For arrays a more efficient implementation may be used that does not require function calls per element.
+When starting the loop, the `iterate` function of the `@Iterable` attribute is extracted. Then `iterate` is called. The `yield` function passed to `iterate` will execute the body of the loop. When leaving the loop early via `break` or `return`, `yield` will return `false`, causing `iterate` to stop iteration early. For arrays a more efficient implementation may be used that does not require function calls per element.
 
 ## Changes to the Standard Library
 

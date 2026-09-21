@@ -6,9 +6,7 @@ description: "Encoding and Decoding"
 # Encoding and Decoding
 
 ::: callout warning In Progress
-This proposal has been accepted in principle.
-It is currently under active development.
-Parts might be incomplete or missing in Zirric.
+This proposal has been accepted in principle. It is currently under active development. Parts might be incomplete or missing in Zirric.
 :::
 
 ## Introduction
