@@ -30,7 +30,14 @@ func (vm *VM) resumeBodyUntil(taskId TaskId, resumeDepth int, endIp int) error {
 }
 
 // runTaskUntil backs runTask/runTaskBounded/resumeBodyUntil with one inline opcode switch, since this loop runs once per instruction for the whole program.
+// runTaskUntil runs frames and, if something fails, notes where.
+//
+// The trace is taken here because the frames are still live at this point: the loop returns rather than unwinding, so the stack is exactly as it was when the failure happened. An error that already carries a trace keeps it.
 func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp int) error {
+	return vm.fail(vm.runLoop(taskId, stopIdx, resumeDepth, endIp))
+}
+
+func (vm *VM) runLoop(taskId TaskId, stopIdx int, resumeDepth int, endIp int) error {
 	for {
 		fr := vm.currentFrame()
 
@@ -111,7 +118,8 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			fr.ip += 2
 			v := vm.stack[vm.sp-1]
 			if v.TypeConstantId() != typeId {
-				return fmt.Errorf("unexpected type (%T %q)", v, v.Inspect())
+				// An asserted type is checked against a constant id, which is not a name this can report, so it says what it found and leaves the expectation to the line itself.
+				return fmt.Errorf("a value of a different type was expected here, got %s %s", typeNameOf(v), v.Inspect())
 			}
 
 		case op.IsType:
@@ -132,9 +140,10 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			}
 
 		case op.Invert:
-			v, ok := vm.pop().(runtime.Bool)
+			operand := vm.pop()
+			v, ok := operand.(runtime.Bool)
 			if !ok {
-				return fmt.Errorf("prefix operator ! is only defined on Bool (%T %q)", v, v.Inspect())
+				return errWrongType("prefix operator !", "Bool", operand)
 			}
 			if err := vm.push(!v); err != nil {
 				return err
@@ -151,7 +160,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 					return err
 				}
 			default:
-				return fmt.Errorf("prefix operator - is only defined on Int or Float (%T %q)", v, v.Inspect())
+				return errWrongType("prefix operator -", "Int or Float", v)
 			}
 		case op.Add, op.Sub, op.Mul, op.Div,
 			op.GreaterThan, op.GreaterThanOrEqual,
@@ -161,13 +170,15 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 				return err
 			}
 		case op.Mod:
-			rhs, ok := vm.pop().(runtime.Int)
+			right := vm.pop()
+			rhs, ok := right.(runtime.Int)
 			if !ok {
-				return fmt.Errorf("operator %% is only defined on Int (%T %q)", rhs, rhs.Inspect())
+				return errWrongType("operator %", "Int", right)
 			}
-			lhs, ok := vm.pop().(runtime.Int)
+			left := vm.pop()
+			lhs, ok := left.(runtime.Int)
 			if !ok {
-				return fmt.Errorf("operator %% is only defined on Int (%T %q)", lhs, lhs.Inspect())
+				return errWrongType("operator %", "Int", left)
 			}
 			err := vm.push(lhs % rhs)
 			if err != nil {
@@ -185,9 +196,10 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			}
 
 		case op.Array:
-			length, ok := vm.pop().(runtime.Int)
+			given := vm.pop()
+			length, ok := given.(runtime.Int)
 			if !ok {
-				return fmt.Errorf("lenght of an array must be an Int (%T %q)", length, length.Inspect())
+				return errWrongType("the length of an array", "Int", given)
 			}
 			array := make(runtime.Array, length)
 
@@ -199,9 +211,10 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 				return err
 			}
 		case op.Dict:
-			length, ok := vm.pop().(runtime.Int)
+			given := vm.pop()
+			length, ok := given.(runtime.Int)
 			if !ok {
-				return fmt.Errorf("lenght of an array must be an Int (%T %q)", length, length.Inspect())
+				return errWrongType("the length of a dict", "Int", given)
 			}
 			dict := make(runtime.Dict)
 
@@ -220,11 +233,12 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			fr.ip += 2
 			nameConst, ok := vm.constants[nameIdx].(runtime.String)
 			if !ok {
-				return fmt.Errorf("module name requires a String constant (%T %q)", vm.constants[nameIdx], vm.constants[nameIdx].Inspect())
+				return errWrongType("a module's name", "String", vm.constants[nameIdx])
 			}
-			length, ok := vm.pop().(runtime.Int)
+			given := vm.pop()
+			length, ok := given.(runtime.Int)
 			if !ok {
-				return fmt.Errorf("module member count must be an Int (%T %q)", length, length.Inspect())
+				return errWrongType("a module's member count", "Int", given)
 			}
 			exports := make(map[string]runtime.RuntimeValue, int(length))
 
@@ -233,7 +247,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 				key := vm.pop()
 				keyName, ok := key.(runtime.String)
 				if !ok {
-					return fmt.Errorf("module member name must be a String (%T %q)", key, key.Inspect())
+					return errWrongType("a module's member name", "String", key)
 				}
 				exports[string(keyName)] = value
 			}
@@ -251,11 +265,11 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			case runtime.Array:
 				idx, ok := index.(runtime.Int)
 				if !ok {
-					return fmt.Errorf("array index must be Int (%T %q)", index, index.Inspect())
+					return errWrongType("an array index", "Int", index)
 				}
 				pos := int(idx)
 				if pos < 0 || pos >= len(target) {
-					return fmt.Errorf("array index %d out of bounds", pos)
+					return errIndexOutOfBounds("array", pos, len(target))
 				}
 				if err := vm.push(target[pos]); err != nil {
 					return err
@@ -263,11 +277,11 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			case runtime.Binary:
 				idx, ok := index.(runtime.Int)
 				if !ok {
-					return fmt.Errorf("binary index must be Int (%T %q)", index, index.Inspect())
+					return errWrongType("a binary index", "Int", index)
 				}
 				pos := int(idx)
 				if pos < 0 || pos >= len(target) {
-					return fmt.Errorf("binary index %d out of bounds", pos)
+					return errIndexOutOfBounds("binary", pos, len(target))
 				}
 				if err := vm.push(runtime.Byte(target[pos])); err != nil {
 					return err
@@ -286,12 +300,12 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			case runtime.String:
 				idx, ok := index.(runtime.Int)
 				if !ok {
-					return fmt.Errorf("string index must be Int (%T %q)", index, index.Inspect())
+					return errWrongType("a string index", "Int", index)
 				}
 
 				pos := int(idx)
 				if pos < 0 || pos >= len(target) {
-					return fmt.Errorf("string index %d out of bounds", pos)
+					return errIndexOutOfBounds("string", pos, len(target))
 				}
 
 				byte := runtime.Byte(target[pos])
@@ -301,7 +315,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 				}
 
 			default:
-				return fmt.Errorf("index operator not supported on %T", target)
+				return errNotIndexable(target)
 			}
 
 		case op.Len:
@@ -320,7 +334,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 					return err
 				}
 			default:
-				return fmt.Errorf("len not supported on %T", val)
+				return fmt.Errorf("len is not defined for %s", typeNameOf(val))
 			}
 
 		case op.ArrayAppend:
@@ -328,7 +342,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			arrayVal := vm.pop()
 			array, ok := arrayVal.(runtime.Array)
 			if !ok {
-				return fmt.Errorf("array append requires Array (%T)", arrayVal)
+				return errWrongType("append", "Array", arrayVal)
 			}
 			array = append(array, value)
 			if err := vm.push(array); err != nil {
@@ -384,7 +398,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			obj := vm.pop()
 			val := obj.Lookup(name)
 			if val == nil {
-				return fmt.Errorf("name %q not found in %T %q", name, obj, obj.Inspect())
+				return fmt.Errorf("%s has no member %q", typeNameOf(obj), name)
 			}
 
 			if err := vm.push(val); err != nil {
@@ -404,7 +418,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			val := vm.pop()
 			dv, ok := obj.(*runtime.DataValue)
 			if !ok {
-				return fmt.Errorf("field assignment requires a data instance (%T)", obj)
+				return errWrongType("assigning to a field", "a data value", obj)
 			}
 			idx, ok := dv.Fields[name]
 			if !ok {
@@ -421,7 +435,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			case runtime.Array:
 				idx, ok := index.(runtime.Int)
 				if !ok {
-					return fmt.Errorf("array index must be Int (%T %q)", index, index.Inspect())
+					return errWrongType("an array index", "Int", index)
 				}
 				pos := int(idx)
 				if pos < 0 || pos >= len(target) {
@@ -431,7 +445,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			case runtime.Dict:
 				target[index] = val
 			default:
-				return fmt.Errorf("index assignment not supported on %T", target)
+				return fmt.Errorf("assigning to an index is not defined for %s", typeNameOf(target))
 			}
 
 		case op.MakeAttribute:
@@ -440,10 +454,10 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			callee := vm.pop()
 			at, ok := callee.(*runtime.AttributeType)
 			if !ok {
-				return fmt.Errorf("attribute value expects AttributeType (%T %q)", callee, callee.Inspect())
+				return errWrongType("reading an attribute", "an attribute type", callee)
 			}
 			if argCount != len(at.FieldSymbols) {
-				return fmt.Errorf("wrong number of attribute arguments: want=%d, got=%d", len(at.FieldSymbols), argCount)
+				return errWrongArgCount("attribute", len(at.FieldSymbols), argCount)
 			}
 			vals := make([]runtime.RuntimeValue, argCount)
 			for i := 0; i < argCount; i++ {
@@ -462,7 +476,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 			switch callee := callee.(type) {
 			case *runtime.AttributeType:
 				if argCount != callee.Arity() {
-					return fmt.Errorf("wrong number of arguments: want=%d, got=%d", callee.Arity(), argCount)
+					return errWrongArgCount("", callee.Arity(), argCount)
 				}
 				val := vm.pop()
 
@@ -488,7 +502,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 
 			case *runtime.ExternFunc:
 				if argCount != callee.Arity() {
-					return fmt.Errorf("wrong number of arguments: want=%d, got=%d", callee.Arity(), argCount)
+					return errWrongArgCount("", callee.Arity(), argCount)
 				}
 
 				args := make([]runtime.RuntimeValue, argCount)
@@ -507,7 +521,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 
 			case *runtime.CompiledFunction:
 				if argCount != callee.Arity() {
-					return fmt.Errorf("wrong number of arguments: want=%d, got=%d", callee.Arity(), argCount)
+					return errWrongArgCount("", callee.Arity(), argCount)
 				}
 
 				closure := runtime.MakeClosure(callee, nil)
@@ -522,7 +536,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 
 			case *runtime.Closure:
 				if argCount != callee.Arity() {
-					return fmt.Errorf("wrong number of arguments: want=%d, got=%d", callee.Arity(), argCount)
+					return errWrongArgCount("", callee.Arity(), argCount)
 				}
 
 				frame := newClosureFrame(callee, vm.sp-argCount)
@@ -536,7 +550,7 @@ func (vm *VM) runTaskUntil(taskId TaskId, stopIdx int, resumeDepth int, endIp in
 
 			case *runtime.DataType:
 				if argCount != callee.Arity() {
-					return fmt.Errorf("wrong number of arguments: want=%d, got=%d", callee.Arity(), argCount)
+					return errWrongArgCount("", callee.Arity(), argCount)
 				}
 
 				vals := make([]runtime.RuntimeValue, argCount)
@@ -729,7 +743,7 @@ func (vm *VM) numericBinaryOperation(operator op.Opcode) error {
 	if lhsStr, ok := lhs.(runtime.String); ok {
 		if rhsStr, ok := rhs.(runtime.String); ok {
 			if operator != op.Add {
-				return fmt.Errorf("unsupported operator %x for String", operator)
+				return errUnsupportedOperands(operator, lhsStr, rhsStr)
 			}
 			return vm.push(lhsStr + rhsStr)
 		}
@@ -752,11 +766,7 @@ func (vm *VM) numericBinaryOperation(operator op.Opcode) error {
 		case runtime.Float:
 			return vm.numericBinaryOperationFloat(operator, lhs, runtime.Float(rhs))
 		default:
-			def, err := op.LookupDefinition(byte(operator))
-			if err != nil {
-				panic(fmt.Sprintf("unknown operator %x", operator))
-			}
-			return fmt.Errorf("unsupported operator %q for Int and %T", def.Name, lhs)
+			return errUnsupportedOperands(operator, lhs, rhs)
 		}
 	case runtime.Float:
 		switch lhs := lhs.(type) {
@@ -765,18 +775,10 @@ func (vm *VM) numericBinaryOperation(operator op.Opcode) error {
 		case runtime.Float:
 			return vm.numericBinaryOperationFloat(operator, lhs, rhs)
 		default:
-			def, err := op.LookupDefinition(byte(operator))
-			if err != nil {
-				panic(fmt.Sprintf("unknown operator %x", operator))
-			}
-			return fmt.Errorf("unsupported operator %q for Float and %T", def.Name, lhs)
+			return errUnsupportedOperands(operator, lhs, rhs)
 		}
 	default:
-		def, err := op.LookupDefinition(byte(operator))
-		if err != nil {
-			panic(fmt.Sprintf("unknown operator %x", operator))
-		}
-		return fmt.Errorf("unsupported operator %q for types %T and %T", def.Name, lhs, rhs)
+		return errUnsupportedOperands(operator, lhs, rhs)
 	}
 }
 
@@ -785,16 +787,16 @@ func (vm *VM) numericBinaryOperation(operator op.Opcode) error {
 func (vm *VM) concatString(operator op.Opcode, str runtime.String, other runtime.RuntimeValue, strFirst bool) error {
 	if operator != op.Add {
 		if strFirst {
-			return fmt.Errorf("unsupported operator %x for String and %T", operator, other)
+			return errUnsupportedOperands(operator, str, other)
 		}
-		return fmt.Errorf("unsupported operator %x for %T and String", operator, other)
+		return errUnsupportedOperands(operator, other, str)
 	}
 	s, ok := runtime.TrivialString(other)
 	if !ok {
 		if strFirst {
-			return fmt.Errorf("unsupported operator + for String and %T", other)
+			return errUnsupportedOperands(operator, str, other)
 		}
-		return fmt.Errorf("unsupported operator + for %T and String", other)
+		return errUnsupportedOperands(operator, other, str)
 	}
 	if strFirst {
 		return vm.push(str + runtime.String(s))
@@ -812,7 +814,7 @@ func (vm *VM) numericBinaryOperationInt(operator op.Opcode, lhs, rhs runtime.Int
 		return vm.push(lhs * rhs)
 	case op.Div:
 		if rhs == 0 {
-			return fmt.Errorf("division by zero")
+			return errDivisionByZero()
 		}
 		return vm.push(lhs / rhs)
 	case op.Mod:
@@ -1008,7 +1010,7 @@ func (vm *VM) timeBinaryOperation(operator op.Opcode, lhs, rhs runtime.RuntimeVa
 				return true, vm.push(runtime.Duration(int64(lhs) * int64(rhs)))
 			case op.Div:
 				if rhs == 0 {
-					return true, fmt.Errorf("division by zero")
+					return true, errDivisionByZero()
 				}
 				return true, vm.push(runtime.Duration(int64(lhs) / int64(rhs)))
 			}
@@ -1060,11 +1062,7 @@ func (vm *VM) timeBinaryOperation(operator op.Opcode, lhs, rhs runtime.RuntimeVa
 		return false, nil
 	}
 
-	def, err := op.LookupDefinition(byte(operator))
-	if err != nil {
-		panic(fmt.Sprintf("unknown operator %x", operator))
-	}
-	return true, fmt.Errorf("unsupported operator %q for %T and %T", def.Name, lhs, rhs)
+	return true, errUnsupportedOperands(operator, lhs, rhs)
 }
 
 func compareOrdered(lhs, rhs int64, operator op.Opcode) (runtime.RuntimeValue, bool) {

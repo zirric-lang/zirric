@@ -66,7 +66,7 @@ func (vm *VM) callIterate(taskId TaskId, callee, value, yield runtime.RuntimeVal
 	case *runtime.Closure:
 		newFrame = newClosureFrame(c, vm.sp)
 	default:
-		return fmt.Errorf("@Iterable.iterate must be a function, got %T", callee)
+		return fmt.Errorf("@Iterable.iterate must be a function, got %s", typeNameOf(callee))
 	}
 
 	if newFrame.closure.Arity() != 2 {

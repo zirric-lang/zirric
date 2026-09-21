@@ -27,7 +27,7 @@ func (*YAMLPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symb
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			text, ok := args[0].(String)
 			if !ok {
-				return nil, fmt.Errorf("parse expects a String, got %T", args[0])
+				return nil, fmt.Errorf("parse expects a String, got %s", TypeName(args[0]))
 			}
 			documents, err := decodeYAMLDocuments(string(text))
 			if err != nil {
@@ -46,7 +46,7 @@ func (*YAMLPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symb
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			text, ok := args[0].(String)
 			if !ok {
-				return nil, fmt.Errorf("parseAll expects a String, got %T", args[0])
+				return nil, fmt.Errorf("parseAll expects a String, got %s", TypeName(args[0]))
 			}
 			documents, err := decodeYAMLDocuments(string(text))
 			if err != nil {
@@ -64,7 +64,7 @@ func (*YAMLPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symb
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			indent, ok := args[1].(Int)
 			if !ok {
-				return nil, fmt.Errorf("formatIndented expects an Int indent, got %T", args[1])
+				return nil, fmt.Errorf("formatIndented expects an Int indent, got %s", TypeName(args[1]))
 			}
 			if indent < 1 {
 				return ResultErr(caller, String("the indent must be at least one space"))
@@ -182,7 +182,7 @@ func valueToYAML(value RuntimeValue) (any, error) {
 	case Dict:
 		return dictToYAML(value)
 	}
-	return nil, fmt.Errorf("%s cannot be written as YAML", typeNameForJSON(value))
+	return nil, fmt.Errorf("%s cannot be written as YAML", TypeName(value))
 }
 
 func dictToYAML(entries Dict) (any, error) {
@@ -192,7 +192,7 @@ func dictToYAML(entries Dict) (any, error) {
 	for key, item := range entries {
 		name, ok := key.(String)
 		if !ok {
-			return nil, fmt.Errorf("a YAML mapping written from a Dict needs String keys, got %s", typeNameForJSON(key))
+			return nil, fmt.Errorf("a YAML mapping written from a Dict needs String keys, got %s", TypeName(key))
 		}
 		keys = append(keys, string(name))
 		byKey[string(name)] = item

@@ -69,13 +69,7 @@ func (p *Parser) parseStatementInContext(pos StatementPosition, annos ast.Attrib
 			return p.parseExprStmt(), nil
 		}
 
-		prefixes := []token.TokenType{
-			token.UNION, token.DATA, token.MODULE, token.EXTERN, token.FUNCTION, token.IMPORT, token.AT, token.CONST, token.VAR, token.IF, token.FOR, token.SWITCH, token.BREAK, token.CONTINUE,
-		}
-		for t := range p.prefixParsers {
-			prefixes = append(prefixes, t)
-		}
-		p.errUnexpectedToken(prefixes...)
+		p.errExpected("a statement or an expression")
 		return nil, nil
 	}
 }

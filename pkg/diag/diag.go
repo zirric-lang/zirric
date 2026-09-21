@@ -20,6 +20,13 @@ type Positioned interface {
 	Position() *token.Source
 }
 
+// Traced is implemented by errors that know which frames were live when they happened.
+// Keeping this an interface is what lets this package show a stack trace without depending on the VM.
+type Traced interface {
+	error
+	StackTrace() string
+}
+
 // SourceReader reads the file an error's position names.
 // It returns an error when the file cannot be read, which is not itself a failure: the message is still rendered, just without the excerpt.
 type SourceReader func(file string) ([]byte, error)
@@ -82,17 +89,30 @@ func renderOne(err error, read SourceReader) string {
 
 	source := Position(err)
 	if source == nil || source.Line <= 0 || read == nil {
-		return message
+		return message + traceOf(err)
 	}
 	content, readErr := read(source.File)
 	if readErr != nil {
-		return message
+		return message + traceOf(err)
 	}
 	excerpt := Excerpt(content, source)
 	if excerpt == "" {
-		return message
+		return message + traceOf(err)
 	}
-	return message + "\n" + excerpt
+	return message + "\n" + excerpt + traceOf(err)
+}
+
+// traceOf renders the frames an error was made with, when it has any.
+func traceOf(err error) string {
+	var traced Traced
+	if !errors.As(err, &traced) {
+		return ""
+	}
+	trace := traced.StackTrace()
+	if trace == "" {
+		return ""
+	}
+	return "\n" + trace
 }
 
 // Excerpt returns the line source names, numbered, with a caret beneath the column.

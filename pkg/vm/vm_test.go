@@ -34,7 +34,7 @@ func TestBasicOperations(t *testing.T) {
 		{input: "!true", expected: false},
 		{input: "!false", expected: true},
 		{input: "true && true", expected: true},
-		{input: "true && 3", err: `unexpected type (runtime.Int "3")`},
+		{input: "true && 3", err: `a value of a different type was expected here, got Int 3`},
 		{input: "(if true { 2 } else { 3 })", expected: 2},
 		{input: "(if 1 == 1 { 2*3 } else { 3 })", expected: 6},
 		{input: "(if 1 == 0 { 2*3 } else { 3 })", expected: 3},
@@ -50,7 +50,7 @@ func TestBasicOperations(t *testing.T) {
 		{input: "[]", expected: []any{}},
 		{input: "[1, 2, 3]", expected: []any{1, 2, 3}},
 		{input: "[1, 2, 3][0]", expected: 1},
-		{input: "[1, 2, 3][3]", err: "array index 3 out of bounds"},
+		{input: "[1, 2, 3][3]", err: "array index 3 out of bounds, length is 3"},
 		{input: "[:]", expected: map[any]any{}},
 		{input: `["hello": "world", 1: 2]`, expected: map[any]any{"hello": "world", 1: 2}},
 		{input: `["1": 3, 1: 2]`, expected: map[any]any{"1": 3, 1: 2}},
@@ -1259,7 +1259,7 @@ func TestForGenericIterable(t *testing.T) {
 			}
 			example()
 			`,
-			err: "error calling extern function: yield called after its for-loop's iterate() call already returned",
+			err: "testing:///test/test.zirr:2:1: error calling extern function: yield called after its for-loop's iterate() call already returned",
 		},
 		{
 			// panic is faked here (Bind only wires the real one inside a "prelude"-named module).
@@ -1274,7 +1274,7 @@ func TestForGenericIterable(t *testing.T) {
 			data NotIterable { value }
 			for x <- NotIterable(1) { x }
 			`,
-			err: "division by zero",
+			err: "testing:///test/test.zirr:17:12: division by zero",
 		},
 	}
 

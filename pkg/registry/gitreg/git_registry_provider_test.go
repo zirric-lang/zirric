@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"slices"
 	"testing"
+	"time"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/gitreg"
@@ -19,13 +20,8 @@ const (
 )
 
 func TestIntegrationGitRegistryResolveLatestZirricInMemory(t *testing.T) {
-	resp, err := http.Get("https://github.com")
-	if err != nil {
-		t.Skipf("unable to connect to GitHub. Are you connected to the internet? %s", err)
-	}
-	if resp.StatusCode >= http.StatusBadRequest {
-		t.Skipf("invalid response from GitHub (%s)", resp.Status)
-	}
+	// The host that actually serves the fixture, rather than a different one that happens to be up: this test failed against a 502 from code.knabel.dev while github.com answered perfectly well.
+	requireReachable(t, zirricGitRepo)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -165,3 +161,24 @@ func TestDiscoverPackageVersionsNoMatchForNonGitLocalPath(t *testing.T) {
 
 // 	return -1, nil
 // }
+
+// requireReachable skips the test unless the host serving url is answering.
+//
+// An integration test against a remote is only meaningful when the remote is there; a checkout with no network, or a host having a bad day, is not a regression in this repository.
+func requireReachable(t *testing.T, url string) {
+	t.Helper()
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url + "/info/refs?service=git-upload-pack")
+	if err != nil {
+		t.Skipf("cannot reach %s, are you online? %s", url, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode >= http.StatusInternalServerError {
+		t.Skipf("%s is not serving right now (%s)", url, resp.Status)
+	}
+	if resp.StatusCode >= http.StatusBadRequest {
+		t.Skipf("%s refused the request (%s)", url, resp.Status)
+	}
+}

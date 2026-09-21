@@ -123,7 +123,7 @@ func (p *Prelude) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbo
 			}
 			msg, ok := args[0].(String)
 			if !ok {
-				return nil, fmt.Errorf("panic expects a String argument, got %T", args[0])
+				return nil, fmt.Errorf("panic expects a String argument, got %s", TypeName(args[0]))
 			}
 			return nil, fmt.Errorf("panic: %s", string(msg))
 		})
@@ -144,12 +144,12 @@ func (p *Prelude) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbo
 					case Binary:
 						v = append(v, a...)
 					default:
-						return nil, fmt.Errorf("append to a Binary expects Byte or Binary, got %T", args[0])
+						return nil, fmt.Errorf("append to a Binary expects Byte or Binary, got %s", TypeName(args[0]))
 					}
 				}
 				return v, nil
 			default:
-				return nil, fmt.Errorf("append expects an Array argument, got %T", args[0])
+				return nil, fmt.Errorf("append expects an Array argument, got %s", TypeName(args[0]))
 			}
 		})
 

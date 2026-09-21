@@ -129,3 +129,47 @@ func (p *Parser) errCannotBeAnnotated() {
 		Summary: fmt.Sprintf("%s cannot have attributes", strings.ToLower(string(p.curToken.Type))),
 	})
 }
+
+// errUnclosed reports a group that was opened and never closed.
+//
+// It is anchored at the opening delimiter rather than at the token that finally gave the game away, because that is where the fix goes: a reader told only "unexpected }" has to find the matching bracket themselves, which is the whole difficulty.
+func (p *Parser) errUnclosed(open token.Token, want token.TokenType) {
+	found := p.curToken.Literal
+	if p.curToken.Type == token.EOF {
+		found = "end of file"
+	} else {
+		found = fmt.Sprintf("%q", found)
+	}
+
+	details := fmt.Sprintf("expected %s, found %s", strings.ToLower(string(want)), found)
+	if source := p.curToken.Source; source != nil && source.Line > 0 {
+		details = fmt.Sprintf("%s at %d:%d", details, source.Line, source.Column)
+	}
+	p.detectError(ParseError{
+		Token:   open,
+		Summary: fmt.Sprintf("unclosed %s", open.Literal),
+		Details: details,
+	})
+}
+
+// expectClosing consumes the delimiter that closes a group, naming where the group was opened when it is missing.
+func (p *Parser) expectClosing(open token.Token, want token.TokenType) (token.Token, bool) {
+	if !p.curIs(want) {
+		p.errUnclosed(open, want)
+		return p.errorToken(), false
+	}
+	cur := p.curToken
+	p.nextToken()
+	return cur, true
+}
+
+// errExpected reports a token that cannot begin what was being parsed, naming what was wanted rather than every token that could have started it.
+//
+// Listing them all tells a reader less, not more: seventeen tokens is a list nobody reads, and "expected a statement" is the same information in a form they can act on.
+func (p *Parser) errExpected(what string) {
+	p.detectError(ParseError{
+		Token:   p.curToken,
+		Summary: fmt.Sprintf("unexpected %q", p.curToken.Literal),
+		Details: fmt.Sprintf("expected %s", what),
+	})
+}

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/compiler"
+	"code.knabel.dev/zirric-lang/zirric/pkg/debuginfo"
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/runtime"
@@ -65,6 +66,8 @@ type VM struct {
 	moduleGlobals map[registry.LogicalURI]int
 	// taskId identifies the running task, so that a global reached reentrantly from an extern function is recognized as recursive rather than waited on as another task's in-progress initialization.
 	taskId TaskId
+	// debug maps instructions back to source, consulted only when something has already failed.
+	debug *debuginfo.Table
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
@@ -80,6 +83,7 @@ func New(bytecode *compiler.Bytecode) *VM {
 		frames:        frames,
 		framesIdx:     1,
 		moduleGlobals: bytecode.ModuleGlobals,
+		debug:         bytecode.Debug,
 	}
 
 	// Build a lookup table for builtin types whose TypeConstantId differs
@@ -186,7 +190,7 @@ func (vm *VM) CallFunction(fn runtime.RuntimeValue, args ...runtime.RuntimeValue
 		return nil, fmt.Errorf("CallFunction: expected *runtime.CompiledFunction or *runtime.Closure, got %T", fn)
 	}
 	if len(args) != closure.Arity() {
-		return nil, fmt.Errorf("CallFunction: wrong number of arguments: want=%d, got=%d", closure.Arity(), len(args))
+		return nil, errWrongArgCount("CallFunction", closure.Arity(), len(args))
 	}
 
 	stopIdx := vm.framesIdx

@@ -50,7 +50,7 @@ func MakeFileSystem(caller VMCaller, bfs billy.Filesystem) (RuntimeValue, error)
 			}
 			content, ok := args[1].(Binary)
 			if !ok {
-				return nil, fmt.Errorf("writeFile expects Binary content, got %T", args[1])
+				return nil, fmt.Errorf("writeFile expects Binary content, got %s", TypeName(args[1]))
 			}
 			written, writeErr := writeWholeFile(bfs, path, content)
 			if writeErr != nil {
@@ -168,7 +168,7 @@ func makeFile(caller VMCaller, handle billy.File) (RuntimeValue, error) {
 		"readFrom": MakeNativeFunc("readFrom", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			length, ok := args[0].(Int)
 			if !ok {
-				return nil, fmt.Errorf("read expects an Int length, got %T", args[0])
+				return nil, fmt.Errorf("read expects an Int length, got %s", TypeName(args[0]))
 			}
 			buf := make([]byte, int(length))
 			n, err := handle.Read(buf)
@@ -180,7 +180,7 @@ func makeFile(caller VMCaller, handle billy.File) (RuntimeValue, error) {
 		"writeTo": MakeNativeFunc("writeTo", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			buf, ok := args[0].(Binary)
 			if !ok {
-				return nil, fmt.Errorf("write expects Binary, got %T", args[0])
+				return nil, fmt.Errorf("write expects Binary, got %s", TypeName(args[0]))
 			}
 			n, err := handle.Write([]byte(buf))
 			if err != nil {
@@ -231,7 +231,7 @@ func writeWholeFile(bfs billy.Filesystem, path string, content []byte) (int, err
 func fsPath(fnName string, v RuntimeValue) (string, error) {
 	s, ok := v.(String)
 	if !ok {
-		return "", fmt.Errorf("%s expects a String path, got %T", fnName, v)
+		return "", fmt.Errorf("%s expects a String path, got %s", fnName, TypeName(v))
 	}
 	return string(s), nil
 }

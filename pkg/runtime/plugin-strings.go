@@ -45,7 +45,7 @@ func (*StringsPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 			}
 			idx, ok := args[1].(Int)
 			if !ok {
-				return nil, fmt.Errorf("charAt expects an Int index, got %T", args[1])
+				return nil, fmt.Errorf("charAt expects an Int index, got %s", TypeName(args[1]))
 			}
 			runes := []rune(s)
 			if idx < 0 || int(idx) >= len(runes) {
@@ -61,11 +61,11 @@ func (*StringsPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 			}
 			start, ok := args[1].(Int)
 			if !ok {
-				return nil, fmt.Errorf("slice expects an Int start argument, got %T", args[1])
+				return nil, fmt.Errorf("slice expects an Int start argument, got %s", TypeName(args[1]))
 			}
 			end, ok := args[2].(Int)
 			if !ok {
-				return nil, fmt.Errorf("slice expects an Int end argument, got %T", args[2])
+				return nil, fmt.Errorf("slice expects an Int end argument, got %s", TypeName(args[2]))
 			}
 			runes := []rune(s)
 			if start < 0 || end > Int(len(runes)) || start > end {
@@ -178,7 +178,7 @@ func (*StringsPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			arr, ok := args[0].(Array)
 			if !ok {
-				return nil, fmt.Errorf("join expects an Array argument, got %T", args[0])
+				return nil, fmt.Errorf("join expects an Array argument, got %s", TypeName(args[0]))
 			}
 			sep, err := likeToString(args[1])
 			if err != nil {
@@ -198,7 +198,7 @@ func (*StringsPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			arr, ok := args[0].(Array)
 			if !ok {
-				return nil, fmt.Errorf("concat expects an Array argument, got %T", args[0])
+				return nil, fmt.Errorf("concat expects an Array argument, got %s", TypeName(args[0]))
 			}
 			var b strings.Builder
 			for i, v := range arr {
@@ -218,7 +218,7 @@ func (*StringsPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 			}
 			n, ok := args[1].(Int)
 			if !ok {
-				return nil, fmt.Errorf("repeat expects an Int count, got %T", args[1])
+				return nil, fmt.Errorf("repeat expects an Int count, got %s", TypeName(args[1]))
 			}
 			if n < 0 {
 				return nil, fmt.Errorf("repeat count must be non-negative, got %d", n)
@@ -233,7 +233,7 @@ func (*StringsPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 			case String:
 				return String(strings.ToUpper(string(v))), nil
 			default:
-				return nil, fmt.Errorf("toUpper expects a Char or String argument, got %T", args[0])
+				return nil, fmt.Errorf("toUpper expects a Char or String argument, got %s", TypeName(args[0]))
 			}
 		})
 	case "toLower":
@@ -244,7 +244,7 @@ func (*StringsPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 			case String:
 				return String(strings.ToLower(string(v))), nil
 			default:
-				return nil, fmt.Errorf("toLower expects a Char or String argument, got %T", args[0])
+				return nil, fmt.Errorf("toLower expects a Char or String argument, got %s", TypeName(args[0]))
 			}
 		})
 	case "trim":
@@ -308,7 +308,7 @@ func likeToString(v RuntimeValue) (string, error) {
 	case String:
 		return string(v), nil
 	default:
-		return "", fmt.Errorf("expected a Char or String argument, got %T", v)
+		return "", fmt.Errorf("expected a Char or String argument, got %s", TypeName(v))
 	}
 }
 

@@ -87,7 +87,7 @@ func makePreludeResult(caller VMCaller, name string, payload RuntimeValue) (Runt
 	}
 	dataType, ok := member.(*DataType)
 	if !ok {
-		return nil, fmt.Errorf("prelude.%s is %T, not a data type", name, member)
+		return nil, fmt.Errorf("prelude.%s is %s, not a data type", name, TypeName(member))
 	}
 	return MakeDataValue(dataType, []RuntimeValue{payload}), nil
 }
@@ -113,7 +113,7 @@ func makePreludeOption(caller VMCaller, name string, payload []RuntimeValue) (Ru
 	}
 	dataType, ok := member.(*DataType)
 	if !ok {
-		return nil, fmt.Errorf("prelude.%s is %T, not a data type", name, member)
+		return nil, fmt.Errorf("prelude.%s is %s, not a data type", name, TypeName(member))
 	}
 	return MakeDataValue(dataType, payload), nil
 }
@@ -148,7 +148,7 @@ func MakeDataValueNamed(caller VMCaller, moduleName string, typeName string, fie
 	}
 	dataType, ok := member.(*DataType)
 	if !ok {
-		return nil, fmt.Errorf("%s.%s is %T, not a data type", moduleName, typeName, member)
+		return nil, fmt.Errorf("%s.%s is %s, not a data type", moduleName, typeName, TypeName(member))
 	}
 	values := make([]RuntimeValue, len(dataType.FieldSymbols))
 	for i, field := range dataType.FieldSymbols {

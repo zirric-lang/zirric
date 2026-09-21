@@ -96,7 +96,7 @@ func makePathUnary(decl *ast.Symbol, apply func(string) string) RuntimeValue {
 func pathString(fnName string, v RuntimeValue) (string, error) {
 	s, ok := v.(String)
 	if !ok {
-		return "", fmt.Errorf("%s expects a String path, got %T", fnName, v)
+		return "", fmt.Errorf("%s expects a String path, got %s", fnName, TypeName(v))
 	}
 	return string(s), nil
 }
@@ -104,7 +104,7 @@ func pathString(fnName string, v RuntimeValue) (string, error) {
 func pathStrings(v RuntimeValue) ([]string, error) {
 	arr, ok := v.(Array)
 	if !ok {
-		return nil, fmt.Errorf("join expects an Array of String, got %T", v)
+		return nil, fmt.Errorf("join expects an Array of String, got %s", TypeName(v))
 	}
 	parts := make([]string, len(arr))
 	for i, item := range arr {

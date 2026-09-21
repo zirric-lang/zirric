@@ -23,7 +23,7 @@ func (*BytesPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Sym
 		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			str, ok := args[0].(String)
 			if !ok {
-				return nil, fmt.Errorf("fromString expects a String argument, got %T", args[0])
+				return nil, fmt.Errorf("fromString expects a String argument, got %s", TypeName(args[0]))
 			}
 			return Binary(str), nil
 		})
@@ -31,7 +31,7 @@ func (*BytesPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Sym
 		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			c, ok := args[0].(Char)
 			if !ok {
-				return nil, fmt.Errorf("fromChar expects a Char argument, got %T", args[0])
+				return nil, fmt.Errorf("fromChar expects a Char argument, got %s", TypeName(args[0]))
 			}
 			return Binary(string(rune(c))), nil
 		})
@@ -59,7 +59,7 @@ func (*BytesPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Sym
 		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			str, ok := args[0].(String)
 			if !ok {
-				return nil, fmt.Errorf("fromHex expects a String argument, got %T", args[0])
+				return nil, fmt.Errorf("fromHex expects a String argument, got %s", TypeName(args[0]))
 			}
 			decoded, err := hex.DecodeString(string(str))
 			if err != nil {
@@ -75,11 +75,11 @@ func (*BytesPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Sym
 			}
 			start, ok := args[1].(Int)
 			if !ok {
-				return nil, fmt.Errorf("slice expects an Int start argument, got %T", args[1])
+				return nil, fmt.Errorf("slice expects an Int start argument, got %s", TypeName(args[1]))
 			}
 			end, ok := args[2].(Int)
 			if !ok {
-				return nil, fmt.Errorf("slice expects an Int end argument, got %T", args[2])
+				return nil, fmt.Errorf("slice expects an Int end argument, got %s", TypeName(args[2]))
 			}
 			if start < 0 || end > Int(len(b)) || start > end {
 				return nil, fmt.Errorf("slice bounds out of range [%d:%d] with length %d", start, end, len(b))
@@ -116,7 +116,7 @@ func likeToBinary(v RuntimeValue) (Binary, error) {
 	case Binary:
 		return v, nil
 	default:
-		return nil, fmt.Errorf("expected a Byte or Binary argument, got %T", v)
+		return nil, fmt.Errorf("expected a Byte or Binary argument, got %s", TypeName(v))
 	}
 }
 

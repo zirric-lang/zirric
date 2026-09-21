@@ -155,11 +155,7 @@ func isValidLValue(expr ast.Expr) bool {
 func (p *Parser) parsePrattExpr(precedence Precedence) ast.Expr {
 	prefix := p.prefixParsers[p.curToken.Type]
 	if prefix == nil {
-		expectedTypes := make([]token.TokenType, 0, len(p.prefixParsers))
-		for t := range p.prefixParsers {
-			expectedTypes = append(expectedTypes, t)
-		}
-		p.expect(expectedTypes...)
+		p.errExpected("an expression")
 		return nil
 	}
 	lhs := prefix()
@@ -241,10 +237,10 @@ func (p *Parser) parsePrattExprInfix(lhs ast.Expr) ast.Expr {
 }
 
 func (p *Parser) parsePrattExprGroup() ast.Expr {
-	p.expect(token.LPAREN)
+	open, _ := p.expect(token.LPAREN)
 	expr := p.parsePrattExpr(LOWEST)
 
-	_, ok := p.expect(token.RPAREN)
+	_, ok := p.expectClosing(open, token.RPAREN)
 	if !ok {
 		return nil
 	}
@@ -414,7 +410,7 @@ func (p *Parser) parsePrattExprMember(owner ast.Expr) ast.Expr {
 func (p *Parser) parsePrattExprIndex(owner ast.Expr) ast.Expr {
 	indexTok := p.nextToken()
 	indexExpr := p.parsePrattExpr(LOWEST)
-	_, ok := p.expect(token.RBRACKET)
+	_, ok := p.expectClosing(indexTok, token.RBRACKET)
 	if !ok {
 		return nil
 	}

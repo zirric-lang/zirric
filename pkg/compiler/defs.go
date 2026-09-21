@@ -3,10 +3,12 @@ package compiler
 import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/analyzer"
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
+	"code.knabel.dev/zirric-lang/zirric/pkg/debuginfo"
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/resolver"
 	"code.knabel.dev/zirric-lang/zirric/pkg/runtime"
+	"code.knabel.dev/zirric-lang/zirric/pkg/token"
 )
 
 type emittedInstruction struct {
@@ -16,8 +18,10 @@ type emittedInstruction struct {
 
 type CompilationScope struct {
 	Instructions op.Instructions
-	symbols      *ast.SymbolTable
-	locals       []*ast.Symbol
+	// positions records where each emitted instruction came from, kept here while the stream is still growing and handed to the debug table once it is finished.
+	positions []debuginfo.Entry
+	symbols   *ast.SymbolTable
+	locals    []*ast.Symbol
 	// freeMapping maps a FreeScope symbol's Index (position in
 	// SymbolTable.FreeSymbols) to its actual position in the Closure.Free
 	// array. Globals and constants are excluded from the Free array and
@@ -41,6 +45,8 @@ type Bytecode struct {
 	MainLocals int
 	// ModuleGlobals maps each compiled module's URI to the global slot holding its ModuleValue, so the VM can reach a module's exports by name at runtime.
 	ModuleGlobals map[registry.LogicalURI]int
+	// Debug maps instructions back to the source they came from, for explaining a crash. Nothing reads it while a program is working.
+	Debug *debuginfo.Table
 }
 
 // mainPackageModules caches the project package's name and the global slot of each of its modules.
@@ -55,6 +61,10 @@ type Compiler struct {
 	moduleGlobals   map[registry.LogicalURI]int
 	compiledModules map[*ast.ContextModule]int
 	mainPackage     *mainPackageModules
+	// position is where the node being compiled came from, recorded against each instruction it emits.
+	position *token.Source
+	// debug collects those positions, so a crash can be traced back to source without anything carrying a position at runtime.
+	debug *debuginfo.Table
 	// mainPackageErrs holds the failures met while compiling the project's own modules, so they can be reported instead of silently dropping a module.
 	mainPackageErrs []error
 	// entryModule is the module passed to Compile, i.e. the program being run, which reflect.packages must not offer as a loadable package member.
@@ -92,6 +102,7 @@ func NewWithAnalyzer(moduleResolver resolver.ModuleResolver, analysis *analyzer.
 		analyzed:        map[*ast.ContextModule]struct{}{},
 		scopes:          []*CompilationScope{mainScope},
 		scopeIdx:        0,
+		debug:           debuginfo.NewTable(),
 	}
 }
 
@@ -129,8 +140,10 @@ func (c *Compiler) Bytecode() *Bytecode {
 	for uri, id := range c.moduleGlobals {
 		moduleGlobals[uri] = id
 	}
+	c.attachPositions(c.scopes[0], "main")
 	return &Bytecode{
 		Instructions:  c.currentInstructions(),
+		Debug:         c.debug,
 		Constants:     c.constants,
 		Globals:       c.globals,
 		MainLocals:    c.scopes[0].LocalsCount(),
@@ -141,6 +154,7 @@ func (c *Compiler) Bytecode() *Bytecode {
 func (c *Compiler) emit(opcode op.Opcode, operands ...int) int {
 	ins := op.Make(opcode, operands...)
 	pos := c.addInstruction(ins)
+	c.recordPosition(pos)
 
 	c.scopes[c.scopeIdx].previousInstruction = c.scopes[c.scopeIdx].lastInstruction
 	c.scopes[c.scopeIdx].lastInstruction = emittedInstruction{
@@ -154,6 +168,24 @@ func (c *Compiler) addInstruction(ins []byte) int {
 	newPos := len(c.currentInstructions())
 	c.scopes[c.scopeIdx].Instructions = append(c.scopes[c.scopeIdx].Instructions, ins...)
 	return newPos
+}
+
+// recordPosition notes where the instruction at this offset came from, so that a crash can be traced back to it.
+func (c *Compiler) recordPosition(offset int) {
+	// A source with no line cannot point anywhere, and recording it would put a file name where a position belongs. A module's own token is like this, since a module is not written at any one place.
+	if c.position == nil || c.position.Line <= 0 {
+		return
+	}
+	scope := c.scopes[c.scopeIdx]
+	scope.positions = append(scope.positions, debuginfo.Entry{Offset: offset, Source: c.position})
+}
+
+// attachPositions hands a finished stream to the debug table, keyed by where its bytes ended up.
+func (c *Compiler) attachPositions(scope *CompilationScope, name string) {
+	if c.debug == nil || scope == nil {
+		return
+	}
+	c.debug.Attach(scope.Instructions, name, scope.positions)
 }
 
 func (c *Compiler) addConstant(v runtime.RuntimeValue) int {
@@ -233,6 +265,8 @@ func (c *Compiler) enterScope(syms *ast.SymbolTable) {
 
 func (c *Compiler) leaveScope() *CompilationScope {
 	scope := c.scopes[c.scopeIdx]
+	// The stream is finished here, which is the only moment its address is the one a frame will run.
+	c.attachPositions(scope, scopeName(scope))
 	c.scopes = c.scopes[:len(c.scopes)-1]
 	c.scopeIdx--
 	return scope
@@ -276,4 +310,18 @@ func (c *Compiler) isLastInstruction(opcodes ...op.Opcode) bool {
 	}
 
 	return false
+}
+
+// scopeName is what to call a frame running a scope's instructions, taken from the function it was opened by.
+func scopeName(scope *CompilationScope) string {
+	if scope == nil || scope.symbols == nil {
+		return ""
+	}
+	switch opened := scope.symbols.OpenedBy.(type) {
+	case *ast.ExprFunc:
+		return opened.Name
+	case *ast.DeclFunc:
+		return opened.Name.Value
+	}
+	return ""
 }

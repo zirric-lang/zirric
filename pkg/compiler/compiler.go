@@ -24,6 +24,14 @@ const (
 )
 
 func (c *Compiler) Compile(node ast.Node) error {
+	// Every instruction emitted while this node is being compiled is recorded against it, which is what lets a crash be traced back to source.
+	if node != nil {
+		if source := node.TokenLiteral().Source; source != nil {
+			previous := c.position
+			c.position = source
+			defer func() { c.position = previous }()
+		}
+	}
 	switch node := node.(type) {
 	case *ast.ContextModule:
 		if err := c.ensureAnalyzed(node, true); err != nil {
@@ -2139,6 +2147,8 @@ func (c *Compiler) CompileSourceFileIncremental(node *ast.SourceFile) (int, erro
 	initScope := c.leaveScope()
 
 	initFn := runtime.MakeCompiledFunction(initScope.Instructions, 0, initScope.LocalsCount(), ModuleSymbol(node.Decls.Module()))
+	// Left unnamed on purpose: a mod declaration is optional and its name need not match the module or the other files in it, so a frame running top-level statements is named after the file it is in instead.
+	c.attachPositions(initScope, "")
 	initConstantId := c.addConstant(initFn)
 	return initConstantId, nil
 }

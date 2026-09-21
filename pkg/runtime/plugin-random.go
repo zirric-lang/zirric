@@ -30,7 +30,7 @@ func (*RandomPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Sy
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			seed, ok := args[0].(Int)
 			if !ok {
-				return nil, fmt.Errorf("seeded expects an Int seed, got %T", args[0])
+				return nil, fmt.Errorf("seeded expects an Int seed, got %s", TypeName(args[0]))
 			}
 			return makeSource(caller, &pseudoRandom{r: mathrand.New(mathrand.NewSource(int64(seed)))})
 		})
@@ -89,7 +89,7 @@ func makeSource(caller VMCaller, bits randomBits) (RuntimeValue, error) {
 		"int": MakeNativeFunc("int", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			n, ok := args[0].(Int)
 			if !ok {
-				return nil, fmt.Errorf("int expects an Int bound, got %T", args[0])
+				return nil, fmt.Errorf("int expects an Int bound, got %s", TypeName(args[0]))
 			}
 			if n <= 0 {
 				return nil, fmt.Errorf("int expects a bound above zero, got %d", n)
@@ -110,7 +110,7 @@ func makeSource(caller VMCaller, bits randomBits) (RuntimeValue, error) {
 		"bytes": MakeNativeFunc("bytes", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			n, ok := args[0].(Int)
 			if !ok {
-				return nil, fmt.Errorf("bytes expects an Int count, got %T", args[0])
+				return nil, fmt.Errorf("bytes expects an Int count, got %s", TypeName(args[0]))
 			}
 			if n < 0 {
 				return nil, fmt.Errorf("bytes expects a count of zero or more, got %d", n)

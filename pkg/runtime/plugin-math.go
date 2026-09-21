@@ -62,7 +62,7 @@ func (*MathPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symb
 			case Float:
 				return Float(gomath.Abs(float64(v))), nil
 			}
-			return nil, fmt.Errorf("abs expects an Int or Float argument, got %T", args[0])
+			return nil, fmt.Errorf("abs expects an Int or Float argument, got %s", TypeName(args[0]))
 		})
 	case "min":
 		return makeMathChoice(decl, "min", func(a, b float64) bool { return a <= b })
@@ -120,5 +120,5 @@ func mathFloat(fnName string, v RuntimeValue) (float64, error) {
 	case Float:
 		return float64(v), nil
 	}
-	return 0, fmt.Errorf("%s expects an Int or Float argument, got %T", fnName, v)
+	return 0, fmt.Errorf("%s expects an Int or Float argument, got %s", fnName, TypeName(v))
 }

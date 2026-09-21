@@ -1,0 +1,11 @@
+import strings
+
+fn pick(index) {
+	return strings.charAt("ab", index)
+}
+
+fn main() {
+	return pick("not an int")
+}
+
+main()

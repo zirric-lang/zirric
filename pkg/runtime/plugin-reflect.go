@@ -146,7 +146,7 @@ func (*ReflectPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 			}
 			name, ok := args[1].(String)
 			if !ok {
-				return nil, fmt.Errorf("_member expects a String name, got %T", args[1])
+				return nil, fmt.Errorf("_member expects a String name, got %s", TypeName(args[1]))
 			}
 			if value := mod.Lookup(string(name)); value != nil {
 				return value, nil
@@ -188,7 +188,7 @@ func (*ReflectPackagesPlugin) Bind(ctx BindContext, module *ast.SymbolTable, dec
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			name, ok := args[0].(String)
 			if !ok {
-				return nil, fmt.Errorf("_moduleNamed expects a String name, got %T", args[0])
+				return nil, fmt.Errorf("_moduleNamed expects a String name, got %s", TypeName(args[0]))
 			}
 			globalId, found := globals[string(name)]
 			if !found || caller == nil {
@@ -338,7 +338,7 @@ func sortedKeys(m map[string]int) []string {
 func asModule(fnName string, v RuntimeValue) (*ModuleValue, error) {
 	mod, ok := v.(*ModuleValue)
 	if !ok {
-		return nil, fmt.Errorf("%s expects a Module argument, got %T", fnName, v)
+		return nil, fmt.Errorf("%s expects a Module argument, got %s", fnName, TypeName(v))
 	}
 	return mod, nil
 }

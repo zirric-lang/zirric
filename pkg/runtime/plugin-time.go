@@ -58,7 +58,7 @@ func (*TimePlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symb
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			text, ok := args[0].(String)
 			if !ok {
-				return nil, fmt.Errorf("parseDuration expects a String, got %T", args[0])
+				return nil, fmt.Errorf("parseDuration expects a String, got %s", TypeName(args[0]))
 			}
 			parsed, err := gotime.ParseDuration(string(text))
 			if err != nil {
@@ -75,7 +75,7 @@ func (*TimePlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symb
 			earlier, ok := a.(Instant)
 			later, ok2 := b.(Instant)
 			if !ok || !ok2 {
-				return nil, fmt.Errorf("since expects two Instant arguments, got %T and %T", a, b)
+				return nil, fmt.Errorf("since expects two Instant arguments, got %s and %s", TypeName(a), TypeName(b))
 			}
 			return Duration(int64(later) - int64(earlier)), nil
 		})
@@ -84,7 +84,7 @@ func (*TimePlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symb
 			earlier, ok := a.(Timestamp)
 			later, ok2 := b.(Timestamp)
 			if !ok || !ok2 {
-				return nil, fmt.Errorf("between expects two Timestamp arguments, got %T and %T", a, b)
+				return nil, fmt.Errorf("between expects two Timestamp arguments, got %s and %s", TypeName(a), TypeName(b))
 			}
 			return Duration(int64(later) - int64(earlier)), nil
 		})
@@ -92,7 +92,7 @@ func (*TimePlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symb
 		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			nanos, ok := args[0].(Int)
 			if !ok {
-				return nil, fmt.Errorf("fromEpoch expects an Int, got %T", args[0])
+				return nil, fmt.Errorf("fromEpoch expects an Int, got %s", TypeName(args[0]))
 			}
 			return Timestamp(nanos), nil
 		})
@@ -104,7 +104,7 @@ func (*TimePlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symb
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			text, ok := args[0].(String)
 			if !ok {
-				return nil, fmt.Errorf("parse expects a String, got %T", args[0])
+				return nil, fmt.Errorf("parse expects a String, got %s", TypeName(args[0]))
 			}
 			parsed, err := gotime.Parse(gotime.RFC3339Nano, string(text))
 			if err != nil {
@@ -132,7 +132,7 @@ func makeDurationOf(decl *ast.Symbol, unit int64) RuntimeValue {
 	return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 		count, ok := args[0].(Int)
 		if !ok {
-			return nil, fmt.Errorf("%s expects an Int count, got %T", decl.Name, args[0])
+			return nil, fmt.Errorf("%s expects an Int count, got %s", decl.Name, TypeName(args[0]))
 		}
 		return Duration(int64(count) * unit), nil
 	})
@@ -142,7 +142,7 @@ func makeDurationTo(decl *ast.Symbol, apply func(Duration) RuntimeValue) Runtime
 	return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 		d, ok := args[0].(Duration)
 		if !ok {
-			return nil, fmt.Errorf("%s expects a Duration, got %T", decl.Name, args[0])
+			return nil, fmt.Errorf("%s expects a Duration, got %s", decl.Name, TypeName(args[0]))
 		}
 		return apply(d), nil
 	})
@@ -152,7 +152,7 @@ func makeTimestampTo(decl *ast.Symbol, apply func(Timestamp) RuntimeValue) Runti
 	return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 		t, ok := args[0].(Timestamp)
 		if !ok {
-			return nil, fmt.Errorf("%s expects a Timestamp, got %T", decl.Name, args[0])
+			return nil, fmt.Errorf("%s expects a Timestamp, got %s", decl.Name, TypeName(args[0]))
 		}
 		return apply(t), nil
 	})

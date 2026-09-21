@@ -41,7 +41,7 @@ func (*OSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			code, ok := args[0].(Int)
 			if !ok {
-				return nil, fmt.Errorf("exit expects Int code, got %T", args[0])
+				return nil, fmt.Errorf("exit expects Int code, got %s", TypeName(args[0]))
 			}
 			os.Exit(int(code))
 			return Void{}, nil
@@ -50,7 +50,7 @@ func (*OSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 		return MakeExternFunc(decl, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			key, ok := args[0].(String)
 			if !ok {
-				return nil, fmt.Errorf("env expects String key, got %T", args[0])
+				return nil, fmt.Errorf("env expects String key, got %s", TypeName(args[0]))
 			}
 			return String(os.Getenv(string(key))), nil
 		})
@@ -84,7 +84,7 @@ func MakeWriteStream(caller VMCaller, w io.Writer) (RuntimeValue, error) {
 	writeFn := MakeNativeFunc("writeTo", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 		buf, ok := args[0].(Binary)
 		if !ok {
-			return nil, fmt.Errorf("write expects Binary, got %T", args[0])
+			return nil, fmt.Errorf("write expects Binary, got %s", TypeName(args[0]))
 		}
 		n, err := w.Write([]byte(buf))
 		if err != nil {
@@ -100,7 +100,7 @@ func MakeReadStream(caller VMCaller, r io.Reader) (RuntimeValue, error) {
 	readFn := MakeNativeFunc("readFrom", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 		length, ok := args[0].(Int)
 		if !ok {
-			return nil, fmt.Errorf("read expects Int, got %T", args[0])
+			return nil, fmt.Errorf("read expects Int, got %s", TypeName(args[0]))
 		}
 		buf := make([]byte, int(length))
 		n, err := r.Read(buf)
@@ -125,7 +125,7 @@ func makeStreamValue(caller VMCaller, typeName string, fn RuntimeValue) (Runtime
 	}
 	dataType, ok := member.(*DataType)
 	if !ok {
-		return nil, fmt.Errorf("io.%s is %T, not a data type", typeName, member)
+		return nil, fmt.Errorf("io.%s is %s, not a data type", typeName, TypeName(member))
 	}
 	return MakeDataValue(dataType, []RuntimeValue{fn}), nil
 }

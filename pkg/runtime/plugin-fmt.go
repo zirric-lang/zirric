@@ -50,7 +50,7 @@ func sprintValue(caller VMCaller, printableSym *ast.Symbol, value RuntimeValue) 
 				}
 				str, ok := result.(String)
 				if !ok {
-					return "", fmt.Errorf("@Printable toString must return a String, got %T", result)
+					return "", fmt.Errorf("@Printable toString must return a String, got %s", TypeName(result))
 				}
 				return string(str), nil
 			}

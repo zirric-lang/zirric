@@ -25,7 +25,7 @@ func (*JSONPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symb
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			text, ok := args[0].(String)
 			if !ok {
-				return nil, fmt.Errorf("parse expects a String, got %T", args[0])
+				return nil, fmt.Errorf("parse expects a String, got %s", TypeName(args[0]))
 			}
 			decoder := json.NewDecoder(bytes.NewReader([]byte(text)))
 			// Numbers are kept as written so that the literal decides the type, rather than every number arriving as a float.
@@ -50,7 +50,7 @@ func (*JSONPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symb
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			indent, ok := args[1].(String)
 			if !ok {
-				return nil, fmt.Errorf("formatIndented expects a String indent, got %T", args[1])
+				return nil, fmt.Errorf("formatIndented expects a String indent, got %s", TypeName(args[1]))
 			}
 			return formatJSON(caller, args[0], string(indent))
 		})
@@ -153,7 +153,7 @@ func valueToJSON(value RuntimeValue) (any, error) {
 	case Dict:
 		return dictToJSON(value)
 	}
-	return nil, fmt.Errorf("%s cannot be written as JSON", typeNameForJSON(value))
+	return nil, fmt.Errorf("%s cannot be written as JSON", TypeName(value))
 }
 
 func dictToJSON(entries Dict) (any, error) {
@@ -163,7 +163,7 @@ func dictToJSON(entries Dict) (any, error) {
 	for key, item := range entries {
 		name, ok := key.(String)
 		if !ok {
-			return nil, fmt.Errorf("a JSON object needs String keys, got %s", typeNameForJSON(key))
+			return nil, fmt.Errorf("a JSON object needs String keys, got %s", TypeName(key))
 		}
 		keys = append(keys, string(name))
 		byKey[string(name)] = item
@@ -179,24 +179,4 @@ func dictToJSON(entries Dict) (any, error) {
 		object[key] = converted
 	}
 	return object, nil
-}
-
-func typeNameForJSON(value RuntimeValue) string {
-	switch value.(type) {
-	case Binary:
-		return "Binary"
-	case Byte:
-		return "Byte"
-	case Char:
-		return "Char"
-	case Duration:
-		return "Duration"
-	case Instant:
-		return "Instant"
-	case Timestamp:
-		return "Timestamp"
-	case *DataValue:
-		return "a data value"
-	}
-	return fmt.Sprintf("%T", value)
 }
