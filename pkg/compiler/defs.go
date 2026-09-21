@@ -213,6 +213,14 @@ func (c *Compiler) ensureLocalSlot(id int) {
 	}
 }
 
+// carryLocalsUp widens the current scope to cover the local slots of a scope whose instructions were just inlined into it.
+// The inlined instructions keep their own SetLocal/GetLocal indices, so the frame that ends up running them must have at least as many slots, or the index reaches past the frame's locals at runtime.
+func (c *Compiler) carryLocalsUp(inlined *CompilationScope) {
+	for len(c.scopes[c.scopeIdx].locals) < len(inlined.locals) {
+		c.scopes[c.scopeIdx].locals = append(c.scopes[c.scopeIdx].locals, nil)
+	}
+}
+
 func (c *Compiler) ensureLocalSlotsForTable(syms *ast.SymbolTable) {
 	if syms == nil {
 		return

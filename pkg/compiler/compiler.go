@@ -106,11 +106,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			scope.Instructions...,
 		)
 
-		// Carry any temp locals allocated in the inlined scope up to the parent,
-		// so that the parent's LocalsCount() covers the SetLocal/GetLocal indices.
-		for len(c.scopes[c.scopeIdx].locals) < len(scope.locals) {
-			c.scopes[c.scopeIdx].locals = append(c.scopes[c.scopeIdx].locals, nil)
-		}
+		c.carryLocalsUp(scope)
 
 		return nil
 
@@ -1981,6 +1977,7 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 	c.globals[id] = scope
 	if c.resolver != nil && c.resolver.MainModule() == module {
 		c.scopes[c.scopeIdx].Instructions = append(c.scopes[c.scopeIdx].Instructions, scope.Instructions...)
+		c.carryLocalsUp(scope)
 	}
 	return nil
 }
@@ -2020,6 +2017,7 @@ func (c *Compiler) compileSourceFileDecls(node *ast.SourceFile) error {
 
 	scope := c.leaveScope()
 	c.scopes[c.scopeIdx].Instructions = append(c.scopes[c.scopeIdx].Instructions, scope.Instructions...)
+	c.carryLocalsUp(scope)
 	return nil
 }
 
