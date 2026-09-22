@@ -25,7 +25,7 @@ It is what makes attribute-driven libraries possible. [`coding`](../coding/index
 ## Contents
 
 - **Unions** — [`DeclarationKind`](#declarationkind), [`TypeRef`](#typeref)
-- **Data** — [`ArrayType`](#arraytype), [`AttrDecl`](#attrdecl), [`AttrsType`](#attrstype), [`ConstDecl`](#constdecl), [`DataDecl`](#datadecl), [`Declaration`](#declaration-data), [`DictType`](#dicttype), [`Field`](#field), [`FuncDecl`](#funcdecl), [`FuncType`](#functype), [`Module`](#module), [`NamedType`](#namedtype), [`Source`](#source), [`TypeDecl`](#typedecl), [`UnionDecl`](#uniondecl), [`UnknownDecl`](#unknowndecl), [`UnknownType`](#unknowntype), [`VarDecl`](#vardecl)
+- **Data** — [`ArrayType`](#arraytype), [`AttrDecl`](#attrdecl), [`AttrsType`](#attrstype), [`ConstDecl`](#constdecl), [`DataDecl`](#datadecl), [`Declaration`](#declaration-data), [`DictType`](#dicttype), [`Field`](#field), [`FuncDecl`](#funcdecl), [`FuncType`](#functype), [`Module`](#module), [`NamedType`](#namedtype), [`OptionType`](#optiontype), [`ResultType`](#resulttype), [`Source`](#source), [`TypeDecl`](#typedecl), [`UnionDecl`](#uniondecl), [`UnknownDecl`](#unknowndecl), [`UnknownType`](#unknowntype), [`VarDecl`](#vardecl)
 - **Functions** — [`construct`](#construct), [`declaration`](#declaration-fn), [`docs`](#docs), [`fieldValues`](#fieldvalues), [`fieldsOf`](#fieldsof), [`hasMember`](#hasmember), [`isAttributeType`](#isattributetype), [`isDataType`](#isdatatype), [`isInstance`](#isinstance), [`isUnionType`](#isuniontype), [`member`](#member), [`memberNames`](#membernames), [`members`](#members), [`moduleName`](#modulename), [`moduleOf`](#moduleof), [`typeName`](#typename), [`typeOf`](#typeof), [`unionMembers`](#unionmembers)
 
 ---
@@ -74,6 +74,8 @@ The form a declaration was written in, which is the keyword that introduced it.
 union TypeRef {
 	NamedType
 	ArrayType
+	OptionType
+	ResultType
 	DictType
 	FuncType
 	AttrsType
@@ -90,6 +92,8 @@ Hints are not enforced at runtime, so a TypeRef describes what a declaration pro
 | ------------- | --------------------------------------------------- |
 | `NamedType`   | A type referred to by name, e.g. String or Person.  |
 | `ArrayType`   | An array type, e.g. [String].                       |
+| `OptionType`  | An optional type, e.g. String?.                     |
+| `ResultType`  | A result type, e.g. String!.                        |
 | `DictType`    | A dict type, e.g. [String: Int].                    |
 | `FuncType`    | A function type, e.g. fn(String) -> Int.            |
 | `AttrsType`   | An attribute constraint, e.g. @Iterable @Countable. |
@@ -133,7 +137,7 @@ An attribute declaration.
 
 ### `AttrsType` {#attrstype}
 
-<small>`reflect/types.zirr:110`</small>
+<small>`reflect/types.zirr:122`</small>
 
 ```zirric
 data AttrsType {
@@ -206,7 +210,7 @@ Attributes are read off a Declaration exactly as off any other value, so `tests.
 
 ### `DictType` {#dicttype}
 
-<small>`reflect/types.zirr:96`</small>
+<small>`reflect/types.zirr:108`</small>
 
 ```zirric
 data DictType {
@@ -265,7 +269,7 @@ A function, declared with fn or extern fn.
 
 ### `FuncType` {#functype}
 
-<small>`reflect/types.zirr:102`</small>
+<small>`reflect/types.zirr:114`</small>
 
 ```zirric
 data FuncType {
@@ -336,6 +340,46 @@ A type referred to by name, e.g. String or Person.
 
 ---
 
+### `OptionType` {#optiontype}
+
+<small>`reflect/types.zirr:96`</small>
+
+```zirric
+data OptionType {
+	element: TypeRef
+}
+```
+
+An optional type, e.g. String?.
+
+#### Fields
+
+| Field     | Description                                                                                                                                                                   |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `element` | What a present value holds, as written. Zirric has no generic types, so a value only has to be an Option at runtime; the element is what two written hints are told apart by. |
+
+---
+
+### `ResultType` {#resulttype}
+
+<small>`reflect/types.zirr:102`</small>
+
+```zirric
+data ResultType {
+	element: TypeRef
+}
+```
+
+A result type, e.g. String!.
+
+#### Fields
+
+| Field     | Description                                                                           |
+| --------- | ------------------------------------------------------------------------------------- |
+| `element` | What a successful value holds, as written, on the same terms as OptionType's element. |
+
+---
+
 ### `Source` {#source}
 
 <small>`reflect/types.zirr:19`</small>
@@ -396,7 +440,7 @@ A declaration in a form reflection does not describe.
 
 ### `UnknownType` {#unknowntype}
 
-<small>`reflect/types.zirr:116`</small>
+<small>`reflect/types.zirr:128`</small>
 
 ```zirric
 data UnknownType

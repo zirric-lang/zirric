@@ -278,8 +278,9 @@ module.exports = {
             },
             {
               title: "Scripts",
-              path: "/stdlib/scripts",
-              icon: "scroll"
+              path: "https://code.knabel.dev/zirric-lang/scripts",
+              icon: "scroll",
+              external: true
             }
           ]
         },

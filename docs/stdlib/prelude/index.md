@@ -55,7 +55,7 @@ union Number {
 
 ### `Option` {#option}
 
-<small>`prelude/option.zirr:11`</small>
+<small>`prelude/option.zirr:21`</small>
 
 ```zirric
 union Option {
@@ -78,7 +78,7 @@ Used for values that may or may not be present.
 
 ### `Result` {#result}
 
-<small>`prelude/result.zirr:19`</small>
+<small>`prelude/result.zirr:26`</small>
 
 ```zirric
 union Result {
@@ -125,7 +125,7 @@ Represents a closed range of integers from start (inclusive) to end (inclusive).
 
 ### `Err` {#err}
 
-<small>`prelude/result.zirr:41`</small>
+<small>`prelude/result.zirr:48`</small>
 
 ```zirric
 data Err {
@@ -145,7 +145,7 @@ The error result.
 
 ### `None` {#none}
 
-<small>`prelude/option.zirr:19`</small>
+<small>`prelude/option.zirr:31`</small>
 
 ```zirric
 data None
@@ -157,7 +157,7 @@ The absent value.
 
 ### `Ok` {#ok}
 
-<small>`prelude/result.zirr:22`</small>
+<small>`prelude/result.zirr:29`</small>
 
 ```zirric
 data Ok {
@@ -243,7 +243,7 @@ Represents an open range of integers from start (inclusive) to end (exclusive).
 
 ### `Some` {#some}
 
-<small>`prelude/option.zirr:13`</small>
+<small>`prelude/option.zirr:24`</small>
 
 ```zirric
 data Some {
@@ -265,37 +265,56 @@ The present value.
 
 ### `AnyOption` {#anyoption}
 
-<small>`prelude/option.zirr:6`</small>
+<small>`prelude/option.zirr:12`</small>
 
 ```zirric
-attr AnyOption
+attr AnyOption {
+	toOption(self: @AnyOption) -> Option
+}
 ```
 
-Marks a union as an option type.
-Types annotated with `@AnyOption` are expected to be unions
-that follow the Some/None pattern.
+Marks a union as an option type, and says how to read one as an [`Option`](#option).
+Types annotated with `@AnyOption` are expected to be unions that follow the
+Some/None pattern, or to convert themselves into one. This is what `?.` and
+`??` read a value through when it is not already a [`Some`](#some) or a [`None`](#none), so
+annotating a union of your own is what makes those operators work on it.
+
+Write it on each member type as well as on the union: a union's attributes
+are not read off a value of one of its members, which is why [`Option`](#option)
+annotates [`Some`](#some) and [`None`](#none) individually.
+
+#### Fields
+
+| Field      | Description                                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------------------ |
+| `toOption` | Returns this value as an [`Option`](#option), which for a union already shaped like one is the value itself. |
 
 ---
 
 ### `AnyResult` {#anyresult}
 
-<small>`prelude/result.zirr:12`</small>
+<small>`prelude/result.zirr:17`</small>
 
 ```zirric
 attr AnyResult {
-	toResult(self) -> Result
+	toResult(self: @AnyResult) -> Result
 }
 ```
 
-Marks a union as a result type.
-Types annotated with `@AnyResult` are expected to be unions
-that follow the Ok/Err pattern.
+Marks a union as a result type, and says how to read one as a [`Result`](#result).
+Types annotated with `@AnyResult` are expected to be unions that follow the
+Ok/Err pattern, or to convert themselves into one. This is what `!.` and
+`!!` read a value through when it is not already an [`Ok`](#ok) or an [`Err`](#err).
+
+Write it on each member type as well as on the union, the way this module
+annotates [`Ok`](#ok) and [`Err`](#err) individually: a union's attributes are not read off
+a value of one of its members.
 
 #### Fields
 
-| Field      | Description |
-| ---------- | ----------- |
-| `toResult` |             |
+| Field      | Description                                                                                                 |
+| ---------- | ----------------------------------------------------------------------------------------------------------- |
+| `toResult` | Returns this value as a [`Result`](#result), which for a union already shaped like one is the value itself. |
 
 ---
 

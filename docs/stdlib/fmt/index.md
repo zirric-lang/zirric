@@ -18,7 +18,7 @@ import fmt
 
 `fmt` is how a value becomes text. [`sprint`](#sprint) converts anything at all — it prefers the value's [`prelude.Printable`](../prelude/index.md#printable) attribute and falls back to a plain rendering for built-in types — while [`fprint`](#fprint) and [`fprintln`](#fprintln) send that text to a writer.
 
-There is no `print` here on purpose: writing needs somewhere to write to. Pass a writer from [`os`](../os/index.md), or use [`scripts`](../scripts/index.md), which pairs these functions with standard output for you.
+There is no `print` here on purpose: writing needs somewhere to write to. Pass a writer from [`os`](../os/index.md), or use [`scripts`](https://code.knabel.dev/zirric-lang/scripts), a separate package pairing these functions with standard output for you.
 
 ## Dependencies
 

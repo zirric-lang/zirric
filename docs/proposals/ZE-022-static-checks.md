@@ -28,7 +28,7 @@ Two kinds of thing are reported.
 | Reported                      | Example                     |
 | ----------------------------- | --------------------------- |
 | undefined name                | `nosuchthing()`             |
-| unknown module member         | `scripts.printlnn(…)`       |
+| unknown module member         | `strings.lenght(…)`         |
 | unknown field                 | `person.nmae`               |
 | wrong number of arguments     | `two(1)` for `fn two(a, b)` |
 | calling a non-callable        | `const x = 5` then `x()`    |

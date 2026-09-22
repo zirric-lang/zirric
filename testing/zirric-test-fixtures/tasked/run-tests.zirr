@@ -1,5 +1,6 @@
 mod tasked
 
-import scripts
+import fmt
+import os
 
-scripts.println("the task ran")
+fmt.fprintln("the task ran", os.stdout())

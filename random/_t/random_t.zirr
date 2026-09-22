@@ -5,6 +5,7 @@ import tests.assert
 
 import random
 import arrays
+import os
 
 @Test()
 fn testSeededIsReproducible() {
@@ -171,8 +172,8 @@ fn testShuffleIsReproducible() {
 }
 
 @Test()
-fn testStrongProducesValues() {
-	const source = random.strong()
+fn testTheHostStrongSourceProducesValues() {
+	const source = os.strongRandom()
 	assert.all([
 		assert.equal(16, len(random.bytes(source, 16))),
 		assert.equal(true, random.int(source, 100) < 100),
@@ -181,8 +182,8 @@ fn testStrongProducesValues() {
 }
 
 @Test()
-fn testFastProducesValues() {
-	const source = random.fast()
+fn testTheHostFastSourceProducesValues() {
+	const source = os.fastRandom()
 	assert.all([
 		assert.equal(4, len(random.bytes(source, 4))),
 		assert.equal(true, random.int(source, 100) < 100),
@@ -205,8 +206,8 @@ fn testShuffleActuallyReorders() {
 }
 
 @Test()
-fn testStrongDiffersBetweenCalls() {
-	assert.equal(false, random.bytes(random.strong(), 16) == random.bytes(random.strong(), 16))
+fn testTheHostStrongSourceDiffersBetweenCalls() {
+	assert.equal(false, random.bytes(os.strongRandom(), 16) == random.bytes(os.strongRandom(), 16))
 }
 
 // An environment providing both kinds of randomness, as a host application would.
@@ -227,7 +228,7 @@ fn _strongOf(self: Environment) -> random.Source {
 
 @Test()
 fn testCapabilitiesAreSeparate() {
-	const env = Environment(random.seeded(99), random.strong())
+	const env = Environment(random.seeded(99), os.strongRandom())
 
 	const fast = random.HasFastRandom(env).random(env)
 	const strong = random.HasStrongRandom(env).random(env)

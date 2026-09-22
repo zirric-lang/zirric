@@ -47,8 +47,8 @@ The types every program is built from, and the two unions the rest of the librar
 - [`paths`](./paths/index.md) — joining, cleaning and matching path strings.
 - [`clock`](./clock/index.md) — wall-clock and monotonic time, as values a test can replace.
 - [`time`](./time/index.md) — durations, instants and timestamps.
-- [`random`](./random/index.md) — fast, seeded and cryptographic sources of randomness.
-- [`scripts`](./scripts/index.md) — the printing and file helpers, already wired to the host.
+- [`random`](./random/index.md) — seeded randomness, and the operations every source shares.
+- [`scripts`](https://code.knabel.dev/zirric-lang/scripts) — the printing and file helpers, already wired to the host. A package of its own: depend on it to use it.
 
 ## Serialization
 

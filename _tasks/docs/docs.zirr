@@ -13,7 +13,6 @@ import fmt
 import os
 import paths
 import reflect
-import scripts
 import strings
 
 import bytes
@@ -87,7 +86,6 @@ const documented = arrays.filter([
 	reflect,
 	rpackages,
 	results,
-	scripts,
 	strings,
 	tasks,
 	tests,
@@ -558,17 +556,17 @@ fn pageOf(m: AnyModule, metadata: reflect.Module) -> String {
 // Writes page to its place under root, creating the directories it needs, and stops the program if the filesystem refuses.
 fn write(root: String, name: String, page: String) {
 	const dir = root + "/" + strings.replace(name, ".", "/")
-	const made = scripts.mkdirAll(dir)
+	const made = fs.mkdirAll(os.fs(), dir)
 	if made is Err {
-		scripts.eprintln("cannot create " + dir + ": " + fmt.sprint(made.reason))
+		fmt.fprintln("cannot create " + dir + ": " + fmt.sprint(made.reason), os.stderr())
 		os.exit(1)
 	}
-	const written = scripts.writeString(dir + "/index.md", page)
+	const written = fs.writeString(os.fs(), dir + "/index.md", page)
 	if written is Err {
-		scripts.eprintln("cannot write " + dir + "/index.md: " + fmt.sprint(written.reason))
+		fmt.fprintln("cannot write " + dir + "/index.md: " + fmt.sprint(written.reason), os.stderr())
 		os.exit(1)
 	}
-	scripts.println(dir + "/index.md")
+	fmt.fprintln(dir + "/index.md", os.stdout())
 }
 
 // The value of a `--name value` or `--name=value` flag, or fallback when the task was run without it.

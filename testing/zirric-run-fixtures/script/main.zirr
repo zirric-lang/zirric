@@ -1,8 +1,8 @@
 mod runscript
 
-import scripts
+import fmt
 import os
 
 for arg <- os.args() {
-	scripts.println(arg)
+	fmt.fprintln(arg, os.stdout())
 }

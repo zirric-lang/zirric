@@ -6,8 +6,8 @@ import tests.assert
 import fs
 import fmt
 import bytes
+import os
 import results
-import scripts
 
 fn _fixture() -> fs.FileSystem {
 	const disk = fs.memory()
@@ -201,11 +201,11 @@ fn testCopyBetweenFilesystems() {
 }
 
 @Test()
-fn testScriptsUseTheHostFilesystem() {
+fn testTheHostFilesystemAnswersLikeAnyOther() {
 	// Only reads, so the test leaves the host untouched.
 	assert.all([
-		assert.equal(true, scripts.exists("/")),
-		assert.equal(false, scripts.exists("/zirric-definitely-absent-path")),
+		assert.equal(true, fs.exists(os.fs(), "/")),
+		assert.equal(false, fs.exists(os.fs(), "/zirric-definitely-absent-path")),
 	])
 }
 

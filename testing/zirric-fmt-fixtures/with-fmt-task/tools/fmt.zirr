@@ -1,8 +1,8 @@
 mod fmttask.tools
 
-import scripts
+import fmt
 import os
 
 for arg <- os.args() {
-	scripts.println("task fmt saw " + arg)
+	fmt.fprintln("task fmt saw " + arg, os.stdout())
 }

@@ -8,7 +8,7 @@ description: A step-by-step guide to getting started with the Zirric programming
 Zirric is a declaration-driven language with an expression-first feel. It aims to stay small while keeping enough structure to build real programs. Values are dynamic, but conversions are explicit, and behavior is described through attributes rather than interfaces.
 
 ::: callout warning Experimental
-Zirric is still evolving. Some features are specified but not fully implemented yet. Use the proposals for authoritative intent. The standard library now covers I/O and the common data types — `io`, `fmt`, `os`, `strings`, `arrays`, `dicts`, `math`, `json` and more — but [ZE-020 Standard Library](/proposals/ZE-020-standard-library) is still in progress, so expect gaps and changes.
+Zirric is still evolving. Some features are specified but not fully implemented yet. Use the proposals for authoritative intent. The standard library covers I/O and the common data types — `io`, `fmt`, `os`, `strings`, `arrays`, `dicts`, `math`, `json` and more — but names and signatures can still change, so expect gaps and changes.
 :::
 
 ## Your first program
@@ -16,9 +16,10 @@ Zirric is still evolving. Some features are specified but not fully implemented 
 After [installing Zirric](/guides/installation), put this in `main.zirr`:
 
 ```zirric
-import scripts { println }
+import fmt
+import os
 
-println("Hello, Zirric!")
+fmt.fprintln("Hello, Zirric!", os.stdout())
 ```
 
 ```bash
@@ -213,7 +214,9 @@ See [Expressions § Guarded Member Access](/specification/expressions#guarded-me
 
 ```zirric
 import fmt
-import scripts { println }
+import os
+
+const out = os.stdout()
 
 const status = if answer == 42 {
 	"yes"
@@ -222,13 +225,13 @@ const status = if answer == 42 {
 }
 
 if answer == 42 {
-	println("yes")
+	fmt.fprintln("yes", out)
 } else {
-	println("no")
+	fmt.fprintln("no", out)
 }
 
 for item <- [1, 2, 3] {
-	println(fmt.sprint(item))
+	fmt.fprintln(item, out)
 }
 
 const oddNumbers = for item <- [1, 2, 3] {
@@ -274,7 +277,7 @@ fn statusLine(code) {
 }
 ```
 
-`scripts.println` writes to stdout and `fmt.sprint` turns any value into a string; `strings`, `math`, `arrays` and the rest are imported the same way.
+`fmt.fprintln` writes to a writer such as `os.stdout()` and `fmt.sprint` turns any value into a string; `strings`, `math`, `arrays` and the rest are imported the same way. The [`scripts`](https://code.knabel.dev/zirric-lang/scripts) package, which lives outside the standard library, pairs those functions with standard output for you.
 
 ## What Zirric avoids
 

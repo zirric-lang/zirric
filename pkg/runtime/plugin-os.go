@@ -3,6 +3,7 @@ package runtime
 import (
 	"fmt"
 	"io"
+	mathrand "math/rand"
 	"os"
 	gotime "time"
 
@@ -18,6 +19,7 @@ var processStart = gotime.Now()
 var _ ExternPlugin = &OSPlugin{}
 
 // OSPlugin provides runtime bindings for the os module extern declarations.
+// The two host-backed random sources build a random.Source through makeSource, the same one random.seeded uses.
 type OSPlugin struct{}
 
 func (*OSPlugin) Module() string { return "os" }
@@ -65,6 +67,14 @@ func (*OSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 				return nil, err
 			}
 			return String(dir), nil
+		})
+	case "fastRandom":
+		return MakeExternFunc(decl, func(caller VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
+			return makeSource(caller, &pseudoRandom{r: mathrand.New(mathrand.NewSource(gotime.Now().UnixNano()))})
+		})
+	case "strongRandom":
+		return MakeExternFunc(decl, func(caller VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
+			return makeSource(caller, cryptoRandom{})
 		})
 	case "_nowTimestamp":
 		return MakeExternFunc(decl, func(_ VMCaller, _ []RuntimeValue) (RuntimeValue, error) {

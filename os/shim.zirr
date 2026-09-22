@@ -3,6 +3,7 @@ mod code.knabel.dev.zirric_lang.zirric.os
 import io
 import fs
 import clock
+import random
 
 // Returns a Writer for the standard output stream.
 extern fn stdout() -> @io.Writer
@@ -28,6 +29,12 @@ extern fn fs() -> fs.FileSystem
 // Returns the directory the process is running in, as an absolute path.
 // The filesystem os.fs returns is rooted at the host's own root, so this is what a path written relative to where the program was started has to be joined onto.
 extern fn cwd() -> String
+
+// A fast generator seeded from the clock. Suitable for simulations and sampling, never for secrets.
+extern fn fastRandom() -> random.Source
+
+// The host's cryptographic generator. Slower, and the only one to use for tokens, keys or anything an adversary should not predict.
+extern fn strongRandom() -> random.Source
 
 extern fn _nowTimestamp() -> Timestamp
 extern fn _nowInstant() -> Instant

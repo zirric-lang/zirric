@@ -7,9 +7,9 @@ mod code.knabel.dev.zirric_lang.zirric._tasks.manifest
 
 import arrays
 import fmt
+import fs
 import os
 import paths
-import scripts
 import strings
 
 import pkgs = reflect.packages
@@ -143,7 +143,7 @@ fn anchorOf(task: pkgs.Task) -> String {
 
 // How a task is invoked, with every flag and argument it accepts.
 fn usageOf(task: pkgs.Task) -> String {
-	var out = "zirric task run " + task.name
+	var out = "zirric task " + task.name
 	for argument <- task.args {
 		out = out + " <" + argument.name + ">"
 	}
@@ -230,7 +230,7 @@ fn tasksSection(manifest: pkgs.Cavefile) -> String {
 		return "## Tasks\n\nThis package declares no tasks.\n"
 	}
 	const links = arrays.map(manifest.tasks, fn(task) { "[`" + task.name + "`](#" + anchorOf(task) + ")" })
-	var out = "## Tasks\n\nWhat this package can be asked to do. Each runs with `zirric task run <name>`, or `zirric x <name>` for short.\n\n"
+	var out = "## Tasks\n\nWhat this package can be asked to do. Each runs with `zirric task <name>`, or `zirric <name>` when no built-in command claims the name.\n\n"
 	out = out + strings.join(links, ", ") + "\n\n"
 	for task <- manifest.tasks {
 		out = out + taskEntry(task)
@@ -280,19 +280,19 @@ fn pageOf(manifest: pkgs.Cavefile) -> String {
 const declared = pkgs.mainPackage().cavefile
 switch declared {
 case is None:
-	scripts.eprintln("this project has no Cavefile to document")
+	fmt.fprintln("this project has no Cavefile to document", os.stderr())
 	os.exit(1)
 case is Some:
 	const target = outputPath()
-	const made = scripts.mkdirAll(paths.dir(target))
+	const made = fs.mkdirAll(os.fs(), paths.dir(target))
 	if made is Err {
-		scripts.eprintln("cannot create " + paths.dir(target) + ": " + fmt.sprint(made.reason))
+		fmt.fprintln("cannot create " + paths.dir(target) + ": " + fmt.sprint(made.reason), os.stderr())
 		os.exit(1)
 	}
-	const written = scripts.writeString(target, pageOf(declared.value))
+	const written = fs.writeString(os.fs(), target, pageOf(declared.value))
 	if written is Err {
-		scripts.eprintln("cannot write " + target + ": " + fmt.sprint(written.reason))
+		fmt.fprintln("cannot write " + target + ": " + fmt.sprint(written.reason), os.stderr())
 		os.exit(1)
 	}
-	scripts.println(target)
+	fmt.fprintln(target, os.stdout())
 }

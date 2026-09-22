@@ -1,6 +1,6 @@
 ---
 title: Random
-description: Fast, seeded and cryptographic sources of randomness.
+description: Seeded randomness, and the operations every source shares.
 ---
 
 # Module `random`
@@ -18,7 +18,7 @@ import random
 
 A [`Source`](#source) is a value carrying four functions, and every function here takes one as its first argument. Which source you pass decides where the bits come from; the code using it does not change.
 
-The three constructors differ only in that: `fast()` is seeded from the clock, `seeded(n)` produces the same sequence every run, and `strong()` uses the operating system's cryptographic generator.
+`seeded(n)` is the only source built here, and it produces the same sequence every run. The two drawing on the host live in [`os`](../os/index.md), which is where everything reaching the machine enters: `os.fastRandom()` is seeded from the clock, and `os.strongRandom()` is the host's cryptographic generator.
 
 [`HasFastRandom`](#hasfastrandom) and [`HasStrongRandom`](#hasstrongrandom) are separate attributes so that code needing secrecy has to say so, and cannot be handed a seeded generator by mistake.
 
@@ -33,7 +33,7 @@ The three constructors differ only in that: `fast()` is seeded from the clock, `
 
 - **Data** — [`Source`](#source)
 - **Attributes** — [`HasFastRandom`](#hasfastrandom), [`HasStrongRandom`](#hasstrongrandom)
-- **Functions** — [`bool`](#bool), [`bytes`](#bytes), [`choice`](#choice), [`fast`](#fast), [`float`](#float), [`floatBetween`](#floatbetween), [`int`](#int), [`intBetween`](#intbetween), [`seeded`](#seeded), [`shuffle`](#shuffle), [`strong`](#strong)
+- **Functions** — [`bool`](#bool), [`bytes`](#bytes), [`choice`](#choice), [`float`](#float), [`floatBetween`](#floatbetween), [`int`](#int), [`intBetween`](#intbetween), [`seeded`](#seeded), [`shuffle`](#shuffle)
 
 ---
 
@@ -52,7 +52,7 @@ data Source {
 }
 ```
 
-A source of randomness. The three constructors below differ only in where the bits come from, so code written against a Source works with any of them.
+A source of randomness. The constructors differ only in where the bits come from, so code written against a Source works with any of them.
 Each field has a matching module function taking the source first, which is usually the nicer way to call it.
 
 #### Fields
@@ -148,18 +148,6 @@ Returns one element of items, or None if items is empty.
 
 ---
 
-### `fast` {#fast}
-
-<small>`random/random.zirr:25`</small>
-
-```zirric
-extern fn fast() -> Source
-```
-
-A fast generator seeded from the clock. Suitable for simulations and sampling, never for secrets.
-
----
-
 ### `float` {#float}
 
 <small>`random/operations.zirr:11`</small>
@@ -210,14 +198,15 @@ Returns a whole number from low up to but excluding high.
 
 ### `seeded` {#seeded}
 
-<small>`random/random.zirr:29`</small>
+<small>`random/random.zirr:27`</small>
 
 ```zirric
 extern fn seeded(seed: Int) -> Source
 ```
 
-A fast generator seeded with the given value, producing the same sequence every run.
+A generator seeded with the given value, producing the same sequence every run.
 This is what makes code using randomness testable: pass a seeded source and the outcome is fixed.
+It is the only source this module builds; the two that draw on the host are [`os.fastRandom`](../os/index.md#fastrandom) and [`os.strongRandom`](../os/index.md#strongrandom).
 
 ---
 
@@ -230,15 +219,3 @@ fn shuffle(source: Source, items: [Any]) -> [Any]
 ```
 
 Returns items in a new order, leaving the original untouched.
-
----
-
-### `strong` {#strong}
-
-<small>`random/random.zirr:32`</small>
-
-```zirric
-extern fn strong() -> Source
-```
-
-The operating system's cryptographic generator. Slower, and the only one to use for tokens, keys or anything an adversary should not predict.

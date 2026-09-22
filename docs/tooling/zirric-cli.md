@@ -39,11 +39,11 @@ zirric main.zirr --loud          # flags reach it the same way, unparsed by the 
 A first argument ending in `.zirr`, or naming a directory that exists, is a program to run — unless a command, built in or a task, already answers to that name. `run` does not parse flags of its own, so a program's flags never collide with the CLI's. `os.args()` returns the script path followed by everything you passed:
 
 ```zirric
+import fmt
 import os
-import scripts { println }
 
 for arg <- os.args() {
-	println(arg)
+	fmt.fprintln(arg, os.stdout())
 }
 ```
 

@@ -27,7 +27,6 @@ import (
 	rangesfs "code.knabel.dev/zirric-lang/zirric/ranges"
 	reflectfs "code.knabel.dev/zirric-lang/zirric/reflect"
 	resultsfs "code.knabel.dev/zirric-lang/zirric/results"
-	scriptsfs "code.knabel.dev/zirric-lang/zirric/scripts"
 	stringsfs "code.knabel.dev/zirric-lang/zirric/strings"
 	tasksfs "code.knabel.dev/zirric-lang/zirric/tasks"
 	testsfs "code.knabel.dev/zirric-lang/zirric/tests"
@@ -65,7 +64,6 @@ func DefaultStdlibProvider() (*embedreg.EmbedRegistry, error) {
 		embedreg.FSConfig{Name: "io", FS: iofs.FS},
 		embedreg.FSConfig{Name: "fmt", FS: fmtfs.FS},
 		embedreg.FSConfig{Name: "os", FS: osfs.FS},
-		embedreg.FSConfig{Name: "scripts", FS: scriptsfs.FS},
 		embedreg.FSConfig{Name: "bytes", FS: bytesfs.FS},
 		embedreg.FSConfig{Name: "ranges", FS: rangesfs.FS},
 		embedreg.FSConfig{Name: "strings", FS: stringsfs.FS},

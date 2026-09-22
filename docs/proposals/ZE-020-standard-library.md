@@ -32,14 +32,14 @@ Add a new set of modules around every logical group of types:
 - `io` adds new attributes for dependency injection
 - `math` covers `prelude.Int` and `prelude.Float`, which had no operations beyond the arithmetic operators
 - `options` adds helpers around `prelude.Option` and `@prelude.AnyOption`
-- `os` hands out the host's own capabilities: its filesystem, its two clocks and the standard streams
+- `os` hands out the host's own capabilities: its filesystem, its two clocks, its two random sources and the standard streams
 - `paths` manipulates slash-separated paths as text, without touching a filesystem
 - `prelude` got some slight adjustments
-- `random` supplies randomness, in a fast, a reproducible and a cryptographic flavour
+- `random` supplies randomness as a value, reproducibly; the fast and cryptographic sources are handed out by `os`
 - `ranges` covers `prelude.Range`, `prelude.ClosedRange` and `prelude.OpenRange`
 - `reflect` inspects modules, types and their fields, with `reflect.packages` reaching the modules of a package
 - `results` adds helpers around `prelude.Result` and `@prelude.AnyResult`
-- `scripts` collects the conveniences that assume a process, such as printing to stdout
+- `scripts` collects the conveniences that assume a process, such as printing to stdout — it ships as [its own package](https://code.knabel.dev/zirric-lang/scripts) rather than with the standard library
 - `strings` for working with `prelude.Char` and `prelude.String`
 - `time` supplies `Duration`, `Instant` and `Timestamp` as primitives, with no way to read a clock
 - `tests` makes it possible to write tests in Zirric, with `tests.runner` discovering and running them through `reflect`
@@ -76,7 +76,7 @@ Helpers are written in Zirric wherever the language can express them, and as `ex
 - `math` is almost entirely Go, since the VM implements the arithmetic operators and nothing else. Only `clamp` is Zirric, composed from `min` and `max`.
 - `paths` is entirely Go, wrapping the standard `path` package so that behaviour matches an established implementation rather than a hand-rolled one.
 - `fs` splits evenly. The filesystem operations are Go, wrapping billy so that an in-memory filesystem and the host's own are the same code; `walk`, `glob`, `copy`, `withFile` and the string helpers are Zirric, composed from those operations.
-- `random` follows the same split: the three generators are Go, everything derived from them is Zirric.
+- `random` follows the same split: the generators are Go, everything derived from them is Zirric. Two of the three are bound by `os` rather than here, since they reach the machine.
 - `time` is Go, but unusually its arithmetic lives in the VM rather than the module, since its three types are primitives rather than values built on top of one.
 - `clock` is entirely Zirric. A clock is a closure over a reading, so the test clocks and the host's alike are built in the language; `os` supplies only the two raw readings.
 - `reflect` is Go only where it must be. Enumerating a module's members needs access to the module value's exports, describing a type's fields needs what the compiler recorded about the declaration, and reaching a package's modules needs the compiler itself; everything built on top of those — `member`, `hasMember`, `typeOf`, `modulesWhere`, `modulesExcept` — is Zirric, as are the `Field` and `TypeRef` types the Go side fills in. `construct` and `fieldValues` are the pair that takes a data value apart and puts one back together, which nothing else in the language can do for a type known only at runtime; [ZE-021](/proposals/ZE-021-encoding-and-decoding) is what needs them.
@@ -125,11 +125,13 @@ The last row is the reason `Instant` and `Timestamp` are separate at all. A mono
 
 ### Randomness is a value too
 
-`random` repeats the shape `fs` uses: a `Source` is a value, and the three constructors differ only in where the bits come from. Code written against a `Source` neither knows nor cares which it was handed.
+`random` repeats the shape `fs` uses: a `Source` is a value, and the constructors differ only in where the bits come from. Code written against a `Source` neither knows nor cares which it was handed.
 
 That is what makes randomness testable. `random.seeded(n)` produces the same sequence every run, so a function that shuffles, samples or picks can be tested for its actual behaviour rather than merely for not crashing — pass a seeded source and the outcome is fixed. `fs.memory()` does the same job for files.
 
-The split between `fast` and `strong` is deliberate and named rather than implied. `fast` is seeded from the clock and is a pseudo-random generator; `strong` draws from the operating system's cryptographic generator. Because both are a `Source`, moving from one to the other is a one-line change at the point of construction, and nothing downstream is rewritten.
+The split between `os.fastRandom` and `os.strongRandom` is deliberate and named rather than implied. `fastRandom` is seeded from the clock and is a pseudo-random generator; `strongRandom` draws from the operating system's cryptographic generator. Because both are a `Source`, moving from one to the other is a one-line change at the point of construction, and nothing downstream is rewritten.
+
+Both live in `os` for the same reason the real clock does: they are the machine answering, and `os` is where the machine enters. What is left in `random` is `seeded` and the operations, none of which can surprise a test.
 
 The capabilities are split the same way, and for a sharper reason than tidiness. A single `HasRandom` would be ambiguous exactly where the difference matters: code generating a token would accept whatever the environment offered, including a seeded generator. `@HasStrongRandom` and `@HasFastRandom` make the requirement part of the signature, so an environment providing only reproducible randomness cannot satisfy code that needs secrecy. A test environment can offer the fast capability alone and will be rejected, at the point of use, by anything asking for the strong one.
 
@@ -268,7 +270,7 @@ The concrete types behind `join` and `wrap` are intentionally unexported, so the
 
 ### fmt
 
-**Removed:** `println`. Moved to `scripts`.
+**Removed:** `println`. Moved to the separate [`scripts`](https://code.knabel.dev/zirric-lang/scripts) package.
 
 | Declaration | Kind        | Description                                                                    |
 | ----------- | ----------- | ------------------------------------------------------------------------------ |
@@ -380,13 +382,17 @@ Float division is unguarded, so `1.0 / 0.0` and `0.0 / 0.0` yield infinity and N
 
 ### os
 
-New here are `fs` and the two clocks; the standard streams and process accessors are unchanged, though `stdout`, `stdin` and `stderr` now yield values carrying `@io.Writer` or `@io.Reader` rather than values of a `Writer`/`Reader` type.
+New here are `fs`, the two clocks and the two random sources; the standard streams and process accessors are unchanged, though `stdout`, `stdin` and `stderr` now yield values carrying `@io.Writer` or `@io.Reader` rather than values of a `Writer`/`Reader` type.
+
+`fastRandom` and `strongRandom` build a `random.Source` the same way `systemClock` builds a `clock.SystemClock`: the type and everything done with it belong to the module named after the domain, while the constructor reaching the machine belongs here. `random` is then left with `seeded` alone, which is the one source a test can rely on.
 
 | Declaration      | Kind        | Description                                                                  |
 | ---------------- | ----------- | ---------------------------------------------------------------------------- |
 | `fs`             | `extern fn` | The host's own filesystem, rooted so that absolute paths resolve as written. |
 | `systemClock`    | `fn`        | The host's wall clock.                                                       |
 | `monotonicClock` | `fn`        | The host's monotonic clock, for measuring elapsed time.                      |
+| `fastRandom`     | `extern fn` | A `random.Source` seeded from the clock, for simulations and sampling.       |
+| `strongRandom`   | `extern fn` | A `random.Source` from the host's cryptographic generator.                   |
 | `stdout`         | `extern fn` | The standard output stream, as an `@io.Writer`.                              |
 | `stdin`          | `extern fn` | The standard input stream, as an `@io.Reader`.                               |
 | `stderr`         | `extern fn` | The standard error stream, as an `@io.Writer`.                               |
@@ -432,22 +438,22 @@ Pure text manipulation: nothing here touches a filesystem. Paths are slash-separ
 
 A `Source` is a value, so code takes one rather than reaching for a generator. Each field has a matching module function taking the source first.
 
-| Declaration       | Kind        | Description                                                             |
-| ----------------- | ----------- | ----------------------------------------------------------------------- |
-| `Source`          | `data`      | A source of randomness.                                                 |
-| `HasFastRandom`   | `attr`      | Provides a fast source, which a seeded one satisfies.                   |
-| `HasStrongRandom` | `attr`      | Provides a cryptographic source.                                        |
-| `fast`            | `extern fn` | Seeded from the clock. For simulations and sampling, never for secrets. |
-| `seeded`          | `extern fn` | Seeded with a given value, producing the same sequence every run.       |
-| `strong`          | `extern fn` | The operating system's cryptographic generator.                         |
-| `int`             | `fn`        | A whole number from 0 up to but excluding a bound.                      |
-| `float`           | `fn`        | A number from 0 up to but excluding 1.                                  |
-| `bytes`           | `fn`        | A given number of random bytes.                                         |
-| `bool`            | `fn`        | True or false with equal likelihood.                                    |
-| `intBetween`      | `fn`        | A whole number within a range.                                          |
-| `floatBetween`    | `fn`        | A number within a range.                                                |
-| `choice`          | `fn`        | One element of an array, or `None` if it is empty.                      |
-| `shuffle`         | `fn`        | The elements in a new order, leaving the original untouched.            |
+`seeded` is the only constructor here. The two drawing on the host are `os.fastRandom` and `os.strongRandom`, so that nothing in this module reaches the machine and a test is never one call away from real randomness.
+
+| Declaration       | Kind        | Description                                                       |
+| ----------------- | ----------- | ----------------------------------------------------------------- |
+| `Source`          | `data`      | A source of randomness.                                           |
+| `HasFastRandom`   | `attr`      | Provides a fast source, which a seeded one satisfies.             |
+| `HasStrongRandom` | `attr`      | Provides a cryptographic source.                                  |
+| `seeded`          | `extern fn` | Seeded with a given value, producing the same sequence every run. |
+| `int`             | `fn`        | A whole number from 0 up to but excluding a bound.                |
+| `float`           | `fn`        | A number from 0 up to but excluding 1.                            |
+| `bytes`           | `fn`        | A given number of random bytes.                                   |
+| `bool`            | `fn`        | True or false with equal likelihood.                              |
+| `intBetween`      | `fn`        | A whole number within a range.                                    |
+| `floatBetween`    | `fn`        | A number within a range.                                          |
+| `choice`          | `fn`        | One element of an array, or `None` if it is empty.                |
+| `shuffle`         | `fn`        | The elements in a new order, leaving the original untouched.      |
 
 ### ranges
 
@@ -528,6 +534,8 @@ Reaching a package's modules compiles them, so this is a separate module: import
 
 Conveniences that assume a process and its standard streams, so that `fmt` itself stays free of `os`.
 
+`scripts` is the one module in this proposal that does not ship with the standard library. It lives in [its own package](https://code.knabel.dev/zirric-lang/scripts), added to a `Cavefile` like any other dependency, because nothing else in the library needs it and a program that never prints should not carry it.
+
 | Declaration | Kind | Description                                       |
 | ----------- | ---- | ------------------------------------------------- |
 | `print`     | `fn` | Writes a printable value to stdout.               |
@@ -537,7 +545,7 @@ Conveniences that assume a process and its standard streams, so that `fmt` itsel
 
 The same idea extends to files: these operate on `os.fs()`, so a script need not thread a filesystem through itself. Code that wants to stay testable takes an `fs.FileSystem` instead.
 
-The module is split by what each group wraps — `fmt-scripts.zirr` and `fs-scripts.zirr` — so that adding helpers for another module adds a file rather than lengthening one.
+The package is split by what each group wraps — `fmt-scripts.zirr` and `fs-scripts.zirr` — so that adding helpers for another module adds a file rather than lengthening one.
 
 | Declaration   | Kind | Description                                             |
 | ------------- | ---- | ------------------------------------------------------- |

@@ -34,7 +34,7 @@ This module is only the vocabulary. [`tests.assert`](../tests/assert/index.md) w
 
 ### `TestCaseDetails` {#testcasedetails}
 
-<small>`tests/types.zirr:20`</small>
+<small>`tests/types.zirr:28`</small>
 
 ```zirric
 union TestCaseDetails {
@@ -44,6 +44,8 @@ union TestCaseDetails {
 	TestCaseDetailsOnly
 }
 ```
+
+Each member says how to be read as an Option, the way prelude's own Result members do: a union's attributes are not read off a value of one of its members.
 
 #### Cases
 
@@ -58,7 +60,7 @@ union TestCaseDetails {
 
 ### `TestEvent` {#testevent}
 
-<small>`tests/types.zirr:28`</small>
+<small>`tests/types.zirr:39`</small>
 
 ```zirric
 union TestEvent {
@@ -86,7 +88,7 @@ union TestEvent {
 
 ### `Completed` {#completed}
 
-<small>`tests/types.zirr:33`</small>
+<small>`tests/types.zirr:44`</small>
 
 ```zirric
 data Completed {
@@ -104,7 +106,7 @@ data Completed {
 
 ### `Discovered` {#discovered}
 
-<small>`tests/types.zirr:29`</small>
+<small>`tests/types.zirr:40`</small>
 
 ```zirric
 data Discovered {
@@ -122,7 +124,7 @@ data Discovered {
 
 ### `FailureRecord` {#failurerecord}
 
-<small>`tests/types.zirr:43`</small>
+<small>`tests/types.zirr:54`</small>
 
 ```zirric
 data FailureRecord {
@@ -142,7 +144,7 @@ data FailureRecord {
 
 ### `Finished` {#finished}
 
-<small>`tests/types.zirr:32`</small>
+<small>`tests/types.zirr:43`</small>
 
 ```zirric
 data Finished {
@@ -162,7 +164,7 @@ data Finished {
 
 ### `Skipped` {#skipped}
 
-<small>`tests/types.zirr:30`</small>
+<small>`tests/types.zirr:41`</small>
 
 ```zirric
 data Skipped {
@@ -180,7 +182,7 @@ data Skipped {
 
 ### `Started` {#started}
 
-<small>`tests/types.zirr:31`</small>
+<small>`tests/types.zirr:42`</small>
 
 ```zirric
 data Started {
@@ -224,7 +226,7 @@ data TestCase {
 
 ### `TestCaseDetailsOnly` {#testcasedetailsonly}
 
-<small>`tests/types.zirr:25`</small>
+<small>`tests/types.zirr:36`</small>
 
 ```zirric
 data TestCaseDetailsOnly
@@ -234,7 +236,7 @@ data TestCaseDetailsOnly
 
 ### `TestCaseDetailsSkip` {#testcasedetailsskip}
 
-<small>`tests/types.zirr:23`</small>
+<small>`tests/types.zirr:32`</small>
 
 ```zirric
 data TestCaseDetailsSkip
@@ -244,7 +246,7 @@ data TestCaseDetailsSkip
 
 ### `TestCaseDetailsTodo` {#testcasedetailstodo}
 
-<small>`tests/types.zirr:24`</small>
+<small>`tests/types.zirr:34`</small>
 
 ```zirric
 data TestCaseDetailsTodo
@@ -254,7 +256,7 @@ data TestCaseDetailsTodo
 
 ### `TestReport` {#testreport}
 
-<small>`tests/types.zirr:36`</small>
+<small>`tests/types.zirr:47`</small>
 
 ```zirric
 data TestReport {

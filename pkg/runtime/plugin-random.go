@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	mathrand "math/rand"
-	"time"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 )
@@ -14,7 +13,8 @@ import (
 var _ ExternPlugin = &RandomPlugin{}
 
 // RandomPlugin provides runtime bindings for the random module's extern declarations.
-// The three sources differ only in where their bits come from, so anything taking a random.Source works with any of them.
+// Only the seeded source is built here: the two drawing on the host belong to os, which is where everything reaching the machine enters.
+// They share makeSource below, so anything taking a random.Source works with any of them.
 type RandomPlugin struct{}
 
 func (*RandomPlugin) Module() string { return "random" }
@@ -22,10 +22,6 @@ func (*RandomPlugin) Module() string { return "random" }
 // Bind implements ExternPlugin.
 func (*RandomPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol) RuntimeValue {
 	switch decl.Name {
-	case "fast":
-		return MakeExternFunc(decl, func(caller VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
-			return makeSource(caller, &pseudoRandom{r: mathrand.New(mathrand.NewSource(time.Now().UnixNano()))})
-		})
 	case "seeded":
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			seed, ok := args[0].(Int)
@@ -34,15 +30,11 @@ func (*RandomPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Sy
 			}
 			return makeSource(caller, &pseudoRandom{r: mathrand.New(mathrand.NewSource(int64(seed)))})
 		})
-	case "strong":
-		return MakeExternFunc(decl, func(caller VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
-			return makeSource(caller, cryptoRandom{})
-		})
 	}
 	return nil
 }
 
-// randomBits is what the three sources have in common: everything the module exposes is derived from these.
+// randomBits is what the sources have in common: everything the module exposes is derived from these.
 type randomBits interface {
 	intn(n int64) (int64, error)
 	float() (float64, error)
