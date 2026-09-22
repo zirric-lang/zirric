@@ -16,6 +16,7 @@ type ExprFloat struct {
 func MakeExprFloat(literal float64, token token.Token) *ExprFloat {
 	return &ExprFloat{
 		Literal: literal,
+		Token:   token,
 	}
 }
 

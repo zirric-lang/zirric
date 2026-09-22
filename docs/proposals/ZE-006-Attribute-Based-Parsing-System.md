@@ -5,17 +5,9 @@ description: Attribute-based parsing system in Zirric.
 
 # Attribute-Based Parsing System
 
-::: callout draft Draft
-This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design. Features described here may not be implemented as described and cannot be used right now.
+::: callout danger Rejected
+This proposal has been rejected and will not be implemented. It is superseded by [ZE-021 Encoding and Decoding](/proposals/ZE-021-encoding-and-decoding).
 :::
-
-::: callout warning Outdated
-While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
-
-- [x] Reflect latest syntax changes
-- [x] Reflect latest stdlib changes
-- [ ] Plan everything out
-      :::
 
 ## Introduction
 

@@ -1,0 +1,29 @@
+const a = user ?. address ?. city
+const b = result !. value
+const c = !ok
+const d = a != b
+const e = user?.items[ 0 ]
+fn f(r) {
+	return r
+		!. value
+		?. name
+}
+const g = maybe ?? "fallback"
+const h = attempt !! "fallback"
+const i = user ?. name ?? "Unknown"
+data Config {
+	host : String?
+	port : Int!
+	tags : [ String ]?
+}
+fn lookup(id: Int) -> User? {
+	return None()
+}
+fn load() -> String! { return Ok("x") }
+const j = !ready
+const k = a !=b
+fn wide(v) {
+	return v
+		?? "a"
+		!! "b"
+}

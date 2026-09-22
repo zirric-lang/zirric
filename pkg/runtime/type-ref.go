@@ -16,6 +16,10 @@ const (
 	TypeRefFunc
 	// TypeRefAttrs is an attribute constraint, e.g. @Iterable @Countable.
 	TypeRefAttrs
+	// TypeRefOption is Element?, the optional shorthand.
+	TypeRefOption
+	// TypeRefResult is Element!, the result shorthand.
+	TypeRefResult
 )
 
 // TypeRef describes a type hint structurally rather than as text, so that reflection can walk it.
@@ -26,7 +30,7 @@ type TypeRef struct {
 	Name string
 	// Type is the constant id the name resolved to, or nil when the name resolves to nothing that has a runtime type value.
 	Type *TypeId
-	// Element is an array's element type.
+	// Element is an array's element type, or what the present or successful value of a TypeRefOption or TypeRefResult holds.
 	Element *TypeRef
 	// Key and Value are a dict's key and value types.
 	Key   *TypeRef

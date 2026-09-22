@@ -376,6 +376,18 @@ func makeTypeRefValue(caller VMCaller, ref TypeRef) (RuntimeValue, error) {
 			return nil, err
 		}
 		return MakeDataValueNamed(caller, "reflect", "ArrayType", map[string]RuntimeValue{"element": element})
+	case TypeRefOption:
+		element, err := makeTypeRefValue(caller, derefTypeRef(ref.Element))
+		if err != nil {
+			return nil, err
+		}
+		return MakeDataValueNamed(caller, "reflect", "OptionType", map[string]RuntimeValue{"element": element})
+	case TypeRefResult:
+		element, err := makeTypeRefValue(caller, derefTypeRef(ref.Element))
+		if err != nil {
+			return nil, err
+		}
+		return MakeDataValueNamed(caller, "reflect", "ResultType", map[string]RuntimeValue{"element": element})
 	case TypeRefDict:
 		key, err := makeTypeRefValue(caller, derefTypeRef(ref.Key))
 		if err != nil {

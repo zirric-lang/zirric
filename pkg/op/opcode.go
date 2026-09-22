@@ -88,6 +88,21 @@ const (
 	// TypeConstantId directly. Pops the value and pushes a Bool result.
 	IsType
 
+	// AsOption replaces the value on top of the stack with the Option standing for it: a Some or a None is already one, and anything else is asked for one through the toOption of its @AnyOption.
+	// A value carrying neither is a failure, which is what makes `?.` and `??` refuse a value that stands for no option at all.
+	AsOption
+	// AsResult is AsOption for the Result side, going through the toResult of an @AnyResult.
+	AsResult
+
+	// JumpIsType jumps when the value on top of the stack matches the type at the given constant, using the same matching as IsType.
+	// It peeks rather than pops, so the value is still there on both paths: that is what lets `?.` leave the None it short-circuited on as the chain's result.
+	JumpIsType
+	// ReturnIsType returns the value on top of the stack from the current frame when it matches the type at the given constant, and does nothing otherwise.
+	// This is how `!.` propagates an error without a jump around the rest of the chain.
+	ReturnIsType
+	// WrapOption wraps the value on top of the stack in Some unless it already is an Option, which is what makes the result of a `?.` chain an Option either way.
+	WrapOption
+
 	// MakeIterYield builds the native `yield` callable for a generic `for <-` dispatch (ZE-010).
 	MakeIterYield
 	// CallIterate reentrantly calls the `iterate` function (top of stack) with 2 args, unlike Call.
@@ -153,6 +168,13 @@ var definitions = map[Opcode]*Definition{
 	SetLocalCell: {"setlocalcell", []int{2}},   // local index
 	WrapLocal:    {"wraplocal", []int{2}},      // local index
 	IsType:       {"istype", []int{2}},         // const id of type or union
+
+	AsOption: {"asoption", []int{2, 2}}, // const id of the Option union, const id of the AnyOption attribute
+	AsResult: {"asresult", []int{2, 2}}, // const id of the Result union, const id of the AnyResult attribute
+
+	JumpIsType:   {"jumpistype", []int{2, 2}}, // address, const id of type or union
+	ReturnIsType: {"returnistype", []int{2}},  // const id of type or union
+	WrapOption:   {"wrapoption", []int{2, 2}}, // const id of the Option union, const id of the Some data type
 
 	MakeIterYield: {"makeiteryield", []int{2, 2, 2}}, // binding local, body start ip, body end ip
 	CallIterate:   {"calliterate", []int{2}},         // arg count (always 2: value, yield)

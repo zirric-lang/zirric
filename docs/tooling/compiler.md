@@ -33,6 +33,16 @@ Functions compile to bytecode chunks with metadata such as arity. Closures captu
 
 Type hints (`: T`, `-> T`) are parsed into `TypeExpr` AST nodes and stored on declarations and parameters. The `IsType` opcode performs runtime type checking against data types, extern types, union membership, and attribute constraints. `switch` statements compile type patterns (`case is T:`) using `IsType`.
 
+## Guarded member access
+
+All four begin with an `asoption` or `asresult` over the target. A value already in the union it names is left alone; anything else is asked for one through the `toOption` or `toResult` of its attribute, which the VM calls reentrantly the same way an extern function calls back into Zirric. What is on the stack afterwards is therefore always a `Some`, `None`, `Ok` or `Err`, so the instructions that follow only have to tell those apart, and the `getfield "value"` that ends each of them is the unwrapping step nobody writes.
+
+`?.` then emits a `jumpistype` against `None` that leaves the value where it is, so the jump carries the `None` itself to the end of the chain; every `?.` in one chain jumps to the same place, where a `wrapoption` turns the value the chain did produce into an `Option`. Because the chain is compiled as one unit, a call cannot be part of it — the call's arguments are already on the stack when the short-circuit would jump past it — which is why the compiler rejects that shape instead.
+
+`!.` emits a `returnistype` against `Err`, which returns the error from the running frame. Nothing has to be unwound or jumped over, since the frame is discarded along with whatever else is on its stack.
+
+`??` and `!!` are the same shape as each other: one `jumpistype` over the normalized left operand — `None` for `??`, `Err` for `!!` — and a `pop` in front of the right operand, which is only ever reached on the missing path.
+
 ## Core opcodes
 
 | Mnemonic        | Widths | Description                                     | Comments                            |
@@ -53,6 +63,11 @@ Type hints (`: T`, `-> T`) are parsed into `TypeExpr` AST nodes and stored on de
 | `arrayappend`   | 0      | Append value to array                           |                                     |
 | `asserttype`    | 2      | Assert top value has given type ID              |                                     |
 | `istype`        | 2      | Check if value is of type; push Bool            | union membership supported          |
+| `asoption`      | 2,2    | Read the top value as an Option                 | Option union, @AnyOption attribute  |
+| `asresult`      | 2,2    | Read the top value as a Result                  | Result union, @AnyResult attribute  |
+| `jumpistype`    | 2,2    | Jump if top value is of type, leaving it        | address, type constant              |
+| `returnistype`  | 2      | Return top value if it is of type               | type constant                       |
+| `wrapoption`    | 2,2    | Wrap top value in `Some` unless already Option  | Option union, `Some` data type      |
 | `jump`          | 2      | Unconditional jump to address                   |                                     |
 | `jumptrue`      | 2      | Jump if top value is truthy                     |                                     |
 | `jumpfalse`     | 2      | Jump if top value is `false`                    |                                     |

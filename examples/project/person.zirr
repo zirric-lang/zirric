@@ -2,13 +2,22 @@ mod code.knabel.dev.zirric_lang.example
 
 import scripts
 
+// Person is always a present SomePerson, which it has to say itself: a union's attributes are not read off a value of one of its members.
+@AnyOption(fn(p) { Some(p) })
 @Printable(fn(p) { p.name })
 data Person {
 	name: String
 	age: Int
 }
 
-@AnyOption()
+@AnyOption(fn(v) {
+	switch v {
+	case is None:
+		v
+	case _:
+		Some(v)
+	}
+})
 union SomePerson {
 	Person
 	None

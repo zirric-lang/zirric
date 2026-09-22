@@ -269,6 +269,14 @@ func resolveTypeExpr(module *ast.ContextModule, typeExpr ast.TypeExpr) ast.Decl 
 		if sym, ok := module.Decls.Resolve("Array"); ok && sym.Decl != nil {
 			return sym.Decl
 		}
+	case ast.TypeExprOption:
+		if sym, ok := module.Decls.Resolve("Option"); ok && sym.Decl != nil {
+			return sym.Decl
+		}
+	case ast.TypeExprResult:
+		if sym, ok := module.Decls.Resolve("Result"); ok && sym.Decl != nil {
+			return sym.Decl
+		}
 	case ast.TypeExprDict:
 		if sym, ok := module.Decls.Resolve("Dict"); ok && sym.Decl != nil {
 			return sym.Decl

@@ -16,12 +16,23 @@ data TestCase {
 	details: TestCaseDetails
 }
 
-@AnyOption()
+// Each member says how to be read as an Option, the way prelude's own Result members do: a union's attributes are not read off a value of one of its members.
+@AnyOption(fn(v) {
+	switch v {
+	case is None:
+		v
+	case _:
+		Some(v)
+	}
+})
 union TestCaseDetails {
 	None
 
+	@AnyOption(fn(d) { Some(d) })
 	data TestCaseDetailsSkip {}
+	@AnyOption(fn(d) { Some(d) })
 	data TestCaseDetailsTodo {}
+	@AnyOption(fn(d) { Some(d) })
 	data TestCaseDetailsOnly {}
 }
 

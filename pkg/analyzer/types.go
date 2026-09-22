@@ -32,7 +32,7 @@ type checked struct {
 	name string
 	// sym is the declaration a named type resolves to, which is how data and union types are compared and how fields are looked up.
 	sym *ast.Symbol
-	// elem is an array's element type; key and value a dict's.
+	// elem is an array's element type, or what a `T?` or `T!` shorthand holds; key and value a dict's.
 	elem  *checked
 	key   *checked
 	value *checked
@@ -115,6 +115,10 @@ func (a *Analyzer) resolveHint(hint ast.TypeExpr, symbols *ast.SymbolTable) chec
 	case ast.TypeExprArray:
 		elem := a.resolveHint(hint.Element, symbols)
 		return checked{kind: kindArray, elem: &elem, arity: -1}
+	case ast.TypeExprOption:
+		return a.resolveShorthandHint(hint, hint.Element, "Option", symbols)
+	case ast.TypeExprResult:
+		return a.resolveShorthandHint(hint, hint.Element, "Result", symbols)
 	case ast.TypeExprDict:
 		key := a.resolveHint(hint.Key, symbols)
 		value := a.resolveHint(hint.Value, symbols)
@@ -142,6 +146,22 @@ func (a *Analyzer) resolveHint(hint ast.TypeExpr, symbols *ast.SymbolTable) chec
 		return checked{kind: kindAttrs, attrs: attrs, arity: -1}
 	}
 	return unknownType()
+}
+
+// resolveShorthandHint resolves `T?` and `T!` to the union each stands for, keeping T beside it the way an array keeps its element.
+//
+// Zirric has no generic types, so the union is what a value actually has to be: `is User?` asks only that much at runtime, exactly as `is [String]` asks only for an Array. The element is what one written hint is compared against another with, and is what keeps `Int?` and `String?` apart.
+func (a *Analyzer) resolveShorthandHint(hint ast.TypeExpr, element ast.TypeExpr, union string, symbols *ast.SymbolTable) checked {
+	resolved := a.resolveNamedHint(ast.StaticReference{{Value: union}}, symbols)
+	if !resolved.isKnown() {
+		return resolved
+	}
+	// Named as written, so a message about a `User?` says so rather than naming the Option it stands for.
+	resolved.name = hint.TypeExpression()
+	if elem := a.resolveHint(element, symbols); elem.isKnown() {
+		resolved.elem = &elem
+	}
+	return resolved
 }
 
 // resolveHintIn resolves a hint in the first scope that can see the names it uses.

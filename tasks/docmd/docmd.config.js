@@ -467,9 +467,9 @@ module.exports = {
           path: "/proposals/ZE-003-named-data-construction"
         },
         {
-          icon: "circle",
-          title: "ZE-04 Variadic",
-          path: "/proposals/ZE-004-Variadic-Arguments"
+          icon: "circle-x",
+          title: "ZE-04 Variadic Attributes",
+          path: "/proposals/ZE-004-Variadic-Attributes"
         },
         {
           icon: "circle",
@@ -477,7 +477,7 @@ module.exports = {
           path: "/proposals/ZE-005-Mixin-Type-Declarations"
         },
         {
-          icon: "circle",
+          icon: "circle-x",
           title: "ZE-06 Parsing",
           path: "/proposals/ZE-006-Attribute-Based-Parsing-System"
         },
@@ -542,22 +542,22 @@ module.exports = {
           path: "/proposals/ZE-018-io-fmt-os"
         },
         {
-          icon: "circle",
+          icon: "circle-check",
           title: "ZE-19 Result & Option Sugar",
           path: "/proposals/ZE-019-result-and-option-sugar"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-20 Standard Library",
           path: "/proposals/ZE-020-standard-library"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-21 Encoding and Decoding",
           path: "/proposals/ZE-021-encoding-and-decoding"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-22 Static Checks",
           path: "/proposals/ZE-022-static-checks"
         },

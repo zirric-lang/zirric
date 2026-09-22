@@ -5,8 +5,10 @@ description: "Syntax sugar for ergonomic result unwrapping, optional chaining, f
 
 # Result and Option Sugar
 
-::: callout draft Draft
-This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design. Features described here may not be implemented as described and cannot be used right now.
+::: callout tip Implemented
+This proposal has been accepted and implemented. You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
+
+What shipped differs from the design below in one respect: `?.` and `!.` read the field off what the wrapper holds, so the `.value` written throughout this proposal is not part of the syntax — `user?.address?.city`, not `user?.value.address?.value.city`. See [Expressions § Guarded Member Access](/specification/expressions#guarded-member-access) for the current rules.
 :::
 
 ## Introduction

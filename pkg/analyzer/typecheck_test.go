@@ -415,3 +415,102 @@ func TestIndexingTextYieldsAByte(t *testing.T) {
 	expectError(t, "extern type Byte {}\nfn takeInt(n: Int) { n }\nfn main(s: String) {\n\ttakeInt(s[0])\n}", "wrong argument type", "declared Int, got Byte")
 	expectClean(t, "extern type Byte {}\nfn takeByte(b: Byte) { b }\nfn main(s: String) {\n\ttakeByte(s[0])\n}")
 }
+
+// shorthandPreamble declares the unions `T?` and `T!` resolve to, since nothing resolves prelude here.
+const shorthandPreamble = `
+union Option {
+	data Some { value }
+	data None
+}
+union Result {
+	data Ok { value }
+	data Err { reason }
+}
+`
+
+// TestTypeShorthandsCompareTheirElement pins `T?` and `T!` to the same terms an array is on: the element is kept and compared, and an element unknown on either side still fits.
+func TestTypeShorthandsCompareTheirElement(t *testing.T) {
+	t.Run("a mismatched element is reported, as it is for an array", func(t *testing.T) {
+		expectError(t, shorthandPreamble+"const x: String? = Some(\"x\")\nconst y: Int? = x",
+			"wrong type", "y is declared Int?, got String?")
+		expectError(t, shorthandPreamble+"const x: String! = Ok(\"x\")\nconst y: Int! = x",
+			"wrong type", "y is declared Int!, got String!")
+		expectError(t, shorthandPreamble+"const x: [String] = [\"x\"]\nconst y: [Int] = x",
+			"wrong type", "y is declared [Int], got [String]")
+	})
+
+	t.Run("a matching element is fine", func(t *testing.T) {
+		expectClean(t, shorthandPreamble+"const x: String? = Some(\"x\")\nconst y: String? = x")
+		expectClean(t, shorthandPreamble+"const x: String! = Ok(\"x\")\nconst y: String! = x")
+	})
+
+	t.Run("the element nests, as an array's does", func(t *testing.T) {
+		expectError(t, shorthandPreamble+"const a: [Int?] = [Some(1)]\nconst b: [String?] = a",
+			"wrong type", "b is declared [String?], got [Int?]")
+		expectClean(t, shorthandPreamble+"const a: [Int?] = [Some(1)]\nconst b: [Int?] = a")
+	})
+
+	t.Run("an element unknown on either side still fits", func(t *testing.T) {
+		expectClean(t, shorthandPreamble+"const x: String? = Some(\"x\")\nconst y: Option = x")
+		expectClean(t, shorthandPreamble+"const x: Option = Some(\"x\")\nconst y: String? = x")
+	})
+
+	t.Run("Option and Result stay apart", func(t *testing.T) {
+		expectError(t, shorthandPreamble+"const x: String? = Some(\"x\")\nconst y: String! = x",
+			"wrong type", "y is declared String!, got String?")
+	})
+
+	t.Run("a constructed value says nothing about its element", func(t *testing.T) {
+		expectClean(t, shorthandPreamble+"data User { name }\nfn f(u: User?) { u }\nfn main() { f(Some(User(\"a\"))) }")
+	})
+}
+
+// TestBinaryOperatorResultsAreDescribed pins what each operator yields to what the VM actually pushes, since a hint written over one is only worth checking if the two agree.
+func TestBinaryOperatorResultsAreDescribed(t *testing.T) {
+	t.Run("Int and Float promote to the wider of the two", func(t *testing.T) {
+		expectError(t, "extern type Float {}\nconst y: Int = 1 + 2.0", "wrong type", "y is declared Int, got Float")
+		expectClean(t, "extern type Float {}\nconst y: Float = 1 + 2.0")
+		expectClean(t, "extern type Float {}\nconst y: Float = 2.0 * 1")
+		expectClean(t, "const y: Int = 1 + 2")
+		// Int widens to Float on its own, so an Int result still satisfies a Float.
+		expectClean(t, "extern type Float {}\nconst y: Float = 1 + 2")
+	})
+
+	t.Run("a String concatenates into a String", func(t *testing.T) {
+		expectError(t, "const y: Int = \"a\" + \"b\"", "wrong type", "y is declared Int, got String")
+		expectClean(t, "const y: String = \"count: \" + 5")
+	})
+
+	t.Run("% is Int alone", func(t *testing.T) {
+		expectClean(t, "const y: Int = 7 % 2")
+		// A Float operand is an operator misuse, which is reported as such rather than as a wrong type.
+		expectError(t, "extern type Float {}\nconst y: Int = 7.0 % 2", "unsupported operator", "% is not defined for Float and Int")
+	})
+
+	t.Run("comparisons, equality and the logical operators yield Bool", func(t *testing.T) {
+		expectError(t, "extern type Bool {}\nconst y: Int = 1 < 2", "wrong type", "y is declared Int, got Bool")
+		expectError(t, "extern type Bool {}\nconst y: Int = 1 == \"a\"", "wrong type", "y is declared Int, got Bool")
+		expectError(t, "extern type Bool {}\nconst y: Int = true && false", "wrong type", "y is declared Int, got Bool")
+		expectError(t, "extern type Bool {}\nconst y: Int = 1 is Int", "wrong type", "y is declared Int, got Bool")
+	})
+
+	t.Run("an operand the checker cannot see leaves the result unknown", func(t *testing.T) {
+		expectClean(t, "fn f(a, b) { a + b }\nconst y: Int = f(1, 2)")
+		expectClean(t, "fn add(a, b) { const sum = a + b\nconst y: String = sum\ny }")
+	})
+
+	t.Run("the time types keep their own algebra", func(t *testing.T) {
+		// A Duration times an Int is a Duration, which this does not re-derive — so nothing is claimed about it.
+		expectClean(t, "extern type Duration {}\nfn f(d: Duration) { const y: Int = d * 2\ny }")
+	})
+
+	t.Run("a fallback yields what both sides agree on", func(t *testing.T) {
+		expectError(t, shorthandPreamble+"const x: String? = Some(\"x\")\nconst y: Int = x ?? \"default\"",
+			"wrong type", "y is declared Int, got String")
+		expectClean(t, shorthandPreamble+"const x: String? = Some(\"x\")\nconst y: String = x ?? \"default\"")
+		// Disagreeing sides make a union, which is more than the checker can name.
+		expectClean(t, shorthandPreamble+"const x: String? = Some(\"x\")\nconst y: Int = x ?? 0")
+		// Without a written shorthand there is no element to unwrap to.
+		expectClean(t, shorthandPreamble+"const x: Option = Some(\"x\")\nconst y: Int = x ?? \"default\"")
+	})
+}

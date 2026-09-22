@@ -190,6 +190,23 @@ const person = Person("Avery", 30)
 const ok = Ok("Done")
 ```
 
+`prelude` ships two such unions, `Option` (`Some`/`None`) and `Result` (`Ok`/`Err`), along with operators for working through them. `?.` reads a field off what an option holds, unless it is absent, in which case the whole chain is `None`; `!.` does the same for a result, and returns the error from the enclosing function instead. `??` and `!!` then stand in for a value that is not there, and `T?` and `T!` name the two types in a signature. None of them needs an unwrapping step written out.
+
+```zirric
+fn nameOf(person: Person?) -> String {
+	return person?.name ?? "Anonymous"
+}
+
+fn describe(found: Person!) -> String! {
+	const name = found!.name
+	return Ok("This is " + name)
+}
+```
+
+A union of your own joins in by carrying `@AnyOption` or `@AnyResult`, whose callback says how to read it as the standard one.
+
+See [Expressions § Guarded Member Access](/specification/expressions#guarded-member-access) and [§ Fallback](/specification/expressions#fallback).
+
 ## Control flow
 
 `if` and `for` come in expression and statement forms. Expression forms return values; statement forms are for side effects.

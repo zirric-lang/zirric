@@ -2,6 +2,7 @@ package parser
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -24,34 +25,38 @@ const (
 	LOGICAL_OR  // ||
 	LOGICAL_AND // &&
 	COMPARISON  // == or != or <= or >= or < or >
-	COALESCING  // placeholder for ??
+	COALESCING  // ?? or !!
 	RANGE       // placeholder for ..<
 	SUM         // + or -
 	PRODUCT     // * or / or %
 	BITWISE     // placeholder for << and >>
 	PREFIX      // -x or !x
 	CALL        // fun(x)
-	MEMBER      // . or ?.
+	MEMBER      // . or ?. or !.
 )
 
 var precedences = map[token.TokenType]Precedence{
-	token.OR:       LOGICAL_OR,
-	token.AND:      LOGICAL_AND,
-	token.EQ:       COMPARISON,
-	token.NEQ:      COMPARISON,
-	token.LTE:      COMPARISON,
-	token.GTE:      COMPARISON,
-	token.LT:       COMPARISON,
-	token.GT:       COMPARISON,
-	token.IS:       COMPARISON,
-	token.PLUS:     SUM,
-	token.MINUS:    SUM,
-	token.SLASH:    PRODUCT,
-	token.PERCENT:  PRODUCT,
-	token.ASTERISK: PRODUCT,
-	token.LPAREN:   CALL,
-	token.LBRACKET: CALL,
-	token.DOT:      MEMBER,
+	token.OR:                LOGICAL_OR,
+	token.AND:               LOGICAL_AND,
+	token.EQ:                COMPARISON,
+	token.NEQ:               COMPARISON,
+	token.LTE:               COMPARISON,
+	token.GTE:               COMPARISON,
+	token.LT:                COMPARISON,
+	token.GT:                COMPARISON,
+	token.IS:                COMPARISON,
+	token.PLUS:              SUM,
+	token.MINUS:             SUM,
+	token.SLASH:             PRODUCT,
+	token.PERCENT:           PRODUCT,
+	token.ASTERISK:          PRODUCT,
+	token.QUESTION_QUESTION: COALESCING,
+	token.BANG_BANG:         COALESCING,
+	token.LPAREN:            CALL,
+	token.LBRACKET:          CALL,
+	token.DOT:               MEMBER,
+	token.QUESTION_DOT:      MEMBER,
+	token.BANG_DOT:          MEMBER,
 }
 
 const (
@@ -132,7 +137,7 @@ func (p *Parser) parseAssignStmt(assignTok token.Token, target ast.Expr, augOp t
 		p.detectError(ParseError{
 			Token:   assignTok,
 			Summary: "invalid assignment target",
-			Details: "left-hand side of assignment must be an identifier, member access, or index expression",
+			Details: invalidLValueDetails(target),
 		})
 		return nil
 	}
@@ -140,7 +145,18 @@ func (p *Parser) parseAssignStmt(assignTok token.Token, target ast.Expr, augOp t
 	return ast.MakeStmtAssign(assignTok, target, augOp, value)
 }
 
+// invalidLValueDetails says why this particular target cannot be assigned to, since a guarded access looks like an ordinary member access but is not one.
+func invalidLValueDetails(target ast.Expr) string {
+	if guard, ok := guardedAccessIn(target); ok {
+		return fmt.Sprintf("%s reads a field but may short-circuit instead, so there is not always a place to assign to", guard.Operator())
+	}
+	return "left-hand side of assignment must be an identifier, member access, or index expression"
+}
+
 func isValidLValue(expr ast.Expr) bool {
+	if _, guarded := guardedAccessIn(expr); guarded {
+		return false
+	}
 	switch expr.(type) {
 	case *ast.ExprIdentifier:
 		return true
@@ -150,6 +166,23 @@ func isValidLValue(expr ast.Expr) bool {
 		return true
 	}
 	return false
+}
+
+// guardedAccessIn finds a `?.` or `!.` anywhere along a postfix chain. Anywhere is what matters for an assignment target: `user?.value.name` ends in a plain dot, yet the place it would write to only exists when the guard lets the chain through.
+func guardedAccessIn(expr ast.Expr) (ast.MemberAccess, bool) {
+	for {
+		switch node := expr.(type) {
+		case *ast.ExprMemberAccess:
+			if access := node.Access(); access != ast.MemberAccessPlain {
+				return access, true
+			}
+			expr = node.Target
+		case *ast.ExprIndexAccess:
+			expr = node.Target
+		default:
+			return ast.MemberAccessPlain, false
+		}
+	}
 }
 
 func (p *Parser) parsePrattExpr(precedence Precedence) ast.Expr {

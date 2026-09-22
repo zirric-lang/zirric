@@ -41,12 +41,30 @@ func (l *Lexer) NextToken() token.Token {
 	leading, src := tok.Leading, tok.Source
 
 	switch l.ch {
-	case '!': // BANG, NEQ
-		if l.peekChar() == '=' {
+	case '!': // BANG, NEQ, BANG_DOT, BANG_BANG
+		switch l.peekChar() {
+		case '=':
 			tok = token.Token{Type: token.NEQ, Literal: "!="}
 			l.advance()
-		} else {
+		case '.':
+			tok = token.Token{Type: token.BANG_DOT, Literal: "!."}
+			l.advance()
+		case '!':
+			tok = token.Token{Type: token.BANG_BANG, Literal: "!!"}
+			l.advance()
+		default:
 			tok = l.newToken(token.BANG, l.ch)
+		}
+	case '?': // QUESTION, QUESTION_DOT, QUESTION_QUESTION
+		switch l.peekChar() {
+		case '.':
+			tok = token.Token{Type: token.QUESTION_DOT, Literal: "?."}
+			l.advance()
+		case '?':
+			tok = token.Token{Type: token.QUESTION_QUESTION, Literal: "??"}
+			l.advance()
+		default:
+			tok = l.newToken(token.QUESTION, l.ch)
 		}
 	case '+': // PLUS, PLUS_ASSIGN
 		if l.peekChar() == '=' {

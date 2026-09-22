@@ -78,6 +78,10 @@ type Compiler struct {
 
 	scopes   []*CompilationScope
 	scopeIdx int
+	// funcDepth counts the function bodies currently being compiled, so `!.` can be rejected where returning from one is not possible.
+	funcDepth int
+	// optionJumps collects the short-circuits of the optional chain being compiled, all of which land at its end.
+	optionJumps []pendingJump
 }
 
 func New(moduleResolver resolver.ModuleResolver) *Compiler {

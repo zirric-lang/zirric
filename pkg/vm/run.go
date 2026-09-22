@@ -139,6 +139,77 @@ func (vm *VM) runLoop(taskId TaskId, stopIdx int, resumeDepth int, endIp int) er
 				return err
 			}
 
+		case op.AsOption:
+			unionId := int(op.ReadUint16(ins[ip:]))
+			attrId := int(op.ReadUint16(ins[ip+2:]))
+			fr.ip += 4
+			wrapped, err := vm.asWrapper(taskId, vm.pop(), unionId, attrId, "toOption", "?. and ??", "@AnyOption")
+			if err != nil {
+				return err
+			}
+			if err := vm.push(wrapped); err != nil {
+				return err
+			}
+
+		case op.AsResult:
+			unionId := int(op.ReadUint16(ins[ip:]))
+			attrId := int(op.ReadUint16(ins[ip+2:]))
+			fr.ip += 4
+			wrapped, err := vm.asWrapper(taskId, vm.pop(), unionId, attrId, "toResult", "!. and !!", "@AnyResult")
+			if err != nil {
+				return err
+			}
+			if err := vm.push(wrapped); err != nil {
+				return err
+			}
+
+		case op.JumpIsType:
+			pos := int(op.ReadUint16(ins[ip:]))
+			constId := int(op.ReadUint16(ins[ip+2:]))
+			fr.ip += 4
+			// The value stays put either way: on the jumping path it is the None a `?.` chain ends as, and on the other it is the target the field is read off.
+			if vm.IsType(vm.stack[vm.sp-1], vm.constants[constId]) {
+				fr.ip = pos
+			}
+
+		case op.ReturnIsType:
+			constId := int(op.ReadUint16(ins[ip:]))
+			fr.ip += 2
+			if !vm.IsType(vm.stack[vm.sp-1], vm.constants[constId]) {
+				break
+			}
+			ret := vm.pop()
+			frame := vm.popFrame()
+			vm.sp = frame.basep
+
+			// Unwinds exactly as op.Return does, including the signal a `for <-` body's early return has to be raised as.
+			if resumeDepth >= 0 && vm.framesIdx < resumeDepth {
+				panic(iterReturnSignal{targetDepth: frame.homeIdx, ret: ret})
+			}
+			if err := vm.push(ret); err != nil {
+				return err
+			}
+
+		case op.WrapOption:
+			optionId := int(op.ReadUint16(ins[ip:]))
+			someId := int(op.ReadUint16(ins[ip+2:]))
+			fr.ip += 4
+			value := vm.pop()
+			if vm.IsType(value, vm.constants[optionId]) {
+				// Already Some or None, so wrapping again would only bury the value one level deeper.
+				if err := vm.push(value); err != nil {
+					return err
+				}
+				break
+			}
+			some, ok := vm.constants[someId].(*runtime.DataType)
+			if !ok {
+				return fmt.Errorf("wrapping a value in Some requires a data type constant (%T)", vm.constants[someId])
+			}
+			if err := vm.push(runtime.MakeDataValue(some, []runtime.RuntimeValue{value})); err != nil {
+				return err
+			}
+
 		case op.Invert:
 			operand := vm.pop()
 			v, ok := operand.(runtime.Bool)
@@ -1077,4 +1148,48 @@ func compareOrdered(lhs, rhs int64, operator op.Opcode) (runtime.RuntimeValue, b
 		return runtime.Bool(lhs >= rhs), true
 	}
 	return nil, false
+}
+
+// asWrapper reads a value as the prelude union the guarded operators are defined against.
+//
+// A value that is already a member of that union is itself. Anything else has to say how to become one, through the attribute's conversion — which is a Zirric closure, called reentrantly the way an extern function's own callbacks are. A value that says nothing is reported here rather than left to fail further along, where the message would name a field instead of the thing that is actually missing.
+func (vm *VM) asWrapper(taskId TaskId, value runtime.RuntimeValue, unionId int, attrId int, field string, operators string, attribute string) (runtime.RuntimeValue, error) {
+	if vm.IsType(value, vm.constants[unionId]) {
+		return value, nil
+	}
+
+	// Keyed by the attribute type's own id, which is not always where the constant sits — the same lookup op.Call makes to read an attribute off a value.
+	attrType, ok := vm.constants[attrId].(*runtime.AttributeType)
+	if !ok {
+		return nil, fmt.Errorf("reading a value as %s requires an attribute type constant (%T)", attribute, vm.constants[attrId])
+	}
+	attributeId, carries := vm.AttributesOf(value)[attrType.TypeConstantId()]
+	if !carries {
+		return nil, fmt.Errorf("%s require a value with %s, got %s %s", operators, attribute, typeNameOf(value), value.Inspect())
+	}
+	instance, err := vm.globals[attributeId].Get(taskId)
+	if err != nil {
+		return nil, err
+	}
+	convert := instance.Lookup(field)
+	if convert == nil {
+		return nil, fmt.Errorf("the %s of %s declares no %s", attribute, typeNameOf(value), field)
+	}
+	wrapped, err := vm.CallFunction(convert, value)
+	if err != nil {
+		return nil, err
+	}
+	// Checked here so that a conversion answering with something else is named where it went wrong, rather than further along where the message would be about a missing field.
+	if !vm.IsType(wrapped, vm.constants[unionId]) {
+		return nil, fmt.Errorf("the %s of %s answered with %s %s, which is no %s", attribute, typeNameOf(value), typeNameOf(wrapped), wrapped.Inspect(), unionNameOf(vm.constants[unionId]))
+	}
+	return wrapped, nil
+}
+
+// unionNameOf names the union a constant holds, which TypeName cannot: it answers for the value's own type, and the value here is the type.
+func unionNameOf(typeValue runtime.RuntimeValue) string {
+	if union, ok := typeValue.(*runtime.UnionType); ok && union.Symbol != nil {
+		return union.Symbol.Name
+	}
+	return typeNameOf(typeValue)
 }

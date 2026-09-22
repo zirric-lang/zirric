@@ -219,6 +219,14 @@ func (c *typeChecker) checkMemberAccess(expr *ast.ExprMemberAccess, symbols *ast
 		c.checkModuleMember(expr, target)
 		return
 	}
+	if expr.Access() != ast.MemberAccessPlain {
+		// A guarded read takes the value out of its wrapper before reading the field, so the field belongs to what the Option or Result holds — which only a hint written as `T?` or `T!` records.
+		held, ok := heldByGuard(target)
+		if !ok {
+			return
+		}
+		target = held
+	}
 	if target.kind != kindData || target.sym == nil {
 		return
 	}
@@ -232,6 +240,15 @@ func (c *typeChecker) checkMemberAccess(expr *ast.ExprMemberAccess, symbols *ast
 		}
 	}
 	c.report(errUnknownField(expr.Token, target.describe(), expr.Property.Value))
+}
+
+// heldByGuard is what a `?.` or `!.` reads the field off: what the wrapper holds, which is recorded only by a hint written as `T?` or `T!`.
+// Anything else — a value that merely happens to be a Some, a union of one's own, a type the checker cannot see into — says nothing about what comes out of it, and nothing is checked.
+func heldByGuard(target checked) (checked, bool) {
+	if target.kind == kindUnion && target.elem != nil {
+		return *target.elem, true
+	}
+	return checked{}, false
 }
 
 // calleeName names what is being called, for a message that says which call is wrong.

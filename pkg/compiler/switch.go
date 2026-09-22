@@ -453,6 +453,11 @@ func (c *Compiler) resolveTypeConstantId(typeExpr ast.TypeExpr) (int, error) {
 			return 0, errAt(e, "not a type", "%s cannot be used in a type check", e.Reference.String())
 		}
 		return *origSym.ConstantId, nil
+	case ast.TypeExprOption:
+		// Only the container is checked at runtime, exactly as TypeExprArray checks for an Array and leaves its element to the analyzer.
+		return c.resolveBuiltinTypeConstantId(e, "Option", symbols)
+	case ast.TypeExprResult:
+		return c.resolveBuiltinTypeConstantId(e, "Result", symbols)
 	case ast.TypeExprArray:
 		return c.resolveBuiltinTypeConstantId(e, "Array", symbols)
 	case ast.TypeExprDict:

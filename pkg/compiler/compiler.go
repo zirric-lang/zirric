@@ -328,26 +328,16 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 
 	case *ast.ExprMemberAccess:
-		err := c.Compile(node.Target)
-		if err != nil {
-			return err
-		}
-		c.emit(op.GetField, c.addConstant(c.plugins.Prelude().String(node.Property.Value)))
-		return nil
+		return c.compilePostfixChain(node)
 
 	case *ast.ExprIndexAccess:
-		err := c.Compile(node.Target)
-		if err != nil {
-			return err
-		}
-		err = c.Compile(node.IndexExpr)
-		if err != nil {
-			return err
-		}
-		c.emit(op.GetIndex)
-		return nil
+		return c.compilePostfixChain(node)
 
 	case *ast.ExprInvocation:
+		// The arguments are pushed before the callee, so a ?. in the callee would short-circuit past a Call that still had them underneath it.
+		if chainShortCircuits(node.Function) {
+			return errAt(node.Function, "a call cannot be part of an optional chain", "?. produces an Option, which is not callable: read the value out of it first")
+		}
 		for i := 0; i < len(node.Arguments); i++ {
 			// compile arguments in left-to-right order
 			// so they are pushed onto the stack in that order
@@ -560,9 +550,9 @@ func (c *Compiler) sourceFileSymbols(file *ast.SourceFile) []*ast.Symbol {
 	return symbols
 }
 
-func (c *Compiler) changeOperand(pos int, operand int) {
+func (c *Compiler) changeOperand(pos int, operands ...int) {
 	opcode := op.Opcode(c.currentInstructions()[pos])
-	patched := op.Make(opcode, operand)
+	patched := op.Make(opcode, operands...)
 	c.replaceInstruction(pos, patched)
 }
 
@@ -586,6 +576,10 @@ func (c *Compiler) compileBlock(block ast.Block) error {
 // A single trailing expression statement is already converted to an explicit `return` at parse time (see parser.go/pratt.go's parseFunctionDecl/parsePrattExprFnClosure), but that conversion only covers a single-statement body whose lone statement is a bare expression.
 // This covers the rest: a multi-statement body, and a trailing `if`/`switch` statement whose branches should likewise produce the return value — recursing so a nested trailing if/switch inside a branch is converted the same way.
 func (c *Compiler) compileFuncBody(block ast.Block) error {
+	// !. returns from the function it sits in, which is only a thing that exists in here.
+	c.funcDepth++
+	defer func() { c.funcDepth-- }()
+
 	for i, stmt := range block {
 		if i == len(block)-1 {
 			handled, err := c.compileTailStmt(stmt)
@@ -1415,6 +1409,14 @@ func (c *Compiler) compileExprOperatorUnary(node *ast.ExprOperatorUnary) error {
 	}
 }
 func (c *Compiler) compileExprOperatorBinary(node *ast.ExprOperatorBinary) error {
+	// The fallback operators inspect the left side rather than combining it with the right, and must not evaluate the right side at all unless the left one is missing, so they compile it themselves.
+	switch node.Operator.Type {
+	case token.QUESTION_QUESTION:
+		return c.compileFallbackOperator(node, ast.MemberAccessOption, "None")
+	case token.BANG_BANG:
+		return c.compileFallbackOperator(node, ast.MemberAccessResult, "Err")
+	}
+
 	err := c.Compile(node.Left)
 	if err != nil {
 		return err
@@ -2479,6 +2481,12 @@ func (c *Compiler) describeTypeExpr(expr ast.TypeExpr) runtime.TypeRef {
 	case ast.TypeExprArray:
 		element := c.describeTypeExpr(expr.Element)
 		return runtime.TypeRef{Kind: runtime.TypeRefArray, Element: &element}
+	case ast.TypeExprOption:
+		element := c.describeTypeExpr(expr.Element)
+		return runtime.TypeRef{Kind: runtime.TypeRefOption, Element: &element}
+	case ast.TypeExprResult:
+		element := c.describeTypeExpr(expr.Element)
+		return runtime.TypeRef{Kind: runtime.TypeRefResult, Element: &element}
 	case ast.TypeExprDict:
 		key := c.describeTypeExpr(expr.Key)
 		value := c.describeTypeExpr(expr.Value)

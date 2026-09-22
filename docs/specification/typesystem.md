@@ -231,6 +231,28 @@ fn process(value: @Countable @Iterable) {
 }
 ```
 
+### Optional and Result Shorthands
+
+`T?` and `T!` are shorthands for the two prelude unions that wrap a value:
+
+```zirric
+fn findUser(id: Int) -> User? { ... } // returns an Option: Some(user) or None()
+fn readFile(path: String) -> String! { ... } // returns a Result: Ok(text) or Err(reason)
+```
+
+`T?` asks for an [`Option`](/stdlib/prelude) and `T!` for a [`Result`](/stdlib/prelude). The element — `User`, `String` — says what a present or successful value holds, and is treated exactly as an array's element is:
+
+- **At runtime the container is all that is checked.** `findUser(1) is User?` asks only whether the value is an `Option`, the same way `xs is [String]` asks only whether it is an `Array`. Zirric has no generic types, so there is nothing about the element for a runtime check to look at.
+- **Between two written hints the element is compared.** Passing a `String?` where an `Int?` is declared is reported, as passing `[String]` where `[Int]` is declared would be. An element unknown on either side still fits, so a plain `Option` satisfies a `String?` and vice versa.
+
+```zirric
+const name: String? = Some("Ada")
+const age: Int? = name // reported: age is declared Int?, got String?
+const any: Option = name // fine — a bare Option says nothing about what it holds
+```
+
+The suffixes stack (`T?!` is a `Result`, the outermost suffix winning) and apply to any type expression, `[Int]?` and `fn() -> Int?` included. They must sit directly on the type, with no space between the two; see [Syntax § Type Expressions](/specification/syntax#type-expressions).
+
 ### Type hints on declarations
 
 See [Declarations § Parameters and Type Hints](/specification/declarations#parameters-and-type-hints) for all positions where type hints can appear.

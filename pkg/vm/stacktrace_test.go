@@ -175,3 +175,40 @@ func TestNoUserFacingMessageNamesAGoType(t *testing.T) {
 		}
 	}
 }
+
+// TestAFailureAfterACallReturnsBlamesTheCaller is a regression test: the frame of a call that has already returned stays in the frames array, and the trace used to start on it — so a failure in the caller, on the line right after the call, was reported inside the function that had just finished.
+func TestAFailureAfterACallReturnsBlamesTheCaller(t *testing.T) {
+	err := runFailing(t, `
+data Person {
+	name
+}
+fn identity(x) {
+	return x
+}
+fn read(p) {
+	return identity(p).missing
+}
+read(Person("a"))
+`)
+
+	var runtimeErr *vm.RuntimeError
+	if !errors.As(err, &runtimeErr) {
+		t.Fatalf("expected a *vm.RuntimeError, got %T: %s", err, err)
+	}
+
+	source := runtimeErr.Position()
+	if source == nil {
+		t.Fatal("expected a position")
+	}
+	// Line 9 is the field read in read(), not line 6 where identity returns.
+	if source.Line != 9 {
+		t.Errorf("expected the failure on line 9, where the field is read, got line %d", source.Line)
+	}
+	trace := runtimeErr.StackTrace()
+	if strings.Contains(trace, "identity") {
+		t.Errorf("identity had already returned, so it must not be in the trace:\n%s", trace)
+	}
+	if !strings.Contains(trace, "read") {
+		t.Errorf("expected the frame that actually failed in the trace:\n%s", trace)
+	}
+}

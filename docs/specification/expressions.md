@@ -52,6 +52,19 @@ Comparison operators are non-associative: `a == b == c` is a syntax error.
 
 `-x` negates a numeric value. `!x` inverts a `Bool`.
 
+### Fallback
+
+`??` and `!!` stand in for a value that is not there. Both short-circuit: the right operand is only evaluated when the left one turns out to be missing.
+
+Each reads its left operand the same way the guarded accesses do — `??` as an `Option` and `!!` as a `Result` — and then answers with the right operand when what comes back is a `None` or an `Err`, and with what the `Some` or `Ok` holds otherwise. A left operand standing for neither an option nor a result is a runtime error rather than a value that passes through.
+
+```zirric
+const city = findUser(42)?.address?.city ?? "Unknown"
+const text = readFile("config.txt") !! "default config"
+```
+
+Both are right-associative, so `a ?? b ?? c` reads as `a ?? (b ?? c)`. They bind looser than arithmetic and tighter than comparison: `a ?? b + 1` is `a ?? (b + 1)`, and `a ?? b == c` is `(a ?? b) == c`.
+
 ## Calls and Member Access
 
 ### Function calls
@@ -80,6 +93,42 @@ strings.join // member of a module
 
 Accessing a nonexistent field is a runtime error.
 
+### Guarded member access
+
+`?.` and `!.` read a field the same way `.` does, but only once the value they sit on turns out to be readable — and they read it off what that value _holds_, so no unwrapping step is written.
+
+Both begin by reading the target as the prelude [`Option`](/stdlib/prelude#option) or [`Result`](/stdlib/prelude#result) standing for it. A `Some`, `None`, `Ok` or `Err` is already one; anything else is asked for one through [`@AnyOption`](/stdlib/prelude#anyoption) or [`@AnyResult`](/stdlib/prelude#anyresult), whose callback says how to make one of it, and a value carrying neither is a runtime error. That is what lets a union of your own be read exactly as the prelude's is.
+
+Both bind exactly as tightly as `.`, so they mix freely in one chain.
+
+#### Optional chaining (`?.`)
+
+`target?.field` reads `field` off what `target` holds, unless `target` is absent, in which case the whole surrounding chain is `None` and nothing further in it is evaluated — including an index expression written after it.
+
+A chain that contains a `?.` always produces an `Option`: its result is wrapped in `Some` unless it already is a `Some` or a `None`, so an `Option`-valued field is not wrapped twice. [`??`](#fallback) reads the value back out.
+
+```zirric
+const city = user?.address?.city
+// Some(city) when both are present, None as soon as either is absent
+```
+
+The chain runs to its outermost member or index access. A call ends it: a call whose callee contains a `?.` is a compile error, because the chain's result is an `Option` and an `Option` cannot be called.
+
+#### Result unwrapping (`!.`)
+
+`target!.field` reads `field` off what `target` holds, unless `target` is an `Err`, in which case the enclosing function returns that `Err` and the rest of its body does not run.
+
+```zirric
+fn hostOf(result: Config!) -> String! {
+	const host = result!.host
+	return Ok("host is " + host)
+}
+// hostOf(Ok(Config("example.com"))) is Ok("host is example.com")
+// hostOf(Err("missing file")) is Err("missing file")
+```
+
+Because `!.` returns from the function it sits in, it is only allowed inside one: using it in a top-level statement or a declaration's initializer is a compile error.
+
 ### Index access
 
 The `[]` operator accesses elements by index (`Array`, `String`) or by key (`Dict`).
@@ -101,6 +150,8 @@ Assignment uses `=` and is only valid for mutable locations:
 - **Index assignment**: `arr[0] = 99`
 
 Assigning to a `const` binding is a compile error. The discard pattern `_ = expr` evaluates `expr` and discards the result.
+
+A guarded access is not an assignment target: `user?.name = "Bob"` is a compile error, since `?.` and `!.` may produce no field to assign to.
 
 ## Closures
 

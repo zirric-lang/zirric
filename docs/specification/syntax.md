@@ -71,6 +71,10 @@ ASSIGN   = "=";     ARROW    = "->";    LARROW   = "<-";
 COLON    = ":";     DOT      = ".";     COMMA    = ",";
 AT       = "@";
 
+QDOT     = "?.";    BANGDOT  = "!.";
+QQ       = "??";    BANGBANG = "!!";
+QUESTION = "?";
+
 LPAREN   = "(";     RPAREN   = ")";
 LBRACE   = "{";     RBRACE   = "}";
 LBRACKET = "[";     RBRACKET = "]";
@@ -97,11 +101,12 @@ Operators are listed from lowest to highest precedence.
 | Logical OR  | `\|\|`                                      | Left          |
 | Logical AND | `&&`                                        | Left          |
 | Comparison  | `==`, `!=`, `<`, `<=`, `>`, `>=`, `is Type` | Left          |
+| Fallback    | `??`, `!!`                                  | Right         |
 | Sum         | `+`, `-`                                    | Left          |
 | Product     | `*`, `/`, `%`                               | Left          |
 | Prefix      | `-x`, `!x`                                  | Right         |
 | Call        | `f(args)`                                   | Left          |
-| Member      | `expr.field`                                | Left          |
+| Member      | `expr.field`, `expr?.field`, `expr!.field`  | Left          |
 
 See [Expressions § Operators](/specification/expressions#operators) for semantic details.
 
@@ -207,7 +212,8 @@ Parameters appear in `fn` declarations, closures, `extern fn`, and function-styl
 Type expressions annotate declarations and parameters with type information. They appear after `:` on fields, parameters, and variables, and after `->` on function return types.
 
 ```ebnf
-TypeExpr      = TypeExprRef | TypeExprArray | TypeExprDict | TypeExprFunc | TypeExprAttrs;
+TypeExpr      = TypeExprPrimary, {"?" | "!"};
+TypeExprPrimary = TypeExprRef | TypeExprArray | TypeExprDict | TypeExprFunc | TypeExprAttrs;
 
 TypeExprRef   = StaticReference;
 TypeExprArray = "[", TypeExpr, "]";
@@ -218,6 +224,8 @@ TypeExprAttrs = "@", StaticReference, {"@", StaticReference};
 TypeExprParams = TypeExprParam, {",", TypeExprParam};
 TypeExprParam  = [{Attribute}, Identifier, ":"], TypeExpr;
 ```
+
+A `?` or `!` suffix must sit directly on the type it qualifies, with no whitespace or comment between them. That is what keeps a return type from running on into the next line: after `extern fn ready() -> Bool`, a following statement that begins with `!` is a statement of its own. See [Type System § Optional and Result Shorthands](/specification/typesystem#optional-and-result-shorthands).
 
 See [Type System § Type Hints](/specification/typesystem#type-hints) for what type expressions express and how they interact with type checking.
 
@@ -250,20 +258,25 @@ A `StaticReference` is a dot-separated path used for qualified names in imports,
 ### Operators
 
 ```ebnf
-InfixExpr  = Expression, operator, Expression;
-PrefixExpr = ("-" | "!"), Expression;
-IsExpr     = Expression, "is", TypeExpr;
+InfixExpr    = Expression, operator, Expression;
+PrefixExpr   = ("-" | "!"), Expression;
+IsExpr       = Expression, "is", TypeExpr;
+FallbackExpr = Expression, ("??" | "!!"), Expression;
 ```
+
+A `!` directly before an expression negates it; one directly after a type is the `T!` shorthand. See [Type Expressions](#type-expressions).
 
 ### Calls and Member Access
 
 ```ebnf
 CallExpr   = Expression, "(", [Arguments], ")";
-MemberExpr = Expression, ".", Identifier;
+MemberExpr = Expression, ("." | "?." | "!."), Identifier;
 IndexExpr  = Expression, "[", Expression, "]";
 
 Arguments = Expression, {",", Expression};
 ```
+
+`?.` and `!.` read a field the same way `.` does, but only once the value they sit on turns out to be readable. See [Expressions § Guarded Member Access](/specification/expressions#guarded-member-access).
 
 ### Closures
 
@@ -290,7 +303,7 @@ FieldAssignment = Expression, ".", Identifier, "=", Expression;
 IndexAssignment = Expression, "[", Expression, "]", "=", Expression;
 ```
 
-Only `var` bindings and mutable locations accept assignment. See [Expressions § Assignment](/specification/expressions#assignment).
+Only `var` bindings and mutable locations accept assignment. A guarded access (`?.` or `!.`) is not an assignment target, since it may produce no field to assign to. See [Expressions § Assignment](/specification/expressions#assignment).
 
 ## Statements
 

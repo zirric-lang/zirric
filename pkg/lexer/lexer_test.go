@@ -1309,3 +1309,96 @@ func TestPositionsAfterATabIndentedLine(t *testing.T) {
 		t.Errorf("expected return at 2:2, got %d:%d", tok.Source.Line, tok.Source.Column)
 	}
 }
+
+// TestGuardedMemberAccessTokens pins the two-character operators apart from the one-character ones they start with, since "!" and "!." differ only in what follows.
+func TestGuardedMemberAccessTokens(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected []token.Token
+	}{
+		{
+			name:  "optional chaining",
+			input: `user?.name`,
+			expected: []token.Token{
+				{Type: token.IDENT, Literal: "user"},
+				{Type: token.QUESTION_DOT, Literal: "?."},
+				{Type: token.IDENT, Literal: "name"},
+			},
+		},
+		{
+			name:  "result unwrapping",
+			input: `result!.value`,
+			expected: []token.Token{
+				{Type: token.IDENT, Literal: "result"},
+				{Type: token.BANG_DOT, Literal: "!."},
+				{Type: token.IDENT, Literal: "value"},
+			},
+		},
+		{
+			name:  "bang before an identifier stays a bang",
+			input: `!ok.value`,
+			expected: []token.Token{
+				{Type: token.BANG, Literal: "!"},
+				{Type: token.IDENT, Literal: "ok"},
+				{Type: token.DOT, Literal: "."},
+				{Type: token.IDENT, Literal: "value"},
+			},
+		},
+		{
+			name:  "not equal is still not equal",
+			input: `a != b`,
+			expected: []token.Token{
+				{Type: token.IDENT, Literal: "a"},
+				{Type: token.NEQ, Literal: "!="},
+				{Type: token.IDENT, Literal: "b"},
+			},
+		},
+		{
+			name:  "option fallback",
+			input: `a ?? b`,
+			expected: []token.Token{
+				{Type: token.IDENT, Literal: "a"},
+				{Type: token.QUESTION_QUESTION, Literal: "??"},
+				{Type: token.IDENT, Literal: "b"},
+			},
+		},
+		{
+			name:  "result fallback",
+			input: `a !! b`,
+			expected: []token.Token{
+				{Type: token.IDENT, Literal: "a"},
+				{Type: token.BANG_BANG, Literal: "!!"},
+				{Type: token.IDENT, Literal: "b"},
+			},
+		},
+		{
+			name:  "type shorthands",
+			input: `User? String!`,
+			expected: []token.Token{
+				{Type: token.IDENT, Literal: "User"},
+				{Type: token.QUESTION, Literal: "?"},
+				{Type: token.IDENT, Literal: "String"},
+				{Type: token.BANG, Literal: "!"},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			l, err := lexer.New(staticmodule.NewSourceString("testing:///test/test.zirr", tc.input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i, want := range tc.expected {
+				got := l.NextToken()
+				if got.Type != want.Type || got.Literal != want.Literal {
+					t.Fatalf("token %d: expected %q %q, got %q %q", i, want.Type, want.Literal, got.Type, got.Literal)
+				}
+			}
+			if got := l.NextToken(); got.Type != token.EOF {
+				t.Fatalf("expected EOF after %d tokens, got %q %q", len(tc.expected), got.Type, got.Literal)
+			}
+		})
+	}
+}

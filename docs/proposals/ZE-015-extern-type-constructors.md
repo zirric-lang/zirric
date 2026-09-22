@@ -179,7 +179,7 @@ Requiring a constructor on every `extern type` was considered, with the intent o
 
 ### Variadic `Array` constructor: `Array(item1, item2, ...)`
 
-A variadic constructor — `Array(1, 2, 3)` — is the most ergonomic form and is referenced in [ZE-004](/proposals/ZE-004-Variadic-Arguments). However, ZE-004 is still a draft. `Array(iterable: @Iterable)` achieves the same goal without a dependency on unaccepted proposals. If ZE-004 is accepted, a variadic form could be added alongside.
+A variadic constructor — `Array(1, 2, 3)` — is the most ergonomic form and is referenced in [ZE-004](/proposals/ZE-004-Variadic-Attributes). However, ZE-004 is still a draft. `Array(iterable: @Iterable)` achieves the same goal without a dependency on unaccepted proposals. If ZE-004 is accepted, a variadic form could be added alongside.
 
 ### Truthy/falsy rules for `Bool`
 

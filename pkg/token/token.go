@@ -41,6 +41,17 @@ const (
 	SLASH_ASSIGN   TokenType = "/="
 	PERCENT_ASSIGN TokenType = "%="
 
+	// Guarded member access, which reads a field only once the value it sits on turns out to be there (?.) or not to be an error (!.).
+	QUESTION_DOT TokenType = "?."
+	BANG_DOT     TokenType = "!."
+
+	// Fallbacks, which stand in for an absent value (??) or a failed one (!!).
+	QUESTION_QUESTION TokenType = "??"
+	BANG_BANG         TokenType = "!!"
+
+	// Written directly after a type, marking it optional (T?) or fallible (T!).
+	QUESTION TokenType = "?"
+
 	LT  TokenType = "<"
 	GT  TokenType = ">"
 	EQ  TokenType = "=="

@@ -92,6 +92,18 @@ union TypeRef {
 		element: TypeRef
 	}
 
+	// An optional type, e.g. String?.
+	data OptionType {
+		// What a present value holds, as written. Zirric has no generic types, so a value only has to be an Option at runtime; the element is what two written hints are told apart by.
+		element: TypeRef
+	}
+
+	// A result type, e.g. String!.
+	data ResultType {
+		// What a successful value holds, as written, on the same terms as OptionType's element.
+		element: TypeRef
+	}
+
 	// A dict type, e.g. [String: Int].
 	data DictType {
 		key: TypeRef

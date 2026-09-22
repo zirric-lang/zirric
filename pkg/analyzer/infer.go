@@ -48,6 +48,14 @@ func (a *Analyzer) infer(expr ast.Expr, symbols *ast.SymbolTable) checked {
 		return a.inferMemberAccess(expr, symbols)
 	case ast.ExprMemberAccess:
 		return a.inferMemberAccess(&expr, symbols)
+	case *ast.ExprOperatorBinary:
+		return a.inferBinaryOperator(expr, symbols)
+	case ast.ExprOperatorBinary:
+		return a.inferBinaryOperator(&expr, symbols)
+	case *ast.ExprIs:
+		return a.builtinNamed("Bool", symbols)
+	case ast.ExprIs:
+		return a.builtinNamed("Bool", symbols)
 	case *ast.ExprIf:
 		return a.inferIf(expr, symbols)
 	case ast.ExprIf:
@@ -287,6 +295,10 @@ func (a *Analyzer) inferInvocation(expr *ast.ExprInvocation, symbols *ast.Symbol
 
 // inferMemberAccess describes reading a field off a value, which is only knowable when the value's type is.
 func (a *Analyzer) inferMemberAccess(expr *ast.ExprMemberAccess, symbols *ast.SymbolTable) checked {
+	// A guarded read answers with an Option or with whatever the enclosing function returns instead, neither of which is the field's own type.
+	if expr.Access() != ast.MemberAccessPlain {
+		return unknownType()
+	}
 	target := a.infer(expr.Target, symbols)
 	if target.kind == kindModule {
 		// Reading a name off a module gives whatever that module bound to it, which is how a qualified call gets checked like any other.

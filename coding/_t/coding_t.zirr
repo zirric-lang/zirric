@@ -185,9 +185,18 @@ fn testATreeSurvivesRealJSONText() {
 	])
 }
 
-@AnyOption()
+@AnyOption(fn(m) {
+	switch m {
+	case is Just:
+		Some(m.value)
+	case _:
+		None()
+	}
+})
 union Maybe {
+	@AnyOption(fn(j) { Some(j.value) })
 	data Just { value }
+	@AnyOption(fn(n) { None() })
 	data Nothing
 }
 

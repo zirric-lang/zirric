@@ -16,6 +16,8 @@ data Sample {
 	scores: [String: Int]
 	parse: fn(String) -> Int
 	nested: Option
+	maybe: String?
+	attempt: Int!
 }
 
 // Declared only so that a hint naming the type it is declared on has something to resolve against.
@@ -36,7 +38,7 @@ fn fieldNamed(name: String) -> reflect.Field {
 @Test()
 fn testFieldsAreEveryFieldInDeclarationOrder() {
 	assert.equal(
-		["plain", "name", "tags", "scores", "parse", "nested"],
+		["plain", "name", "tags", "scores", "parse", "nested", "maybe", "attempt"],
 		arrays.map(reflect.fieldsOf(Sample), fn(field) { field.name }),
 	)
 }
@@ -90,6 +92,18 @@ fn testArrayAndDictHintsKeepTheirElementTypes() {
 }
 
 @Test()
+fn testOptionAndResultHintsKeepTheirElementTypes() {
+	const maybe = fieldNamed("maybe").declaredType
+	const attempt = fieldNamed("attempt").declaredType
+	assert.all([
+		assert.equal(true, maybe is reflect.OptionType),
+		assert.equal("String", maybe.element.name),
+		assert.equal(true, attempt is reflect.ResultType),
+		assert.equal("Int", attempt.element.name),
+	])
+}
+
+@Test()
 fn testAFunctionHintKeepsItsParametersAndResult() {
 	const parse = fieldNamed("parse").declaredType
 	assert.all([
@@ -116,30 +130,30 @@ fn testTypesReportWhatTheyAre() {
 @Test()
 fn testUnionMembersAreItsMemberTypes() {
 	assert.equal(
-		["NamedType", "ArrayType", "DictType", "FuncType", "AttrsType", "UnknownType"],
+		["NamedType", "ArrayType", "OptionType", "ResultType", "DictType", "FuncType", "AttrsType", "UnknownType"],
 		arrays.map(reflect.unionMembers(reflect.TypeRef), fn(m) { reflect.typeName(m) }),
 	)
 }
 
 @Test()
 fn testTypeOfFindsTheTypeAValueWasBuiltFrom() {
-	const value = Sample(1, "a", [], [:], fn(text) { 0 }, None())
+	const value = Sample(1, "a", [], [:], fn(text) { 0 }, None(), None(), Ok(1))
 	const found = reflect.typeOf(value)
 	assert.all([
 		assert.equal(true, found is Some),
 		assert.equal("Sample", reflect.typeName(found.value)),
 		// The type reflection finds is the very type an `is` check compares against.
 		assert.equal(true, reflect.fieldsOf(found.value) is [Any]),
-		assert.equal(6, len(reflect.fieldsOf(found.value))),
+		assert.equal(8, len(reflect.fieldsOf(found.value))),
 	])
 }
 
 @Test()
 fn testFieldValuesAlignWithFields() {
-	const value = Sample(1, "a", ["t"], ["k": 2], fn(text) { 0 }, None())
+	const value = Sample(1, "a", ["t"], ["k": 2], fn(text) { 0 }, None(), None(), Ok(1))
 	assert.all([
 		assert.equal(
-			["plain", "name", "tags", "scores", "parse", "nested"],
+			["plain", "name", "tags", "scores", "parse", "nested", "maybe", "attempt"],
 			arrays.map(reflect.fieldsOf(Sample), fn(field) { field.name }),
 		),
 		assert.equal(1, reflect.fieldValues(value)[0]),
@@ -152,7 +166,7 @@ fn testFieldValuesAlignWithFields() {
 
 @Test()
 fn testConstructBuildsAValueFromItsFields() {
-	const built = reflect.construct(Sample, [1, "a", [], [:], void, void])
+	const built = reflect.construct(Sample, [1, "a", [], [:], void, void, void, void])
 	assert.all([
 		assert.equal(true, built is Ok),
 		assert.equal("a", built.value.name),
@@ -171,7 +185,7 @@ fn testConstructRefusesTheWrongNumberOfFields() {
 
 @Test()
 fn testIsInstanceDecidesAsTheIsOperatorDoes() {
-	const value = Sample(1, "a", [], [:], fn(text) { 0 }, None())
+	const value = Sample(1, "a", [], [:], fn(text) { 0 }, None(), None(), Ok(1))
 	assert.all([
 		assert.equal(true, reflect.isInstance(value, Sample)),
 		assert.equal(false, reflect.isInstance(42, Sample)),
@@ -203,7 +217,7 @@ fn testTypesCompareByIdentity() {
 		assert.equal(true, String == String),
 		assert.equal(false, String == Int),
 		// The type reflection hands back is the same value as the one written in source.
-		assert.equal(true, reflect.typeOf(Sample(1, "a", [], [:], fn(text) { 0 }, None())).value == Sample),
+		assert.equal(true, reflect.typeOf(Sample(1, "a", [], [:], fn(text) { 0 }, None(), None(), Ok(1))).value == Sample),
 		// Comparing a type with something that is not one is simply false.
 		assert.equal(false, Sample == 42),
 	])

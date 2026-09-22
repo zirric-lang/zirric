@@ -5,18 +5,9 @@ description: Introduce variadic attributes to allow attributes to accept a varia
 
 # Variadic Attributes
 
-::: callout draft Draft
-This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design. Features described here may not be implemented as described and cannot be used right now.
+::: callout danger Rejected
+This proposal has been rejected and will not be implemented.
 :::
-
-::: callout warning Outdated
-While this proposal has not been rejected, it is currently outdated and requires an overhaul to reflect the latest design decisions.
-
-- [ ] Reflect latest syntax changes
-- [ ] Reflect latest stdlib changes
-- [ ] Attributes are no longer used for types
-- [ ] Evaluate the use cases of this proposal
-      :::
 
 ## Introduction
 

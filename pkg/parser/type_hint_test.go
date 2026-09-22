@@ -215,3 +215,48 @@ func TestParseDottedTypeHint(t *testing.T) {
 		t.Errorf("second part: want 'String', got %q", ref.Reference[1].Value)
 	}
 }
+
+// TestParseTypeShorthands covers `T?` and `T!`, including the adjacency rule that keeps a hint from swallowing the line after it.
+func TestParseTypeShorthands(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{`data Foo { name: String? }`, "String?"},
+		{`data Foo { name: String! }`, "String!"},
+		{`data Foo { name: [Int]? }`, "[Int]?"},
+		{`data Foo { name: a.User? }`, "a.User?"},
+		{`data Foo { name: fn() -> Int? }`, "fn() -> Int?"},
+		// The shorthands stack and read left to right.
+		{`data Foo { name: String?! }`, "String?!"},
+		// A space between the type and the suffix means the suffix is not one.
+		{`data Foo { name: String }`, "String"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			sf := prepareSourceFileParsing(t, tt.input)
+			decl := lookupDeclSymbol(t, sf, "Foo").Decl.(*ast.DeclData)
+			hint := decl.Fields[0].TypeHint
+			if hint == nil {
+				t.Fatal("expected a type hint")
+			}
+			if got := hint.TypeExpression(); got != tt.want {
+				t.Errorf("want %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
+// TestTypeHintDoesNotSwallowTheNextLine is a regression guard: `!` starts plenty of statements, so a return type has to end at the end of its own line.
+func TestTypeHintDoesNotSwallowTheNextLine(t *testing.T) {
+	sf := prepareSourceFileParsing(t, "extern fn ready() -> Bool\nconst notReady = !ready()")
+
+	decl, ok := lookupDeclSymbol(t, sf, "ready").Decl.(*ast.DeclExternFunc)
+	if !ok {
+		t.Fatalf("expected DeclExternFunc, got %T", lookupDeclSymbol(t, sf, "ready").Decl)
+	}
+	if got := decl.ReturnType.TypeExpression(); got != "Bool" {
+		t.Errorf("expected the return type to end at Bool, got %q", got)
+	}
+}

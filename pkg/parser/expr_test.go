@@ -5,6 +5,10 @@ import (
 	"testing"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
+	"code.knabel.dev/zirric-lang/zirric/pkg/lexer"
+	"code.knabel.dev/zirric-lang/zirric/pkg/parser"
+	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
+	"code.knabel.dev/zirric-lang/zirric/pkg/registry/staticmodule"
 )
 
 func TestExprIdentifier(t *testing.T) {
@@ -124,6 +128,121 @@ func TestParseExprFor(t *testing.T) {
 					t.Fatalf("expected last stmt %s, got %s", tt.lastStmtType, got)
 				}
 			}
+		})
+	}
+}
+
+// TestFloatLiteralCarriesItsToken is a regression test: MakeExprFloat took a token and dropped it, so every float literal in the tree had a zero token and anything anchored to one — a diagnostic, a hover, a stack frame — had no position to report.
+func TestFloatLiteralCarriesItsToken(t *testing.T) {
+	srcFile := prepareSourceFileParsing(t, "13.37")
+	stmt := srcFile.Statements[0].(*ast.StmtExpr)
+	source := stmt.Expr.TokenLiteral().Source
+	if source == nil || source.Line <= 0 {
+		t.Fatalf("expected the literal to carry a position, got %v", source)
+	}
+}
+
+// TestExprGuardedMemberAccess covers `?.` and `!.`: that they parse as member accesses, that they bind like a plain dot, and that the operator survives into the tree rather than being flattened into one.
+func TestExprGuardedMemberAccess(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+		// access lists the operator of every member access in the tree, outermost first, which is the order the node walk visits them in.
+		access []ast.MemberAccess
+	}{
+		{"user.name", "user.name", []ast.MemberAccess{ast.MemberAccessPlain}},
+		{"user?.name", "user?.name", []ast.MemberAccess{ast.MemberAccessOption}},
+		{"result!.value", "result!.value", []ast.MemberAccess{ast.MemberAccessResult}},
+		{
+			"user?.address?.city",
+			"user?.address?.city",
+			[]ast.MemberAccess{
+				ast.MemberAccessOption,
+				ast.MemberAccessOption,
+			},
+		},
+		// A guarded access binds tighter than arithmetic, the same way a plain dot does.
+		{"a?.b + c!.d", "(a?.b+c!.d)", []ast.MemberAccess{ast.MemberAccessOption, ast.MemberAccessResult}},
+		// A fallback binds looser than the chain in front of it and than arithmetic behind it.
+		{"a?.b ?? c", "(a?.b??c)", []ast.MemberAccess{ast.MemberAccessOption}},
+		{"a!.b !! c", "(a!.b!!c)", []ast.MemberAccess{ast.MemberAccessResult}},
+		{"a ?? b + 1", "(a??(b+1))", nil},
+		{"a ?? b ?? c", "(a??(b??c))", nil},
+		{"a ?? b == c", "((a??b)==c)", nil},
+		{"readFile(path)!.value", "readFile(pathreadFile)!.value", []ast.MemberAccess{ast.MemberAccessResult}},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("%d.\t test: %q", i+1, tt.input), func(t *testing.T) {
+			srcFile := prepareSourceFileParsing(t, tt.input)
+			if len(srcFile.Statements) != 1 {
+				t.Fatalf("srcFile.Statements does not contain 1 statement, got %d", len(srcFile.Statements))
+			}
+			stmt, ok := srcFile.Statements[0].(*ast.StmtExpr)
+			if !ok {
+				t.Fatalf("srcFile.Statements[0] is not *ast.StmtExpr, got %T", srcFile.Statements[0])
+			}
+			if got := stmt.Expr.Expression(); got != tt.want {
+				t.Errorf("wrong expression parsed\nwant:\t%q\ngot:\t%q", tt.want, got)
+			}
+
+			var got []ast.MemberAccess
+			collect := func(node ast.Node) {
+				if member, ok := node.(*ast.ExprMemberAccess); ok {
+					got = append(got, member.Access())
+				}
+			}
+			collect(stmt.Expr)
+			stmt.Expr.EnumerateChildNodes(collect)
+			if len(got) == 0 && len(tt.access) == 0 {
+				return
+			}
+			if len(got) != len(tt.access) {
+				t.Fatalf("expected %d member accesses, got %d (%v)", len(tt.access), len(got), got)
+			}
+			for j := range tt.access {
+				if got[j] != tt.access[j] {
+					t.Errorf("member access %d: expected %q, got %q", j, tt.access[j].Operator(), got[j].Operator())
+				}
+			}
+		})
+	}
+}
+
+// TestGuardedAccessIsNotAnAssignmentTarget covers a guard anywhere along the chain, not just at its end: `user?.value.name` ends in a plain dot, yet the place it would write to only exists when the guard lets the chain through.
+func TestGuardedAccessIsNotAnAssignmentTarget(t *testing.T) {
+	rejected := []string{
+		"user?.name = 1",
+		"user!.name = 1",
+		"user?.name = 1",
+		"user?.items[0] = 1",
+		"user?.name += 1",
+	}
+
+	for _, input := range rejected {
+		t.Run(input, func(t *testing.T) {
+			module := ast.MakeContextModule(registry.LogicalURI("test"))
+			l, err := lexer.New(staticmodule.NewSourceString("testing:///test.zirr", input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := parser.NewSourceParser(l, module.Decls, "test.zirr")
+			p.ParseSourceFile()
+
+			errs := p.Errors()
+			if len(errs) == 0 {
+				t.Fatalf("expected %q to be rejected", input)
+			}
+			if errs[0].Summary != "invalid assignment target" {
+				t.Fatalf("expected an invalid assignment target, got %q: %s", errs[0].Summary, errs[0].Details)
+			}
+		})
+	}
+
+	// The plain forms are still assignable.
+	for _, input := range []string{"user.name = 1", "items[0] = 1", "count = 1"} {
+		t.Run(input, func(t *testing.T) {
+			prepareSourceFileParsing(t, input)
 		})
 	}
 }

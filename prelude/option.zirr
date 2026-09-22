@@ -1,20 +1,32 @@
 mod code.knabel.dev.zirric_lang.zirric.prelude
 
-// Marks a union as an option type.
-// Types annotated with `@AnyOption` are expected to be unions
-// that follow the Some/None pattern.
-attr AnyOption {}
+// Marks a union as an option type, and says how to read one as an `Option`.
+// Types annotated with `@AnyOption` are expected to be unions that follow the
+// Some/None pattern, or to convert themselves into one. This is what `?.` and
+// `??` read a value through when it is not already a `Some` or a `None`, so
+// annotating a union of your own is what makes those operators work on it.
+//
+// Write it on each member type as well as on the union: a union's attributes
+// are not read off a value of one of its members, which is why `Option`
+// annotates `Some` and `None` individually.
+attr AnyOption {
+	// Returns this value as an `Option`, which for a union already shaped
+	// like one is the value itself.
+	toOption(self: @AnyOption) -> Option
+}
 
 // An option type that can be either Some or None.
 // Used for values that may or may not be present.
-@AnyOption()
+@AnyOption(fn(o) { o })
 union Option {
 	// The present value.
+	@AnyOption(fn(o) { o })
 	data Some {
 		// The value that is present.
 		value
 	}
 
 	// The absent value.
+	@AnyOption(fn(o) { o })
 	data None
 }

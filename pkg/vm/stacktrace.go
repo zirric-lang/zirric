@@ -90,8 +90,9 @@ func (vm *VM) trace() []TraceFrame {
 	if vm.debug == nil {
 		return nil
 	}
-	frames := make([]TraceFrame, 0, vm.framesIdx+1)
-	for i := vm.framesIdx; i >= 0; i-- {
+	frames := make([]TraceFrame, 0, vm.framesIdx)
+	// framesIdx counts the live frames rather than indexing the top one, so the walk starts below it. Starting at framesIdx reads whatever the last returning call left behind, since popFrame only decrements — a frame that is no longer running, reported as the one that failed.
+	for i := vm.framesIdx - 1; i >= 0; i-- {
 		frame := vm.frames[i]
 		if frame == nil {
 			continue

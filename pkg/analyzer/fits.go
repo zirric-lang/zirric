@@ -12,6 +12,11 @@ func (a *Analyzer) fits(value checked, target checked, symbols *ast.SymbolTable)
 		return true
 	}
 
+	// Two hints on the same union differ only in what they hold, which is compared exactly as an array's element is — and, as there, an element unknown on either side still fits, so a bare `Option` is no harder to satisfy than it ever was.
+	if value.kind == kindUnion && target.kind == kindUnion && sameType(value, target) {
+		return a.elementFits(value.elem, target.elem, symbols)
+	}
+
 	// A union fits when any member does, in either direction: the value might be the member that works, and the target accepts any of its members.
 	if target.kind == kindUnion {
 		members := a.unionMembers(target, symbols)

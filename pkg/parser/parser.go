@@ -64,8 +64,12 @@ func NewSourceParser(lex *lexer.Lexer, parent *ast.DeclTable, path string) *Pars
 	p.registerInfix(token.SLASH, p.parsePrattExprInfix)
 	p.registerInfix(token.ASTERISK, p.parsePrattExprInfix)
 	p.registerInfix(token.PERCENT, p.parsePrattExprInfix)
+	p.registerInfix(token.QUESTION_QUESTION, p.parsePrattExprInfix)
+	p.registerInfix(token.BANG_BANG, p.parsePrattExprInfix)
 	p.registerInfix(token.LPAREN, p.parsePrattExprCall)
 	p.registerInfix(token.DOT, p.parsePrattExprMember)
+	p.registerInfix(token.QUESTION_DOT, p.parsePrattExprMember)
+	p.registerInfix(token.BANG_DOT, p.parsePrattExprMember)
 	p.registerInfix(token.LBRACKET, p.parsePrattExprIndex)
 	p.registerInfix(token.IS, p.parsePrattExprIs)
 
@@ -730,6 +734,10 @@ func (p *Parser) parseDeclParameterListWithInsert(insert bool) []ast.DeclParamet
 //   - Function types: fn(params) -> ReturnType
 //   - Attribute constraints: @Attr, @A @B @C
 func (p *Parser) parseTypeHintExpr() ast.TypeExpr {
+	return p.parseTypeHintSuffixes(p.parseTypeHintPrimary())
+}
+
+func (p *Parser) parseTypeHintPrimary() ast.TypeExpr {
 	// Attribute constraints: @Attr or @A @B @C
 	if p.curIs(token.AT) {
 		return p.parseTypeHintAttrs()
@@ -748,6 +756,23 @@ func (p *Parser) parseTypeHintExpr() ast.TypeExpr {
 	// Named type: Ident or Ident.Ident.Ident...
 	ref := p.parseStaticIdentifierReference()
 	return ast.MakeTypeExprRef(ref)
+}
+
+// parseTypeHintSuffixes applies the `T?` and `T!` shorthands, which stack (`T?!`) and read left to right.
+//
+// A suffix must sit directly on the type it qualifies, with nothing between them. That is what keeps a hint from swallowing the line below it: after `extern fn ready() -> Bool`, a following statement that starts with `!` is its own statement, not a `Bool!`.
+func (p *Parser) parseTypeHintSuffixes(inner ast.TypeExpr) ast.TypeExpr {
+	for inner != nil && len(p.curToken.Leading) == 0 {
+		switch p.curToken.Type {
+		case token.QUESTION:
+			inner = ast.MakeTypeExprOption(p.nextToken(), inner)
+		case token.BANG:
+			inner = ast.MakeTypeExprResult(p.nextToken(), inner)
+		default:
+			return inner
+		}
+	}
+	return inner
 }
 
 // parseTypeHintAttrs parses one or more @Attr references as a type expression.

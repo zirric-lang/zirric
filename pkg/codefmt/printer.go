@@ -27,7 +27,9 @@ type frame struct {
 
 // continuationStarters can only continue the previous line, so indenting them keeps a hand-written operator chain off the left margin.
 var continuationStarters = map[token.TokenType]bool{
-	token.DOT: true, token.PLUS: true, token.MINUS: true, token.ASTERISK: true,
+	token.DOT: true, token.QUESTION_DOT: true, token.BANG_DOT: true,
+	token.QUESTION_QUESTION: true, token.BANG_BANG: true,
+	token.PLUS: true, token.MINUS: true, token.ASTERISK: true,
 	token.SLASH: true, token.PERCENT: true, token.EQ: true, token.NEQ: true,
 	token.LT: true, token.GT: true, token.LTE: true, token.GTE: true,
 	token.AND: true, token.OR: true, token.RIGHT_ARROW: true, token.LEFT_ARROW: true,
@@ -167,14 +169,15 @@ func (p *printer) writeToken(items []item, i int, newlines int) {
 			p.frames = popCloser(p.frames, tok.Type)
 		}
 		p.popCaseFor(tok)
-		if p.hasPrev && (needSpace(p.prev, p.prevWasPrefix, tok) ||
+		if p.hasPrev && (needSpace(p.prev, p.prevWasPrefix, tok, len(it.leading) == 0) ||
 			wouldGlue(p.cur.String(), canonicalText(it))) {
 			p.cur.WriteString(" ")
 		}
 	}
 
+	glued := len(it.leading) == 0
 	p.cur.WriteString(canonicalText(it))
-	p.prevWasPrefix = isPrefixOperator(tok, p.prev, p.hasPrev)
+	p.prevWasPrefix = isPrefixOperator(tok, p.prev, p.hasPrev, glued)
 	p.prev = tok
 	p.hasPrev = true
 	p.pushForOpener(tok)

@@ -19,9 +19,9 @@ This directory contains Zirric Evolution Proposals. Each proposal documents a ch
 | [ZE-001](/proposals/ZE-001-base-language)                      | Base Language                       | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-002](/proposals/ZE-002-the-cavefile)                       | The Cavefile                        | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-003](/proposals/ZE-003-named-data-construction)            | Named Data Construction             | Rejected    |                             |
-| [ZE-004](/proposals/ZE-004-Variadic-Arguments)                 | Variadic Arguments                  | Draft       | Outdated                    |
+| [ZE-004](/proposals/ZE-004-Variadic-Attributes)                | Variadic Attributes                 | Rejected    |                             |
 | [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)            | Mixin Type Declarations             | Draft       | Outdated                    |
-| [ZE-006](/proposals/ZE-006-Attribute-Based-Parsing-System)     | Attribute-Based Parsing System      | Draft       | Outdated                    |
+| [ZE-006](/proposals/ZE-006-Attribute-Based-Parsing-System)     | Attribute-Based Parsing System      | Rejected    | Superseded by ZE-021        |
 | [ZE-007](/proposals/ZE-007-attribute-binding)                  | Attribute Binding                   | Draft       |                             |
 | [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                      | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                       | Implemented | [v0.1.0](/changelog/v0.1.0) |
@@ -34,10 +34,10 @@ This directory contains Zirric Evolution Proposals. Each proposal documents a ch
 | [ZE-016](/proposals/ZE-016-closure-syntax)                     | Unified Function and Closure Syntax | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-017](/proposals/ZE-017-type-hints)                         | Type Hints and Type Matching        | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-018](/proposals/ZE-018-io-fmt-os)                          | I/O, Formatting, and OS             | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-019](/proposals/ZE-019-result-and-option-sugar)            | Result and Option Sugar             | Draft       |                             |
-| [ZE-020](/proposals/ZE-020-standard-library)                   | Standard Library                    | In Progress |                             |
-| [ZE-021](/proposals/ZE-021-encoding-and-decoding)              | Encoding and Decoding               | In Progress |                             |
-| [ZE-022](/proposals/ZE-022-static-checks)                      | Static Checks                       | In Progress |                             |
+| [ZE-019](/proposals/ZE-019-result-and-option-sugar)            | Result and Option Sugar             | Implemented | [v0.1.0](/changelog/v0.1.0) |
+| [ZE-020](/proposals/ZE-020-standard-library)                   | Standard Library                    | Implemented | [v0.1.0](/changelog/v0.1.0) |
+| [ZE-021](/proposals/ZE-021-encoding-and-decoding)              | Encoding and Decoding               | Implemented | [v0.1.0](/changelog/v0.1.0) |
+| [ZE-022](/proposals/ZE-022-static-checks)                      | Static Checks                       | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-023](/proposals/ZE-023-code-formatting)                    | Code Formatting                     | Implemented | [v0.1.0](/changelog/v0.1.0) |
 | [ZE-024](/proposals/ZE-024-qualified-module-names)             | Qualified Module Names              | Implemented | [v0.1.0](/changelog/v0.1.0) |
 

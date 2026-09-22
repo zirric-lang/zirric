@@ -1259,7 +1259,8 @@ func TestForGenericIterable(t *testing.T) {
 			}
 			example()
 			`,
-			err: "testing:///test/test.zirr:2:1: error calling extern function: yield called after its for-loop's iterate() call already returned",
+			// Line 29 is the `savedYield(99)` that fails. This used to report 2:1, the position of a frame that had already returned.
+			err: "testing:///test/test.zirr:29:12: error calling extern function: yield called after its for-loop's iterate() call already returned",
 		},
 		{
 			// panic is faked here (Bind only wires the real one inside a "prelude"-named module).

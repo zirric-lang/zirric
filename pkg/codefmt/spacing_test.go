@@ -35,6 +35,13 @@ func TestSpacing(t *testing.T) {
 		{"const a = b is @Iterable", "const a = b is @Iterable"},
 		{"fn f() { a += 1 }", "fn f() { a += 1 }"},
 		{"const a = b&&c", "const a = b && c"},
+		{"const a = b??c", "const a = b ?? c"},
+		{"const a = b!!c", "const a = b !! c"},
+		{"const a : User? = b", "const a: User? = b"},
+		{"fn f() -> String! { a }", "fn f() -> String! { a }"},
+		{"fn f(a: [Int]?) -> Int? { a }", "fn f(a: [Int]?) -> Int? { a }"},
+		// A "!" that does not sit on a type is still the prefix operator.
+		{"const a = b && !c", "const a = b && !c"},
 	}
 
 	for _, tt := range tests {
@@ -57,6 +64,8 @@ func TestAdjacencyGuard(t *testing.T) {
 		{"a", "b", false},
 		{"a +", "+ b", false}, // Zirric has no "++"
 		{"a /", "/ b", true},
+		{"a ?", "? b", true},
+		{"a !", "! b", true},
 		{"", "a", false},
 		{"a", "", false},
 	}

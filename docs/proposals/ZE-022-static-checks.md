@@ -5,8 +5,8 @@ description: "Static Checks"
 
 # Static Checks
 
-::: callout warning In Progress
-This proposal has been accepted in principle. It is currently under active development. Parts might be incomplete or missing in Zirric.
+::: callout tip Implemented
+This proposal has been accepted and implemented. You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
 :::
 
 ## Introduction
