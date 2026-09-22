@@ -20,3 +20,9 @@ type MainPackageLister interface {
 	MainPackageName() string
 	MainPackageModules(ctx context.Context) ([]registry.LogicalURI, error)
 }
+
+// DeclaredPackageBase is an optional ModuleResolver capability reporting the module path the project's Cavefile declares with its own `mod`.
+// It is empty for a loose script or the REPL, where a file's `mod` has no base to be held to.
+type DeclaredPackageBase interface {
+	DeclaredPackageBase() registry.LogicalURI
+}

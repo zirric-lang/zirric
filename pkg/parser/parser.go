@@ -366,16 +366,22 @@ func (p *Parser) parseAttrDecl(_ StatementPosition, annos ast.AttributeChain) *a
 
 // parseModuleDecl parses a declared module
 //
-//	module <identifier>
+//	mod <fully.qualified.name>
+//	mod <identifier> = <fully.qualified.name>
 func (p *Parser) parseModuleDecl(pos StatementPosition, annos ast.AttributeChain) *ast.DeclModule {
 	if pos != IN_INITIAL {
 		p.errStatementMisplaced(pos)
 	}
 	modToken, _ := p.expect(token.MODULE)
-	nameTok, _ := p.expect(token.IDENT)
-	name := ast.MakeIdentifier(nameTok)
 
-	mod := ast.MakeDeclModule(modToken, name)
+	var mod *ast.DeclModule
+	if p.peekIs(token.ASSIGN) {
+		aliasTok, _ := p.expect(token.IDENT)
+		p.expect(token.ASSIGN)
+		mod = ast.MakeDeclAliasModule(modToken, ast.MakeIdentifier(aliasTok), p.parseStaticIdentifierReference())
+	} else {
+		mod = ast.MakeDeclModule(modToken, p.parseStaticIdentifierReference())
+	}
 	mod.Attributes = annos
 	return mod
 }

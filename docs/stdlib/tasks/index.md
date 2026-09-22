@@ -16,7 +16,7 @@ import tasks
 | **Module** | `tasks`                                                                                                 |
 | **Source** | [`tasks/manifest.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/tasks/manifest.zirr) |
 
-A task is a `data` declaration in the `Cavefile` carrying either [`Exec`](#exec) or [`Call`](#call). `zirric task` lists them and `zirric task run` — or `zirric x` — runs them.
+A task is a `data` declaration in the `Cavefile` carrying either [`Exec`](#exec) or [`Call`](#call). `zirric task` lists them, `zirric task <name>` runs one, and a task whose name no built-in command claims also answers to `zirric <name>`. A few built-in commands make room for a task of their own name: `zirric fmt` runs a `fmt` task alongside its own work, and `zirric test` runs a `test` task instead of its own.
 
 The difference between the two is what happens when it runs. [`Exec`](#exec) runs a script as its own program, which reads its own arguments through `os.args()`. [`Call`](#call) invokes a function directly with an instance of the declaration, built from the parsed flag and argument values — so the fields are typed and the CLI does the parsing.
 

@@ -9,9 +9,11 @@ import (
 
 func TestImportModuleNameCompletion(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "Cavefile", `import cave
+	writeFile(t, base, "Cavefile", `mod proj
 
-@cave.Dependencies()
+import cave
+
+@cave.Package()
 data Dependencies {
   @cave.Local("../helper-package")
   helper

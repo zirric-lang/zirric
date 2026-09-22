@@ -1,8 +1,12 @@
-// Cavefile for code.knabel.dev.zirric_lang.zirric
-mod cave
+mod code.knabel.dev.zirric_lang.zirric
 
+import cave
 import tasks
 
-@tasks.Name("test")
-@tasks.Exec("_tasks/test.zirr")
-data TestPrelude {}
+@cave.Package()
+@cave.Git("https://code.knabel.dev/zirric-lang/zirric")
+@cave.Version("v0.1.0-alpha.1")
+@cave.LanguageVersion("=v0.1.0-alpha.1")
+@cave.Description("Early development, experimental programming language with an implicit but strong and dynamic type system.")
+@cave.Documentation("https://zirric.knabel.dev")
+data Zirric {}

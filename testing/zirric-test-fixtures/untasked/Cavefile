@@ -1,0 +1,7 @@
+mod untasked
+
+import cave
+
+@cave.Package()
+data Package {
+}

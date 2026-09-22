@@ -1,6 +1,7 @@
 package cavefile
 
 import (
+	"sort"
 	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
@@ -68,6 +69,8 @@ func extractTasks(cavefileMod *ast.ContextModule, tasksMod *ast.ContextModule, a
 		}
 		tasks = append(tasks, task)
 	}
+	// Declarations come out of a map, so they are ordered here rather than left to differ between runs.
+	sort.Slice(tasks, func(i, j int) bool { return tasks[i].Name < tasks[j].Name })
 	return tasks
 }
 

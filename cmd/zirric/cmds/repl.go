@@ -25,7 +25,6 @@ import (
 
 func init() {
 	rootCmd.AddCommand(replCmd)
-	skipCavefileFetchForCmds["repl"] = false
 }
 
 type replState struct {

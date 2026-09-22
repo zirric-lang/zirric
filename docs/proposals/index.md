@@ -39,6 +39,7 @@ This directory contains Zirric Evolution Proposals. Each proposal documents a ch
 | [ZE-021](/proposals/ZE-021-encoding-and-decoding)              | Encoding and Decoding               | In Progress |                             |
 | [ZE-022](/proposals/ZE-022-static-checks)                      | Static Checks                       | In Progress |                             |
 | [ZE-023](/proposals/ZE-023-code-formatting)                    | Code Formatting                     | Implemented | [v0.1.0](/changelog/v0.1.0) |
+| [ZE-024](/proposals/ZE-024-qualified-module-names)             | Qualified Module Names              | Implemented | [v0.1.0](/changelog/v0.1.0) |
 
 ## Submitting Proposals
 

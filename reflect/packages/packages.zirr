@@ -1,4 +1,4 @@
-mod packages
+mod code.knabel.dev.zirric_lang.zirric.reflect.packages
 
 import arrays
 

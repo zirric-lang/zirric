@@ -1,3 +1,5 @@
+mod code.knabel.dev.zirric_lang.zirric.random._t
+
 import tests { Test }
 import tests.assert
 

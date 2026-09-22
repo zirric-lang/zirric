@@ -1,4 +1,4 @@
-mod random
+mod code.knabel.dev.zirric_lang.zirric.random
 
 // Provides a fast source of randomness, for simulations, sampling and anything else where predictability is not a hazard.
 // A seeded source satisfies this, which is what lets a test pin down behaviour that depends on randomness.

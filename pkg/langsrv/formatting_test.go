@@ -145,7 +145,7 @@ func TestFormattingFallsBackToDisk(t *testing.T) {
 // A file excluded by the Cavefile must not be formatted by the editor either, or the two would disagree about the project's sources.
 func TestFormattingHonoursCavefileExcludes(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "Cavefile", "import cave\n\n"+
+	writeFile(t, base, "Cavefile", "mod proj\n\nimport cave\n\n"+
 		"@cave.FormattingExcludes([\"vendor/**\"])\n"+
 		"data Formatting {}\n")
 	writeFile(t, base, "vendor/dep.zirr", fmtUnformatted)
@@ -188,7 +188,7 @@ func TestFormattingWithoutCavefileHasNoExcludes(t *testing.T) {
 // A Cavefile that does not parse may declare excludes the server cannot see, so it stops rather than rewrite an excluded file.
 func TestFormattingStopsWhenCavefileIsMalformed(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "Cavefile", "import cave\n\n@cave.Dependencies(\ndata Broken {\n")
+	writeFile(t, base, "Cavefile", "mod proj\n\nimport cave\n\n@cave.Package(\ndata Broken {\n")
 	writeFile(t, base, "main.zirr", fmtUnformatted)
 
 	ls := &zirricLangserver{
@@ -218,7 +218,7 @@ func TestFormattingStopsWhenCavefileIsMalformed(t *testing.T) {
 // A well-formed Cavefile does not block formatting.
 func TestFormattingProceedsWithValidCavefile(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "Cavefile", "import cave\n\n@cave.Dependencies()\ndata Dependencies {}\n")
+	writeFile(t, base, "Cavefile", "mod proj\n\nimport cave\n\n@cave.Package()\ndata Dependencies {}\n")
 	writeFile(t, base, "main.zirr", fmtUnformatted)
 
 	ls := &zirricLangserver{

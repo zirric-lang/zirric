@@ -1,4 +1,4 @@
-mod paths
+mod code.knabel.dev.zirric_lang.zirric.paths
 
 // Paths are slash-separated regardless of the host, matching the filesystem abstraction rather than the machine the program runs on.
 

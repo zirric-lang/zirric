@@ -23,79 +23,87 @@ teardown() {
   [[ "$output" == *"no tasks"* ]]
 }
 
-@test "task run executes a declared task by name" {
+@test "task executes a declared task by name" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-task-fixtures/with-task"
 
-  run_zirric task run greet
+  run_zirric task greet
   [ "$status" -eq 0 ]
 }
 
-@test "task run fails cleanly for an unknown task" {
+@test "task fails cleanly for an unknown task" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-task-fixtures/with-task"
 
-  run_zirric task run nope
+  run_zirric task nope
   [ "$status" -ne 0 ]
-  [[ "$output" == *"\"nope\" not found"* ]]
+  [[ "$output" == *"unknown task"*"nope"* ]]
 }
 
-@test "x is a shorthand for task run" {
+@test "a task answers by its bare name" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-task-fixtures/with-task"
 
-  run_zirric x greet
+  run_zirric greet
   [ "$status" -eq 0 ]
 }
 
-@test "x resolves task aliases" {
+@test "a task answers by a bare alias" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-task-fixtures/with-task"
 
-  run_zirric x hi
+  run_zirric hi
   [ "$status" -eq 0 ]
 }
 
-@test "task run ignores trailing arguments rather than failing" {
+@test "a declared task appears in the root help" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-task-fixtures/with-task"
 
-  run_zirric task run greet --dry extra-arg
+  run_zirric --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"greet"* ]]
+}
+
+@test "task ignores trailing arguments rather than failing" {
+  setup_fixture "$BATS_TEST_DIRNAME/zirric-task-fixtures/with-task"
+
+  run_zirric task greet --dry extra-arg
   [ "$status" -eq 0 ]
 }
 
-@test "task run passes typed flag values to a @tasks.Call task" {
+@test "task passes typed flag values to a @tasks.Call task" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-task-fixtures/with-call-task"
 
-  run_zirric task run build --target=release
+  run_zirric task build --target=release
   [ "$status" -eq 0 ]
   [[ "$output" == "release" ]]
 }
 
-@test "task run rejects an unknown flag on a @tasks.Call task" {
+@test "task rejects an unknown flag on a @tasks.Call task" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-task-fixtures/with-call-task"
 
-  run_zirric task run build --nope
+  run_zirric task build --nope
   [ "$status" -ne 0 ]
   [[ "$output" == *"unknown flag"* ]]
 }
 
-@test "task run --help describes a @tasks.Call task's flags" {
+@test "task --help describes a @tasks.Call task's flags" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-task-fixtures/with-call-task"
 
-  run_zirric task run build --help
+  run_zirric task build --help
   [ "$status" -eq 0 ]
   [[ "$output" == *"--target"* ]]
   [[ "$output" == *"-d, --dry"* ]]
 }
 
-@test "x dispatches to a @tasks.Call task by alias" {
+@test "a bare alias dispatches to a @tasks.Call task" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-task-fixtures/with-call-task"
 
-  run_zirric x b --target=via-x
+  run_zirric b --target=bare
   [ "$status" -eq 0 ]
-  [[ "$output" == "via-x" ]]
+  [[ "$output" == "bare" ]]
 }
 
-@test "task run fails cleanly when two tasks share a name" {
+@test "task fails cleanly when two tasks share a name" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-task-fixtures/name-collision"
 
-  run_zirric task run dup
+  run_zirric task dup
   [ "$status" -ne 0 ]
   [[ "$output" == *"both use the name \"dup\""* ]]
 }

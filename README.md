@@ -103,14 +103,18 @@ Here `Countable` supplies a `length` implementation, allowing tools to treat
 
 ### Cavefile manifests
 
-Cavefiles are Zirric sources that declare dependencies and tasks via attributes:
+Cavefiles are Zirric sources that describe a package, its dependencies and its tasks via attributes. The Cavefile's own `mod` is the base module path every module of the package is named under:
 
 ```zirric
+mod code.knabel.dev.example.myapp
+
 import cave
 import tasks
 
-@cave.Dependencies()
-data Dependencies {
+@cave.Package()
+@cave.Version("1.0.0")
+@cave.Description("An example package")
+data MyApp {
     @cave.Stdlib("prelude")
     prelude
 }

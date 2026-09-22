@@ -1,4 +1,4 @@
-mod prelude
+mod code.knabel.dev.zirric_lang.zirric.prelude
 
 // Transparently indicates the assumed default value of a parameter or field.
 // Can be used by tooling and libraries.

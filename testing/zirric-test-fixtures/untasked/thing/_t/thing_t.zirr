@@ -1,0 +1,9 @@
+mod untasked.thing._t
+
+import tests
+import tests.assert
+
+@tests.Test()
+fn testAdd() {
+	assert.equal(3, 1 + 2)
+}

@@ -1,4 +1,4 @@
-mod fs
+mod code.knabel.dev.zirric_lang.zirric.fs
 
 // One function per FileSystem field, each taking the filesystem first.
 // These exist so that calls read the same way as the rest of the library — fs.readFile(disk, path) rather than disk.readFile(path) — and so that a filesystem can be piped through fun.with and friends.

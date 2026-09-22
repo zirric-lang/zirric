@@ -10,8 +10,13 @@ var _ Decl = DeclModule{}
 var _ Overviewable = DeclModule{}
 
 type DeclModule struct {
-	Token      token.Token
-	Name       Identifier
+	Token token.Token
+	// Name is the alias of `mod local = a.b.c`, otherwise the last segment of Path.
+	Name Identifier
+	// Path is the fully qualified module path.
+	Path ModuleName
+	// HasAlias records that the source wrote `mod local = a.b.c`, so it can be shown back that way.
+	HasAlias   bool
 	Attributes AttributeChain
 
 	Docs *Docs
@@ -33,15 +38,24 @@ func (e DeclModule) DeclName() Identifier {
 }
 
 func (e DeclModule) DeclOverview() string {
-	return fmt.Sprintf("mod %s", e.Name)
+	if e.HasAlias {
+		return fmt.Sprintf("mod %s = %s", e.Name.Value, e.Path)
+	}
+	return fmt.Sprintf("mod %s", e.Path)
 }
 
 func (e DeclModule) ExportScope() ExportScope {
 	return ExportScopeLocal
 }
 
-func MakeDeclModule(tok token.Token, internalName Identifier) *DeclModule {
-	return &DeclModule{Token: tok, Name: internalName}
+// MakeDeclModule binds the path's last segment locally.
+func MakeDeclModule(tok token.Token, path StaticReference) *DeclModule {
+	return &DeclModule{Token: tok, Name: path[len(path)-1], Path: ModuleName(path)}
+}
+
+// MakeDeclAliasModule binds the path to a local name of its own.
+func MakeDeclAliasModule(tok token.Token, alias Identifier, path StaticReference) *DeclModule {
+	return &DeclModule{Token: tok, Name: alias, Path: ModuleName(path), HasAlias: true}
 }
 
 func (decl DeclModule) ProvidedDocs() *Docs {

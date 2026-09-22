@@ -1,3 +1,5 @@
+mod code.knabel.dev.zirric_lang.zirric.prelude._t
+
 import tests
 import tests.assert
 import bytes

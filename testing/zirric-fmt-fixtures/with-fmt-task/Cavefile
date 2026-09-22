@@ -1,0 +1,18 @@
+mod fmttask
+
+import cave
+import tasks
+
+@cave.Package()
+data Deps {}
+
+@tasks.Name("fmt")
+@tasks.Help("Formats what the built-in formatter does not")
+@tasks.Exec("tools/fmt.zirr")
+data FmtTask {
+	@tasks.Flag()
+	check: Bool
+
+	@tasks.Flag()
+	write: Bool
+}

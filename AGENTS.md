@@ -22,9 +22,9 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 
 ### Where to look first (authoritative Zirric source)
 
-- **Language proposals**: `docs/proposals/ZE-001-base-language.md` (core syntax/semantics) and `docs/proposals/ZE-002-the-cavefile.md` (package manifest + tasks). Recent implemented proposals include `docs/proposals/ZE-002-the-cavefile.md` (Cavefile dependencies and tasks), `docs/proposals/ZE-013-mutability-and-constants.md` (const/var), `docs/proposals/ZE-016-closure-syntax.md` (fn closures), and `docs/proposals/ZE-017-type-hints.md` (type hints and is-matching). ZE-011 (`docs/proposals/ZE-011-zirric-cli.md`, the CLI) is still In Progress. For future-facing features, see `docs/proposals/ZE-004-Variadic-Arguments.md` and `docs/proposals/ZE-005-Mixin-Type-Declarations.md`.
+- **Language proposals**: `docs/proposals/ZE-001-base-language.md` (core syntax/semantics) and `docs/proposals/ZE-002-the-cavefile.md` (package manifest + tasks). Recent implemented proposals include `docs/proposals/ZE-002-the-cavefile.md` (Cavefile dependencies and tasks), `docs/proposals/ZE-013-mutability-and-constants.md` (const/var), `docs/proposals/ZE-016-closure-syntax.md` (fn closures), `docs/proposals/ZE-017-type-hints.md` (type hints and is-matching), and `docs/proposals/ZE-024-qualified-module-names.md` (every file names its module in full). ZE-011 (`docs/proposals/ZE-011-zirric-cli.md`, the CLI) is still In Progress. For future-facing features, see `docs/proposals/ZE-004-Variadic-Arguments.md` and `docs/proposals/ZE-005-Mixin-Type-Declarations.md`.
 - **Standard library Zirric sources**: `prelude/shim.zirr` (core types and values), `prelude/attributes.zirr` (attribute system), `prelude/countable.zirr` (protocol-like attributes), `prelude/result.zirr` (Result/Optional patterns), `future/reflect/stub.zirr` (reflection surface).
-- **Cavefile schema and tasks**: `cave/manifest.zirr` and `tasks/manifest.zirr` define the attribute-driven dependency/task model used by the package manager.
+- **Cavefile schema and tasks**: `cave/manifest.zirr` and `tasks/manifest.zirr` define the attribute-driven package/dependency/task model used by the package manager.
 - **Example manifest**: `examples/project/Cavefile` shows real-world dependency + task declarations.
 
 ### Core mental model (intuition)
@@ -34,7 +34,8 @@ Zirric is an experimental programming language implemented in Go with a bytecode
 - **Data and unions**: `data` defines record-like types with named fields; `union` are a declared nominal supertype consisting of a fixed set of existing types; values are implicitly usable as a union if their concrete type is a member (often with nested `data` members).
 - **Attributes are first-class**: Behaviors (defaults, docs, protocols) are expressed via attributes in `prelude/attributes.zirr`. Type information uses type hints (`: T`, `-> T`) rather than attributes.
 - **Collection protocols**: `@Countable`/`@Iterable` in `prelude/countable.zirr` describe the “protocols” used by loops and helpers.
-- **Cavefile is just Zirric**: Dependency and task manifests are Zirric `data` declarations annotated with `@cave.Dependencies` and `@tasks.*` (see `cave/manifest.zirr` and `tasks/manifest.zirr`).
+- **Cavefile is just Zirric**: The package manifest and its tasks are Zirric `data` declarations annotated with `@cave.Package` and `@tasks.*` (see `cave/manifest.zirr` and `tasks/manifest.zirr`). The Cavefile's own `mod` declares the package's base module path.
+- **Modules name themselves**: Every `.zirr` file starts with `mod <fully.qualified.path>` — the package base joined with the file's directory — and the last segment binds the module locally. The repository's own base is `code.knabel.dev.zirric_lang.zirric`, so `prelude/shim.zirr` declares `mod code.knabel.dev.zirric_lang.zirric.prelude`. A directory with a `Cavefile` of its own is a separate package, which is how fixture directories stay out of the project's module set.
 
 ## Build & Validation Instructions
 
@@ -74,6 +75,22 @@ go build -v ./...
 - **Time**: ~30-60 seconds on first run, ~5-10 seconds on subsequent runs
 - **Purpose**: Compile all packages to verify syntax and dependencies
 - **Always succeed**: Should exit with code 0; `-v` prints packages as they build
+- **Note**: `task build` does more — it stamps the version into the binary and keeps the `Cavefile` in step with it (see [Versioning](#versioning)). A plain `go build` stamps nothing, which reports as `devel`.
+
+#### Versioning
+
+`VERSION` in `Taskfile.yml` is the nearest Git tag, and it is written in two places that must agree:
+
+- into the binary, through `-ldflags` on `github.com/metal-stack/v` (`zirric version` prints it)
+- into the `Cavefile`, as `@cave.Version("$VERSION")` and `@cave.LanguageVersion("=$VERSION")`
+
+`@cave.LanguageVersion` is an **exact** predicate, so a binary stamped with any other version refuses to build this package at all. `task version:sync` writes the `Cavefile` values, and `task build` runs it first, so the two never drift apart. Never edit those two attributes by hand.
+
+```bash
+task release:prepare VERSION=v0.1.0   # set the version, then commit and tag it
+```
+
+`release:prepare` is where the rest of the release steps will be added.
 
 #### Test (Critical validation)
 
@@ -200,6 +217,7 @@ GitHub Actions workflow (`.github/workflows/go.yml`):
 │   ├── syncheck/               # Syntax validation
 │   ├── token/                  # Token definitions
 │   ├── version/                # Semantic versioning
+│   ├── toolchain/              # Version of the running zirric build (ldflags)
 │   ├── world/                  # OS interaction abstractions
 │   └── pkgmanager/             # Package management logic
 ```

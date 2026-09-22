@@ -28,7 +28,7 @@ func TestParseUnterminatedBodiesTerminate(t *testing.T) {
 		"switch x {",
 		"@A()\ndata B {",
 		"@A(\ndata B {",
-		"mod m\n\n@cave.Dependencies()\ndata Deps {\n\t@cave.Stdlib(\"prelude\")\n\tprelude",
+		"mod m\n\n@cave.Package()\ndata Deps {\n\t@cave.Stdlib(\"prelude\")\n\tprelude",
 	}
 
 	for _, input := range inputs {

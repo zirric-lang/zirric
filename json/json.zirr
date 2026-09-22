@@ -1,4 +1,4 @@
-mod json
+mod code.knabel.dev.zirric_lang.zirric.json
 
 // JSON maps onto Zirric's own values rather than onto a tree of its own: an object is a Dict with String keys, an array is an Array, a string is a String, a boolean is a Bool, and null is void.
 // A number is an Int when it was written as one, and a Float otherwise, so 1 and 1.0 stay apart.

@@ -36,6 +36,10 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
+      - -X github.com/metal-stack/v.Version={{ .Version }}
+      - -X github.com/metal-stack/v.Revision={{ .Tag }}
+      - -X github.com/metal-stack/v.GitSHA1={{ .ShortCommit }}
+      - -X github.com/metal-stack/v.BuildDate={{ .Date }}
     mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:

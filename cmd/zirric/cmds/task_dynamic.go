@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// registerTaskCommands registers a cobra.Command per declared task under `task run` and `x`; a no-op when no usable Cavefile is found.
+// registerTaskCommands registers a cobra.Command per declared task under `task`, and again at the top level when nothing built in already answers to that name.
 func registerTaskCommands() error {
 	projectFS, err := cwdFS()
 	if err != nil {
@@ -31,19 +31,34 @@ func registerTaskCommands() error {
 			seen[name] = task.DeclName
 		}
 
-		runTaskCmd, err := newTaskCommand(task)
+		subCmd, err := newTaskCommand(task)
 		if err != nil {
 			return err
 		}
-		taskRunCmd.AddCommand(runTaskCmd)
+		taskCmd.AddCommand(subCmd)
 
-		xTaskCmd, err := newTaskCommand(task)
+		// The built-in wins: `zirric fmt` must keep meaning the formatter, which calls the task of that name through itself.
+		if rootCommandFor(task.Name) != nil {
+			continue
+		}
+		rootTaskCmd, err := newTaskCommand(task)
 		if err != nil {
 			return err
 		}
-		xCmd.AddCommand(xTaskCmd)
+		rootTaskCmd.Aliases = freeAliases(task.Aliases)
+		rootCmd.AddCommand(rootTaskCmd)
 	}
 	return nil
+}
+
+func freeAliases(aliases []string) []string {
+	free := make([]string, 0, len(aliases))
+	for _, alias := range aliases {
+		if rootCommandFor(alias) == nil {
+			free = append(free, alias)
+		}
+	}
+	return free
 }
 
 // newTaskCommand builds a cobra.Command for one task: TaskKindExec disables flag parsing (the script owns its own argv), TaskKindCall gets real typed flags and positional arguments.

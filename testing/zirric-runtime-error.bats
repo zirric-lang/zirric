@@ -12,7 +12,7 @@ teardown() {
   run_zirric run main.zirr
   [ "$status" -ne 0 ]
   # A real position, not just a file name.
-  [[ "$output" == *"main.zirr:4:"* ]]
+  [[ "$output" == *"main.zirr:6:"* ]]
 }
 
 @test "a runtime failure prints the stack that led there" {
@@ -37,7 +37,7 @@ teardown() {
 
   run_zirric run main.zirr
   [ "$status" -ne 0 ]
-  [[ "$output" == *"main.zirr:4:"* ]]
+  [[ "$output" == *"main.zirr:6:"* ]]
   [[ "$output" != *"at main (main)"* ]]
   [[ "$output" != *"Error: main: "* ]]
 }

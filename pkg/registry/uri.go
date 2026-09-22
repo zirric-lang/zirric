@@ -2,8 +2,24 @@ package registry
 
 import (
 	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+var moduleSegment = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+// IsModulePath reports whether path is the dot-separated identifiers a `mod` declaration accepts.
+func IsModulePath(path string) bool {
+	if path == "" {
+		return false
+	}
+	for _, segment := range strings.Split(path, ".") {
+		if !moduleSegment.MatchString(segment) {
+			return false
+		}
+	}
+	return true
+}
 
 // CanonicalizeModuleSource maps a module source to its canonical URI.
 func CanonicalizeModuleSource(source string) LogicalURI {

@@ -1,4 +1,4 @@
-mod reflect
+mod code.knabel.dev.zirric_lang.zirric.reflect
 
 // The canonical name of a module, e.g. "code.knabel.dev.zirric_lang.zirric.arrays".
 extern fn moduleName(m: Module) -> String

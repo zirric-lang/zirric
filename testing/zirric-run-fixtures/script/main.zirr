@@ -1,0 +1,8 @@
+mod runscript
+
+import scripts
+import os
+
+for arg <- os.args() {
+	scripts.println(arg)
+}

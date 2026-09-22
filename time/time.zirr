@@ -1,4 +1,4 @@
-mod time
+mod code.knabel.dev.zirric_lang.zirric.time
 
 // A span of time, in nanoseconds.
 // A primitive rather than a wrapper, so that spans add, subtract and scale with the usual operators, and print as 1.5s rather than as a bare number.

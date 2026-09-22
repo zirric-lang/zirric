@@ -1,4 +1,4 @@
-mod dicts
+mod code.knabel.dev.zirric_lang.zirric.dicts
 
 // Returns whether d has no entries.
 fn isEmpty(d: Dict) -> Bool {

@@ -1,4 +1,4 @@
-mod errors
+mod code.knabel.dev.zirric_lang.zirric.errors
 
 // Returns a debug string for err, via its @Error attribute.
 fn debug(err: @Error) -> String {

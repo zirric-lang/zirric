@@ -1,4 +1,4 @@
-mod yaml
+mod code.knabel.dev.zirric_lang.zirric.yaml
 
 // Reads one YAML document into the native tree: a mapping is a Dict, a sequence an Array, and null is void.
 // A stream holding several documents is an `Err`, since that is not one value; use `parseAll` for those.

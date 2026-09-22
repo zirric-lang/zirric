@@ -123,7 +123,7 @@ func (ls *zirricLangserver) installDependenciesCommand(ctx *glsp.Context) (any, 
 	return map[string]any{"installed": len(installed)}, nil
 }
 
-// runTaskCommand is the one deliberate exception to "the LSP never executes user code", and only ever fires from an explicit command. It shells out to `zirric task run` rather than calling orchestra.RunTask in-process, since the VM's os plugin hardcodes real stdio and calls os.Exit, which would corrupt the LSP's JSON-RPC stream or kill it outright.
+// runTaskCommand is the one deliberate exception to "the LSP never executes user code", and only ever fires from an explicit command. It shells out to `zirric task <name>` rather than calling orchestra.RunTask in-process, since the VM's os plugin hardcodes real stdio and calls os.Exit, which would corrupt the LSP's JSON-RPC stream or kill it outright.
 func (ls *zirricLangserver) runTaskCommand(ctx *glsp.Context, name string, args []any) (any, error) {
 	if ls.rootPath == "" {
 		return nil, fmt.Errorf("zirric.task.%s: no workspace root", name)
@@ -149,7 +149,7 @@ func (ls *zirricLangserver) runTaskCommand(ctx *glsp.Context, name string, args 
 		return nil, fmt.Errorf("zirric.task.%s: could not locate zirric executable: %w", name, err)
 	}
 
-	cmdArgs := append([]string{"task", "run", name}, execArgs...)
+	cmdArgs := append([]string{"task", name}, execArgs...)
 	cmd := exec.Command(self, cmdArgs...)
 	cmd.Dir = ls.rootPath
 

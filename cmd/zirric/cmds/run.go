@@ -10,7 +10,6 @@ import (
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-	skipCavefileFetchForCmds["run"] = false
 }
 
 var runCmd = &cobra.Command{

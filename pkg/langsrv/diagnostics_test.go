@@ -72,9 +72,11 @@ func TestRefreshDiagnosticsReportsAnalyzerErrors(t *testing.T) {
 // TestRefreshDiagnosticsWarnsOnMissingDependency is a regression test: a missing Cavefile dependency used to break diagnostics for the whole project, not just files that import it.
 func TestRefreshDiagnosticsWarnsOnMissingDependency(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "Cavefile", `import cave
+	writeFile(t, base, "Cavefile", `mod proj
 
-@cave.Dependencies()
+import cave
+
+@cave.Package()
 data Dependencies {
   @cave.Local("../does-not-exist")
   missing
@@ -128,7 +130,7 @@ import cave {
 	Dependencies
 }
 
-@cave.Dependencies()
+@cave.Package()
 data UI {}
 `)
 	writeFile(t, base, "broken.zirr", "mod ui\nconst x = f(, 1)\n")

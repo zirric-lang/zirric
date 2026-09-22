@@ -1,4 +1,4 @@
-mod coding
+mod code.knabel.dev.zirric_lang.zirric.coding
 
 // The key a field is read and written under, instead of its declared name.
 // Every attribute here is an override, so a type carrying none encodes under the names it declares.

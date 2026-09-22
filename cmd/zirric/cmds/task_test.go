@@ -15,7 +15,26 @@ func TestPrintTasks(t *testing.T) {
 	if err := printTasks(&buf, tasks); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := "generate\tGenerates something\n"
+	want := "generate  Generates something\n"
+	if got := buf.String(); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+// Help text lines up in a column, however long the names are, and a task without any leaves no padding behind it.
+func TestPrintTasks_AlignsHelpAndTrimsPadding(t *testing.T) {
+	var buf strings.Builder
+	tasks := []cavefile.Task{
+		{Name: "generate-everything", Help: "Long name"},
+		{Name: "g", Help: "Short name"},
+		{Name: "quiet"},
+	}
+	if err := printTasks(&buf, tasks); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := "generate-everything  Long name\n" +
+		"g                    Short name\n" +
+		"quiet\n"
 	if got := buf.String(); got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}

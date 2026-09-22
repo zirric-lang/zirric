@@ -1,4 +1,4 @@
-mod strings
+mod code.knabel.dev.zirric_lang.zirric.strings
 
 import ranges
 

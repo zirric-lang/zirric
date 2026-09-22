@@ -1,4 +1,4 @@
-mod time
+mod code.knabel.dev.zirric_lang.zirric.time
 
 // Spans are built from a unit rather than a bare number, so that a call site says which unit it meant.
 

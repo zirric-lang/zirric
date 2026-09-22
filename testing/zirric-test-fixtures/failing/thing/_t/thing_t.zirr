@@ -1,0 +1,9 @@
+mod failing.thing._t
+
+import tests
+import tests.assert
+
+@tests.Test()
+fn testAdd() {
+	assert.equal(3, 4)
+}

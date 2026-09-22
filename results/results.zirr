@@ -1,4 +1,4 @@
-mod results
+mod code.knabel.dev.zirric_lang.zirric.results
 
 // Normalizes r to Result.
 fn from(r: @AnyResult) -> Result {

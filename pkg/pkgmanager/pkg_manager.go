@@ -7,6 +7,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/gitreg"
+	"code.knabel.dev/zirric-lang/zirric/pkg/toolchain"
 	"github.com/go-git/go-billy/v5"
 )
 
@@ -32,6 +33,7 @@ func (pm *PackageManager) Install(cf cavefile.Cavefile) *InstallationTask {
 	return &InstallationTask{
 		pkgmanager: pm,
 		cave:       cf,
+		Toolchain:  toolchain.Version(),
 	}
 }
 

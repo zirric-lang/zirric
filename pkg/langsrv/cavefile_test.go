@@ -9,8 +9,8 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-// cavefileTestSrc mirrors a real Cavefile declaring a Git dependency via attributes, exercising the "import cave" alias, the "@cave.Dependencies()" decorator, and a nested "@cave.Git(...)"/"@cave.Version(...)" pair.
-const cavefileTestSrc = "mod ui\n\nimport cave\n\n@cave.Dependencies()\ndata UI {\n\t@cave.Git(\"https://code.knabel.dev/zirric-lang/colors\")\n\t@cave.Version(\"main\")\n\tcolors\n}\n"
+// cavefileTestSrc mirrors a real Cavefile declaring a Git dependency via attributes, exercising the "import cave" alias, the "@cave.Package()" decorator, and a nested "@cave.Git(...)"/"@cave.Version(...)" pair.
+const cavefileTestSrc = "mod ui\n\nimport cave\n\n@cave.Package()\ndata UI {\n\t@cave.Git(\"https://code.knabel.dev/zirric-lang/colors\")\n\t@cave.Version(\"main\")\n\tcolors\n}\n"
 
 func newCavefileTestServer(t *testing.T) *zirricLangserver {
 	t.Helper()
@@ -26,14 +26,14 @@ func newCavefileTestServer(t *testing.T) *zirricLangserver {
 	return ls
 }
 
-// TestCavefileHover is a regression test: parseModuleFiles' directory scan only ever globs *.zirr files, so it silently skipped the Cavefile itself (no such extension), leaving hover blind to its own content — hovering "cave" in "@cave.Dependencies()" used to return nil.
+// TestCavefileHover is a regression test: parseModuleFiles' directory scan only ever globs *.zirr files, so it silently skipped the Cavefile itself (no such extension), leaving hover blind to its own content — hovering "cave" in "@cave.Package()" used to return nil.
 func TestCavefileHover(t *testing.T) {
 	ls := newCavefileTestServer(t)
 
 	params := &protocol.HoverParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///Cavefile"},
-			Position:     protocol.Position{Line: 4, Character: 2}, // on "cave" in "@cave.Dependencies()"
+			Position:     protocol.Position{Line: 4, Character: 2}, // on "cave" in "@cave.Package()"
 		},
 	}
 	result, err := ls.textDocumentHover(nil, params)
@@ -52,14 +52,14 @@ func TestCavefileHover(t *testing.T) {
 	}
 }
 
-// TestCavefileDefinition is a regression test for the same gap as TestCavefileHover: go-to-definition on "Dependencies" in "@cave.Dependencies()" used to return nil since the Cavefile was never parsed as part of any module.
+// TestCavefileDefinition is a regression test for the same gap as TestCavefileHover: go-to-definition on "Package" in "@cave.Package()" used to return nil since the Cavefile was never parsed as part of any module.
 func TestCavefileDefinition(t *testing.T) {
 	ls := newCavefileTestServer(t)
 
 	params := &protocol.DefinitionParams{
 		TextDocumentPositionParams: protocol.TextDocumentPositionParams{
 			TextDocument: protocol.TextDocumentIdentifier{URI: "file:///Cavefile"},
-			Position:     protocol.Position{Line: 4, Character: 10}, // inside "Dependencies" in "@cave.Dependencies()"
+			Position:     protocol.Position{Line: 4, Character: 10}, // inside "Package" in "@cave.Package()"
 		},
 	}
 	result, err := ls.textDocumentDefinition(nil, params)
@@ -67,7 +67,7 @@ func TestCavefileDefinition(t *testing.T) {
 		t.Fatalf("textDocumentDefinition: %v", err)
 	}
 	if result == nil {
-		t.Fatal("expected a definition location for cave.Dependencies, got nil")
+		t.Fatal("expected a definition location for cave.Package, got nil")
 	}
 	loc, ok := result.(*protocol.Location)
 	if !ok {
@@ -110,7 +110,7 @@ func TestCavefileAttributeCompletion(t *testing.T) {
 	for _, item := range items {
 		labels[item.Label] = true
 	}
-	for _, want := range []string{"Dependencies", "Git", "Version"} {
+	for _, want := range []string{"Package", "Git", "Version", "Description", "Documentation", "LanguageVersion"} {
 		if !labels[want] {
 			t.Errorf("expected \"@cave.\" completion to include %q, got %v", want, labels)
 		}
@@ -120,7 +120,7 @@ func TestCavefileAttributeCompletion(t *testing.T) {
 // TestCavefileOwnSyntaxErrorIsDiagnosed is a regression test: since the Cavefile was never part of any parsed module, a genuine syntax error inside it (as opposed to one on an import target) never surfaced as a diagnostic.
 func TestCavefileOwnSyntaxErrorIsDiagnosed(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "Cavefile", "mod ui\n\nimport cave\n\n@cave.Dependencies()\ndata UI {\n\t@cave.Git(\"x\")\n\t@cave.Version(\n\tcolors\n}\n")
+	writeFile(t, base, "Cavefile", "mod ui\n\nimport cave\n\n@cave.Package()\ndata UI {\n\t@cave.Git(\"x\")\n\t@cave.Version(\n\tcolors\n}\n")
 
 	ls := zirricLangserver{
 		docs:     newDocumentStore(),

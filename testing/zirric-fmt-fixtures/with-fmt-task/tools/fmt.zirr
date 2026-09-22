@@ -1,0 +1,8 @@
+mod fmttask.tools
+
+import scripts
+import os
+
+for arg <- os.args() {
+	scripts.println("task fmt saw " + arg)
+}

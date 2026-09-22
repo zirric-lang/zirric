@@ -34,11 +34,17 @@ type InstallationTask struct {
 	ReadOnly    bool
 	OnInstalled InstallProgress
 
+	// Toolchain is held against every @cave.LanguageVersion; nil passes everything.
+	Toolchain version.Version
+
 	queue []cavefile.Dependency
 }
 
 // TODO: Recursively install dependencies!
 func (t *InstallationTask) Run(ctx context.Context) ([]registry.ResolvedPackage, error) {
+	if err := t.checkLanguageVersions(); err != nil {
+		return nil, err
+	}
 	if t.queue == nil {
 		t.queue = t.cave.Dependencies
 		if t.cave.Name != "" || t.cave.Source != "" {
@@ -99,6 +105,19 @@ func (t *InstallationTask) Run(ctx context.Context) ([]registry.ResolvedPackage,
 		return completed, &DependencyNotInstalledError{Names: missing}
 	}
 	return completed, nil
+}
+
+// checkLanguageVersions refuses before any registry is consulted, since nothing that cannot be built is worth fetching.
+func (t *InstallationTask) checkLanguageVersions() error {
+	if err := cavefile.CheckLanguageVersion(t.cave.Package, t.Toolchain); err != nil {
+		return err
+	}
+	for _, dep := range t.cave.Dependencies {
+		if err := cavefile.CheckDependencyLanguageVersion(dep, t.Toolchain); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (t *InstallationTask) notify(dep cavefile.Dependency, pkg registry.ResolvedPackage) {

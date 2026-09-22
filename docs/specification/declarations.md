@@ -260,13 +260,23 @@ All `extern` declarations can only appear at top level.
 
 ## `mod`
 
-`mod` declares a reference to the current module as a value. It must be the first declaration in the file (after any shebang line). While not required, it is conventional to declare it for readability.
+`mod` declares which module the file belongs to, by the module's fully qualified path, and binds that module as a value. It must be the first declaration in the file (after any shebang line), and every source file has one.
 
 ```zirric
-mod http
+mod code.knabel.dev.zirric_lang.ui.flow.node
 ```
 
-The declared name becomes an identifier bound to the module object. This is useful for qualified attribute references when the module defines attributes.
+**Local binding.** The last segment of the path becomes an identifier bound to the module object — `node` above. This is useful for qualified attribute references when the module defines attributes. An explicit binding can be given instead:
+
+```zirric
+mod here = code.knabel.dev.zirric_lang.ui.flow.node
+```
+
+**Package base.** The path is the package's base module path joined with the path from the package root to the file's directory. The base is what the package's `Cavefile` declares with its own `mod`, so a package whose `Cavefile` says `mod code.knabel.dev.zirric_lang.ui` holds its `./flow/node` sources to `mod code.knabel.dev.zirric_lang.ui.flow.node`. A directory name becomes a path segment lowercased, with `-` replaced by `_`.
+
+**Agreement.** Every source file of one module declares the same path.
+
+**Where it is checked.** These rules are checked for the modules of the package the `Cavefile` describes. A project with no `Cavefile` — a loose script, or the REPL — has no base to qualify against, and its files may declare any path. A dependency is checked when it is built as its own package.
 
 | Context         | Valid | Visibility |
 | --------------- | ----- | ---------- |

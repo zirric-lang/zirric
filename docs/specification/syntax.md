@@ -107,14 +107,15 @@ See [Expressions § Operators](/specification/expressions#operators) for semanti
 
 ## Source File Structure
 
-A source file begins with an optional shebang line and module declaration, followed by top-level declarations.
+A source file begins with an optional shebang line, then the module declaration, followed by top-level declarations.
 
 ```ebnf
-SourceFile = [shebang], [Module], {TopLevelDeclaration};
+SourceFile = [shebang], Module, {TopLevelDeclaration};
 
 shebang = "#!", {any_inline_char}, newline;
 
-Module = "mod", Identifier;
+Module     = "mod", [Identifier, "="], ModulePath;
+ModulePath = Identifier, {".", Identifier};
 ```
 
 ## Declarations

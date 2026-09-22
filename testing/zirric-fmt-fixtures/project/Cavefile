@@ -1,6 +1,8 @@
+mod fmtproject
+
 import cave
 
-@cave.Dependencies()
+@cave.Package()
 data Dependencies {
 	prelude
 }

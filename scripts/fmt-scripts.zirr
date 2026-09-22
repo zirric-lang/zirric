@@ -1,4 +1,4 @@
-mod scripts
+mod code.knabel.dev.zirric_lang.zirric.scripts
 
 import fmt
 import os

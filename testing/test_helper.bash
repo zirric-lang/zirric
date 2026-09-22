@@ -23,8 +23,15 @@ setup_fixture() {
   export ZIRRIC_PATH="$ZIRRIC_HOME_DIR"
 }
 
+# Tears down whatever setup_fixture made, and succeeds when it made nothing: a test that skipped before
+# setting a fixture up would otherwise be reported as a teardown failure rather than as a skip.
 teardown_fixture() {
   cd "$REPO_ROOT" || return 1
-  [ -n "$TEST_PROJECT_DIR" ] && rm -rf "$TEST_PROJECT_DIR"
-  [ -n "$ZIRRIC_HOME_DIR" ] && rm -rf "$ZIRRIC_HOME_DIR"
+  if [ -n "$TEST_PROJECT_DIR" ]; then
+    rm -rf "$TEST_PROJECT_DIR"
+  fi
+  if [ -n "$ZIRRIC_HOME_DIR" ]; then
+    rm -rf "$ZIRRIC_HOME_DIR"
+  fi
+  return 0
 }

@@ -224,7 +224,7 @@ func TestDefinitionQualifiedModule(t *testing.T) {
 // TestDefinitionBareImportViaProjectBaseURI is a regression test: with an explicit Cavefile package name ("ui"), a bare import's real URI is "ui.flow" — go-to-definition worked via an old ad hoc path, but diagnostics reported "unknown module" since the resolver had no <projectBaseURI>.<name> fallback yet.
 func TestDefinitionBareImportViaProjectBaseURI(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "Cavefile", "import cave\n\n@cave.Dependencies()\ndata App {}\n")
+	writeFile(t, base, "Cavefile", "mod proj\n\nimport cave\n\n@cave.Package()\ndata App {}\n")
 	writeFile(t, base, "flow/types.zirr", "mod flow\nfn helper() {}\n")
 	writeFile(t, base, "main.zirr", "mod main\nimport flow\nflow.helper")
 

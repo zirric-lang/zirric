@@ -21,6 +21,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/localreg"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry/staticmodule"
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
+	"code.knabel.dev/zirric-lang/zirric/pkg/toolchain"
 	"code.knabel.dev/zirric-lang/zirric/pkg/vm"
 	"github.com/go-git/go-billy/v5"
 )
@@ -36,6 +37,10 @@ type Config struct {
 
 	Cavefile     *cavefile.Cavefile // optional; overrides auto-detecting the Cavefile in ProjectFS
 	CavefilePath string             // optional; overrides DefaultCavefileName as the Cavefile's path within ProjectFS
+
+	// IgnoreLanguageVersion opens a project whose @cave.LanguageVersion this Zirric does not satisfy.
+	// Only `zirric cave describe` sets it, since reporting what the manifest says is how the refusal is explained.
+	IgnoreLanguageVersion bool
 }
 
 type Orchestra struct {
@@ -67,6 +72,12 @@ func New(cfg Config) (*Orchestra, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Refused here rather than at each command, so that nothing acts on a package this Zirric cannot build.
+	if !cfg.IgnoreLanguageVersion {
+		if err := cavefile.CheckLanguageVersion(cave.Package, toolchain.Version()); err != nil {
+			return nil, err
+		}
+	}
 	cave = ensureStandardLibraryDependency(cave)
 
 	caveReg, err := cavereg.New(cave, cfg.ProjectFS)
@@ -94,6 +105,14 @@ func New(cfg Config) (*Orchestra, error) {
 	}, nil
 }
 
+func suggestedModuleDeclaration(packageName string) string {
+	candidate := registry.CanonicalizeModulePath(packageName)
+	if !registry.IsModulePath(candidate) {
+		return "add a 'mod' declaration"
+	}
+	return fmt.Sprintf("add 'mod %s'", candidate)
+}
+
 // loadCave resolves the project's Cavefile and its path within ProjectFS (empty when a synthetic Cavefile was used instead).
 func loadCave(cfg Config) (cavefile.Cavefile, string, error) {
 	if cfg.Cavefile != nil {
@@ -107,6 +126,10 @@ func loadCave(cfg Config) (cavefile.Cavefile, string, error) {
 		cave, err := ParseCavefile(context.Background(), cfg.ProjectFS, cfg.RegistryFS, path)
 		if err != nil {
 			return cavefile.Cavefile{}, "", fmt.Errorf("parse %s: %w", path, err)
+		}
+		// Every module of the package is named under this path, so a Cavefile that declares none leaves the package unnamed.
+		if cave.ModulePath == "" {
+			return cavefile.Cavefile{}, "", fmt.Errorf("%s declares no module: %s to name the package", path, suggestedModuleDeclaration(cfg.PackageName))
 		}
 		return cave, path, nil
 	}
@@ -140,7 +163,8 @@ func (o *Orchestra) ParseFile(ctx context.Context, filePath string, resolver *Mo
 	if err != nil {
 		return nil, err
 	}
-	mod := staticmodule.NewModule(o.projectBaseURI, []registry.Source{source})
+	// A file belongs to the module its directory names, however it was reached.
+	mod := staticmodule.NewModule(registry.JoinModuleURI(o.projectBaseURI, filepath.ToSlash(filepath.Dir(filePath))), []registry.Source{source})
 	return o.ParseModule(ctx, mod, resolver)
 }
 
@@ -224,6 +248,33 @@ func (o *Orchestra) RunFile(ctx context.Context, filePath string) error {
 		return err
 	}
 
+	bytecode, err := o.Compile(module, resolver)
+	if err != nil {
+		return err
+	}
+	return o.runBytecode(bytecode)
+}
+
+// RunSource compiles and runs body as a program of the project's root module.
+//
+// The module declaration is written here, since it has to name the module the project's Cavefile puts at that path. A project with no Cavefile fixed no base, and none is written.
+func (o *Orchestra) RunSource(ctx context.Context, name string, body string) error {
+	source := body
+	if registry.IsModulePath(string(o.projectBaseURI)) {
+		source = "mod " + string(o.projectBaseURI) + "\n\n" + body
+	}
+
+	resolver, err := o.NewResolver()
+	if err != nil {
+		return err
+	}
+	mod := staticmodule.NewModule(o.projectBaseURI, []registry.Source{
+		staticmodule.NewSource(o.projectBaseURI.Join(name), []byte(source)),
+	})
+	module, err := o.ParseModule(ctx, mod, resolver)
+	if err != nil {
+		return err
+	}
 	bytecode, err := o.Compile(module, resolver)
 	if err != nil {
 		return err

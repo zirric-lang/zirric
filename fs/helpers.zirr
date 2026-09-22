@@ -1,4 +1,4 @@
-mod fs
+mod code.knabel.dev.zirric_lang.zirric.fs
 
 import bytes
 import paths

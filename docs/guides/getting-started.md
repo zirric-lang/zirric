@@ -110,7 +110,7 @@ In the same way we could also add attributes for JSON parsing. Then the JSON par
 Zirric code is built from a small set of declarations:
 
 ```zirric
-mod app
+mod myapp
 
 import strings
 
@@ -245,10 +245,10 @@ Attributes are central to tooling, defaults, and protocol-like behavior.
 
 ## Modules and imports
 
-Zirric code is organized into modules. Use `mod` to declare the namespace and `import` to access other modules.
+Zirric code is organized into modules. Every file declares the module it belongs to with `mod`, by its fully qualified path, and uses `import` to reach other modules.
 
 ```zirric
-mod http
+mod myapp.http
 
 import fmt
 

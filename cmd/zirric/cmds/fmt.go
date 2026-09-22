@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
+	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/codefmt"
 	"code.knabel.dev/zirric-lang/zirric/pkg/lexer"
 	"code.knabel.dev/zirric-lang/zirric/pkg/orchestra"
@@ -22,8 +24,6 @@ import (
 
 func init() {
 	rootCmd.AddCommand(fmtCmd)
-	// Formatting must work in a project whose Cavefile is broken or has no deps.
-	skipCavefileFetchForCmds["fmt"] = true
 
 	fmtCmd.Flags().BoolVarP(&fmtOpts.list, "list", "l", false, "list files whose formatting differs")
 	fmtCmd.Flags().BoolVar(&fmtOpts.check, "check", false, "exit non-zero if any file needs formatting")
@@ -59,27 +59,38 @@ var fmtCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		var excludes codefmt.Excludes
-		if !fmtOpts.noExcludes {
-			excludes, err = projectFormattingExcludes(projectFS)
-			if err != nil {
-				return err
-			}
-		}
-		drift, err := runFmt(projectFS, args, fmtOpts, excludes, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
+		excludes, err := projectFormattingExcludes(projectFS, !fmtOpts.noExcludes)
 		if err != nil {
 			return err
 		}
+		// The formatter goes first: a script task may end the process itself, which would swallow what the formatter found.
+		failed := false
+		drift, err := runFmt(projectFS, args, fmtOpts, excludes, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
+		if err != nil {
+			reportError(err)
+			failed = true
+		}
 		if drift && fmtOpts.check {
 			// A bare error would add a redundant "Error:" line; the paths were already printed.
+			failed = true
+		}
+
+		if taskErr := runTaskAlongside(cmd, cmd.Name(), args, cmd.ErrOrStderr()); taskErr != nil {
+			reportError(taskErr)
+			failed = true
+		}
+
+		if failed {
 			os.Exit(1)
 		}
 		return nil
 	},
 }
 
-// projectFormattingExcludes reads the project's excludes. No Cavefile means none, but one that cannot be read is an error: reformatting a file it meant to exclude is worse than formatting nothing.
-func projectFormattingExcludes(projectFS billy.Filesystem) (codefmt.Excludes, error) {
+// projectFormattingExcludes opens the project and, when wanted, reads the paths it excludes from formatting.
+//
+// A Cavefile that cannot be read is an error only when its excludes are wanted: reformatting a file it meant to exclude is worse than formatting nothing. A package this Zirric cannot build refuses either way, which is no decision about excludes.
+func projectFormattingExcludes(projectFS billy.Filesystem, wantExcludes bool) (codefmt.Excludes, error) {
 	path := cavefilePath
 	if path == "" {
 		path = orchestra.DefaultCavefileName
@@ -92,17 +103,30 @@ func projectFormattingExcludes(projectFS billy.Filesystem) (codefmt.Excludes, er
 		return nil, nil
 	}
 
-	src, err := billyutil.ReadFile(projectFS, path)
-	if err != nil {
-		return nil, fmt.Errorf("read %s: %w", path, err)
-	}
-	if err := checkCavefileSyntax(path, string(src)); err != nil {
-		return nil, err
+	if wantExcludes {
+		src, err := billyutil.ReadFile(projectFS, path)
+		if err != nil {
+			return nil, fmt.Errorf("read %s: %w", path, err)
+		}
+		if err := checkCavefileSyntax(path, string(src)); err != nil {
+			return nil, err
+		}
 	}
 
 	orch, err := newOrchestra(projectFS, currentDirPackageName())
 	if err != nil {
+		// The file was read fine, so wrapping this as a read failure would mislead.
+		var languageVersion *cavefile.LanguageVersionError
+		if errors.As(err, &languageVersion) {
+			return nil, err
+		}
+		if !wantExcludes {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("read %s: %w", path, err)
+	}
+	if !wantExcludes {
+		return nil, nil
 	}
 	return codefmt.Excludes(orch.Cavefile().FormattingExcludes), nil
 }

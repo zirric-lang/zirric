@@ -1,6 +1,6 @@
 ---
 title: Cave
-description: The attributes a Cavefile uses to declare dependencies and package metadata.
+description: The attributes a Cavefile uses to describe a package and declare its dependencies.
 ---
 
 # Module `cave`
@@ -18,34 +18,36 @@ import cave
 
 A `Cavefile` is ordinary Zirric source, and `cave` is the vocabulary it is written in. The package manager reads the file for its types and attributes rather than executing it, so everything here is declaration, not behaviour.
 
-[`Dependencies`](#dependencies) marks the one `data` declaration whose fields are dependencies. Each field names the import, and the attributes on it say where the package comes from — [`Stdlib`](#stdlib), [`Git`](#git) or [`Local`](#local) — and, optionally, [`Version`](#version).
+[`Package`](#package) marks the one `data` declaration that is the manifest. The attributes on the declaration describe the package itself; its fields are the dependencies. Each field names the import, and the attributes on it say where the package comes from — [`Stdlib`](#stdlib), [`Git`](#git) or [`Local`](#local) — and, optionally, which [`Version`](#version) is acceptable.
+
+[`Version`](#version), [`LanguageVersion`](#languageversion), [`Description`](#description) and [`Documentation`](#documentation) read the same way on the package and on one of its dependencies.
 
 [`FormattingExcludes`](#formattingexcludes) is unrelated to dependencies and may sit on any declaration; [`zirric fmt`](/tooling/code-formatter) reads it to decide which paths to leave alone.
 
 ## Contents
 
-- **Attributes** — [`Dependencies`](#dependencies), [`FormattingExcludes`](#formattingexcludes), [`Package`](#package), [`Version`](#version), [`Stdlib`](#stdlib), [`Git`](#git), [`Local`](#local)
+- **Attributes** — [`Package`](#package), [`FormattingExcludes`](#formattingexcludes), [`Version`](#version), [`LanguageVersion`](#languageversion), [`Description`](#description), [`Documentation`](#documentation), [`Stdlib`](#stdlib), [`Git`](#git), [`Local`](#local)
 - **Unions** — [`Source`](#source)
 
 ---
 
 ## Attributes
 
-### `Dependencies` {#dependencies}
+### `Package` {#package}
 
-<small>`cave/manifest.zirr:4`</small>
+<small>`cave/manifest.zirr:5`</small>
 
 ```zirric
-attr Dependencies {}
+attr Package {}
 ```
 
-Marks the current data structure as a dependencies manifest.
+Marks the current data structure as the package manifest. Its attributes describe the package itself, its fields declare the dependencies.
 
 ---
 
 ### `FormattingExcludes` {#formattingexcludes}
 
-<small>`cave/manifest.zirr:8`</small>
+<small>`cave/manifest.zirr:9`</small>
 
 ```zirric
 attr FormattingExcludes {
@@ -64,34 +66,13 @@ Excludes paths from `zirric fmt` and from editor formatting. Patterns are relati
 
 ---
 
-### `Package` {#package}
-
-<small>`cave/manifest.zirr:17`</small>
-
-```zirric
-attr Package {
-	// The canonical URL of the package.
-	url: String
-}
-```
-
-Declares the canonical URL of the current package. Placed on the Cavefile's `mod` declaration, e.g. `@cave.Package("https://...") mod mymodule`. Used to derive the package's name and source instead of falling back to the project directory name.
-
-#### Members
-
-| Member | Signature     | Description                       |
-| ------ | ------------- | --------------------------------- |
-| `url`  | `url: String` | The canonical URL of the package. |
-
----
-
 ### `Version` {#version}
 
-<small>`cave/manifest.zirr:22`</small>
+<small>`cave/manifest.zirr:15`</small>
 
 ```zirric
 attr Version {
-	// The version predicate for the Git dependency.
+	// The version, or the version predicate for a dependency.
 	// Examples:
 	//   - "main"
 	//   - "~1.2.3"
@@ -99,25 +80,86 @@ attr Version {
 	//   - ">=1.2.3"
 	//   - ">= 1.0.0"
 	//   - "< 1.0.0"
-	//   - ">= 1.0.0"
-	//   - ">= 1.0.0"
 	predicate: String
 }
 ```
 
-Constrains which versions of a Git dependency may be resolved. Omitted, any version is acceptable.
+On the package, its own version. On a dependency, which versions may be resolved; omitted, any version is acceptable.
 
 #### Members
 
-| Member      | Signature           | Description                                                                                                                                           |
-| ----------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `predicate` | `predicate: String` | The version predicate for the Git dependency. Examples: - "main" - "~1.2.3" - "^1.2.3" - ">=1.2.3" - ">= 1.0.0" - "< 1.0.0" - ">= 1.0.0" - ">= 1.0.0" |
+| Member      | Signature           | Description                                                                                                  |
+| ----------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `predicate` | `predicate: String` | The version, or the version predicate for a dependency. Examples: - "main" - "~1.2.3" - "^1.2.3" - ">=1.2.3" |
+
+---
+
+### `LanguageVersion` {#languageversion}
+
+<small>`cave/manifest.zirr:28`</small>
+
+```zirric
+attr LanguageVersion {
+	// The version predicate for the Zirric toolchain itself.
+	predicate: String
+}
+```
+
+Declares which Zirric versions the package or dependency can be built with. A toolchain that does not satisfy it refuses the project — only `zirric cave describe` still opens it, to report why; a development build that carries no version of its own is exempt.
+
+#### Members
+
+| Member      | Signature           | Description                                            |
+| ----------- | ------------------- | ------------------------------------------------------ |
+| `predicate` | `predicate: String` | The version predicate for the Zirric toolchain itself. |
+
+---
+
+### `Description` {#description}
+
+<small>`cave/manifest.zirr:38`</small>
+
+```zirric
+attr Description {
+	// The description of the package or dependency.
+	desc: String
+}
+```
+
+Describes the package or dependency in one line.
+
+#### Members
+
+| Member | Signature      | Description                                   |
+| ------ | -------------- | --------------------------------------------- |
+| `desc` | `desc: String` | The description of the package or dependency. |
+
+---
+
+### `Documentation` {#documentation}
+
+<small>`cave/manifest.zirr:44`</small>
+
+```zirric
+attr Documentation {
+	// The URL of the documentation.
+	url: String
+}
+```
+
+Links to the documentation of the package or dependency.
+
+#### Members
+
+| Member | Signature     | Description                   |
+| ------ | ------------- | ----------------------------- |
+| `url`  | `url: String` | The URL of the documentation. |
 
 ---
 
 ### `Stdlib` {#stdlib}
 
-<small>`cave/manifest.zirr:44`</small>
+<small>`cave/manifest.zirr:57`</small>
 
 ```zirric
 attr Stdlib {
@@ -138,7 +180,7 @@ Marks the current data structure as a standard library dependency.
 
 ### `Git` {#git}
 
-<small>`cave/manifest.zirr:51`</small>
+<small>`cave/manifest.zirr:64`</small>
 
 ```zirric
 attr Git {
@@ -147,7 +189,7 @@ attr Git {
 }
 ```
 
-Marks a field as a Git dependency with a URL and predicate. The field name represents the import name of the dependency in this package.
+Declares the Git repository of the package, or marks a field as a Git dependency. On a dependency the field name represents the import name of the dependency in this package.
 
 #### Members
 
@@ -159,7 +201,7 @@ Marks a field as a Git dependency with a URL and predicate. The field name repre
 
 ### `Local` {#local}
 
-<small>`cave/manifest.zirr:57`</small>
+<small>`cave/manifest.zirr:70`</small>
 
 ```zirric
 attr Local {
@@ -182,7 +224,7 @@ Marks a field as a local dependency with a path.
 
 ### `Source` {#source}
 
-<small>`cave/manifest.zirr:37`</small>
+<small>`cave/manifest.zirr:50`</small>
 
 ```zirric
 union Source {

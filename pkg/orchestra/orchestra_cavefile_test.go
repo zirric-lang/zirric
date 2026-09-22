@@ -96,17 +96,21 @@ func TestNewInjectsStdlibDependencyIntoProvidedCavefile(t *testing.T) {
 
 func TestNewUsesCavefilePathOverride(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, orchestra.DefaultCavefileName, `import cave
+	writeFile(t, projectFS, orchestra.DefaultCavefileName, `mod proj
 
-@cave.Dependencies()
+import cave
+
+@cave.Package()
 data Dependencies {
   @cave.Stdlib("io")
   io
 }
 `)
-	writeFile(t, projectFS, "Cavefile.alt", `import cave
+	writeFile(t, projectFS, "Cavefile.alt", `mod proj
 
-@cave.Dependencies()
+import cave
+
+@cave.Package()
 data Dependencies {
   @cave.Stdlib("os")
   os
@@ -151,9 +155,11 @@ func TestNewCavefilePathOverrideMissingIsAnError(t *testing.T) {
 
 func TestNewAutoDetectsCavefileFromProjectRoot(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, orchestra.DefaultCavefileName, `import cave
+	writeFile(t, projectFS, orchestra.DefaultCavefileName, `mod proj
 
-@cave.Dependencies()
+import cave
+
+@cave.Package()
 data Dependencies {
   @cave.Stdlib("io")
   io
@@ -186,9 +192,11 @@ data Dependencies {
 
 func TestStdlibDependencyModuleResolves(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, orchestra.DefaultCavefileName, `import cave
+	writeFile(t, projectFS, orchestra.DefaultCavefileName, `mod proj
 
-@cave.Dependencies()
+import cave
+
+@cave.Package()
 data Dependencies {
   @cave.Stdlib("io")
   io
@@ -258,9 +266,11 @@ func TestLocalDependencyResolvesUnderDeclaredName(t *testing.T) {
 
 func TestEnsureInstalledResolvesDeclaredDependencies(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, orchestra.DefaultCavefileName, `import cave
+	writeFile(t, projectFS, orchestra.DefaultCavefileName, `mod proj
 
-@cave.Dependencies()
+import cave
+
+@cave.Package()
 data Dependencies {
   @cave.Stdlib("io")
   io
@@ -298,9 +308,11 @@ data Dependencies {
 
 func TestWithInstallProgressReportsDependenciesBeforeProject(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, orchestra.DefaultCavefileName, `import cave
+	writeFile(t, projectFS, orchestra.DefaultCavefileName, `mod proj
 
-@cave.Dependencies()
+import cave
+
+@cave.Package()
 data Dependencies {
   @cave.Stdlib("io")
   io

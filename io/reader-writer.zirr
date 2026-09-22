@@ -1,4 +1,4 @@
-mod io
+mod code.knabel.dev.zirric_lang.zirric.io
 
 // Marks a type as a readable stream of bytes.
 attr Reader {

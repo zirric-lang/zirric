@@ -1,4 +1,4 @@
-mod reflect
+mod code.knabel.dev.zirric_lang.zirric.reflect
 
 // A field of a data type, carrying the attributes written on it.
 // Attributes are read off a Field exactly as off any other value, so `coding.Name(field).text` and `field is @coding.Ignore` both work.

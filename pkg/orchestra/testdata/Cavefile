@@ -1,7 +1,9 @@
+mod testproject
+
 import cave
 import tasks
 
-@cave.Dependencies()
+@cave.Package()
 data Dependencies {
   // Standard library packages are available by default
   @cave.Stdlib("tests")

@@ -819,7 +819,7 @@ func TestBarePreludeAndQualified(t *testing.T) {
 
 // TestCavefileExample verifies that the example Cavefile from
 // examples/project/Cavefile compiles and runs without errors.
-// The Cavefile uses cross-module attribute references like @cave.Dependencies
+// The Cavefile uses cross-module attribute references like @cave.Package
 // and @tasks.Name which require file-local imports to be visible during
 // attribute resolution of promoted declarations.
 func TestCavefileExample(t *testing.T) {
@@ -900,9 +900,11 @@ func TestInvalidateModules(t *testing.T) {
 // TestReadOnlyResolverMissingDependencyIsScoped is a regression test: an unresolvable Cavefile dependency used to fail Prelude()/ParseModule for the whole project, not just files that import it; resolving the missing dependency itself must surface a typed pkgmanager.DependencyNotInstalledError.
 func TestReadOnlyResolverMissingDependencyIsScoped(t *testing.T) {
 	projectFS := memfs.New()
-	writeFile(t, projectFS, "Cavefile", `import cave
+	writeFile(t, projectFS, "Cavefile", `mod proj
 
-@cave.Dependencies()
+import cave
+
+@cave.Package()
 data Dependencies {
   @cave.Local("../does-not-exist")
   missing

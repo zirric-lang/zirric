@@ -62,14 +62,22 @@ func NewModuleResolver(pm *pkgmanager.PackageManager, cave cavefile.Cavefile, op
 }
 
 var (
-	_ resolver.ModuleResolver    = (*ModuleResolver)(nil)
-	_ resolver.MainPackageLister = (*ModuleResolver)(nil)
+	_ resolver.ModuleResolver      = (*ModuleResolver)(nil)
+	_ resolver.MainPackageLister   = (*ModuleResolver)(nil)
+	_ resolver.DeclaredPackageBase = (*ModuleResolver)(nil)
 )
 
 func (r *ModuleResolver) MainPackageName() string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.cave.Name
+}
+
+// DeclaredPackageBase implements resolver.DeclaredPackageBase.
+func (r *ModuleResolver) DeclaredPackageBase() registry.LogicalURI {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return registry.LogicalURI(r.cave.ModulePath)
 }
 
 // MainPackageModules returns every module URI belonging to the project's own package, sorted.

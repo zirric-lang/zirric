@@ -10,9 +10,9 @@ teardown() {
   cd "$REPO_ROOT" || return 1
 }
 
-@test "task run test succeeds against the repo's own Cavefile" {
+@test "test succeeds against the repo's own package" {
   cd "$REPO_ROOT" || return 1
 
-  run_zirric task run test
+  run_zirric test
   [ "$status" -eq 0 ]
 }

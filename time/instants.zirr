@@ -1,4 +1,4 @@
-mod time
+mod code.knabel.dev.zirric_lang.zirric.time
 
 // The zero point of the monotonic scale. Its position carries no meaning; it exists so that instants can be constructed, which is mostly useful for test clocks.
 extern fn origin() -> Instant

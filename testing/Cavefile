@@ -1,0 +1,2 @@
+// Marks this directory as a package of its own, so the enclosing project does not compile these fixtures.
+// Each fixture is copied into a temporary project directory of its own before the CLI runs against it.

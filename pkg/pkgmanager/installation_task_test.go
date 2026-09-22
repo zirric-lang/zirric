@@ -345,3 +345,75 @@ func TestInstallationTaskRun_ReadOnlyMissingDoesNotNotify(t *testing.T) {
 		t.Fatalf("expected no install events for a missing dependency, got %+v", events)
 	}
 }
+
+// A package the running Zirric cannot build is refused before any registry is consulted.
+func TestRunRefusesLanguageVersionMismatch(t *testing.T) {
+	discovered := false
+	pm := &PackageManager{registries: []registry.Provider{&stubProvider{
+		discoverFn: func(context.Context) ([]registry.ResolvedPackage, error) {
+			discovered = true
+			return nil, nil
+		},
+	}}}
+
+	cases := []struct {
+		name string
+		cave cavefile.Cavefile
+		want string
+	}{
+		{
+			name: "the package itself",
+			cave: cavefile.Cavefile{Package: cavefile.Package{Name: "app", Source: "file:///app", LanguageVersion: ">=9.0.0"}},
+			want: "app",
+		},
+		{
+			name: "one of its dependencies",
+			cave: cavefile.Cavefile{
+				Package:      cavefile.Package{Name: "app", Source: "file:///app"},
+				Dependencies: []cavefile.Dependency{{Package: cavefile.Package{Name: "widgets", Source: "file:///widgets", LanguageVersion: "^2.0.0"}}},
+			},
+			want: "widgets",
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			discovered = false
+			task := pm.Install(tt.cave)
+			task.Toolchain = version.Parse("1.0.0")
+
+			_, err := task.Run(context.Background())
+			var mismatch *cavefile.LanguageVersionError
+			if !errors.As(err, &mismatch) {
+				t.Fatalf("err = %v, want *cavefile.LanguageVersionError", err)
+			}
+			if mismatch.Package != tt.want {
+				t.Errorf("refused %q, want %q", mismatch.Package, tt.want)
+			}
+			if discovered {
+				t.Error("registries were consulted for a package that cannot be built")
+			}
+		})
+	}
+}
+
+// A build that stamped no version of its own cannot be told apart from one that is too old, so it installs anyway.
+func TestRunInstallsForUnknownToolchain(t *testing.T) {
+	pkg := &stubResolvedPackage{source: "file:///app", version: version.Parse("1.0.0")}
+	pm := &PackageManager{registries: []registry.Provider{&stubProvider{
+		discoverFn: func(context.Context) ([]registry.ResolvedPackage, error) {
+			return []registry.ResolvedPackage{pkg}, nil
+		},
+	}}}
+
+	task := pm.Install(cavefile.Cavefile{Package: cavefile.Package{Name: "app", Source: "file:///app", LanguageVersion: ">=9.0.0"}})
+	task.Toolchain = nil
+
+	installed, err := task.Run(context.Background())
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if len(installed) != 1 {
+		t.Fatalf("expected the package to be installed, got %d", len(installed))
+	}
+}

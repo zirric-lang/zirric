@@ -1,6 +1,8 @@
+mod plugin_error
+
 import cave
 
-@cave.Dependencies()
+@cave.Package()
 data Dependencies {
 	@cave.Stdlib("strings")
 	strings

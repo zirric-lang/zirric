@@ -1,14 +1,17 @@
 package cmds
 
 import (
+	"errors"
 	"io"
 	"strings"
 	"testing"
 
+	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/codefmt"
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	billyutil "github.com/go-git/go-billy/v5/util"
+	mv "github.com/metal-stack/v"
 )
 
 const unformatted = "fn f() {\n      const x = 1+2\n}\n"
@@ -25,7 +28,7 @@ func fmtFixture(t *testing.T) billy.Filesystem {
 	}
 	write("main.zirr", unformatted)
 	write("clean.zirr", formatted)
-	write("Cavefile", "import cave\n\n@cave.Dependencies()\ndata Dependencies {\n      prelude\n}\n")
+	write("Cavefile", "mod fmtfixture\n\nimport cave\n\n@cave.Package()\ndata Dependencies {\n      prelude\n}\n")
 	write("nested/deep.zirr", unformatted)
 	write("notes.txt", "not zirric\n")
 	return fs
@@ -280,5 +283,33 @@ func TestRunFmt_StdinFormatsNonExcludedPath(t *testing.T) {
 	_, out, _ := runFmtExcl(t, fs, nil, flags, codefmt.Excludes{"vendor/**"}, unformatted)
 	if out != formatted {
 		t.Errorf("want %q, got %q", formatted, out)
+	}
+}
+
+// `zirric fmt` stops for a package this Zirric cannot build rather than reformatting sources written for a language it does not have.
+// --no-excludes is no way around it: it says nothing about which Zirric may build the package.
+func TestProjectFormattingExcludes_RefusesLanguageVersionMismatch(t *testing.T) {
+	// Stands in for the ldflags a release build stamps.
+	previous := mv.Version
+	mv.Version = "1.0.0"
+	t.Cleanup(func() { mv.Version = previous })
+
+	fs := memfs.New()
+	if err := billyutil.WriteFile(fs, "Cavefile", []byte("mod myapp\n\nimport cave\n\n@cave.Package()\n@cave.LanguageVersion(\">=9.0.0\")\ndata Deps {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := projectFormattingExcludes(fs, true)
+	var mismatch *cavefile.LanguageVersionError
+	if !errors.As(err, &mismatch) {
+		t.Fatalf("err = %v, want *cavefile.LanguageVersionError", err)
+	}
+	// The Cavefile read fine, so the refusal must not arrive dressed as a read failure.
+	if strings.Contains(err.Error(), "read Cavefile") {
+		t.Errorf("err = %q, want it to report the refusal on its own", err)
+	}
+
+	if _, err := projectFormattingExcludes(fs, false); !errors.As(err, &mismatch) {
+		t.Fatalf("err under --no-excludes = %v, want the same refusal", err)
 	}
 }

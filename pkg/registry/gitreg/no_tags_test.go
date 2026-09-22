@@ -138,9 +138,11 @@ func TestReinstallBranchClonedPackageDoesNotFail(t *testing.T) {
 	}
 
 	writeCavefile := func(predicate string) {
-		content := `import cave
+		content := `mod proj
 
-@cave.Dependencies()
+import cave
+
+@cave.Package()
 data Deps {
   @cave.Git("` + source + `")
   @cave.Version("` + predicate + `")

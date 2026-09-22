@@ -17,30 +17,32 @@ Whitespace is not covered here, because it is not a matter of taste: run [`zirri
 
 ## Modules
 
-Zirric favors many small modules over a few large ones. Module names use `snake_case` but should avoid underscores when possible. Names should be short, expressive, and aligned with the declarations they contain.
+Zirric favors many small modules over a few large ones. Every source file declares the module it belongs to, by its fully qualified path — the package's base module path joined with the directory the file sits in. The last segment binds the module locally, so it is that segment a reader actually uses, and that segment worth choosing well.
+
+Segment names use `snake_case` but should avoid underscores when possible. They should be short, expressive, and aligned with the declarations they contain.
 
 Plural or singular follows what the module is about. A module of operations over one kind of value is plural; a module covering a domain or a capability is singular.
 
 ```zirric
 // good
-mod strings // operations on many strings
-mod paths
-mod results
+mod code.knabel.dev.zirric_lang.zirric.strings // operations on many strings
+mod code.knabel.dev.zirric_lang.zirric.paths
+mod code.knabel.dev.zirric_lang.zirric.results
 
-mod io // a domain
-mod math
-mod reflect // reflect.typeOf
+mod code.knabel.dev.zirric_lang.zirric.io // a domain
+mod code.knabel.dev.zirric_lang.zirric.math
+mod code.knabel.dev.zirric_lang.zirric.reflect // reflect.typeOf
 
 // bad
-mod string_utils
-mod json_parser
-mod reflection // reflection.typeOf
+mod myapp.string_utils
+mod myapp.json_parser
+mod myapp.reflection // reflection.typeOf
 ```
 
-It is a good practice to always declare the local module name at the top of the file even if not used as a variable to improve readability.
+Reach for `mod local = path` only when the last segment would collide with something the file already declares. A local name that differs from the module's own is one more thing a reader has to keep in mind.
 
 ```zirric
-mod my_module
+mod here = myapp.flow.node
 ```
 
 ### Submodules

@@ -12,7 +12,6 @@ func init() {
 	lspCmd.AddCommand(lspSocketCmd)
 	lspCmd.AddCommand(lspIPCCmd)
 	lspCmd.AddCommand(lspTCPCmd)
-	skipCavefileFetchForCmds["lsp"] = true
 
 	lspSocketCmd.Flags().StringVarP(
 		&lspSocketAddress,

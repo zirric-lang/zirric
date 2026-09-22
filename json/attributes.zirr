@@ -1,4 +1,4 @@
-mod json
+mod code.knabel.dev.zirric_lang.zirric.json
 
 // The JSON key a field is read and written under, overriding `@coding.Name` for JSON only.
 // `coding` finds these by name, so declaring them here is all it takes for them to win.

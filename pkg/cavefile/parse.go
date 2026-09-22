@@ -22,16 +22,23 @@ func Parse(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, tasksMod 
 	}
 
 	aliasMap := buildAliasMap(cavefileMod)
-	pkgSource := extractPackageSource(cavefileMod, caveMod, aliasMap)
 
-	var pkgName string
-	if pkgSource != "" {
-		pkgName = string(registry.CanonicalizeModuleSource(pkgSource))
-	} else {
-		pkgName = fallbackName
+	pkg := Package{ModulePath: extractModulePath(cavefileMod)}
+	var deps []Dependency
+	if data := findPackageData(cavefileMod, caveMod, aliasMap); data != nil {
+		applyPackageAttributes(&pkg, data.Attributes, caveMod, aliasMap)
+		deps = fieldsToDepencies(data.Fields, caveMod, aliasMap, projectDir)
 	}
 
-	deps := extractDependencies(cavefileMod, caveMod, aliasMap, projectDir)
+	switch {
+	case pkg.ModulePath != "":
+		pkg.Name = pkg.ModulePath
+	case pkg.Source != "":
+		pkg.Name = string(registry.CanonicalizeModuleSource(pkg.Source))
+	default:
+		pkg.Name = fallbackName
+	}
+
 	excludes := extractFormattingExcludes(cavefileMod, caveMod, aliasMap)
 
 	var tasks []Task
@@ -40,10 +47,28 @@ func Parse(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, tasksMod 
 	}
 
 	return Cavefile{
-		Package:            Package{Name: pkgName, Source: pkgSource},
+		Package:            pkg,
 		Dependencies:       deps,
 		Tasks:              tasks,
 		FormattingExcludes: excludes,
+	}
+}
+
+// applyPackageAttributes reads the metadata a package declares about itself onto pkg.
+func applyPackageAttributes(pkg *Package, attrs ast.AttributeChain, caveMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) {
+	for _, attr := range attrs {
+		switch {
+		case isFutureCaveAttr(attr, "Git", caveMod, aliasMap):
+			pkg.Source = firstStringArg(attr)
+		case isFutureCaveAttr(attr, "Version", caveMod, aliasMap):
+			pkg.Version = firstStringArg(attr)
+		case isFutureCaveAttr(attr, "Documentation", caveMod, aliasMap):
+			pkg.Documentation = firstStringArg(attr)
+		case isFutureCaveAttr(attr, "Description", caveMod, aliasMap):
+			pkg.Description = firstStringArg(attr)
+		case isFutureCaveAttr(attr, "LanguageVersion", caveMod, aliasMap):
+			pkg.LanguageVersion = firstStringArg(attr)
+		}
 	}
 }
 
@@ -85,9 +110,9 @@ func extractFormattingExcludes(cavefileMod *ast.ContextModule, caveMod *ast.Cont
 	return patterns
 }
 
-// extractPackageSource finds the @cave.Package("url") attribute on the mod declaration
-// and returns the URL. DeclModule has ExportScopeLocal so it stays in the file-level DeclTable.
-func extractPackageSource(mod *ast.ContextModule, caveMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) string {
+// extractModulePath returns the fully qualified path the Cavefile's own `mod` declares, which is the base every module of the package is named under.
+// DeclModule has ExportScopeLocal so it stays in the file-level DeclTable.
+func extractModulePath(mod *ast.ContextModule) string {
 	for _, file := range mod.Files {
 		if file.Decls == nil {
 			continue
@@ -96,14 +121,8 @@ func extractPackageSource(mod *ast.ContextModule, caveMod *ast.ContextModule, al
 			if sym == nil || sym.Decl == nil {
 				continue
 			}
-			m, ok := sym.Decl.(*ast.DeclModule)
-			if !ok {
-				continue
-			}
-			for _, attr := range m.Attributes {
-				if isFutureCaveAttr(attr, "Package", caveMod, aliasMap) {
-					return firstStringArg(attr)
-				}
+			if m, ok := sym.Decl.(*ast.DeclModule); ok {
+				return m.Path.String()
 			}
 		}
 	}
@@ -133,10 +152,9 @@ func buildAliasMap(mod *ast.ContextModule) map[string]registry.LogicalURI {
 	return result
 }
 
-// extractDependencies finds the @cave.Dependencies() data block in the Cavefile module
-// and converts each field into a cavefile.Dependency. Attribute types are verified
-// against actual DeclAttr declarations in caveMod, identified via the alias map.
-func extractDependencies(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI, projectDir string) []Dependency {
+// findPackageData returns the data declaration carrying @cave.Package(), whose attributes describe the package and whose fields are its dependencies.
+// Attribute types are verified against actual DeclAttr declarations in caveMod, identified via the alias map.
+func findPackageData(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) *ast.DeclData {
 	for _, sym := range cavefileMod.Decls.Symbols {
 		if sym == nil || sym.Decl == nil {
 			continue
@@ -145,10 +163,10 @@ func extractDependencies(cavefileMod *ast.ContextModule, caveMod *ast.ContextMod
 		if !ok {
 			continue
 		}
-		if !hasCaveAttr(data.Attributes, "Dependencies", caveMod, aliasMap) {
+		if !hasCaveAttr(data.Attributes, "Package", caveMod, aliasMap) {
 			continue
 		}
-		return fieldsToDepencies(data.Fields, caveMod, aliasMap, projectDir)
+		return data
 	}
 	return nil
 }
@@ -233,6 +251,12 @@ func fieldToDependency(field ast.DeclField, caveMod *ast.ContextModule, aliasMap
 			found = true
 		case isFutureCaveAttr(attr, "Version", caveMod, aliasMap):
 			dep.Predicates = append(dep.Predicates, version.ParsePredicate(firstStringArg(attr)))
+		case isFutureCaveAttr(attr, "Documentation", caveMod, aliasMap):
+			dep.Documentation = firstStringArg(attr)
+		case isFutureCaveAttr(attr, "Description", caveMod, aliasMap):
+			dep.Description = firstStringArg(attr)
+		case isFutureCaveAttr(attr, "LanguageVersion", caveMod, aliasMap):
+			dep.LanguageVersion = firstStringArg(attr)
 		}
 	}
 	return dep, found

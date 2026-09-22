@@ -122,6 +122,7 @@ func (a *Analyzer) Analyze(module *ast.ContextModule, reserveModule bool) ([]Ana
 	errs := a.validateStaticRefs(module)
 	errs = append(errs, collectSymbolErrors(module.Symbols)...)
 	errs = append(errs, a.checkTypes(module)...)
+	errs = append(errs, a.checkModuleDeclarations(module)...)
 	return errs, module
 }
 

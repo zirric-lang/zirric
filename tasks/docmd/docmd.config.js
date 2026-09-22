@@ -565,6 +565,11 @@ module.exports = {
           icon: "circle-check",
           title: "ZE-23 Code Formatting",
           path: "/proposals/ZE-023-code-formatting"
+        },
+        {
+          icon: "circle-check",
+          title: "ZE-24 Module Names",
+          path: "/proposals/ZE-024-qualified-module-names"
         }
       ]
     },

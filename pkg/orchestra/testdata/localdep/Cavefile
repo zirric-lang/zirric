@@ -1,6 +1,8 @@
+mod localdep
+
 import cave
 
-@cave.Dependencies()
+@cave.Package()
 data Dependencies {
   @cave.Local("../local-package")
   helpers

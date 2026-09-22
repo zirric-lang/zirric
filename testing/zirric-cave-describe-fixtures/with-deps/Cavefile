@@ -1,0 +1,9 @@
+mod with_deps
+
+import cave
+
+@cave.Package()
+data Dependencies {
+	@cave.Stdlib("io")
+	io
+}

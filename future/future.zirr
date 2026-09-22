@@ -5,7 +5,7 @@
 //
 // Not all proposals are implemented nor complete.
 // Some require addtional syntax not yet available in Zirric.
-mod future
+mod code.knabel.dev.zirric_lang.zirric.future
 
 attr Proposal {
 	link: String

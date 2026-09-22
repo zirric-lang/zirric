@@ -14,10 +14,12 @@ import (
 )
 
 // testdataCavefile is the content written into the in-memory projectFS as "Cavefile".
-const testdataCavefile = `import cave
+const testdataCavefile = `mod myproject
+
+import cave
 import tasks
 
-@cave.Dependencies()
+@cave.Package()
 data Dependencies {
   @cave.Stdlib("tests")
   tests
@@ -85,7 +87,7 @@ func TestParseFullCavefile(t *testing.T) {
 func TestParseStdlibDependencyModule(t *testing.T) {
 	src := `import cave
 
-@cave.Dependencies()
+@cave.Package()
 data Dependencies {
   @cave.Stdlib("cave")
   caveModule
@@ -104,20 +106,46 @@ data Dependencies {
 	}
 }
 
-func TestParseFallbackName(t *testing.T) {
+func TestParseNameFromModuleDeclaration(t *testing.T) {
 	cave, _ := parseCavefileInMem(t, testdataCavefile)
-	// Name should be non-empty (fallback to the memfs root basename)
+	if cave.ModulePath != "myproject" {
+		t.Errorf("ModulePath = %q, want %q", cave.ModulePath, "myproject")
+	}
+	if cave.Name != "myproject" {
+		t.Errorf("Name = %q, want %q", cave.Name, "myproject")
+	}
+}
+
+func TestParseFallbackName(t *testing.T) {
+	cave, _ := parseCavefileInMem(t, `import cave
+
+@cave.Package()
+data Dependencies {
+}
+`)
+	// Without a mod declaration the name falls back to the memfs root basename.
+	if cave.ModulePath != "" {
+		t.Errorf("ModulePath = %q, want empty", cave.ModulePath)
+	}
 	if cave.Name == "" {
 		t.Error("expected non-empty package name")
 	}
 }
 
-func TestParsePackageFromURL(t *testing.T) {
-	src := `import cave
+func TestParsePackageMetadata(t *testing.T) {
+	src := `mod code.knabel.dev.zirric_lang.zirric
 
-@cave.Package("https://code.knabel.dev/zirric-lang/zirric")
-mod mymodule
-` + testdataCavefile
+import cave
+
+@cave.Package()
+@cave.Git("https://code.knabel.dev/zirric-lang/zirric")
+@cave.Version("1.2.3")
+@cave.LanguageVersion("^0.1.0")
+@cave.Description("The package itself")
+@cave.Documentation("https://zirric.knabel.dev")
+data Zirric {
+}
+`
 	cave, _ := parseCavefileInMem(t, src)
 	wantName := "code.knabel.dev.zirric_lang.zirric"
 	if cave.Name != wantName {
@@ -127,32 +155,77 @@ mod mymodule
 	if cave.Source != wantSource {
 		t.Errorf("Source = %q, want %q", cave.Source, wantSource)
 	}
+	if cave.Version != "1.2.3" {
+		t.Errorf("Version = %q, want %q", cave.Version, "1.2.3")
+	}
+	if cave.LanguageVersion != "^0.1.0" {
+		t.Errorf("LanguageVersion = %q, want %q", cave.LanguageVersion, "^0.1.0")
+	}
+	if cave.Description != "The package itself" {
+		t.Errorf("Description = %q, want %q", cave.Description, "The package itself")
+	}
+	if cave.Documentation != "https://zirric.knabel.dev" {
+		t.Errorf("Documentation = %q, want %q", cave.Documentation, "https://zirric.knabel.dev")
+	}
 }
 
-func TestParseModuleWithoutPackageAttribute(t *testing.T) {
-	// A `mod` declaration without @cave.Package should leave Source empty
-	// and fall back to fallbackName, exactly like having no mod decl at all.
-	src := `import cave
+func TestParseDependencyMetadata(t *testing.T) {
+	src := `mod myproject
 
-mod mymodule
-` + testdataCavefile
+import cave
+
+@cave.Package()
+data Dependencies {
+  @cave.Git("https://example.com/example/example")
+  @cave.Version("^1.2.3")
+  @cave.LanguageVersion(">=0.1.0")
+  @cave.Description("An example dependency")
+  @cave.Documentation("https://example.com/docs")
+  example
+}
+`
 	cave, _ := parseCavefileInMem(t, src)
+	if len(cave.Dependencies) != 1 {
+		t.Fatalf("expected 1 dep, got %d: %+v", len(cave.Dependencies), cave.Dependencies)
+	}
+	dep := cave.Dependencies[0]
+	if dep.LanguageVersion != ">=0.1.0" {
+		t.Errorf("LanguageVersion = %q, want %q", dep.LanguageVersion, ">=0.1.0")
+	}
+	if dep.Description != "An example dependency" {
+		t.Errorf("Description = %q, want %q", dep.Description, "An example dependency")
+	}
+	if dep.Documentation != "https://example.com/docs" {
+		t.Errorf("Documentation = %q, want %q", dep.Documentation, "https://example.com/docs")
+	}
+	if len(dep.Predicates) != 1 || dep.Predicates[0].String() != "^1.2.3" {
+		t.Errorf("Predicates = %v, want [^1.2.3]", dep.Predicates)
+	}
+}
+
+func TestParseModuleWithoutGitAttribute(t *testing.T) {
+	// A package that names no Git repository has no source, and its name is the one its mod declares.
+	cave, _ := parseCavefileInMem(t, testdataCavefile)
 	if cave.Source != "" {
 		t.Errorf("Source = %q, want empty", cave.Source)
 	}
-	if cave.Name == "" {
-		t.Error("expected fallback name to be non-empty")
+	if cave.Name != "myproject" {
+		t.Errorf("Name = %q, want %q", cave.Name, "myproject")
 	}
 }
 
 func TestParsePackageViaAlias(t *testing.T) {
-	// @cave.Package must resolve through import aliases just like every
-	// other cave attribute (regression guard: extractPackageSource
-	// must not hardcode the "cave" prefix).
-	src := `import x = cave
+	// @cave.Package and @cave.Git must resolve through import aliases just like
+	// every other cave attribute (regression guard: the package lookup must not
+	// hardcode the "cave" prefix).
+	src := `mod mymodule
 
-@x.Package("https://code.knabel.dev/zirric-lang/zirric")
-mod mymodule
+import x = cave
+
+@x.Package()
+@x.Git("https://code.knabel.dev/zirric-lang/zirric")
+data Deps {
+}
 `
 	cave, _ := parseCavefileInMem(t, src)
 	wantSource := "https://code.knabel.dev/zirric-lang/zirric"
@@ -171,9 +244,11 @@ func TestParseNoCavefileBlock(t *testing.T) {
 func TestParseAttributeAliasingIrrelevant(t *testing.T) {
 	// Using an explicit alias (x = cave) should still work
 	// because we resolve the alias via the import declaration
-	src := `import x = cave
+	src := `mod mymodule
 
-@x.Dependencies()
+import x = cave
+
+@x.Package()
 data Dependencies {
   @x.Stdlib("prelude")
   prelude
@@ -189,17 +264,19 @@ data Dependencies {
 }
 
 func TestParseNoNameCollision(t *testing.T) {
-	// An import with a coincidentally-named attribute should NOT be treated as cave.Dependencies
+	// An import with a coincidentally-named attribute should NOT be treated as cave.Package
 	// because the alias maps to a different module URI
-	src := `import notcave = tasks
+	src := `mod mymodule
+
+import notcave = tasks
 import cave
 
-@notcave.Dependencies()
+@notcave.Package()
 data WrongDependencies {
   tasks
 }
 
-@cave.Dependencies()
+@cave.Package()
 data RealDependencies {
   @cave.Stdlib("prelude")
   prelude
@@ -207,7 +284,7 @@ data RealDependencies {
 `
 	cave, _ := parseCavefileInMem(t, src)
 	if len(cave.Dependencies) != 1 {
-		t.Fatalf("expected 1 dep (only from cave.Dependencies), got %d: %+v", len(cave.Dependencies), cave.Dependencies)
+		t.Fatalf("expected 1 dep (only from cave.Package), got %d: %+v", len(cave.Dependencies), cave.Dependencies)
 	}
 	if cave.Dependencies[0].Name != "prelude" {
 		t.Errorf("dependency name = %q, want %q", cave.Dependencies[0].Name, "prelude")

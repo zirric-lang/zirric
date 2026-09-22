@@ -1,4 +1,4 @@
-mod random
+mod code.knabel.dev.zirric_lang.zirric.random
 
 // One function per Source field, each taking the source first.
 

@@ -1,0 +1,2 @@
+// Marks this directory as a package of its own, so the enclosing project does not compile these fixtures.
+// They stand in for an embedded standard library and are mounted by the registry tests directly.

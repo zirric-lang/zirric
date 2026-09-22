@@ -1,0 +1,12 @@
+mod tasked
+
+import cave
+import tasks
+
+@cave.Package()
+data Package {
+}
+
+@tasks.Name("test")
+@tasks.Exec("run-tests.zirr")
+data TestTask {}

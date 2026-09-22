@@ -27,7 +27,7 @@ teardown() {
 @test "--cavefile runs a task from the overridden Cavefile" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-cavefile-flag-fixtures/with-alt"
 
-  run_zirric --cavefile Cavefile.alt task run alt-task
+  run_zirric --cavefile Cavefile.alt task alt-task
   [ "$status" -eq 0 ]
 }
 
@@ -42,7 +42,7 @@ teardown() {
 @test "--cavefile placed after the task name has no effect on task dispatch" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-cavefile-flag-fixtures/with-alt"
 
-  run_zirric task run alt-task --cavefile Cavefile.alt
+  run_zirric task alt-task --cavefile Cavefile.alt
   [ "$status" -ne 0 ]
-  [[ "$output" == *"alt-task"*"not found"* ]]
+  [[ "$output" == *"unknown task"*"alt-task"* ]]
 }

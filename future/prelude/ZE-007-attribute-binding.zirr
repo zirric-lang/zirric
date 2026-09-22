@@ -1,4 +1,5 @@
-mod xprelude
+// Bound to xprelude rather than to its last segment, which would shadow the prelude every module is given.
+mod xprelude = code.knabel.dev.zirric_lang.zirric.future.prelude
 
 import future {
 	Proposal

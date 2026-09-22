@@ -16,16 +16,26 @@ import (
 )
 
 func newOrchestra(projectFS billy.Filesystem, packageName string) (*orchestra.Orchestra, error) {
+	return newOrchestraWith(projectFS, packageName, false)
+}
+
+// newReadingOrchestra opens a project only to report what its Cavefile says, which must work even for a package this Zirric cannot build — that report is how the refusal is explained.
+func newReadingOrchestra(projectFS billy.Filesystem, packageName string) (*orchestra.Orchestra, error) {
+	return newOrchestraWith(projectFS, packageName, true)
+}
+
+func newOrchestraWith(projectFS billy.Filesystem, packageName string, ignoreLanguageVersion bool) (*orchestra.Orchestra, error) {
 	registryFS, err := orchestra.DefaultRegistryFS()
 	if err != nil {
 		return nil, err
 	}
 
 	orch, err := orchestra.New(orchestra.Config{
-		ProjectFS:    projectFS,
-		RegistryFS:   registryFS,
-		PackageName:  packageName,
-		CavefilePath: cavefilePath,
+		ProjectFS:             projectFS,
+		RegistryFS:            registryFS,
+		PackageName:           packageName,
+		CavefilePath:          cavefilePath,
+		IgnoreLanguageVersion: ignoreLanguageVersion,
 	})
 	if err != nil {
 		return nil, err

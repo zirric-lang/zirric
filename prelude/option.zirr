@@ -1,4 +1,4 @@
-mod prelude
+mod code.knabel.dev.zirric_lang.zirric.prelude
 
 // Marks a union as an option type.
 // Types annotated with `@AnyOption` are expected to be unions

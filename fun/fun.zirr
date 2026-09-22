@@ -1,4 +1,4 @@
-mod fun
+mod code.knabel.dev.zirric_lang.zirric.fun
 
 // Applies fun to val and returns the result. Useful for starting a pipe()-style chain from a value without naming an intermediate variable.
 fn with(val, fun: fn(Any)) {

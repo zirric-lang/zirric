@@ -2,15 +2,15 @@ package cmds
 
 import (
 	"fmt"
-	"io"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/diag"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 func Execute() error {
@@ -24,7 +24,6 @@ func Execute() error {
 	}
 
 	cmdArgs = extractCavefileFlag(cmdArgs)
-	rootCmd.SetArgs(cmdArgs)
 	rootCmd.SilenceUsage = true
 	// Errors are printed here rather than by cobra, so that one carrying a position can be shown with the line it refers to.
 	rootCmd.SilenceErrors = true
@@ -33,6 +32,7 @@ func Execute() error {
 		reportError(err)
 		return err
 	}
+	rootCmd.SetArgs(resolveScriptShorthand(cmdArgs))
 
 	if err := rootCmd.Execute(); err != nil {
 		reportError(err)
@@ -66,12 +66,42 @@ func readSourceForDiagnostic(file string) ([]byte, error) {
 	}
 }
 
-var skipCavefileFetchForCmds = map[string]bool{}
-
 var cavefilePath string
 
+// banner heads the help of `zirric` itself. Subcommands keep their own
+// descriptions, so it is shown once rather than above every usage screen.
+const banner = `
+ ███ █ ██▄ ██▄ █ ▄██
+  ▄▀ █ █▄█ █▄█ █ █
+ ▄▀  █ █▀▄ █▀▄ █ █
+ ███ █ █ █ █ █ █ ▀██
+`
+
+// bannerStyle paints the banner yellow. lipgloss reads the color profile from
+// stdout, so a redirected `zirric --help`, a dumb terminal and NO_COLOR each
+// get the plain drawing rather than the escape sequences around it.
+var bannerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+
+// renderBanner paints the drawing a line at a time. Rendering it as one block
+// would pad every line out to the widest, padding the blank ones into runs of
+// spaces, and the art is written to sit exactly as it is.
+func renderBanner() string {
+	lines := strings.Split(banner, "\n")
+	for i, line := range lines {
+		if line != "" {
+			lines[i] = bannerStyle.Render(line)
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 var rootCmd = &cobra.Command{
-	Use: "zirric",
+	Use:  "zirric",
+	Long: renderBanner(),
+	// A first argument may name a file to run rather than a command, so completion offers those too.
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{strings.TrimPrefix(zirricFileExtension, ".")}, cobra.ShellCompDirectiveFilterFileExt
+	},
 }
 
 func init() {
@@ -79,37 +109,96 @@ func init() {
 }
 
 // extractCavefileFlag pulls a leading --cavefile flag out of args into cavefilePath and returns the remainder. Some task commands disable Cobra's own flag parsing, so this must run before Cobra ever sees the args.
+// Everything else is passed through exactly as written, so that the flags Cobra handles itself — --version among them — still reach it.
 func extractCavefileFlag(args []string) []string {
-	fs := pflag.NewFlagSet("peek", pflag.ContinueOnError)
-	fs.ParseErrorsAllowlist = pflag.ParseErrorsAllowlist{UnknownFlags: true}
-	fs.SetInterspersed(false)
-	fs.Usage = func() {}
-	fs.SetOutput(io.Discard)
-	fs.StringVar(&cavefilePath, "cavefile", "", "")
-	if err := fs.Parse(args); err != nil {
-		return args
+	out := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		// The flag only counts before the subcommand, so once one appears the rest is left alone.
+		if !strings.HasPrefix(arg, "-") {
+			out = append(out, args[i:]...)
+			break
+		}
+		switch {
+		case arg == "--cavefile":
+			if i+1 < len(args) {
+				cavefilePath = args[i+1]
+				i++
+			}
+		case strings.HasPrefix(arg, "--cavefile="):
+			cavefilePath = strings.TrimPrefix(arg, "--cavefile=")
+		default:
+			out = append(out, arg)
+		}
 	}
-	return fs.Args()
+	return out
 }
 
-// loadCavefileIfNeeded registers one dynamic subcommand per declared task under `task run` and `x`; a missing Cavefile is tolerated, but a task-level problem (name collision, unsupported type) is a hard error.
+// loadCavefileIfNeeded registers one command per declared task; a missing Cavefile is tolerated, but a name collision or an unsupported type is a hard error.
 func loadCavefileIfNeeded(args []string) error {
-	if len(args) == 0 {
+	if !needsDeclaredTasks(args) {
 		return nil
+	}
+	return registerTaskCommands()
+}
+
+// needsDeclaredTasks reports whether the command about to run has to know the project's tasks.
+// Everything else is spared reading the Cavefile, which is what lets `zirric cave new` work in a directory that has none.
+func needsDeclaredTasks(args []string) bool {
+	// The root help is where a project's own tasks are found.
+	if len(args) == 0 {
+		return true
 	}
 	target := args[0]
 	if target == cobra.ShellCompRequestCmd || target == cobra.ShellCompNoDescRequestCmd {
 		// completion requests prefix the real command path with __complete/__completeNoDesc
 		if len(args) < 2 {
-			return nil
+			return true
 		}
 		target = args[1]
 	}
-	if skipCavefileFetchForCmds[target] {
-		return nil
+	if strings.HasPrefix(target, "-") {
+		return target == "-h" || target == "--help"
 	}
-	if target != "task" && target != "tasks" && target != "x" {
-		return nil
+	if target == taskCmd.Name() || slices.Contains(taskCmd.Aliases, target) {
+		return true
 	}
-	return registerTaskCommands()
+	return rootCommandFor(target) == nil
 }
+
+// rootCommandFor returns the built-in command answering to name, by its own name or an alias.
+func rootCommandFor(name string) *cobra.Command {
+	for _, cmd := range rootCmd.Commands() {
+		if cmd.Name() == name || slices.Contains(cmd.Aliases, name) {
+			return cmd
+		}
+	}
+	return nil
+}
+
+// resolveScriptShorthand turns `zirric main.zirr args...` into `zirric run main.zirr args...`.
+// A registered command always wins, which is why this runs once the tasks are registered.
+func resolveScriptShorthand(args []string) []string {
+	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
+		return args
+	}
+	if rootCommandFor(args[0]) != nil {
+		return args
+	}
+	if !namesSomethingToRun(args[0]) {
+		return args
+	}
+	return append([]string{runCmd.Name()}, args...)
+}
+
+// namesSomethingToRun reports whether target reads as a program rather than a mistyped command.
+// A .zirr file counts whether or not it exists, so a typo names a missing file rather than an unknown command; a directory has to be there, since any word could otherwise be taken for one.
+func namesSomethingToRun(target string) bool {
+	if filepath.Ext(target) == zirricFileExtension {
+		return true
+	}
+	info, err := os.Stat(target)
+	return err == nil && info.IsDir()
+}
+
+const zirricFileExtension = ".zirr"

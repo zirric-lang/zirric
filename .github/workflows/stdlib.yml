@@ -28,4 +28,4 @@ jobs:
         run: ./zirric fmt --check .
 
       - name: Run CLI tests
-        run: ./zirric task run test
+        run: ./zirric test

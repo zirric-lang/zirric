@@ -1,3 +1,5 @@
+mod taskdemo
+
 import tasks
 
 @tasks.Name("greet")

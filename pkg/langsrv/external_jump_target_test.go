@@ -103,9 +103,11 @@ func TestDefinitionGitDependencyJumpTarget(t *testing.T) {
 
 	root := t.TempDir()
 	registryFS := memfs.New()
-	cave := `import cave
+	cave := `mod proj
 
-@cave.Dependencies()
+import cave
+
+@cave.Package()
 data Dependencies {
   @cave.Git("` + source + `")
   @cave.Version("v1.0.0")

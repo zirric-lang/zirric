@@ -1,4 +1,4 @@
-mod io
+mod code.knabel.dev.zirric_lang.zirric.io
 
 // Provides a standard out writer.
 // In production, this usually points to `os.stdout`.

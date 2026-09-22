@@ -1,7 +1,8 @@
-mod cave
+mod code.knabel.dev.zirric_lang.zirric.cave
 
-// Marks the current data structure as a dependencies manifest.
-attr Dependencies {}
+// Marks the current data structure as the package manifest.
+// Its attributes describe the package itself, its fields declare the dependencies.
+attr Package {}
 
 // Excludes paths from `zirric fmt` and from editor formatting.
 // Patterns are relative to the package root: `*` matches within one segment, `**` matches any number of segments.
@@ -10,17 +11,9 @@ attr FormattingExcludes {
 	patterns: [String]
 }
 
-// Declares the canonical URL of the current package.
-// Placed on the Cavefile's `mod` declaration, e.g. `@cave.Package("https://...") mod mymodule`.
-// Used to derive the package's name and source instead of falling back to
-// the project directory name.
-attr Package {
-	// The canonical URL of the package.
-	url: String
-}
-
+// Declares the version of the package, or the version predicate a dependency accepts.
 attr Version {
-	// The version predicate for the Git dependency.
+	// The version, or the version predicate for a dependency.
 	// Examples:
 	//   - "main"
 	//   - "~1.2.3"
@@ -28,9 +21,29 @@ attr Version {
 	//   - ">=1.2.3"
 	//   - ">= 1.0.0"
 	//   - "< 1.0.0"
-	//   - ">= 1.0.0"
-	//   - ">= 1.0.0"
 	predicate: String
+}
+
+// Declares which Zirric versions the package or dependency can be built with.
+attr LanguageVersion {
+	// The version predicate for the Zirric toolchain itself.
+	// Examples:
+	//   - "~1.2.3"
+	//   - "^1.2.3"
+	//   - ">=1.2.3"
+	predicate: String
+}
+
+// Describes the package or dependency in one line.
+attr Description {
+	// The description of the package or dependency.
+	desc: String
+}
+
+// Links to the documentation of the package or dependency.
+attr Documentation {
+	// The URL of the documentation.
+	url: String
 }
 
 // The type of dependency: standard library, Git, or local.
@@ -46,8 +59,8 @@ attr Stdlib {
 	name: String
 }
 
-// Marks a field as a Git dependency with a URL and predicate.
-// The field name represents the import name of the dependency in this package.
+// Declares the Git repository of the package, or marks a field as a Git dependency.
+// On a dependency the field name represents the import name of the dependency in this package.
 attr Git {
 	// The URL of the Git repository.
 	url: String

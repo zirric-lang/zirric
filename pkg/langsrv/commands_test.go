@@ -29,7 +29,9 @@ func (r *messageRecorder) Notify(method string, params any) {
 
 func TestListTasksCommand(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "Cavefile", `import tasks
+	writeFile(t, base, "Cavefile", `mod proj
+
+import tasks
 
 @tasks.Name("greet")
 @tasks.Alias(["hi"])
@@ -75,7 +77,9 @@ data GreetTask {
 // TestExecuteCommandNamesIncludesPerTaskCommands checks that each Cavefile-declared task gets its own advertised "zirric.task.<name>" command, alongside the two static ones.
 func TestExecuteCommandNamesIncludesPerTaskCommands(t *testing.T) {
 	base := memfs.New()
-	writeFile(t, base, "Cavefile", `import tasks
+	writeFile(t, base, "Cavefile", `mod proj
+
+import tasks
 
 @tasks.Name("greet")
 @tasks.Exec("greet.zirr")
@@ -117,14 +121,16 @@ func TestWorkspaceExecuteCommandDispatchesTaskPrefix(t *testing.T) {
 	defer func() { zirricExecutablePath = prev }()
 
 	root := t.TempDir()
-	cave := `import tasks
+	cave := `mod greeter
+
+import tasks
 
 @tasks.Name("greet")
 @tasks.Exec("greet.zirr")
 data GreetTask {
 }
 `
-	greet := "mod greet\n"
+	greet := "mod greeter\n"
 	if err := os.WriteFile(filepath.Join(root, "Cavefile"), []byte(cave), 0o644); err != nil {
 		t.Fatalf("write Cavefile: %v", err)
 	}
@@ -225,14 +231,16 @@ func TestRunTaskCommandSpawnsSubprocess(t *testing.T) {
 	defer func() { zirricExecutablePath = prev }()
 
 	root := t.TempDir()
-	cave := `import tasks
+	cave := `mod greeter
+
+import tasks
 
 @tasks.Name("greet")
 @tasks.Exec("greet.zirr")
 data GreetTask {
 }
 `
-	greet := `mod greet
+	greet := `mod greeter
 import io
 import os
 import bytes

@@ -34,13 +34,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 	}
 	switch node := node.(type) {
 	case *ast.ContextModule:
+		// Recorded before analysis, which already asks whether the module being worked on is the program itself.
+		if c.entryModule == nil {
+			c.entryModule = node
+		}
 		if err := c.ensureAnalyzed(node, true); err != nil {
 			return err
 		}
 
-		if c.entryModule == nil {
-			c.entryModule = node
-		}
 		moduleId := c.reserveGlobalModule(node.Name)
 		if err := c.compileContextModule(node, moduleId); err != nil {
 			return err
@@ -495,7 +496,7 @@ func (c *Compiler) ensureAnalyzed(module *ast.ContextModule, reserveModule bool)
 		return nil
 	}
 	errs, _ := c.analyzer.Analyze(module, reserveModule)
-	if c.resolver != nil && c.resolver.MainModule() == module && c.scopes[0].symbols == nil {
+	if c.entryModule == module && c.scopes[0].symbols == nil {
 		c.scopes[0].symbols = module.Symbols
 	}
 	// Only diagnostics that stop a build are returned; a warning is the caller's to report, not the compiler's to fail on.
@@ -1915,7 +1916,7 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 
 	// Reserve file-level imports before compiling module-level symbols.
 	// Promoted declarations (e.g. data) may reference file-local imports
-	// in their attributes (e.g. @cave.Dependencies), so the import's
+	// in their attributes (e.g. @cave.Package), so the import's
 	// module global must be registered before attribute resolution.
 	for _, src := range module.Files {
 		if src.Symbols == nil {
@@ -1975,7 +1976,8 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 
 	scope := c.leaveScope()
 	c.globals[id] = scope
-	if c.resolver != nil && c.resolver.MainModule() == module {
+	// The program being run is the module the compiler was handed, whatever its name: a script in a subdirectory belongs to that directory's module rather than to the project root, and its top-level code still has to run.
+	if c.entryModule == module {
 		c.scopes[c.scopeIdx].Instructions = append(c.scopes[c.scopeIdx].Instructions, scope.Instructions...)
 		c.carryLocalsUp(scope)
 	}

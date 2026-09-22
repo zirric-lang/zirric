@@ -1,4 +1,4 @@
-mod prelude
+mod code.knabel.dev.zirric_lang.zirric.prelude
 
 fn len(v: @Countable) -> Int {
 	Countable(v).length(v)
