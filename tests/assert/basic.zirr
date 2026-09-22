@@ -26,40 +26,45 @@ fn isFalse(val) -> Result {
 fn isOk(val) -> Result {
 	switch val {
 	case is Ok:
+		return Ok(true)
 	case is Err:
-		Err("expected an ok value, got " + fmt.sprint(val))
+		return Err("expected an ok value, got " + fmt.sprint(val))
 	case is @AnyResult:
 		const res = AnyResult(val).toResult(val)
 		switch res {
 		case is Ok:
+			return Ok(true)
 		case _:
-			Err("expected an ok result, got " + fmt.sprint(val))
+			return Err("expected an ok result, got " + fmt.sprint(val))
 		}
 	case _:
-		Err("expected an ok result, got " + fmt.sprint(val))
+		return Err("expected an ok result, got " + fmt.sprint(val))
 	}
 }
 
 fn isErr(val) -> Result {
 	switch val {
 	case is Err:
+		return Ok(true)
 	case is @AnyResult:
 		const res = AnyResult(val).toResult(val)
 		switch res {
 		case is Err:
+			return Ok(true)
 		case _:
-			Err("expected an err result, got " + fmt.sprint(val))
+			return Err("expected an err result, got " + fmt.sprint(val))
 		}
 	case _:
-		Err("expected an err result, got " + fmt.sprint(val))
+		return Err("expected an err result, got " + fmt.sprint(val))
 	}
 }
 
 fn isError(val) -> Result {
 	switch val {
 	case is @Error:
+		return Ok(true)
 	case _:
-		Err("expected an error, got " + fmt.sprint(val))
+		return Err("expected an error, got " + fmt.sprint(val))
 	}
 }
 

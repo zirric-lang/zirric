@@ -1,0 +1,164 @@
+mod code.knabel.dev.zirric_lang.zirric.tests.assert._t
+
+import tests { Test, Todo }
+import tests.assert
+
+// Result-shaped without being an Ok or an Err, so isOk and isErr have to read it through @AnyResult rather than match it directly.
+@AnyResult(fn(r) { r.inner })
+data _wrapped {
+	inner: Result
+}
+
+// Carries @Error without being a result at all, which is the one thing isError asks for.
+@Error(fn(e) { e.message })
+data _failure {
+	message: String
+}
+
+@Test()
+fn testEqualAcceptsEqualValues() {
+	assert.all([
+		assert.equal(true, assert.equal(1, 1) is Ok),
+		assert.equal(true, assert.equal("a", "a") is Ok),
+		assert.equal(true, assert.equal([1, 2], [1, 2]) is Ok),
+		assert.equal(true, assert.equal(["k": 1], ["k": 1]) is Ok),
+	])
+}
+
+@Test()
+fn testEqualNamesBothValuesWhenTheyDiffer() {
+	const failed = assert.equal(1, 2)
+	assert.all([
+		assert.equal(true, failed is Err),
+		assert.equal("expected 1, got 2", failed.reason),
+		assert.equal("expected a, got b", assert.equal("a", "b").reason),
+	])
+}
+
+// A bug, kept here as the shape of the fix rather than as a record of the behaviour.
+//
+// `equal` builds its message with `fmt.sprint`, which renders a String as the text it holds rather than as a quoted
+// literal. A String and the value it spells are therefore indistinguishable in a failure: `equal("1", 1)` reports
+// `expected 1, got 1`, naming two values that look identical and leaving nothing to tell them apart. The values are
+// what a failure exists to report, so the message has to quote a String — and, for the same reason, distinguish a
+// Float from the Int it equals in print.
+//
+// Marked @Todo so the suite stays green while the message is what it is; the assertions below are what it should be.
+@Test()
+@Todo()
+fn testEqualTellsAStringFromTheValueItSpells() {
+	assert.all([
+		assert.equal(true, assert.equal("1", 1) is Err),
+		assert.equal("expected \"1\", got 1", assert.equal("1", 1).reason),
+		assert.equal("expected \"a\", got \"b\"", assert.equal("a", "b").reason),
+	])
+}
+
+@Test()
+fn testIsTrueAndIsFalse() {
+	assert.all([
+		assert.equal(true, assert.isTrue(true) is Ok),
+		assert.equal(true, assert.isTrue(false) is Err),
+		assert.equal(true, assert.isFalse(false) is Ok),
+		assert.equal(true, assert.isFalse(true) is Err),
+		// They are equal() underneath, so they report the same way.
+		assert.equal("expected true, got false", assert.isTrue(false).reason),
+	])
+}
+
+@Test()
+fn testAllPassesOnlyWhenEveryAssertionDoes() {
+	assert.all([
+		assert.equal(true, assert.all([]) is Ok),
+		assert.equal(true, assert.all([assert.equal(1, 1), assert.equal(2, 2)]) is Ok),
+		assert.equal(true, assert.all([assert.equal(1, 1), assert.equal(2, 3)]) is Err),
+	])
+}
+
+@Test()
+fn testAllReportsEveryFailureRatherThanTheFirst() {
+	const failed = assert.all([assert.equal(1, 2), assert.equal(3, 3), assert.equal(4, 5)])
+	assert.all([
+		assert.equal(true, failed is Err),
+		assert.equal(2, len(failed.reason)),
+		assert.equal("expected 1, got 2", failed.reason[0]),
+		assert.equal("expected 4, got 5", failed.reason[1]),
+	])
+}
+
+@Test()
+fn testFailIsAlwaysAnErrCarryingItsReason() {
+	const failed = assert.fail("no reason at all")
+	assert.all([
+		assert.equal(true, failed is Err),
+		assert.equal("no reason at all", failed.reason),
+	])
+}
+
+@Test()
+fn testIsOkRejectsWhatIsNotOk() {
+	assert.all([
+		assert.equal(true, assert.isOk(Err("boom")) is Err),
+		assert.equal("expected an ok value, got Err(\"boom\")", assert.isOk(Err("boom")).reason),
+		assert.equal(true, assert.isOk(_wrapped(Err("boom"))) is Err),
+		// Nothing result-shaped at all.
+		assert.equal(true, assert.isOk(42) is Err),
+	])
+}
+
+@Test()
+fn testIsErrRejectsWhatIsNotErr() {
+	assert.all([
+		assert.equal(true, assert.isErr(Ok(1)) is Err),
+		assert.equal("expected an err result, got Ok(1)", assert.isErr(Ok(1)).reason),
+		assert.equal(true, assert.isErr(_wrapped(Ok(1))) is Err),
+		assert.equal(true, assert.isErr(42) is Err),
+	])
+}
+
+@Test()
+fn testIsErrorRejectsWhatCarriesNoError() {
+	assert.all([
+		assert.equal(true, assert.isError(42) is Err),
+		assert.equal("expected an error, got 42", assert.isError(42).reason),
+		assert.equal(true, assert.isError("boom") is Err),
+	])
+}
+
+@Test()
+fn testIsOkAcceptsAnOkAndAnythingReadableAsOne() {
+	assert.all([
+		assert.isOk(Ok(1)),
+		assert.isOk(Ok("anything")),
+		assert.isOk(_wrapped(Ok(1))),
+	])
+}
+
+@Test()
+fn testIsErrAcceptsAnErrAndAnythingReadableAsOne() {
+	assert.all([
+		assert.isErr(Err("boom")),
+		assert.isErr(_wrapped(Err("boom"))),
+	])
+}
+
+@Test()
+fn testIsErrorAcceptsWhatCarriesError() {
+	assert.all([
+		assert.isError(Err("boom")),
+		assert.isError(_failure("boom")),
+	])
+}
+
+// A passing isOk, isErr or isError used to answer with `void` rather than a Result, which `all` could not read: combining one stopped the run outright.
+// Passing them through `all` is therefore the check that matters, not merely that each returns an Ok.
+@Test()
+fn testAPassingCheckCanBeCombinedWithAll() {
+	const combined = assert.all([
+		assert.isOk(Ok(1)),
+		assert.isErr(Err("boom")),
+		assert.isError(_failure("boom")),
+		assert.equal(1, 1),
+	])
+	assert.equal(true, combined is Ok)
+}

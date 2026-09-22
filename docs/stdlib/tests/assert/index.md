@@ -60,7 +60,7 @@ fn equal(expect, got) -> Result
 
 ### `fail` {#fail}
 
-<small>`tests/assert/basic.zirr:66`</small>
+<small>`tests/assert/basic.zirr:71`</small>
 
 ```zirric
 fn fail(reason) -> Result
@@ -70,7 +70,7 @@ fn fail(reason) -> Result
 
 ### `isErr` {#iserr}
 
-<small>`tests/assert/basic.zirr:43`</small>
+<small>`tests/assert/basic.zirr:45`</small>
 
 ```zirric
 fn isErr(val) -> Result
@@ -80,7 +80,7 @@ fn isErr(val) -> Result
 
 ### `isError` {#iserror}
 
-<small>`tests/assert/basic.zirr:58`</small>
+<small>`tests/assert/basic.zirr:62`</small>
 
 ```zirric
 fn isError(val) -> Result
