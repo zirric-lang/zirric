@@ -82,7 +82,7 @@ publishers:
       sh -euc '
       case "{{ .ArtifactName }}" in
         *.pkg.tar.zst)
-          curl -fsSL -X PUT "{{ or .Env.FORGEJO_BASE_URL "https://code.knabel.dev" }}/api/packages/{{ or .Env.FORGEJO_OWNER "zirric-lang" }}/arch/{{ or .Env.FORGEJO_ARCH_REPO "extras" }}" \
+          curl --fail-with-body -sS -X PUT "{{ or .Env.FORGEJO_BASE_URL "https://code.knabel.dev" }}/api/packages/{{ or .Env.FORGEJO_OWNER "zirric-lang" }}/arch/{{ or .Env.FORGEJO_ARCH_REPO "extras" }}" \
             --user "{{ .Env.FORGEJO_USER }}:{{ .Env.FORGEJO_TOKEN }}" \
             -H "Content-Type: application/octet-stream" \
             --data-binary "@{{ abs .ArtifactPath }}"
@@ -96,7 +96,7 @@ publishers:
       sh -euc '
       case "{{ .ArtifactName }}" in
         *.apk)
-          curl -fsSL -X PUT "{{ or .Env.FORGEJO_BASE_URL "https://code.knabel.dev" }}/api/packages/{{ or .Env.FORGEJO_OWNER "zirric-lang" }}/alpine/{{ or .Env.FORGEJO_ALPINE_BRANCH "v3.20" }}/{{ or .Env.FORGEJO_ALPINE_REPO "main" }}" \
+          curl --fail-with-body -sS -X PUT "{{ or .Env.FORGEJO_BASE_URL "https://code.knabel.dev" }}/api/packages/{{ or .Env.FORGEJO_OWNER "zirric-lang" }}/alpine/{{ or .Env.FORGEJO_ALPINE_BRANCH "v3.20" }}/{{ or .Env.FORGEJO_ALPINE_REPO "main" }}" \
             --user "{{ .Env.FORGEJO_USER }}:{{ .Env.FORGEJO_TOKEN }}" \
             -H "Content-Type: application/octet-stream" \
             --data-binary "@{{ abs .ArtifactPath }}"
