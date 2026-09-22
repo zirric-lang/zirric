@@ -1,0 +1,8 @@
+// Comparing, intersecting and merging the three range types.
+//
+// > Set operations over `Range`, `ClosedRange` and `OpenRange`.
+//
+// The three range types themselves live in `prelude` — they are iterable and countable, so `for i <- Range(0, 10)` works without importing anything. `ranges` adds the operations that treat a range as a set of integers.
+//
+// `Like` is the union of all three, so every function here accepts any of them, in any combination. Results come back as `prelude.ClosedRange`, the one form that can describe any non-empty span exactly, wrapped in an `prelude.Option` because the answer may be empty.
+mod code.knabel.dev.zirric_lang.zirric.ranges

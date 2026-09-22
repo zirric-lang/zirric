@@ -1,0 +1,10 @@
+// Fast, seeded and cryptographic sources of randomness.
+//
+// > Randomness as a value, so a test can pin it down.
+//
+// A `Source` is a value carrying four functions, and every function here takes one as its first argument. Which source you pass decides where the bits come from; the code using it does not change.
+//
+// The three constructors differ only in that: `fast()` is seeded from the clock, `seeded(n)` produces the same sequence every run, and `strong()` uses the operating system's cryptographic generator.
+//
+// `HasFastRandom` and `HasStrongRandom` are separate attributes so that code needing secrecy has to say so, and cannot be handed a seeded generator by mistake.
+mod code.knabel.dev.zirric_lang.zirric.random

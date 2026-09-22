@@ -6,17 +6,27 @@ import arrays
 data Package {
 	name: String
 	moduleNames: [String]
+	// The manifest the package declares itself with, or None for a project running without a Cavefile.
+	cavefile: Option
 }
 
 extern fn _mainPackageName() -> String
 extern fn _mainPackageModuleNames() -> [String]
 extern fn _moduleNamed(name: String) -> Any
+extern fn _cavefile() -> Any
 
 // The package the running project itself declares.
 // Importing this module compiles every module in that package, including ones no import reaches, so that they can be looked up by name later.
 // Left out are the entry module, since the running program cannot be loaded again, and any module whose unqualified name is already taken by a loaded module, since it could never be imported anyway.
 fn mainPackage() -> Package {
-	Package(_mainPackageName(), _mainPackageModuleNames())
+	const manifest = _cavefile()
+	const declared = switch manifest {
+	case is Void:
+		None()
+	case _:
+		Some(manifest)
+	}
+	Package(_mainPackageName(), _mainPackageModuleNames(), declared)
 }
 
 // The module of p called name, or None if p declares no such module.
@@ -33,7 +43,7 @@ fn module(p: Package, name: String) -> Option {
 
 // Every module of p whose name satisfies predicate.
 // Each name is tested before its module is loaded, so a module the predicate rejects never runs.
-fn modulesWhere(p: Package, predicate: fn(String) -> Bool) -> [Module] {
+fn modulesWhere(p: Package, predicate: fn(String) -> Bool) -> [AnyModule] {
 	var result = []
 	for name <- p.moduleNames {
 		if !predicate(name) {
@@ -52,6 +62,6 @@ fn modulesWhere(p: Package, predicate: fn(String) -> Bool) -> [Module] {
 
 // Every module of p except those named.
 // Loading a module runs its top-level code, so naming the ones to leave out is the point: there is deliberately no way to ask for all of them without saying so.
-fn modulesExcept(p: Package, names: [String]) -> [Module] {
+fn modulesExcept(p: Package, names: [String]) -> [AnyModule] {
 	modulesWhere(p, fn(name) { !arrays.contains(names, name) })
 }

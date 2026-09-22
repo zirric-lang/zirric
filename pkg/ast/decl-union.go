@@ -40,7 +40,7 @@ func (e DeclUnion) DeclOverview() string {
 	}
 	memberLines := make([]string, 0)
 	for _, cs := range e.Members {
-		memberLines = append(memberLines, "    "+cs.Member.String())
+		memberLines = append(memberLines, "\t"+cs.Member.String())
 	}
 	return fmt.Sprintf("union %s {\n%s\n}", e.Name, strings.Join(memberLines, "\n"))
 }
@@ -79,6 +79,11 @@ func (e DeclUnion) String() string {
 
 func (decl DeclUnion) ProvidedDocs() *Docs {
 	return decl.Docs
+}
+
+// SetDocs implements Documentable.
+func (decl *DeclUnion) SetDocs(docs *Docs) {
+	decl.Docs = docs
 }
 
 // EnumerateChildNodes implements Decl.

@@ -41,6 +41,11 @@ func (decl DeclUnionMember) ProvidedDocs() *Docs {
 	return decl.Docs
 }
 
+// SetDocs implements Documentable.
+func (decl *DeclUnionMember) SetDocs(docs *Docs) {
+	decl.Docs = docs
+}
+
 func (n DeclUnionMember) EnumerateChildNodes(action func(child Node)) {
 	action(n.Member)
 }

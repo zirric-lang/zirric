@@ -1,0 +1,8 @@
+// Standard streams, environment, arguments, filesystem and clocks.
+//
+// > The only module that talks to the machine.
+//
+// `os` is the seam between a program and its host. Everything the outside world provides — the standard streams, the environment, the command line, the real filesystem, the real clocks — enters here and nowhere else.
+//
+// That is what makes the rest testable. A function that takes a `fs.FileSystem` or a `clock.SystemClock` can be handed `fs.fs.memory` or `clock.fixed` in a test; a function that calls `os.fs()` itself cannot. Take the capability as a parameter and let the entry point reach for `os`.
+mod code.knabel.dev.zirric_lang.zirric.os

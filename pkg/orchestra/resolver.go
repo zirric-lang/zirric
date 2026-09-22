@@ -29,6 +29,9 @@ type ModuleResolver struct {
 	onInstalled pkgmanager.InstallProgress
 	// missing holds dependencies not found locally in read-only mode; ResolveModule reports a scoped DependencyNotInstalledError instead of failing the whole resolver.
 	missing []cavefile.Dependency
+	// discovered holds every module of every installed package, found once. See resolvedModulesLocked.
+	discovered    []registry.ResolvedModule
+	discoveredErr error
 }
 
 type ResolverOption func(*ModuleResolver)
@@ -64,8 +67,16 @@ func NewModuleResolver(pm *pkgmanager.PackageManager, cave cavefile.Cavefile, op
 var (
 	_ resolver.ModuleResolver      = (*ModuleResolver)(nil)
 	_ resolver.MainPackageLister   = (*ModuleResolver)(nil)
+	_ resolver.CavefileProvider    = (*ModuleResolver)(nil)
 	_ resolver.DeclaredPackageBase = (*ModuleResolver)(nil)
 )
+
+// MainPackageCavefile returns the manifest the project declared itself with, which is the one this resolver was built from.
+func (r *ModuleResolver) MainPackageCavefile() cavefile.Cavefile {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.cave
+}
 
 func (r *ModuleResolver) MainPackageName() string {
 	r.mu.Lock()
@@ -98,22 +109,17 @@ func (r *ModuleResolver) MainPackageModules(ctx context.Context) ([]registry.Log
 
 	seen := map[registry.LogicalURI]struct{}{}
 	uris := make([]registry.LogicalURI, 0)
-	for _, pkg := range r.installed {
-		mods, err := pkg.ResolveModules()
-		if err != nil {
+	mods, _ := r.resolvedModulesLocked()
+	for _, mod := range mods {
+		uri := mod.URI()
+		if uri != base && !strings.HasPrefix(string(uri), prefix) {
 			continue
 		}
-		for _, mod := range mods {
-			uri := mod.URI()
-			if uri != base && !strings.HasPrefix(string(uri), prefix) {
-				continue
-			}
-			if _, ok := seen[uri]; ok {
-				continue
-			}
-			seen[uri] = struct{}{}
-			uris = append(uris, uri)
+		if _, ok := seen[uri]; ok {
+			continue
 		}
+		seen[uri] = struct{}{}
+		uris = append(uris, uri)
 	}
 	sort.Slice(uris, func(i, j int) bool { return uris[i] < uris[j] })
 	return uris, nil
@@ -136,7 +142,32 @@ func (r *ModuleResolver) InvalidateModules() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.modules = make(map[registry.LogicalURI]*ast.ContextModule)
+	// Dropped with the parsed modules, since a file added or removed since the last pass changes which modules exist at all.
+	r.discovered = nil
+	r.discoveredErr = nil
 	// Keep: r.installed, r.prelude, r.ready, r.pm, r.cave
+}
+
+// resolvedModulesLocked returns every module of every installed package, finding them once.
+// Discovering them walks the whole project tree, and resolving a module asks for that walk again, so a program importing reflect.packages used to walk the tree once per module of its own package — a hundred times over for a package the size of the standard library. A package that cannot list its modules contributes none rather than hiding the ones that can, and its failure is kept for a caller that finds nothing.
+func (r *ModuleResolver) resolvedModulesLocked() ([]registry.ResolvedModule, error) {
+	if r.discovered != nil {
+		return r.discovered, r.discoveredErr
+	}
+	found := make([]registry.ResolvedModule, 0)
+	var firstErr error
+	for _, pkg := range r.installed {
+		mods, err := pkg.ResolveModules()
+		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+		found = append(found, mods...)
+	}
+	r.discovered, r.discoveredErr = found, firstErr
+	return found, firstErr
 }
 
 func (r *ModuleResolver) ensureDependencies(ctx context.Context) ([]registry.ResolvedPackage, error) {
@@ -156,6 +187,7 @@ func (r *ModuleResolver) ensureDependencies(ctx context.Context) ([]registry.Res
 		return nil, err
 	}
 	r.installed = append(r.installed, projectPkgs...)
+	r.discovered, r.discoveredErr = nil, nil
 
 	if depErr != nil {
 		return r.installed, depErr
@@ -176,6 +208,7 @@ func (r *ModuleResolver) installMissingDependencies(ctx context.Context) error {
 		// In read-only mode, still use whatever was found locally.
 		if r.readOnly && len(depPkgs) > 0 {
 			r.installed = append(r.installed, depPkgs...)
+			r.discovered, r.discoveredErr = nil, nil
 		}
 		var notInstalled *pkgmanager.DependencyNotInstalledError
 		if r.readOnly && errors.As(err, &notInstalled) {
@@ -186,6 +219,7 @@ func (r *ModuleResolver) installMissingDependencies(ctx context.Context) error {
 		return err
 	}
 	r.installed = append(r.installed, depPkgs...)
+	r.discovered, r.discoveredErr = nil, nil
 	return nil
 }
 
@@ -322,17 +356,15 @@ func (r *ModuleResolver) preludeLocked(ctx context.Context) (*ast.ContextModule,
 }
 
 func (r *ModuleResolver) findResolvedModule(uri registry.LogicalURI) (registry.ResolvedModule, error) {
-	for _, pkg := range r.installed {
-		mods, err := pkg.ResolveModules()
-		if err != nil {
-			return nil, err
+	mods, err := r.resolvedModulesLocked()
+	for _, mod := range mods {
+		if mod.URI() != uri {
+			continue
 		}
-		for _, mod := range mods {
-			if mod.URI() != uri {
-				continue
-			}
-			return mod, nil
-		}
+		return mod, nil
+	}
+	if err != nil {
+		return nil, err
 	}
 	return nil, fmt.Errorf("module %q not found", uri)
 }

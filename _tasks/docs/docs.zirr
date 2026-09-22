@@ -1,0 +1,610 @@
+// Writes one Markdown page per standard library module, built from what reflection reads back about it.
+//
+//	zirric task docs [--out <directory>] [--source <repository root>]
+//
+// Every heading, signature, source line and paragraph on a page comes from the module's own sources, read back with `reflect.moduleOf`. A module's own prose lives in `<module>/module-docs.zirr`, a file holding nothing but a `mod` declaration and the comment above it: the first line becomes the page description and the rest its opening paragraphs.
+//
+// The modules are named below rather than discovered through reflect.packages, because this package is the standard library itself: each of its modules is shadowed by the copy the compiler already carries, and reflect.packages deliberately leaves a shadowed module out. Test modules are dropped again in `documented` in case one is ever added to the list by mistake.
+mod code.knabel.dev.zirric_lang.zirric._tasks.docs
+
+import arrays
+import dicts
+import fmt
+import os
+import paths
+import reflect
+import scripts
+import strings
+
+import bytes
+import cave
+import clock
+import coding
+import dicts
+import errors
+import fs
+import fun
+import future
+import io
+import json
+import math
+import options
+import paths
+import prelude
+import random
+import ranges
+import results
+import tasks
+import tests
+import time
+import yaml
+
+import assert = tests.assert
+import fprelude = future.prelude
+import freflect = future.reflect
+import rpackages = reflect.packages
+import runner = tests.runner
+import tap = tests.tap
+
+// The sections a page is divided into, in the order they appear on it.
+const sections = ["Unions", "Data", "Attributes", "Types", "Functions", "Constants", "Variables", "Other"]
+
+// The section each kind of declaration is written under.
+const sectionsByKeyword = [
+	"union": "Unions",
+	"data": "Data",
+	"attr": "Attributes",
+	"type": "Types",
+	"fn": "Functions",
+	"const": "Constants",
+	"var": "Variables",
+]
+
+// Every module this package documents, with its test modules left out.
+const documented = arrays.filter([
+	arrays,
+	bytes,
+	cave,
+	clock,
+	coding,
+	dicts,
+	errors,
+	fmt,
+	fs,
+	fun,
+	future,
+	fprelude,
+	freflect,
+	io,
+	json,
+	math,
+	options,
+	os,
+	paths,
+	prelude,
+	random,
+	ranges,
+	reflect,
+	rpackages,
+	results,
+	scripts,
+	strings,
+	tasks,
+	tests,
+	assert,
+	runner,
+	tap,
+	time,
+	yaml,
+	], fn(m) { !isTestModule(reflect.moduleName(m)) })
+
+// The metadata of every documented module, in the same order, read once because linking a name looks through all of them.
+const described = arrays.map(documented, fn(m) { reflect.moduleOf(m) })
+
+// Whether a module is a test module, which this repository names by a trailing _t.
+// Both a `foo/_t` submodule and a sibling module named `foo_t` match, the same rule the test runner uses.
+fn isTestModule(name: String) -> Bool {
+	strings.hasSuffix(name, "_t")
+}
+
+// Text flattened onto one line, with its runs of whitespace collapsed and its delimiters escaped, so that it survives inside a Markdown table cell.
+// The collapsing is what the formatter does to a cell anyway, and doing it here is what keeps a generated page from being rewritten the next time the repository is formatted.
+fn cellOf(text: String) -> String {
+	const flattened = strings.replace(strings.replace(text, "\n", " "), "\t", " ")
+	const words = arrays.filter(strings.split(flattened, " "), fn(word) { word != "" })
+	strings.replace(strings.join(words, " "), "|", "\\|")
+}
+
+// The first line of text, which is what a page's description takes.
+fn firstLine(text: String) -> String {
+	const lines = strings.split(text, "\n")
+	if len(lines) == 0 { "" } else { lines[0] }
+}
+
+// Everything after the first line of text, which is the part of a module's documentation the frontmatter does not already carry.
+fn afterFirstLine(text: String) -> String {
+	const lines = strings.split(text, "\n")
+	if len(lines) < 2 {
+		return ""
+	}
+	return strings.trim(strings.join(arrays.slice(lines, 1, len(lines)), "\n"))
+}
+
+// A frontmatter value, quoted only where YAML would otherwise read it as something other than text.
+fn yamlValue(text: String) -> String {
+	if strings.isEmpty(text) {
+		return strings.quote(text)
+	}
+	if strings.contains(text, ":") || strings.contains(text, "\"") || strings.contains(text, "#") {
+		return strings.quote(text)
+	}
+	if !strings.isLetter(strings.charAt(text, 0)) {
+		return strings.quote(text)
+	}
+	return text
+}
+
+// The anchor a declaration's heading gets, which is what the links in Contents point at.
+// Two declarations can differ only in case — `Declaration` and `declaration` — and would claim the same anchor, so a name that is not unique on its page carries the keyword it was declared with.
+fn anchorOf(declarations: [reflect.Declaration], declaration: reflect.Declaration) -> String {
+	const lowered = strings.from(strings.toLower(declaration.name))
+	const sharing = arrays.filter(declarations, fn(d) { strings.from(strings.toLower(d.name)) == lowered })
+	if len(sharing) > 1 {
+		return lowered + "-" + keywordOf(declaration)
+	}
+	return lowered
+}
+
+// The titles capitalization cannot derive, because the module name spells an acronym in lower case.
+const acronyms = [
+	"fs": "FS",
+	"io": "IO",
+	"json": "JSON",
+	"os": "OS",
+	"tap": "TAP",
+	"yaml": "YAML",
+]
+
+// One segment of a module name as it is written in a title.
+fn capitalize(segment: String) -> String {
+	if dicts.hasKey(acronyms, segment) {
+		return acronyms[segment]
+	}
+	return strings.from(strings.toUpper(strings.charAt(segment, 0))) + strings.slice(segment, 1, strings.count(segment))
+}
+
+// The page title of a module: every segment of its name capitalized, e.g. "tests.assert" becomes "Tests.Assert".
+fn titleOf(name: String) -> String {
+	strings.join(arrays.map(strings.split(name, "."), capitalize), ".")
+}
+
+// text with every backticked name this documentation covers turned into a link.
+// Fenced code is left alone, because a name there is code rather than prose.
+fn linkMembers(text: String, from: String, declarations: [reflect.Declaration], skip: String) -> String {
+	const parts = strings.split(text, "```")
+	var out = ""
+	var index = 0
+	for index < len(parts) {
+		if index % 2 == 0 {
+			out = out + linkProse(parts[index], from, declarations, skip)
+		} else {
+			out = out + parts[index]
+		}
+		if index < len(parts) - 1 {
+			out = out + "```"
+		}
+		index = index + 1
+	}
+	return out
+}
+
+// One run of prose, with every backticked name this documentation covers turned into a link.
+// A name already inside a link is left alone, which would otherwise end up wrapped in a second one.
+fn linkProse(text: String, from: String, declarations: [reflect.Declaration], skip: String) -> String {
+	const parts = strings.split(text, "`")
+	var out = parts[0]
+	var index = 1
+	for index < len(parts) {
+		// Splitting on the marker leaves the parts alternating between outside and inside, so an even one follows a closing marker that has already been written.
+		if index % 2 == 0 {
+			out = out + parts[index]
+			index = index + 1
+			continue
+		}
+		// An odd part with nothing after it was never closed, so its marker is prose rather than the start of inline code.
+		if index + 1 >= len(parts) {
+			out = out + "`" + parts[index]
+			index = index + 1
+			continue
+		}
+
+		const token = parts[index]
+		const linked = if isLinkable(out, parts[index + 1], token) { referenceLink(token, from, declarations, skip) } else { "" }
+		if linked == "" {
+			out = out + "`" + token + "`"
+		} else {
+			out = out + linked
+		}
+		index = index + 1
+	}
+	return out
+}
+
+// Whether a backticked token may be turned into a link here: it has to read as a name, and it must not already sit inside one.
+fn isLinkable(before: String, after: String, token: String) -> Bool {
+	if strings.hasSuffix(before, "[") || strings.hasPrefix(after, "](") {
+		return false
+	}
+	return isReference(token)
+}
+
+// Whether token reads as a name — an identifier, a qualified one, or an attribute — rather than as prose.
+// Only a name is ever linked, so a stray backtick that shifts what counts as inline code cannot mangle a sentence.
+fn isReference(token: String) -> Bool {
+	const bare = strings.trimPrefix(token, "@")
+	if strings.isEmpty(bare) {
+		return false
+	}
+	if !strings.isLetter(strings.from(strings.charAt(bare, 0))) {
+		return false
+	}
+	for ch <- bare {
+		const letter = strings.from(ch)
+		if !strings.isLetter(letter) && !strings.isDigit(letter) && letter != "_" && letter != "." {
+			return false
+		}
+	}
+	return true
+}
+
+// The link a backticked name becomes, or the empty String when it names nothing this documentation covers or when it names the declaration whose entry it sits in.
+// A member of the page's own module is nearest, then a member of another module named through it, then a module of its own.
+fn referenceLink(token: String, from: String, declarations: [reflect.Declaration], skip: String) -> String {
+	const bare = strings.trimPrefix(token, "@")
+	// A declaration's own entry is where the reader already is, so naming it there is not somewhere to go.
+	if bare == skip {
+		return ""
+	}
+
+	const own = declarationNamed(declarations, bare)
+	if own is Some {
+		return "[`" + token + "`](#" + anchorOf(declarations, own.value) + ")"
+	}
+
+	const qualified = qualifiedLink(token, bare, from)
+	if qualified != "" {
+		return qualified
+	}
+
+	if bare != from && describedNamed(bare) is Some {
+		return "[`" + token + "`](" + modulePath(from, bare) + ")"
+	}
+	return ""
+}
+
+// The link for a name of the form Module.Member, or the empty String when no documented module answers to it.
+fn qualifiedLink(token: String, bare: String, from: String) -> String {
+	for metadata <- described {
+		if !strings.hasPrefix(bare, metadata.name + ".") {
+			continue
+		}
+		const memberName = strings.trimPrefix(bare, metadata.name + ".")
+		const found = declarationNamed(metadata.declarations, memberName)
+		if found is None {
+			continue
+		}
+		const anchor = "#" + anchorOf(metadata.declarations, found.value)
+		if metadata.name == from {
+			return "[`" + token + "`](" + anchor + ")"
+		}
+		return "[`" + token + "`](" + modulePath(from, metadata.name) + anchor + ")"
+	}
+	return ""
+}
+
+// The declaration called name, or None when the module declares no such member.
+fn declarationNamed(declarations: [reflect.Declaration], name: String) -> Option {
+	for declaration <- declarations {
+		if declaration.name == name {
+			return Some(declaration)
+		}
+	}
+	return None()
+}
+
+// The keyword a declaration was written with.
+fn keywordOf(declaration: reflect.Declaration) -> String {
+	switch declaration.kind {
+	case is reflect.UnionDecl:
+		"union"
+	case is reflect.DataDecl:
+		"data"
+	case is reflect.AttrDecl:
+		"attr"
+	case is reflect.TypeDecl:
+		"type"
+	case is reflect.FuncDecl:
+		"fn"
+	case is reflect.ConstDecl:
+		"const"
+	case is reflect.VarDecl:
+		"var"
+	case _:
+		"decl"
+	}
+}
+
+// The section a declaration is written under, which is also its heading on the page.
+fn sectionOf(declaration: reflect.Declaration) -> String {
+	const keyword = keywordOf(declaration)
+	if dicts.hasKey(sectionsByKeyword, keyword) {
+		return sectionsByKeyword[keyword]
+	}
+	return "Other"
+}
+
+// Everything in declarations belonging to section, in the order reflection returned it, which is by name.
+fn inSection(declarations: [reflect.Declaration], section: String) -> [reflect.Declaration] {
+	arrays.filter(declarations, fn(d) { sectionOf(d) == section })
+}
+
+// Pads cell with spaces to width, which is what keeps a Markdown table's columns even.
+fn pad(cell: String, width: Int) -> String {
+	cell + strings.repeat(" ", width - strings.count(cell))
+}
+
+// One row of a Markdown table, its cells padded to widths.
+fn tableRow(cells: [String], widths: [Int]) -> String {
+	var out = "|"
+	var column = 0
+	for column < len(cells) {
+		out = out + " " + pad(cells[column], widths[column]) + " |"
+		column = column + 1
+	}
+	return out + "\n"
+}
+
+// A Markdown table with every column padded to its widest cell, which is how the formatter writes one.
+// Emitting it already formatted is what keeps a generated page from being rewritten the next time the repository is formatted.
+fn table(header: [String], rows: [[String]]) -> String {
+	var widths = arrays.map(header, fn(cell) { strings.count(cell) })
+	for cells <- rows {
+		var column = 0
+		for column < len(cells) {
+			if strings.count(cells[column]) > widths[column] {
+				widths[column] = strings.count(cells[column])
+			}
+			column = column + 1
+		}
+	}
+
+	const rules = arrays.map(widths, fn(width) { strings.repeat("-", width) })
+	var out = tableRow(header, widths) + tableRow(rules, widths)
+	for line <- rows {
+		out = out + tableRow(line, widths)
+	}
+	return out
+}
+
+// The Contents entry listing one section, linking to each declaration in it.
+fn contentsLine(section: String, entries: [reflect.Declaration], declarations: [reflect.Declaration]) -> String {
+	const links = arrays.map(entries, fn(d) { "[`" + d.name + "`](#" + anchorOf(declarations, d) + ")" })
+	"- **" + section + "** — " + strings.join(links, ", ") + "\n"
+}
+
+// The table of a data or attribute type's fields, or the empty String for a type that has none.
+// The fields are read off the type rather than the declaration, so each one carries the attributes written on it and answers for its own documentation.
+fn fieldsTable(m: AnyModule, from: String, declaration: reflect.Declaration, declarations: [reflect.Declaration]) -> String {
+	const found = reflect.member(m, declaration.name)
+	if found is None {
+		return ""
+	}
+	const fields = reflect.fieldsOf(found.value)
+	if len(fields) == 0 {
+		return ""
+	}
+	const rows = arrays.map(fields, fn(field) { ["`" + field.name + "`", linkMembers(cellOf(reflect.docs(field)), from, declarations, declaration.name)] })
+	return "\n#### Fields\n\n" + table(["Field", "Description"], rows)
+}
+
+// The table of a union's cases, or the empty String for anything that is not a union.
+fn casesTable(m: AnyModule, from: String, declaration: reflect.Declaration, declarations: [reflect.Declaration]) -> String {
+	const found = reflect.member(m, declaration.name)
+	if found is None {
+		return ""
+	}
+	const members = reflect.unionMembers(found.value)
+	if len(members) == 0 {
+		return ""
+	}
+	const rows = arrays.map(members, fn(member) { ["`" + reflect.typeName(member) + "`", linkMembers(cellOf(reflect.docs(member)), from, declarations, declaration.name)] })
+	return "\n#### Cases\n\n" + table(["Case", "Interpretation"], rows)
+}
+
+// One declaration's entry: its heading, where it was written, how it was written, and what it says about itself.
+fn entryOf(m: AnyModule, from: String, declaration: reflect.Declaration, declarations: [reflect.Declaration]) -> String {
+	var out = "### `" + declaration.name + "` {#" + anchorOf(declarations, declaration) + "}\n\n"
+	out = out + "<small>`" + declaration.source.path + ":" + fmt.sprint(declaration.source.line) + "`</small>\n\n"
+	out = out + "```zirric\n" + declaration.signature + "\n```\n"
+	const docs = reflect.docs(declaration)
+	if docs != "" {
+		out = out + "\n" + linkMembers(docs, from, declarations, declaration.name) + "\n"
+	}
+	out = out + fieldsTable(m, from, declaration, declarations)
+	out = out + casesTable(m, from, declaration, declarations)
+	return out + "\n---\n\n"
+}
+
+// The table naming the module and linking every file it was read from into the repository.
+fn sourceTable(metadata: reflect.Module) -> String {
+	const links = arrays.map(metadata.sources, fn(path) { "[`" + path + "`](" + sourceRoot() + "/" + path + ")" })
+	const rows = [
+		["**Module**", "`" + metadata.name + "`"],
+		["**Source**", strings.join(links, ", ")],
+	]
+	table(["", ""], rows) + "\n"
+}
+
+// The module of `documented` called name, or None when nothing here documents it.
+fn documentedNamed(name: String) -> Option {
+	for m <- documented {
+		if reflect.moduleName(m) == name {
+			return Some(m)
+		}
+	}
+	return None()
+}
+
+// The metadata of the documented module called name, or None when nothing here documents it.
+fn describedNamed(name: String) -> Option {
+	for metadata <- described {
+		if metadata.name == name {
+			return Some(metadata)
+		}
+	}
+	return None()
+}
+
+// The path from the page of one module to the page of another.
+// A module's page lives one directory deep per segment of its name, which is how far back the link has to reach.
+fn modulePath(from: String, to: String) -> String {
+	const up = strings.repeat("../", len(strings.split(from, ".")))
+	up + strings.replace(to, ".", "/") + "/index.md"
+}
+
+// A link from the page of one module to the page of another.
+fn pageLink(from: String, to: String) -> String {
+	"[`" + to + "`](" + modulePath(from, to) + ")"
+}
+
+// The modules m imports, and the ones those import in turn, as a nested list.
+// A module already listed on the page is named without being opened again, which keeps a shared dependency from being repeated and a cycle from running forever.
+fn dependencyTree(metadata: reflect.Module, from: String, depth: Int, listed: [String]) -> String {
+	var out = ""
+	var seen = listed
+	for name <- metadata.imports {
+		const indent = strings.repeat("  ", depth)
+		const link = if describedNamed(name) is Some { pageLink(from, name) } else { "`" + name + "`" }
+		if arrays.contains(seen, name) {
+			out = out + indent + "- " + link + "\n"
+			continue
+		}
+		seen = append(seen, name)
+		out = out + indent + "- " + link + "\n"
+		const imported = describedNamed(name)
+		if imported is Some {
+			out = out + dependencyTree(imported.value, from, depth + 1, seen)
+			for deeper <- imported.value.imports {
+				if !arrays.contains(seen, deeper) {
+					seen = append(seen, deeper)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// The section naming what a module is built on, or the empty String for one that imports nothing.
+fn dependencies(metadata: reflect.Module) -> String {
+	if len(metadata.imports) == 0 {
+		return ""
+	}
+	return "## Dependencies\n\n" + dependencyTree(metadata, metadata.name, 0, []) + "\n---\n\n"
+}
+
+// The whole page for a module.
+fn pageOf(m: AnyModule, metadata: reflect.Module) -> String {
+	const name = metadata.name
+	const docs = metadata.docs
+	const declarations = metadata.declarations
+
+	var out = "---\n"
+	out = out + "title: " + yamlValue(titleOf(name)) + "\n"
+	out = out + "description: " + yamlValue(firstLine(docs)) + "\n"
+	out = out + "---\n\n"
+	out = out + "# Module `" + name + "`\n\n"
+	out = out + "```zirric\nimport " + name + "\n```\n\n"
+	out = out + sourceTable(metadata)
+	const body = afterFirstLine(docs)
+	if body != "" {
+		out = out + linkMembers(body, name, declarations, "") + "\n\n"
+	}
+
+	out = out + dependencies(metadata)
+	out = out + "## Contents\n\n"
+	for section <- sections {
+		const found = inSection(declarations, section)
+		if len(found) > 0 {
+			out = out + contentsLine(section, found, declarations)
+		}
+	}
+	out = out + "\n---\n\n"
+
+	for section <- sections {
+		const entries = inSection(declarations, section)
+		if len(entries) == 0 {
+			continue
+		}
+		out = out + "## " + section + "\n\n"
+		for declaration <- entries {
+			out = out + entryOf(m, name, declaration, declarations)
+		}
+	}
+
+	// The last entry's separator would divide the page from nothing, and taking it away also takes away the blank line the formatter would.
+	return strings.trimSuffix(out, "\n---\n\n")
+}
+
+// Writes page to its place under root, creating the directories it needs, and stops the program if the filesystem refuses.
+fn write(root: String, name: String, page: String) {
+	const dir = root + "/" + strings.replace(name, ".", "/")
+	const made = scripts.mkdirAll(dir)
+	if made is Err {
+		scripts.eprintln("cannot create " + dir + ": " + fmt.sprint(made.reason))
+		os.exit(1)
+	}
+	const written = scripts.writeString(dir + "/index.md", page)
+	if written is Err {
+		scripts.eprintln("cannot write " + dir + "/index.md: " + fmt.sprint(written.reason))
+		os.exit(1)
+	}
+	scripts.println(dir + "/index.md")
+}
+
+// The value of a `--name value` or `--name=value` flag, or fallback when the task was run without it.
+// A task declared with @tasks.Exec is handed its arguments as they were written, which is why they are read here rather than by the CLI.
+fn flag(name: String, fallback: String) -> String {
+	const args = os.args()
+	const prefixed = "--" + name + "="
+	var found = fallback
+	var index = 1
+	for index < len(args) {
+		if args[index] == "--" + name && index + 1 < len(args) {
+			found = args[index + 1]
+		}
+		if strings.hasPrefix(args[index], prefixed) {
+			found = strings.trimPrefix(args[index], prefixed)
+		}
+		index = index + 1
+	}
+	return found
+}
+
+// Where the pages go.
+// A relative path is joined onto the directory the task was started in, because os.fs is rooted at the host's own root and would otherwise read it as absolute.
+fn outputRoot() -> String {
+	const given = flag("out", "docs/stdlib")
+	if paths.isAbs(given) { given } else { paths.join([os.cwd(), given]) }
+}
+
+// The repository the Source links point into, up to and including the branch.
+fn sourceRoot() -> String {
+	strings.trimSuffix(flag("source", "https://code.knabel.dev/zirric-lang/zirric/src/branch/main"), "/")
+}
+
+const root = outputRoot()
+var index = 0
+for index < len(documented) {
+	write(root, described[index].name, pageOf(documented[index], described[index]))
+	index = index + 1
+}

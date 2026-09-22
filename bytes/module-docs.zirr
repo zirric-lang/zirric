@@ -1,0 +1,8 @@
+// Building, slicing and searching Binary values.
+//
+// > Raw byte sequences and the conversions into them.
+//
+// `bytes` works on `prelude.Binary`, the type that carries raw bytes. Most functions accept `Like`, so a single `prelude.Byte` can be passed anywhere a `Binary` is expected.
+//
+// Text crosses the boundary explicitly: `fromString` and `toString` convert through UTF-8, and `toHex` and `fromHex` through hexadecimal. Indexing a `Binary` yields a `Byte` and iterating one yields bytes, never characters — for characters, convert to `String` and use `strings`.
+mod code.knabel.dev.zirric_lang.zirric.bytes

@@ -64,6 +64,11 @@ func (decl DeclExternFunc) ProvidedDocs() *Docs {
 	return decl.Docs
 }
 
+// SetDocs implements Documentable.
+func (decl *DeclExternFunc) SetDocs(docs *Docs) {
+	decl.Docs = docs
+}
+
 // EnumerateChildNodes implements Decl.
 func (n DeclExternFunc) EnumerateChildNodes(action func(child Node)) {
 	action(n.Name)

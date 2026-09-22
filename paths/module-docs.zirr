@@ -1,0 +1,8 @@
+// Joining, cleaning, splitting and matching path strings.
+//
+// > Path strings, independent of the host.
+//
+// Paths are slash-separated regardless of the host: they describe the filesystem `fs` presents, not the machine the program runs on. Nothing here touches the disk — these are string operations, and a path that does not exist is manipulated exactly like one that does.
+//
+// `match` is the exception to the "returns a plain value" rule: a malformed pattern is a mistake worth reporting, so it returns a `prelude.Result` rather than silently answering `false`.
+mod code.knabel.dev.zirric_lang.zirric.paths

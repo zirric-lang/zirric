@@ -59,18 +59,18 @@ var NumBuiltinTypeIds = len(allBuiltinTypeIds)
 // Used by the compiler to create SimpleType values that match the runtime
 // TypeConstantId of builtin literal values (Array, Dict, Int, etc.).
 var BuiltinTypeIds = map[string]TypeId{
-	"Array":  typeIdArray,
-	"Bool":   typeIdBool,
-	"Char":   typeIdChar,
-	"Dict":   typeIdDict,
-	"Float":  typeIdFloat,
-	"Func":   typeIdFunc,
-	"Int":    typeIdInt,
-	"Module": typeIdModule,
-	"String": typeIdString,
-	"Binary": typeIdBinary,
-	"Byte":   typeIdByte,
-	"Void":   typeIdVoid,
+	"Array":     typeIdArray,
+	"Bool":      typeIdBool,
+	"Char":      typeIdChar,
+	"Dict":      typeIdDict,
+	"Float":     typeIdFloat,
+	"Func":      typeIdFunc,
+	"Int":       typeIdInt,
+	"AnyModule": typeIdModule,
+	"String":    typeIdString,
+	"Binary":    typeIdBinary,
+	"Byte":      typeIdByte,
+	"Void":      typeIdVoid,
 
 	// Declared by the time module rather than prelude, but registered here because the lookup is by bare type name.
 	"Duration":  typeIdDuration,
@@ -101,7 +101,7 @@ func (p *Prelude) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbo
 		return MakeBuiltinSimpleType(decl, typeIdFunc)
 	case "Int":
 		return MakeBuiltinSimpleType(decl, typeIdInt)
-	case "Module":
+	case "AnyModule":
 		return MakeBuiltinSimpleType(decl, typeIdModule)
 	case "String":
 		return MakeBuiltinSimpleType(decl, typeIdString)

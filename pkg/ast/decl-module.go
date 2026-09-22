@@ -62,6 +62,11 @@ func (decl DeclModule) ProvidedDocs() *Docs {
 	return decl.Docs
 }
 
+// SetDocs implements Documentable.
+func (decl *DeclModule) SetDocs(docs *Docs) {
+	decl.Docs = docs
+}
+
 // EnumerateChildNodes implements Decl.
 func (n DeclModule) EnumerateChildNodes(action func(child Node)) {
 	action(n.Name)

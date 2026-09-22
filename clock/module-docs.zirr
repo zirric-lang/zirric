@@ -1,0 +1,10 @@
+// Wall-clock and monotonic time, as values a test can replace.
+//
+// > Two kinds of clock, deliberately kept apart.
+//
+// There are two clocks, and confusing them is a bug. `SystemClock` reads civil time and can jump when the host is corrected — use it to timestamp and to do calendar work. `MonotonicClock` only moves forward and has a meaningless origin — use it to measure how long something took.
+//
+// The attributes keep them apart at the type level: code that measures elapsed time requires `HasMonotonicClock` and therefore cannot be handed a wall clock by mistake.
+//
+// Both are plain data holding a function, so a test supplies its own. `fixed` freezes time, `stepping` advances it predictably, and `steppingMonotonic` with a zero step makes every reading identical — which is how code under a timeout is tested without waiting for one.
+mod code.knabel.dev.zirric_lang.zirric.clock

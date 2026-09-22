@@ -1,0 +1,10 @@
+// Function combinators and lazy operations over anything iterable.
+//
+// > Composing functions, and streaming through them.
+//
+// `fun` has two halves. The first composes functions: `pipe` and `compose` chain them, `negate` and `flip` adjust them, and `identity` and `constant` fill in where an API wants a function and you have a value.
+//
+// The second is `map`, `filter`, `flatMap`, `take`, `skip` and `zip` over anything carrying `prelude.Iterable`. These are lazy: they build a new iterable and nothing runs until something consumes it — a `for` loop, `reduce`, or any other consumer. That is what lets `take` stop an otherwise unbounded sequence.
+//
+// For the eager equivalents that always walk the whole collection, see `arrays`.
+mod code.knabel.dev.zirric_lang.zirric.fun

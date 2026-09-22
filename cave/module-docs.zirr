@@ -1,0 +1,12 @@
+// The attributes a Cavefile uses to describe a package and declare its dependencies.
+//
+// > The vocabulary of a `Cavefile`.
+//
+// A `Cavefile` is ordinary Zirric source, and `cave` is the vocabulary it is written in. The package manager reads the file for its types and attributes rather than executing it, so everything here is declaration, not behaviour.
+//
+// `Package` marks the one `data` declaration that is the manifest. The attributes on the declaration describe the package itself; its fields are the dependencies. Each field names the import, and the attributes on it say where the package comes from — `Stdlib`, `Git` or `Local` — and, optionally, which `Version` is acceptable.
+//
+// `Version`, `LanguageVersion`, `Description` and `Documentation` read the same way on the package and on one of its dependencies.
+//
+// `FormattingExcludes` is unrelated to dependencies and may sit on any declaration; [`zirric fmt`](https://zirric.knabel.dev/tooling/code-formatter) reads it to decide which paths to leave alone.
+mod code.knabel.dev.zirric_lang.zirric.cave

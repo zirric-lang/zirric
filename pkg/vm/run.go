@@ -229,11 +229,11 @@ func (vm *VM) runLoop(taskId TaskId, stopIdx int, resumeDepth int, endIp int) er
 			}
 
 		case op.Module:
-			nameIdx := op.ReadUint16(ins[ip:])
+			infoIdx := op.ReadUint16(ins[ip:])
 			fr.ip += 2
-			nameConst, ok := vm.constants[nameIdx].(runtime.String)
+			info, ok := vm.constants[infoIdx].(*runtime.ModuleInfo)
 			if !ok {
-				return errWrongType("a module's name", "String", vm.constants[nameIdx])
+				return errWrongType("a module's declaration", "ModuleInfo", vm.constants[infoIdx])
 			}
 			given := vm.pop()
 			length, ok := given.(runtime.Int)
@@ -252,7 +252,7 @@ func (vm *VM) runLoop(taskId TaskId, stopIdx int, resumeDepth int, endIp int) er
 				exports[string(keyName)] = value
 			}
 
-			moduleVal := runtime.MakeModuleValue(string(nameConst), exports)
+			moduleVal := runtime.MakeModuleValue(info, exports)
 			if err := vm.push(moduleVal); err != nil {
 				return err
 			}

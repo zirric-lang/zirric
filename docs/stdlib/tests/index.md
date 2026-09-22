@@ -5,98 +5,28 @@ description: The attributes and types that describe a test, its outcome and its 
 
 # Module `tests`
 
-> What a test is, before anything runs it.
-
 ```zirric
 import tests
 ```
 
-|            |                                                                                                   |
-| ---------- | ------------------------------------------------------------------------------------------------- |
-| **Module** | `tests`                                                                                           |
-| **Source** | [`tests/types.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/tests/types.zirr) |
+|            |                                                                                                                                                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Module** | `tests`                                                                                                                                                                                                          |
+| **Source** | [`tests/module-docs.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/tests/module-docs.zirr), [`tests/types.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/tests/types.zirr) |
 
-A test is a function carrying [`Test`](#test) that returns a [`Result`](../prelude/index.md#result). Nothing else is required: there is no registry and no base type, so the runner finds tests by [reflecting](../reflect/index.md) over a module rather than by being told about them.
+> What a test is, before anything runs it.
+
+A test is a function carrying [`Test`](#test) that returns a [`prelude.Result`](../prelude/index.md#result). Nothing else is required: there is no registry and no base type, so the runner reaches for [`reflect`](../reflect/index.md) and finds tests by reading a module rather than by being told about them.
 
 The other attributes adjust what happens to one. [`Skip`](#skip) keeps it out of the run, [`Todo`](#todo) marks it as expected to be unfinished, [`Only`](#only) narrows the run to itself, and [`Comment`](#comment) attaches a note that reporters print.
 
-This module is only the vocabulary. [`tests.assert`](./assert/index.md) writes the assertions, [`tests.runner`](./runner/index.md) finds and runs them, and [`tests.tap`](./tap/index.md) reports what happened.
+This module is only the vocabulary. [`tests.assert`](../tests/assert/index.md) writes the assertions, [`tests.runner`](../tests/runner/index.md) finds and runs them, and [`tests.tap`](../tests/tap/index.md) reports what happened.
 
 ## Contents
 
-- **Attributes** — [`Test`](#test), [`Skip`](#skip), [`Only`](#only), [`Todo`](#todo), [`Comment`](#comment)
 - **Unions** — [`TestCaseDetails`](#testcasedetails), [`TestEvent`](#testevent)
-- **Data** — [`TestCase`](#testcase), [`TestReport`](#testreport), [`FailureRecord`](#failurerecord)
-
----
-
-## Attributes
-
-### `Test` {#test}
-
-<small>`tests/types.zirr:3`</small>
-
-```zirric
-attr Test {}
-```
-
-Marks a function as a test. The function takes no arguments and returns a [`Result`](../prelude/index.md#result); `Ok` passed, `Err` failed.
-
----
-
-### `Skip` {#skip}
-
-<small>`tests/types.zirr:4`</small>
-
-```zirric
-attr Skip {}
-```
-
-Keeps a test out of the run. It is still discovered and still reported, as skipped.
-
----
-
-### `Only` {#only}
-
-<small>`tests/types.zirr:5`</small>
-
-```zirric
-attr Only {}
-```
-
-Narrows the run to the tests carrying it. Applied after discovery, so one `@Only` anywhere silences every test without it.
-
----
-
-### `Todo` {#todo}
-
-<small>`tests/types.zirr:6`</small>
-
-```zirric
-attr Todo {}
-```
-
-Marks a test as known to be unfinished. It runs, but its failure is reported as expected rather than as a problem.
-
----
-
-### `Comment` {#comment}
-
-<small>`tests/types.zirr:7`</small>
-
-```zirric
-attr Comment {
-	text: String
-}
-```
-
-Attaches a note to a test, which reporters print alongside its result.
-
-#### Members
-
-| Member | Signature      | Description                             |
-| ------ | -------------- | --------------------------------------- |
-| `text` | `text: String` | The note to print alongside the result. |
+- **Data** — [`Completed`](#completed), [`Discovered`](#discovered), [`FailureRecord`](#failurerecord), [`Finished`](#finished), [`Skipped`](#skipped), [`Started`](#started), [`TestCase`](#testcase), [`TestCaseDetailsOnly`](#testcasedetailsonly), [`TestCaseDetailsSkip`](#testcasedetailsskip), [`TestCaseDetailsTodo`](#testcasedetailstodo), [`TestReport`](#testreport)
+- **Attributes** — [`Comment`](#comment), [`Only`](#only), [`Skip`](#skip), [`Test`](#test), [`Todo`](#todo)
 
 ---
 
@@ -107,26 +37,22 @@ Attaches a note to a test, which reporters print alongside its result.
 <small>`tests/types.zirr:20`</small>
 
 ```zirric
-@AnyOption()
 union TestCaseDetails {
 	None
-
-	data TestCaseDetailsSkip {}
-	data TestCaseDetailsTodo {}
-	data TestCaseDetailsOnly {}
+	TestCaseDetailsSkip
+	TestCaseDetailsTodo
+	TestCaseDetailsOnly
 }
 ```
 
-Which of the marker attributes a test carried, if any. Declared as an option type, so `None` means an ordinary test.
-
 #### Cases
 
-| Case                  | Interpretation                                        |
-| --------------------- | ----------------------------------------------------- |
-| `None`                | An ordinary test, with none of the marker attributes. |
-| `TestCaseDetailsSkip` | The test carries [`@Skip`](#skip).                    |
-| `TestCaseDetailsTodo` | The test carries [`@Todo`](#todo).                    |
-| `TestCaseDetailsOnly` | The test carries [`@Only`](#only).                    |
+| Case                  | Interpretation    |
+| --------------------- | ----------------- |
+| `None`                | The absent value. |
+| `TestCaseDetailsSkip` |                   |
+| `TestCaseDetailsTodo` |                   |
+| `TestCaseDetailsOnly` |                   |
 
 ---
 
@@ -136,29 +62,139 @@ Which of the marker attributes a test carried, if any. Declared as an option typ
 
 ```zirric
 union TestEvent {
-	data Discovered { cases: [TestCase] }
-	data Skipped { test: TestCase }
-	data Started { test: TestCase }
-	data Finished { test: TestCase, outcome: Result }
-	data Completed { report: TestReport }
+	Discovered
+	Skipped
+	Started
+	Finished
+	Completed
 }
 ```
 
-What the runner reports as it proceeds. A reporter is a function taking one of these.
-
 #### Cases
 
-| Case         | Interpretation                                       |
-| ------------ | ---------------------------------------------------- |
-| `Discovered` | Emitted once, with every case the run will consider. |
-| `Skipped`    | A case was passed over rather than run.              |
-| `Started`    | A case is about to run.                              |
-| `Finished`   | A case finished, with the `Result` it returned.      |
-| `Completed`  | The run is over, with the full report.               |
+| Case         | Interpretation |
+| ------------ | -------------- |
+| `Discovered` |                |
+| `Skipped`    |                |
+| `Started`    |                |
+| `Finished`   |                |
+| `Completed`  |                |
 
 ---
 
 ## Data
+
+### `Completed` {#completed}
+
+<small>`tests/types.zirr:33`</small>
+
+```zirric
+data Completed {
+	report: TestReport
+}
+```
+
+#### Fields
+
+| Field    | Description |
+| -------- | ----------- |
+| `report` |             |
+
+---
+
+### `Discovered` {#discovered}
+
+<small>`tests/types.zirr:29`</small>
+
+```zirric
+data Discovered {
+	cases: [TestCase]
+}
+```
+
+#### Fields
+
+| Field   | Description |
+| ------- | ----------- |
+| `cases` |             |
+
+---
+
+### `FailureRecord` {#failurerecord}
+
+<small>`tests/types.zirr:43`</small>
+
+```zirric
+data FailureRecord {
+	test: TestCase
+	error: Err
+}
+```
+
+#### Fields
+
+| Field   | Description |
+| ------- | ----------- |
+| `test`  |             |
+| `error` |             |
+
+---
+
+### `Finished` {#finished}
+
+<small>`tests/types.zirr:32`</small>
+
+```zirric
+data Finished {
+	test: TestCase
+	outcome: Result
+}
+```
+
+#### Fields
+
+| Field     | Description |
+| --------- | ----------- |
+| `test`    |             |
+| `outcome` |             |
+
+---
+
+### `Skipped` {#skipped}
+
+<small>`tests/types.zirr:30`</small>
+
+```zirric
+data Skipped {
+	test: TestCase
+}
+```
+
+#### Fields
+
+| Field  | Description |
+| ------ | ----------- |
+| `test` |             |
+
+---
+
+### `Started` {#started}
+
+<small>`tests/types.zirr:31`</small>
+
+```zirric
+data Started {
+	test: TestCase
+}
+```
+
+#### Fields
+
+| Field  | Description |
+| ------ | ----------- |
+| `test` |             |
+
+---
 
 ### `TestCase` {#testcase}
 
@@ -174,17 +210,45 @@ data TestCase {
 }
 ```
 
-One discovered test: the function to call, the name it was found under, and what the attributes on it said.
-
 #### Fields
 
-| Field     | Signature                  | Description                                     |
-| --------- | -------------------------- | ----------------------------------------------- |
-| `name`    | `name: String`             | The name the test was discovered under.         |
-| `impl`    | `impl: fn() -> Result`     | The function to call.                           |
-| `skipped` | `skipped: Bool`            | Whether it will be passed over rather than run. |
-| `comment` | `comment: String`          | The note from [`@Comment`](#comment), or empty. |
-| `details` | `details: TestCaseDetails` | Which marker attribute it carried, if any.      |
+| Field     | Description |
+| --------- | ----------- |
+| `name`    |             |
+| `impl`    |             |
+| `skipped` |             |
+| `comment` |             |
+| `details` |             |
+
+---
+
+### `TestCaseDetailsOnly` {#testcasedetailsonly}
+
+<small>`tests/types.zirr:25`</small>
+
+```zirric
+data TestCaseDetailsOnly
+```
+
+---
+
+### `TestCaseDetailsSkip` {#testcasedetailsskip}
+
+<small>`tests/types.zirr:23`</small>
+
+```zirric
+data TestCaseDetailsSkip
+```
+
+---
+
+### `TestCaseDetailsTodo` {#testcasedetailstodo}
+
+<small>`tests/types.zirr:24`</small>
+
+```zirric
+data TestCaseDetailsTodo
+```
 
 ---
 
@@ -201,39 +265,71 @@ data TestReport {
 }
 ```
 
-The outcome of a whole run, with the cases grouped by what happened to them.
-
 #### Fields
 
-| Field  | Signature               | Description                                 |
-| ------ | ----------------------- | ------------------------------------------- |
-| `pass` | `pass: [TestCase]`      | Cases that returned `Ok`.                   |
-| `fail` | `fail: [FailureRecord]` | Cases that returned `Err`, with the reason. |
-| `skip` | `skip: [TestCase]`      | Cases that were not run.                    |
-| `todo` | `todo: [TestCase]`      | Cases marked [`@Todo`](#todo).              |
+| Field  | Description |
+| ------ | ----------- |
+| `pass` |             |
+| `fail` |             |
+| `skip` |             |
+| `todo` |             |
 
 ---
 
-### `FailureRecord` {#failurerecord}
+## Attributes
 
-<small>`tests/types.zirr:43`</small>
+### `Comment` {#comment}
+
+<small>`tests/types.zirr:7`</small>
 
 ```zirric
-data FailureRecord { test: TestCase, error: Err }
+attr Comment {
+	text: String
+}
 ```
-
-A failed test together with the `Err` it returned.
 
 #### Fields
 
-| Field  | Signature                      | Description           |
-| ------ | ------------------------------ | --------------------- |
-| `test` | `test: TestCase, error: Err }` | The case that failed. |
+| Field  | Description |
+| ------ | ----------- |
+| `text` |             |
 
 ---
 
-## See also
+### `Only` {#only}
 
-- [`tests.assert`](./assert/index.md) — producing the `Result` a test returns.
-- [`tests.runner`](./runner/index.md) — discovery and execution.
-- [`tests.tap`](./tap/index.md) — TAP output.
+<small>`tests/types.zirr:5`</small>
+
+```zirric
+attr Only
+```
+
+---
+
+### `Skip` {#skip}
+
+<small>`tests/types.zirr:4`</small>
+
+```zirric
+attr Skip
+```
+
+---
+
+### `Test` {#test}
+
+<small>`tests/types.zirr:3`</small>
+
+```zirric
+attr Test
+```
+
+---
+
+### `Todo` {#todo}
+
+<small>`tests/types.zirr:6`</small>
+
+```zirric
+attr Todo
+```

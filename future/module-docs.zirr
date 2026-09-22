@@ -1,0 +1,10 @@
+// Implementations of proposals that have not landed yet.
+//
+// > Proposals, implemented early and subject to change.
+//
+// `future` holds implementations of [proposals](https://zirric.knabel.dev/proposals) that are not part of the language yet. Use them with care: they may change or disappear without notice, and the declarations of a rejected proposal are removed outright.
+//
+// Once a proposal is accepted, its implementation moves to the module it belongs in. Not every proposal is represented here, and some cannot be — a few need syntax Zirric does not have yet.
+//
+// `Proposal` links a declaration back to the proposal that describes it.
+mod code.knabel.dev.zirric_lang.zirric.future

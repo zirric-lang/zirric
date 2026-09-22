@@ -1,0 +1,298 @@
+// Writes what the package declares about itself — its dependencies and its tasks — as a single Markdown page.
+//
+//	zirric task manifest [--out <file>] [--source <repository root>]
+//
+// This documents the Cavefile rather than the code, so it lists neither modules nor declarations: `zirric task docs` covers those. Everything on the page comes from `reflect.packages.mainPackage().cavefile`, which is the same manifest `zirric cave describe` reports, doc comments included.
+mod code.knabel.dev.zirric_lang.zirric._tasks.manifest
+
+import arrays
+import fmt
+import os
+import paths
+import scripts
+import strings
+
+import pkgs = reflect.packages
+
+// The value of a `--name value` or `--name=value` flag, or fallback when the task was run without it.
+// A task declared with @tasks.Exec is handed its arguments as they were written, which is why they are read here rather than by the CLI.
+fn flag(name: String, fallback: String) -> String {
+	const args = os.args()
+	const prefixed = "--" + name + "="
+	var found = fallback
+	var index = 1
+	for index < len(args) {
+		if args[index] == "--" + name && index + 1 < len(args) {
+			found = args[index + 1]
+		}
+		if strings.hasPrefix(args[index], prefixed) {
+			found = strings.trimPrefix(args[index], prefixed)
+		}
+		index = index + 1
+	}
+	return found
+}
+
+// Where the page goes.
+// A relative path is joined onto the directory the task was started in, because os.fs is rooted at the host's own root and would otherwise read it as absolute.
+fn outputPath() -> String {
+	const given = flag("out", "docs/manifest.md")
+	if paths.isAbs(given) { given } else { paths.join([os.cwd(), given]) }
+}
+
+// The repository the links to files in this package point into, up to and including the branch.
+fn sourceRoot() -> String {
+	strings.trimSuffix(flag("source", "https://code.knabel.dev/zirric-lang/zirric/src/branch/main"), "/")
+}
+
+// Text flattened onto one line, with its runs of whitespace collapsed and its delimiters escaped, so that it survives inside a Markdown table cell.
+fn cellOf(text: String) -> String {
+	const flattened = strings.replace(strings.replace(text, "\n", " "), "\t", " ")
+	const words = arrays.filter(strings.split(flattened, " "), fn(word) { word != "" })
+	strings.replace(strings.join(words, " "), "|", "\\|")
+}
+
+// The first line of text, which is what the page's description takes.
+fn firstLine(text: String) -> String {
+	const lines = strings.split(text, "\n")
+	if len(lines) == 0 { "" } else { lines[0] }
+}
+
+// Everything after the first line of text, which is the part the frontmatter does not already carry.
+fn afterFirstLine(text: String) -> String {
+	const lines = strings.split(text, "\n")
+	if len(lines) < 2 {
+		return ""
+	}
+	return strings.trim(strings.join(arrays.slice(lines, 1, len(lines)), "\n"))
+}
+
+// A frontmatter value, quoted only where YAML would otherwise read it as something other than text.
+fn yamlValue(text: String) -> String {
+	if strings.isEmpty(text) {
+		return strings.quote(text)
+	}
+	if strings.contains(text, ":") || strings.contains(text, "\"") || strings.contains(text, "#") {
+		return strings.quote(text)
+	}
+	if !strings.isLetter(strings.from(strings.charAt(text, 0))) {
+		return strings.quote(text)
+	}
+	return text
+}
+
+// Pads cell with spaces to width, which is what keeps a Markdown table's columns even.
+fn pad(cell: String, width: Int) -> String {
+	cell + strings.repeat(" ", width - strings.count(cell))
+}
+
+// One row of a Markdown table, its cells padded to widths.
+fn tableRow(cells: [String], widths: [Int]) -> String {
+	var out = "|"
+	var column = 0
+	for column < len(cells) {
+		out = out + " " + pad(cells[column], widths[column]) + " |"
+		column = column + 1
+	}
+	return out + "\n"
+}
+
+// A Markdown table with every column padded to its widest cell, which is how the formatter writes one.
+// Emitting it already formatted is what keeps a generated page from being rewritten the next time the repository is formatted.
+fn table(header: [String], rows: [[String]]) -> String {
+	var widths = arrays.map(header, fn(cell) { strings.count(cell) })
+	for cells <- rows {
+		var column = 0
+		for column < len(cells) {
+			if strings.count(cells[column]) > widths[column] {
+				widths[column] = strings.count(cells[column])
+			}
+			column = column + 1
+		}
+	}
+
+	const rules = arrays.map(widths, fn(width) { strings.repeat("-", width) })
+	var out = tableRow(header, widths) + tableRow(rules, widths)
+	for line <- rows {
+		out = out + tableRow(line, widths)
+	}
+	return out
+}
+
+// A link to a file of this package, in the repository it is published from.
+fn fileLink(path: String) -> String {
+	"[`" + path + "`](" + sourceRoot() + "/" + path + ")"
+}
+
+// Where a dependency can be read, as something to follow.
+// A standard library dependency is documented here, a Git one lives at its URL, and a local one is a path on the machine that built the package rather than a place anyone else can reach.
+fn dependencyLink(dependency: pkgs.Dependency) -> String {
+	if dependency.kind == "stdlib" {
+		return "[`" + dependency.module + "`](./stdlib/" + strings.replace(dependency.module, ".", "/") + "/index.md)"
+	}
+	if dependency.kind == "git" {
+		return "[" + dependency.source + "](" + dependency.source + ")"
+	}
+	return "`" + dependency.source + "`"
+}
+
+// The anchor a task's heading gets, which is what the links in Contents point at.
+fn anchorOf(task: pkgs.Task) -> String {
+	strings.from(strings.toLower(task.name))
+}
+
+// How a task is invoked, with every flag and argument it accepts.
+fn usageOf(task: pkgs.Task) -> String {
+	var out = "zirric task run " + task.name
+	for argument <- task.args {
+		out = out + " <" + argument.name + ">"
+	}
+	for option <- task.flags {
+		out = out + " [--" + option.name
+		if option.type != "" && option.type != "Bool" {
+			out = out + " <" + option.type +">"
+		}
+		out = out + "]"
+	}
+	return out
+}
+
+// The table of a task's flags or arguments, or the empty String when it takes none.
+fn paramsTable(heading: String, column: String, params: [pkgs.Param], prefix: String) -> String {
+	if len(params) == 0 {
+		return ""
+	}
+	const rows = arrays.map(params, fn(param) {
+		[
+			"`" + prefix + param.name + "`",
+			if param.type == "" { "—" } else { "`" + param.type +"`" },
+			cellOf(describe(param.help, param.docs)),
+		]
+	})
+	return "\n#### " + heading + "\n\n" + table([column, "Type", "Description"], rows)
+}
+
+// What to say about a declaration: the help written for the command line, and the comment written above it, whichever of the two exist.
+fn describe(help: String, docs: String) -> String {
+	if help == "" {
+		return docs
+	}
+	if docs == "" {
+		return help
+	}
+	return help + "\n\n" + docs
+}
+
+// The section describing the package's dependencies, or a note when it declares none.
+fn dependenciesSection(manifest: pkgs.Cavefile) -> String {
+	if len(manifest.dependencies) == 0 {
+		return "## Dependencies\n\nThis package declares no dependencies.\n\n"
+	}
+	const rows = arrays.map(manifest.dependencies, fn(dependency) {
+		[
+			"`" + dependency.name + "`",
+			dependency.kind,
+			dependencyLink(dependency),
+			if dependency.version == "" { "—" } else { "`" + dependency.version + "`" },
+			cellOf(dependency.docs),
+		]
+	})
+	"## Dependencies\n\nWhat this package imports from outside itself. Each is reached by the name in the first column.\n\n" + table(["Dependency", "Kind", "Source", "Version", "Description"], rows) + "\n"
+}
+
+// One task's entry: how it is run, what it does, and what it takes.
+fn taskEntry(task: pkgs.Task) -> String {
+	var out = "### `" + task.name + "` {#" + anchorOf(task) + "}\n\n"
+	out = out + "```sh\n" + usageOf(task) + "\n```\n\n"
+
+	const described = describe(task.help, task.docs)
+	if described != "" {
+		out = out + described + "\n\n"
+	}
+
+	if task.kind == "exec" {
+		out = out + "Runs " + fileLink(task.exec) + ".\n"
+	} else {
+		out = out + "Runs the function written on `" + task.declName + "` in the [`Cavefile`](" + sourceRoot() + "/Cavefile).\n"
+	}
+	if len(task.aliases) > 0 {
+		out = out + "\nAlso answers to " + strings.join(arrays.map(task.aliases, fn(alias) { "`" + alias + "`" }), ", ") + ".\n"
+	}
+
+	out = out + paramsTable("Arguments", "Argument", task.args, "")
+	out = out + paramsTable("Flags", "Flag", task.flags, "--")
+	return out + "\n"
+}
+
+// The section describing the package's tasks, or a note when it declares none.
+fn tasksSection(manifest: pkgs.Cavefile) -> String {
+	if len(manifest.tasks) == 0 {
+		return "## Tasks\n\nThis package declares no tasks.\n"
+	}
+	const links = arrays.map(manifest.tasks, fn(task) { "[`" + task.name + "`](#" + anchorOf(task) + ")" })
+	var out = "## Tasks\n\nWhat this package can be asked to do. Each runs with `zirric task run <name>`, or `zirric x <name>` for short.\n\n"
+	out = out + strings.join(links, ", ") + "\n\n"
+	for task <- manifest.tasks {
+		out = out + taskEntry(task)
+	}
+	return out
+}
+
+// The table naming the package, where it comes from, and the file all of this was read from.
+fn overviewTable(manifest: pkgs.Cavefile) -> String {
+	var rows = [["**Package**", "`" + manifest.name + "`"]]
+	if manifest.source != "" {
+		rows = append(rows, ["**Source**", "[" + manifest.source + "](" + manifest.source + ")"])
+	}
+	rows = append(rows, ["**Manifest**", fileLink("Cavefile")])
+	if len(manifest.formattingExcludes) > 0 {
+		const patterns = arrays.map(manifest.formattingExcludes, fn(pattern) { "`" + pattern + "`" })
+		rows = append(rows, ["**Unformatted**", strings.join(patterns, ", ")])
+	}
+	table(["", ""], rows) + "\n"
+}
+
+// The whole page.
+fn pageOf(manifest: pkgs.Cavefile) -> String {
+	const description = if manifest.docs == "" {
+		"What " + manifest.name + " depends on and what it can be asked to do."
+	} else {
+		firstLine(manifest.docs)
+	}
+
+	var out = "---\n"
+	out = out + "title: " + yamlValue("Package manifest") + "\n"
+	out = out + "description: " + yamlValue(description) + "\n"
+	out = out + "---\n\n"
+	out = out + "# Package `" + manifest.name + "`\n\n"
+	out = out + overviewTable(manifest)
+
+	const body = afterFirstLine(manifest.docs)
+	if body != "" {
+		out = out + body + "\n\n"
+	}
+
+	out = out + dependenciesSection(manifest)
+	out = out + tasksSection(manifest)
+	return strings.trimSuffix(out, "\n")
+}
+
+const declared = pkgs.mainPackage().cavefile
+switch declared {
+case is None:
+	scripts.eprintln("this project has no Cavefile to document")
+	os.exit(1)
+case is Some:
+	const target = outputPath()
+	const made = scripts.mkdirAll(paths.dir(target))
+	if made is Err {
+		scripts.eprintln("cannot create " + paths.dir(target) + ": " + fmt.sprint(made.reason))
+		os.exit(1)
+	}
+	const written = scripts.writeString(target, pageOf(declared.value))
+	if written is Err {
+		scripts.eprintln("cannot write " + target + ": " + fmt.sprint(written.reason))
+		os.exit(1)
+	}
+	scripts.println(target)
+}

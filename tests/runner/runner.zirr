@@ -82,7 +82,7 @@ fn _applyOnly(cases: [tests.TestCase]) -> [tests.TestCase] {
 }
 
 // Every @tests.Test function declared in module, as runnable cases.
-fn discover(module: Module) -> [tests.TestCase] {
+fn discover(module: AnyModule) -> [tests.TestCase] {
 	var cases = []
 	for member <- reflect.members(module) {
 		switch member {
@@ -96,7 +96,7 @@ fn discover(module: Module) -> [tests.TestCase] {
 }
 
 // Every @tests.Test function declared in any of modules, as runnable cases.
-fn discoverAll(modules: [Module]) -> [tests.TestCase] {
+fn discoverAll(modules: [AnyModule]) -> [tests.TestCase] {
 	var cases = []
 	for module <- modules {
 		for found <- discover(module) {

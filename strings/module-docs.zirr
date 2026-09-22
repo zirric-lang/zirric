@@ -1,0 +1,8 @@
+// Searching, slicing, splitting and transforming text.
+//
+// > Text operations that count characters, not bytes.
+//
+// `strings` works on `Like` — a `prelude.String` or a single `prelude.Char` — so a one-character value can be passed anywhere text is expected.
+//
+// Positions here are character positions. `count` returns the number of UTF-8 code points, which is not the same as `len()`: `len("café")` is 5 bytes, `count("café")` is 4 characters. Indexing a `String` directly gives bytes; `charAt` gives characters.
+mod code.knabel.dev.zirric_lang.zirric.strings

@@ -1,0 +1,10 @@
+// Durations, instants and timestamps.
+//
+// > Three types that refuse to be mixed up.
+//
+// `time` defines the three values a clock deals in and the arithmetic over them. `Duration` is a span, `Instant` a monotonic reading, and `Timestamp` a point on the wall clock.
+//
+// They are separate types on purpose. Subtracting two `Instant`s gives a `Duration`; adding a `Duration` to either moves it. Subtracting two `Timestamp`s is `between`. What you cannot do is measure elapsed time with wall-clock readings, because a wall clock jumps and the types will not let you pretend otherwise.
+//
+// `Duration` is a primitive rather than a wrapper, so spans add, subtract and scale with the usual operators and print as `1.5s` rather than as a bare number.
+mod code.knabel.dev.zirric_lang.zirric.time

@@ -12,6 +12,9 @@ type SourceFile struct {
 	Statements []Statement
 	Decls      *DeclTable
 	Symbols    *SymbolTable
+
+	// Module is the file's own `mod` declaration, if it wrote one. A module is declared once per file, so its documentation is only whole once every file of it has been read.
+	Module *DeclModule
 }
 
 func MakeSourceFile(parent *DeclTable, path string, token token.Token) *SourceFile {

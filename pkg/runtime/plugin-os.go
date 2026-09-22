@@ -58,6 +58,14 @@ func (*OSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			return MakeFileSystem(caller, osfs.New("/"))
 		})
+	case "cwd":
+		return MakeExternFunc(decl, func(_ VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
+			dir, err := os.Getwd()
+			if err != nil {
+				return nil, err
+			}
+			return String(dir), nil
+		})
 	case "_nowTimestamp":
 		return MakeExternFunc(decl, func(_ VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
 			return Timestamp(gotime.Now().UnixNano()), nil

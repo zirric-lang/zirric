@@ -15,6 +15,8 @@ type DeclData struct {
 	Name       Identifier
 	Fields     []DeclField
 	Attributes AttributeChain
+
+	Docs *Docs
 }
 
 func MakeDeclData(tok token.Token, name Identifier) *DeclData {
@@ -46,7 +48,7 @@ func (e DeclData) DeclOverview() string {
 	}
 	fieldLines := make([]string, 0)
 	for _, field := range e.Fields {
-		fieldLines = append(fieldLines, "    "+field.DeclOverview())
+		fieldLines = append(fieldLines, "\t"+field.DeclOverview())
 	}
 	return fmt.Sprintf("data %s {\n%s\n}", e.Name, strings.Join(fieldLines, "\n"))
 }
@@ -60,6 +62,15 @@ func (e DeclData) ExportScope() ExportScope {
 
 func (e *DeclData) AddField(field DeclField) {
 	e.Fields = append(e.Fields, field)
+}
+
+func (decl DeclData) ProvidedDocs() *Docs {
+	return decl.Docs
+}
+
+// SetDocs implements Documentable.
+func (decl *DeclData) SetDocs(docs *Docs) {
+	decl.Docs = docs
 }
 
 // EnumerateChildNodes implements Decl.

@@ -48,6 +48,7 @@ func Parse(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, tasksMod 
 
 	return Cavefile{
 		Package:            pkg,
+		Docs:               moduleDocs(cavefileMod),
 		Dependencies:       deps,
 		Tasks:              tasks,
 		FormattingExcludes: excludes,
@@ -152,6 +153,19 @@ func buildAliasMap(mod *ast.ContextModule) map[string]registry.LogicalURI {
 	return result
 }
 
+// moduleDocs is the comment written above the Cavefile's own `mod` declaration, which is what the file says about the package as a whole.
+func moduleDocs(cavefileMod *ast.ContextModule) string {
+	for _, file := range cavefileMod.Files {
+		if file == nil || file.Module == nil {
+			continue
+		}
+		if docs := ast.DocsOf(file.Module); docs != "" {
+			return docs
+		}
+	}
+	return ""
+}
+
 // findPackageData returns the data declaration carrying @cave.Package(), whose attributes describe the package and whose fields are its dependencies.
 // Attribute types are verified against actual DeclAttr declarations in caveMod, identified via the alias map.
 func findPackageData(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) *ast.DeclData {
@@ -225,6 +239,7 @@ func fieldsToDepencies(fields []ast.DeclField, caveMod *ast.ContextModule, alias
 func fieldToDependency(field ast.DeclField, caveMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI, projectDir string) (Dependency, bool) {
 	dep := Dependency{
 		Package: Package{Name: field.Name.Value},
+		Docs:    ast.DocsOf(field),
 	}
 	found := false
 	for _, attr := range field.Attributes {

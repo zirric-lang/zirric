@@ -1,0 +1,8 @@
+// The built-in types, attributes and values every Zirric program starts with.
+//
+// > The types, attributes and values that are always in scope.
+//
+// `prelude` is imported into every module automatically. It defines the built-in types the runtime provides, the attributes that describe what a value can do, and the two unions — `Option` and `Result` — that the rest of the standard library returns.
+//
+// Nothing here has to be imported, and nothing here can be avoided: `Int`, `String`, `Array` and the rest are prelude declarations, and the `for element <- value` loop is a call into `Iterable`.
+mod code.knabel.dev.zirric_lang.zirric.prelude

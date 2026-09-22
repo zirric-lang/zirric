@@ -1,0 +1,10 @@
+// Encoding and decoding your own types through a native value tree.
+//
+// > Between your `data` types and a tree any format can carry.
+//
+// `coding` converts between your own declarations and a native tree of `prelude.Dict`, `prelude.Array`, `String`, `Int`, `Float`, `Bool` and `void`. It never touches text: `json` and `yaml` take that tree the rest of the way.
+//
+// It works through `reflect`. Fields are read off the type, and the attributes written on them decide the details — the key a field travels under, whether it travels at all, what it becomes when absent, and how it is converted when the general rules are not what you want. A type carrying none of them encodes under the names it declares.
+//
+// A format can override any of these for itself. `encodeWith` and `decodeWith` take a format module and consult its own attributes first, which is why `@json.Name` beats `@coding.Name` when encoding as JSON.
+mod code.knabel.dev.zirric_lang.zirric.coding

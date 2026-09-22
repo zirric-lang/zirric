@@ -25,6 +25,10 @@ extern fn args() -> [String]
 // Returns the host's own filesystem, rooted so that absolute paths resolve as written.
 extern fn fs() -> fs.FileSystem
 
+// Returns the directory the process is running in, as an absolute path.
+// The filesystem os.fs returns is rooted at the host's own root, so this is what a path written relative to where the program was started has to be joined onto.
+extern fn cwd() -> String
+
 extern fn _nowTimestamp() -> Timestamp
 extern fn _nowInstant() -> Instant
 

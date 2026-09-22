@@ -1,0 +1,8 @@
+// Slicing, searching and transforming the built-in Array type.
+//
+// > Eager operations over `Array`.
+//
+// `arrays` operates on the built-in `prelude.Array` type. Every function returns a new array rather than changing the one passed in.
+//
+// These are the eager versions: each one walks the whole array and builds its result immediately. For the same operations applied lazily to anything iterable, see `fun`.
+mod code.knabel.dev.zirric_lang.zirric.arrays

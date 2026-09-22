@@ -10,6 +10,7 @@ import (
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/analyzer"
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
+	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/resolver"
@@ -85,6 +86,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 		for _, sym := range fileSymbols {
 			if sym.Decl == nil {
 				return errUndeclaredSymbol(sym)
+			}
+			if !isFileScopeDecl(sym) {
+				continue
 			}
 			err := c.compileSymbol(sym)
 			if err != nil {
@@ -505,6 +509,17 @@ func (c *Compiler) ensureAnalyzed(module *ast.ContextModule, reserveModule bool)
 		return nil
 	}
 	return failing
+}
+
+// isFileScopeDecl reports whether a symbol's declaration is one of the file's own, rather than a binding promoted into its table from inside a block.
+// A const or var written inside a loop or an if is promoted so that its name resolves, but it is only reached where it was written: compiling it here as well would run its initializer once before the block, where the values it reads do not exist yet.
+func isFileScopeDecl(sym *ast.Symbol) bool {
+	switch sym.Decl.(type) {
+	case *ast.DeclConstant, *ast.DeclVariable:
+		return sym.Decl.ExportScope() != ast.ExportScopeLocal
+	default:
+		return true
+	}
 }
 
 func (c *Compiler) sourceFileSymbols(file *ast.SourceFile) []*ast.Symbol {
@@ -1514,6 +1529,14 @@ func (c *Compiler) compileExprOperatorBinary(node *ast.ExprOperatorBinary) error
 	}
 }
 
+// recordAttributes files a declaration's compiled attributes under the symbol they were written on, so that the module can report them for members whose value carries none.
+func (c *Compiler) recordAttributes(sym *ast.Symbol, attributes map[runtime.TypeId]int) {
+	if sym == nil || len(attributes) == 0 {
+		return
+	}
+	c.symbolAttributes[sym.Original()] = attributes
+}
+
 func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 	switch decl := sym.Decl.(type) {
 	case *ast.DeclData:
@@ -1527,6 +1550,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return err
 		}
 		dt.Attributes = attributes
+		c.recordAttributes(sym, attributes)
 
 		fieldAttributes, err := c.compileFieldAttributes(decl.Fields, c.currentSymbols())
 		if err != nil {
@@ -1534,6 +1558,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		}
 		dt.FieldAttributes = fieldAttributes
 		dt.FieldTypes = c.compileFieldTypes(decl.Fields)
+		dt.FieldDocs = fieldDocs(decl.Fields)
 
 		c.constants[*sym.ConstantId] = dt
 
@@ -1550,6 +1575,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		}
 		ut := runtime.MakeUnionType(sym, memberTypeIds)
 		ut.Attributes = attributes
+		c.recordAttributes(sym, attributes)
 		c.constants[*sym.ConstantId] = ut
 		return nil
 
@@ -1563,10 +1589,15 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return err
 		}
 		at.Attributes = attributes
+		c.recordAttributes(sym, attributes)
 
-		if err := c.validateFieldAttributes(decl.Fields, c.currentSymbols()); err != nil {
+		fieldAttributes, err := c.compileFieldAttributes(decl.Fields, c.currentSymbols())
+		if err != nil {
 			return err
 		}
+		at.FieldAttributes = fieldAttributes
+		at.FieldTypes = c.compileFieldTypes(decl.Fields)
+		at.FieldDocs = fieldDocs(decl.Fields)
 
 		c.constants[*sym.ConstantId] = at
 		return nil
@@ -1577,14 +1608,11 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return err
 		}
 
-		// Validate field attributes on extern types
-		fields := make([]ast.DeclField, 0, len(decl.Fields))
-		for _, f := range decl.Fields {
-			fields = append(fields, f)
-		}
-		if err := c.validateFieldAttributes(fields, c.currentSymbols()); err != nil {
+		if err := c.validateFieldAttributes(decl.Fields, c.currentSymbols()); err != nil {
 			return err
 		}
+
+		c.recordAttributes(sym, attributes)
 
 		if tid, ok := runtime.BuiltinTypeIds[sym.Name]; ok {
 			st := runtime.MakeBuiltinSimpleType(sym, tid)
@@ -1596,11 +1624,11 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		return nil
 
 	case *ast.DeclExternValue:
-		if len(decl.Attributes) > 0 {
-			if _, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols()); err != nil {
-				return err
-			}
+		attributes, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols())
+		if err != nil {
+			return err
 		}
+		c.recordAttributes(sym, attributes)
 
 		val := c.plugins.Bind(c, c.currentSymbols(), sym)
 		if val == nil {
@@ -1637,6 +1665,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 
 		extfn.Attributes = attributes
 		extfn.ParamAttributes = paramAttributes
+		c.recordAttributes(sym, attributes)
 
 		c.constants[*sym.ConstantId] = fn
 		return nil
@@ -1711,6 +1740,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		)
 		function.Attributes = functionAttributes
 		function.ParamAttributes = paramAttributes
+		c.recordAttributes(sym, functionAttributes)
 		// Use Original() to access ConstantId: FreeScope copies created by
 		// resolve_identifiers (before assignModuleIDs) have nil ConstantId.
 		origSym := sym.Original()
@@ -1741,11 +1771,11 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		return nil
 
 	case *ast.DeclVariable:
-		if len(decl.Attributes) > 0 {
-			if _, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols()); err != nil {
-				return err
-			}
+		variableAttributes, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols())
+		if err != nil {
+			return err
 		}
+		c.recordAttributes(sym, variableAttributes)
 
 		switch decl.ExportScope() {
 		case ast.ExportScopeInternal, ast.ExportScopePublic:
@@ -1789,11 +1819,11 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		}
 
 	case *ast.DeclConstant:
-		if len(decl.Attributes) > 0 {
-			if _, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols()); err != nil {
-				return err
-			}
+		constantAttributes, err := c.compileAttributeChain(decl.Attributes, c.currentSymbols())
+		if err != nil {
+			return err
 		}
+		c.recordAttributes(sym, constantAttributes)
 
 		switch decl.ExportScope() {
 		case ast.ExportScopeInternal, ast.ExportScopePublic:
@@ -1943,7 +1973,7 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 	}
 
 	for _, sym := range module.Symbols.Symbols {
-		if sym.Decl == nil {
+		if sym.Decl == nil || !isFileScopeDecl(sym) {
 			continue
 		}
 		if err := c.compileSymbol(sym); err != nil {
@@ -2011,6 +2041,9 @@ func (c *Compiler) compileSourceFileDecls(node *ast.SourceFile) error {
 	}
 
 	for _, sym := range fileSymbols {
+		if !isFileScopeDecl(sym) {
+			continue
+		}
 		if err := c.compileSymbol(sym); err != nil {
 			c.leaveScope()
 			return err
@@ -2179,9 +2212,108 @@ func (c *Compiler) compileModuleValue(module *ast.ContextModule) error {
 
 	countId := c.addConstant(c.plugins.Prelude().Int(int64(len(exports))))
 	c.emit(op.Const, countId)
-	moduleNameId := c.addConstant(c.plugins.Prelude().String(string(module.Name)))
-	c.emit(op.Module, moduleNameId)
+
+	files := moduleFilesInNameOrder(module)
+	info := &runtime.ModuleInfo{
+		Name:    string(module.Name),
+		Docs:    moduleDocs(files),
+		Imports: moduleImports(module),
+		Sources: moduleSources(module),
+	}
+	attributes, err := c.compileModuleAttributes(files)
+	if err != nil {
+		return err
+	}
+	info.Attributes = attributes
+	info.Declarations = make([]runtime.ModuleDeclaration, 0, len(exports))
+	for _, sym := range exports {
+		info.Declarations = append(info.Declarations, runtime.ModuleDeclaration{
+			Name:       sym.Name,
+			Decl:       sym.Decl,
+			Attributes: c.symbolAttributes[sym],
+		})
+	}
+	c.emit(op.Module, c.addConstant(info))
 	return nil
+}
+
+// moduleFilesInNameOrder returns the files that declare the module, ordered by name.
+// A module is declared once per file, and both its documentation and its attributes are only whole once every one of them has been read.
+func moduleFilesInNameOrder(module *ast.ContextModule) []*ast.SourceFile {
+	files := make([]*ast.SourceFile, 0, len(module.Files))
+	for _, file := range module.Files {
+		if file != nil && file.Module != nil {
+			files = append(files, file)
+		}
+	}
+	sort.Slice(files, func(i, j int) bool { return files[i].Path < files[j].Path })
+	return files
+}
+
+// moduleDocs joins the comment written above each `mod` declaration, in file name order, separated by a blank line.
+func moduleDocs(files []*ast.SourceFile) string {
+	paragraphs := make([]string, 0, len(files))
+	for _, file := range files {
+		if docs := file.Module.ProvidedDocs(); docs != nil && docs.Content != "" {
+			paragraphs = append(paragraphs, docs.Content)
+		}
+	}
+	return strings.Join(paragraphs, "\n\n")
+}
+
+// moduleImports names every module the files of this one import, ordered by name and free of duplicates.
+// Imports are file-local, so a module's own dependencies are only whole once every file of it has been read.
+func moduleImports(module *ast.ContextModule) []string {
+	seen := map[string]struct{}{}
+	for _, file := range module.Files {
+		if file == nil || file.Decls == nil {
+			continue
+		}
+		for _, sym := range file.Decls.Symbols {
+			if sym == nil {
+				continue
+			}
+			decl, ok := sym.Decl.(*ast.DeclImport)
+			if !ok {
+				continue
+			}
+			seen[string(decl.ModuleName.URI())] = struct{}{}
+		}
+	}
+	names := make([]string, 0, len(seen))
+	for name := range seen {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// moduleSources names every file the module was read from, ordered by name.
+// Every file is named, including one that declares nothing, because a file carrying only the module's documentation is still where that documentation is edited.
+func moduleSources(module *ast.ContextModule) []string {
+	paths := make([]string, 0, len(module.Files))
+	for _, file := range module.Files {
+		if file == nil || file.Path == "" {
+			continue
+		}
+		paths = append(paths, file.Path)
+	}
+	sort.Strings(paths)
+	return paths
+}
+
+// compileModuleAttributes compiles the attributes written on a module's `mod` declarations.
+func (c *Compiler) compileModuleAttributes(files []*ast.SourceFile) (map[runtime.TypeId]int, error) {
+	chain := make(ast.AttributeChain, 0, len(files))
+	for _, file := range files {
+		for _, instance := range file.Module.Attributes {
+			if instance == nil {
+				continue
+			}
+			chain = append(chain, instance)
+		}
+	}
+	return c.compileAttributeChain(chain, c.currentSymbols())
 }
 
 func (c *Compiler) emitModuleExport(sym *ast.Symbol) error {
@@ -2310,6 +2442,22 @@ func (c *Compiler) compileFieldTypes(fields []ast.DeclField) []runtime.TypeRef {
 		}
 		result[i] = c.describeTypeExpr(fields[i].TypeHint)
 		hasAny = true
+	}
+	if !hasAny {
+		return nil
+	}
+	return result
+}
+
+// fieldDocs records the comment written above each field, by field position, or nil when no field carries one.
+func fieldDocs(fields []ast.DeclField) []string {
+	result := make([]string, len(fields))
+	hasAny := false
+	for i := range fields {
+		result[i] = ast.DocsOf(fields[i])
+		if result[i] != "" {
+			hasAny = true
+		}
 	}
 	if !hasAny {
 		return nil
@@ -2839,12 +2987,24 @@ func (c *Compiler) ResolveModuleSymbol(moduleName string, symbolName string) *as
 	if c.resolver == nil {
 		return nil
 	}
-	// Find the module URI that ends with the given suffix.
+	// A URI matching outright is the module meant; the suffix is only for one carried under a package name, e.g. code.knabel.dev...zirric.prelude.
+	// Both are searched in a fixed order, because more than one module can end in the same name — future.prelude ends in .prelude too — and every module's table carries prelude's own members as imports, so whichever answered first used to decide which Printable an extern was bound to.
+	candidates := make([]registry.LogicalURI, 0, len(c.moduleGlobals))
 	for uri := range c.moduleGlobals {
 		uriStr := string(uri)
 		if uriStr != moduleName && !strings.HasSuffix(uriStr, "."+moduleName) {
 			continue
 		}
+		candidates = append(candidates, uri)
+	}
+	sort.Slice(candidates, func(i, j int) bool {
+		if (candidates[i] == registry.LogicalURI(moduleName)) != (candidates[j] == registry.LogicalURI(moduleName)) {
+			return candidates[i] == registry.LogicalURI(moduleName)
+		}
+		return candidates[i] < candidates[j]
+	})
+
+	for _, uri := range candidates {
 		mod, err := c.resolver.ResolveModule(context.Background(), uri)
 		if err != nil || mod == nil || mod.Symbols == nil {
 			continue
@@ -2908,6 +3068,16 @@ func (c *Compiler) MainPackageModules() (string, map[string]int) {
 		}
 	}
 	return info.name, info.globals
+}
+
+// MainPackageCavefile implements runtime.BindContext.
+// A resolver that cannot supply a manifest — the stubs used in tests — reports none rather than an empty one, so that a program can tell "no Cavefile" from "a Cavefile declaring nothing".
+func (c *Compiler) MainPackageCavefile() (cavefile.Cavefile, bool) {
+	provider, ok := c.resolver.(resolver.CavefileProvider)
+	if !ok {
+		return cavefile.Cavefile{}, false
+	}
+	return provider.MainPackageCavefile(), true
 }
 
 // MainPackageErrors returns the failures met while compiling the modules of the project's own package.

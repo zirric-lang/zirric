@@ -43,7 +43,7 @@ func TestTypeNameOfADataValueIsItsOwnName(t *testing.T) {
 func TestTypeNameNeverLeaksAGoType(t *testing.T) {
 	for _, value := range []runtime.RuntimeValue{
 		runtime.Int(1), runtime.String("a"), runtime.Array{}, runtime.Dict{}, runtime.Void{},
-		&runtime.DataValue{TypeName: "Person"}, runtime.MakeModuleValue("m", nil),
+		&runtime.DataValue{TypeName: "Person"}, runtime.MakeModuleValue(&runtime.ModuleInfo{Name: "m"}, nil),
 	} {
 		if name := runtime.TypeName(value); strings.Contains(name, "runtime.") {
 			t.Errorf("%v is named with a Go type: %q", value, name)

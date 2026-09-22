@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
+	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 )
 
@@ -12,6 +13,12 @@ import (
 type ModuleResolver interface {
 	MainModule() *ast.ContextModule
 	ResolveModule(ctx context.Context, name registry.LogicalURI) (*ast.ContextModule, error)
+}
+
+// CavefileProvider is an optional ModuleResolver capability for reading the manifest the project declared itself with.
+// It is optional so the stub resolvers used in tests need not implement it; reflect reports no Cavefile for a resolver that does not.
+type CavefileProvider interface {
+	MainPackageCavefile() cavefile.Cavefile
 }
 
 // MainPackageLister is an optional ModuleResolver capability for enumerating every module the project's own package declares, including ones no import reaches.

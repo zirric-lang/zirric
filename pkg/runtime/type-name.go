@@ -38,7 +38,7 @@ func TypeName(value RuntimeValue) string {
 	case *DataValue:
 		return value.TypeName
 	case *ModuleValue:
-		return "Module"
+		return "AnyModule"
 	case *CompiledFunction, *Closure, *ExternFunc:
 		return "Func"
 	case *DataType, *UnionType, *AttributeType, SimpleType:

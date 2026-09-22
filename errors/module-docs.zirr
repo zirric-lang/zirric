@@ -1,0 +1,8 @@
+// Combining, annotating and unwrapping error values.
+//
+// > What to do with the reason inside an `Err`.
+//
+// An error in Zirric is any value carrying the `prelude.Error` attribute, which knows how to render itself for diagnostics. `errors` works with those values rather than with `prelude.Result` itself.
+//
+// `join` and `wrap` both return new `@Error` values whose `debug` output is composed from the errors they were given, so the context survives into whatever finally prints it.
+mod code.knabel.dev.zirric_lang.zirric.errors

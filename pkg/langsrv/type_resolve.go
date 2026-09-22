@@ -289,20 +289,11 @@ func fieldsForTypeDecl(decl ast.Decl) []ast.DeclField {
 	case ast.DeclAttr:
 		return d.Fields
 	case *ast.DeclExternType:
-		return externTypeFieldSlice(d.Fields)
+		return d.Fields
 	case ast.DeclExternType:
-		return externTypeFieldSlice(d.Fields)
+		return d.Fields
 	}
 	return nil
-}
-
-// externTypeFieldSlice converts a DeclExternType's field map to a slice.
-func externTypeFieldSlice(fields map[string]ast.DeclField) []ast.DeclField {
-	result := make([]ast.DeclField, 0, len(fields))
-	for _, f := range fields {
-		result = append(result, f)
-	}
-	return result
 }
 
 // findFieldByName looks up a field by name in a type declaration.
@@ -333,12 +324,16 @@ func findFieldByName(typeDecl ast.Decl, name string) *ast.DeclField {
 			}
 		}
 	case *ast.DeclExternType:
-		if f, ok := d.Fields[name]; ok {
-			return &f
+		for i := range d.Fields {
+			if d.Fields[i].Name.Value == name {
+				return &d.Fields[i]
+			}
 		}
 	case ast.DeclExternType:
-		if f, ok := d.Fields[name]; ok {
-			return &f
+		for i := range d.Fields {
+			if d.Fields[i].Name.Value == name {
+				return &d.Fields[i]
+			}
 		}
 	}
 	return nil

@@ -10,8 +10,8 @@ extern type Attribute {}
 // All attribute types are of type `AttributeType`.
 extern type AttributeType {}
 
-// All modules are of type `Module`.
-extern type Module {}
+// All modules are of type `AnyModule`.
+extern type AnyModule {}
 // All module types are of type `ModuleType`.
 extern type ModuleType {}
 

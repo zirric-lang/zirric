@@ -1,0 +1,8 @@
+// Numeric constants, conversions, rounding and comparisons.
+//
+// > Arithmetic that the operators do not cover.
+//
+// `math` operates on `prelude.Number`, the union of `prelude.Int` and `prelude.Float`. Functions that can only answer in fractions (`sqrt`, `floor`, `pow`) return `Float`; the ones that merely pick or transform a value (`abs`, `min`, `max`, `clamp`) return whichever kind they were given.
+//
+// Conversions are never implicit — use `toInt` and `toFloat` when you need to cross between them.
+mod code.knabel.dev.zirric_lang.zirric.math

@@ -1,0 +1,10 @@
+// Discovering tests by reflection and running them.
+//
+// > Finding the tests, then executing them.
+//
+// The runner finds tests through `reflect`: it walks the modules of the running package, reads the functions carrying `@tests.Test`, and builds a `tests.TestCase` for each.
+//
+// `discover` and its siblings only find; `exec` runs what it is given and emits a `tests.TestEvent` as each test starts and finishes, which is what a reporter subscribes to. `runT` is the two put together with TAP output, and is what a `Cavefile` test task normally calls.
+//
+// `@tests.Only` is applied here rather than at discovery: if any discovered test carries it, the run narrows to those.
+mod code.knabel.dev.zirric_lang.zirric.tests.runner

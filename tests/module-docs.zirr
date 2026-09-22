@@ -1,0 +1,10 @@
+// The attributes and types that describe a test, its outcome and its report.
+//
+// > What a test is, before anything runs it.
+//
+// A test is a function carrying `Test` that returns a `prelude.Result`. Nothing else is required: there is no registry and no base type, so the runner reaches for `reflect` and finds tests by reading a module rather than by being told about them.
+//
+// The other attributes adjust what happens to one. `Skip` keeps it out of the run, `Todo` marks it as expected to be unfinished, `Only` narrows the run to itself, and `Comment` attaches a note that reporters print.
+//
+// This module is only the vocabulary. `tests.assert` writes the assertions, `tests.runner` finds and runs them, and `tests.tap` reports what happened.
+mod code.knabel.dev.zirric_lang.zirric.tests

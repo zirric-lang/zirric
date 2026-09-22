@@ -1,0 +1,8 @@
+// Reading and writing JSON text, and per-field JSON overrides.
+//
+// > JSON as Zirric values, not as a tree of its own.
+//
+// JSON maps onto Zirric's own values: an object is a `prelude.Dict` with `String` keys, an array is an `prelude.Array`, and `null` is `void`. A number is an `prelude.Int` when it was written as one and a `prelude.Float` otherwise, so `1` and `1.0` stay apart.
+//
+// `parse` and `format` move between text and that tree. To move between the tree and your own `data` types, hand this module to `coding`: `coding.encodeWith(json, value)` consults the attributes below before falling back to `@coding`'s.
+mod code.knabel.dev.zirric_lang.zirric.json

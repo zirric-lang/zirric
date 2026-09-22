@@ -12,6 +12,15 @@ type AttributeType struct {
 	Symbol       *ast.Symbol
 	FieldSymbols []*ast.Symbol
 	Attributes   map[TypeId]int
+	// FieldAttributes holds the attributes written on each field, by the same index as FieldSymbols.
+	// It is nil when no field carries any, so reach for FieldAttributesAt rather than indexing it directly.
+	FieldAttributes []map[TypeId]int
+	// FieldTypes holds the type hint written on each field, by the same index as FieldSymbols.
+	// It is nil when no field carries one, so reach for FieldTypeAt rather than indexing it directly.
+	FieldTypes []TypeRef
+	// FieldDocs holds the comment written above each field, by the same index as FieldSymbols.
+	// It is nil when no field carries one, so reach for FieldDocsAt rather than indexing it directly.
+	FieldDocs []string
 }
 
 func MakeAttributeType(symbol *ast.Symbol) (*AttributeType, error) {
@@ -64,4 +73,33 @@ func (at *AttributeType) MakeValue(values []RuntimeValue) *AttributeValue {
 
 func (at *AttributeType) TypeAttributes() map[TypeId]int {
 	return at.Attributes
+}
+
+// Fields implements FieldedType.
+func (at *AttributeType) Fields() []*ast.Symbol {
+	return at.FieldSymbols
+}
+
+// FieldAttributesAt implements FieldedType.
+func (at *AttributeType) FieldAttributesAt(i int) map[TypeId]int {
+	if i < 0 || i >= len(at.FieldAttributes) {
+		return nil
+	}
+	return at.FieldAttributes[i]
+}
+
+// FieldTypeAt implements FieldedType.
+func (at *AttributeType) FieldTypeAt(i int) TypeRef {
+	if i < 0 || i >= len(at.FieldTypes) {
+		return TypeRef{}
+	}
+	return at.FieldTypes[i]
+}
+
+// FieldDocsAt implements FieldedType.
+func (at *AttributeType) FieldDocsAt(i int) string {
+	if i < 0 || i >= len(at.FieldDocs) {
+		return ""
+	}
+	return at.FieldDocs[i]
 }

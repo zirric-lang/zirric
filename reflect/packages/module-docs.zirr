@@ -1,0 +1,8 @@
+// Discovering the modules that make up the running package.
+//
+// > Finding modules by name, or by asking.
+//
+// Where `reflect` inspects a module you already hold, `reflect.packages` finds the modules in the first place. `mainPackage()` is the package being run, and `modulesWhere` selects from it by name.
+//
+// This is how test discovery works: `tests.runner` asks for every module whose name matches a convention, then reflects over each one to find the functions carrying `@tests.Test`.
+mod code.knabel.dev.zirric_lang.zirric.reflect.packages

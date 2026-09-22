@@ -5,38 +5,38 @@ description: Mapping, filtering and reducing the built-in Dict type.
 
 # Module `dicts`
 
-> Operations over `Dict`, by key, by value, or by pair.
-
 ```zirric
 import dicts
 ```
 
-|            |                                                                                                   |
-| ---------- | ------------------------------------------------------------------------------------------------- |
-| **Module** | `dicts`                                                                                           |
-| **Source** | [`dicts/dicts.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/dicts/dicts.zirr) |
+|            |                                                                                                                                                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Module** | `dicts`                                                                                                                                                                                                          |
+| **Source** | [`dicts/dicts.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/dicts/dicts.zirr), [`dicts/module-docs.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/dicts/module-docs.zirr) |
 
-`dicts` operates on the built-in [`Dict`](../prelude/index.md#dict) type and returns new dictionaries rather than changing the one passed in.
+> Operations over `Dict`, by key, by value, or by pair.
 
-Iterating a `Dict` yields [`Pair`](../prelude/index.md#pair) values, which is why [`mapPairs`](#mappairs) exists alongside [`mapKeys`](#mapkeys) and [`mapValues`](#mapvalues): it is the one that can change both halves of an entry at once.
+`dicts` operates on the built-in [`prelude.Dict`](../prelude/index.md#dict) type and returns new dictionaries rather than changing the one passed in.
+
+Iterating a `Dict` yields [`prelude.Pair`](../prelude/index.md#pair) values, which is why [`mapPairs`](#mappairs) exists alongside [`mapKeys`](#mapkeys) and [`mapValues`](#mapvalues): it is the one that can change both halves of an entry at once.
 
 ## Contents
 
-- **Functions** — [`isEmpty`](#isempty), [`hasKey`](#haskey), [`map`](#map), [`mapKeys`](#mapkeys), [`mapValues`](#mapvalues), [`mapPairs`](#mappairs), [`filter`](#filter), [`reduce`](#reduce)
+- **Functions** — [`filter`](#filter), [`hasKey`](#haskey), [`isEmpty`](#isempty), [`map`](#map), [`mapKeys`](#mapkeys), [`mapPairs`](#mappairs), [`mapValues`](#mapvalues), [`reduce`](#reduce)
 
 ---
 
 ## Functions
 
-### `isEmpty` {#isempty}
+### `filter` {#filter}
 
-<small>`dicts/dicts.zirr:4`</small>
+<small>`dicts/dicts.zirr:56`</small>
 
 ```zirric
-fn isEmpty(d: Dict) -> Bool
+fn filter(d: Dict, predicate: fn(Any, Any) -> Bool) -> Dict
 ```
 
-Returns whether d has no entries.
+Returns a new dict containing only the entries of d for which predicate returns true. predicate receives both the key and its value.
 
 ---
 
@@ -49,6 +49,18 @@ fn hasKey(d: Dict, key: Any) -> Bool
 ```
 
 Returns whether d has an entry for key. Indexing alone cannot tell, since a missing key and a void value both read as void.
+
+---
+
+### `isEmpty` {#isempty}
+
+<small>`dicts/dicts.zirr:4`</small>
+
+```zirric
+fn isEmpty(d: Dict) -> Bool
+```
+
+Returns whether d has no entries.
 
 ---
 
@@ -76,18 +88,6 @@ Returns a new dict with transform applied to each key, keeping the same values.
 
 ---
 
-### `mapValues` {#mapvalues}
-
-<small>`dicts/dicts.zirr:37`</small>
-
-```zirric
-fn mapValues(d: Dict, transform: fn(Any) -> Any) -> Dict
-```
-
-Returns a new dict with transform applied to each value, keeping the same keys.
-
----
-
 ### `mapPairs` {#mappairs}
 
 <small>`dicts/dicts.zirr:46`</small>
@@ -100,15 +100,15 @@ Returns a new dict with transform applied to each key/value Pair, replacing both
 
 ---
 
-### `filter` {#filter}
+### `mapValues` {#mapvalues}
 
-<small>`dicts/dicts.zirr:56`</small>
+<small>`dicts/dicts.zirr:37`</small>
 
 ```zirric
-fn filter(d: Dict, predicate: fn(Any, Any) -> Bool) -> Dict
+fn mapValues(d: Dict, transform: fn(Any) -> Any) -> Dict
 ```
 
-Returns a new dict containing only the entries of d for which predicate returns true. predicate receives both the key and its value.
+Returns a new dict with transform applied to each value, keeping the same keys.
 
 ---
 
@@ -121,10 +121,3 @@ fn reduce(d: Dict, initial: Any, combine: fn(Any, Any, Any) -> Any) -> Any
 ```
 
 Combines d's entries into a single value, starting from initial and applying combine(accumulator, key, value) for each entry, in no particular order.
-
----
-
-## See also
-
-- [`arrays`](../arrays/index.md) — the same shape of helpers for `Array`.
-- [`fun`](../fun/index.md) — lazy versions that work on anything iterable.

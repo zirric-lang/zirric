@@ -1,0 +1,10 @@
+// Reading and writing YAML text, and per-field YAML overrides.
+//
+// > YAML over the same value tree as JSON.
+//
+// `yaml` reads and writes the same native tree `json` does — `prelude.Dict`, `prelude.Array`, `String`, `Int`, `Float`, `Bool` and `void` — so the two formats are interchangeable as far as your own types are concerned.
+//
+// `parseAll` is the one addition: a YAML file may hold several documents separated by `---`, and it returns all of them.
+//
+// Pass this module to `coding` to encode and decode your own `data` types through it; the attributes below override `@coding`'s for YAML only.
+mod code.knabel.dev.zirric_lang.zirric.yaml

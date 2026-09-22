@@ -16,7 +16,7 @@ func (n DeclAttrInstance) TokenLiteral() token.Token {
 }
 
 func MakeAttributeInstance(tok token.Token, ref StaticReference) *DeclAttrInstance {
-	return &DeclAttrInstance{tok, ref, nil}
+	return &DeclAttrInstance{Token: tok, Reference: ref}
 }
 
 func (n *DeclAttrInstance) AddArgument(arg Expr) {

@@ -1,5 +1,0 @@
-mod code.knabel.dev.zirric_lang.zirric._tasks
-
-import runner = tests.runner
-
-runner.runT()

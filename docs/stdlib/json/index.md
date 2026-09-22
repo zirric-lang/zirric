@@ -5,60 +5,47 @@ description: Reading and writing JSON text, and per-field JSON overrides.
 
 # Module `json`
 
-> JSON as Zirric values, not as a tree of its own.
-
 ```zirric
 import json
 ```
 
-|            |                                                                                                                                                                                                          |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Module** | `json`                                                                                                                                                                                                   |
-| **Source** | [`json/json.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/json/json.zirr), [`json/attributes.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/json/attributes.zirr) |
+|            |                                                                                                                                                                                                                                                                                                                       |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Module** | `json`                                                                                                                                                                                                                                                                                                                |
+| **Source** | [`json/attributes.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/json/attributes.zirr), [`json/json.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/json/json.zirr), [`json/module-docs.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/json/module-docs.zirr) |
 
-JSON maps onto Zirric's own values: an object is a [`Dict`](../prelude/index.md#dict) with `String` keys, an array is an [`Array`](../prelude/index.md#array), and `null` is `void`. A number is an [`Int`](../prelude/index.md#int) when it was written as one and a [`Float`](../prelude/index.md#float) otherwise, so `1` and `1.0` stay apart.
+> JSON as Zirric values, not as a tree of its own.
 
-[`parse`](#parse) and [`format`](#format) move between text and that tree. To move between the tree and your own `data` types, hand this module to [`coding`](../coding/index.md): `coding.encodeWith(json, value)` consults the attributes below before falling back to `@coding`'s.
+JSON maps onto Zirric's own values: an object is a [`prelude.Dict`](../prelude/index.md#dict) with `String` keys, an array is an [`prelude.Array`](../prelude/index.md#array), and `null` is `void`. A number is an [`prelude.Int`](../prelude/index.md#int) when it was written as one and a [`prelude.Float`](../prelude/index.md#float) otherwise, so `1` and `1.0` stay apart.
+
+[`parse`](#parse) and [`format`](#format) move between text and that tree. To move between the tree and your own `data` types, hand this module to [`coding`](../coding/index.md): `coding.encodeWith(json, value)` consults the attributes below before falling back to [`@coding`](../coding/index.md)'s.
 
 ## Contents
 
-- **Attributes** — [`Name`](#name), [`Ignore`](#ignore), [`Default`](#default), [`Decode`](#decode), [`Encode`](#encode)
-- **Functions** — [`parse`](#parse), [`format`](#format), [`formatIndented`](#formatindented)
+- **Attributes** — [`Decode`](#decode), [`Default`](#default), [`Encode`](#encode), [`Ignore`](#ignore), [`Name`](#name)
+- **Functions** — [`format`](#format), [`formatIndented`](#formatindented), [`parse`](#parse)
 
 ---
 
 ## Attributes
 
-### `Name` {#name}
+### `Decode` {#decode}
 
-<small>`json/attributes.zirr:5`</small>
+<small>`json/attributes.zirr:20`</small>
 
 ```zirric
-attr Name {
-	// The key to use.
-	text
+attr Decode {
+	parse
 }
 ```
 
-The JSON key a field is read and written under, overriding `@coding.Name` for JSON only. `coding` finds these by name, so declaring them here is all it takes for them to win.
+Decodes a field from its raw JSON tree, overriding [`@coding.Decode`](../coding/index.md#decode-attr).
 
-#### Members
+#### Fields
 
-| Member | Description     |
-| ------ | --------------- |
-| `text` | The key to use. |
-
----
-
-### `Ignore` {#ignore}
-
-<small>`json/attributes.zirr:11`</small>
-
-```zirric
-attr Ignore {}
-```
-
-Marks a field as one that does not travel as JSON, overriding `@coding.Ignore`.
+| Field   | Description               |
+| ------- | ------------------------- |
+| `parse` | `fn(raw: Any) -> Result`. |
 
 ---
 
@@ -68,39 +55,17 @@ Marks a field as one that does not travel as JSON, overriding `@coding.Ignore`.
 
 ```zirric
 attr Default {
-	// The value to use.
 	value
 }
 ```
 
-The value a field takes when its JSON key is absent, overriding `@coding.Default`.
+The value a field takes when its JSON key is absent, overriding [`@coding.Default`](../coding/index.md#default).
 
-#### Members
+#### Fields
 
-| Member  | Description       |
+| Field   | Description       |
 | ------- | ----------------- |
 | `value` | The value to use. |
-
----
-
-### `Decode` {#decode}
-
-<small>`json/attributes.zirr:20`</small>
-
-```zirric
-attr Decode {
-	// `fn(raw: Any) -> Result`.
-	parse
-}
-```
-
-Decodes a field from its raw JSON tree, overriding `@coding.Decode`.
-
-#### Members
-
-| Member  | Description               |
-| ------- | ------------------------- |
-| `parse` | `fn(raw: Any) -> Result`. |
 
 ---
 
@@ -110,34 +75,54 @@ Decodes a field from its raw JSON tree, overriding `@coding.Decode`.
 
 ```zirric
 attr Encode {
-	// `fn(value: Any) -> Result`.
 	format
 }
 ```
 
-Encodes a field to a JSON tree, overriding `@coding.Encode`.
+Encodes a field to a JSON tree, overriding [`@coding.Encode`](../coding/index.md#encode-attr).
 
-#### Members
+#### Fields
 
-| Member   | Description                 |
+| Field    | Description                 |
 | -------- | --------------------------- |
 | `format` | `fn(value: Any) -> Result`. |
 
 ---
 
-## Functions
+### `Ignore` {#ignore}
 
-### `parse` {#parse}
-
-<small>`json/json.zirr:7`</small>
+<small>`json/attributes.zirr:11`</small>
 
 ```zirric
-extern fn parse(text: String) -> Result
+attr Ignore
 ```
 
-Reads JSON text, failing with Err when the text is not one JSON value.
+Marks a field as one that does not travel as JSON, overriding [`@coding.Ignore`](../coding/index.md#ignore).
 
 ---
+
+### `Name` {#name}
+
+<small>`json/attributes.zirr:5`</small>
+
+```zirric
+attr Name {
+	text
+}
+```
+
+The JSON key a field is read and written under, overriding [`@coding.Name`](../coding/index.md#name) for JSON only.
+[`coding`](../coding/index.md) finds these by name, so declaring them here is all it takes for them to win.
+
+#### Fields
+
+| Field  | Description     |
+| ------ | --------------- |
+| `text` | The key to use. |
+
+---
+
+## Functions
 
 ### `format` {#format}
 
@@ -147,7 +132,8 @@ Reads JSON text, failing with Err when the text is not one JSON value.
 extern fn format(value: Any) -> Result
 ```
 
-Renders a value as JSON text, failing with Err when it holds something JSON has no form for. Object keys come out sorted, so the same value always produces the same text.
+Renders a value as JSON text, failing with Err when it holds something JSON has no form for.
+Object keys come out sorted, so the same value always produces the same text.
 
 ---
 
@@ -163,7 +149,12 @@ As format, but spread over lines with each level prefixed by indent.
 
 ---
 
-## See also
+### `parse` {#parse}
 
-- [`coding`](../coding/index.md) — encoding and decoding your own types.
-- [`yaml`](../yaml/index.md) — the same shape for YAML.
+<small>`json/json.zirr:7`</small>
+
+```zirric
+extern fn parse(text: String) -> Result
+```
+
+Reads JSON text, failing with Err when the text is not one JSON value.

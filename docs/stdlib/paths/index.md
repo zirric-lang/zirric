@@ -5,38 +5,38 @@ description: Joining, cleaning, splitting and matching path strings.
 
 # Module `paths`
 
-> Path strings, independent of the host.
-
 ```zirric
 import paths
 ```
 
-|            |                                                                                                   |
-| ---------- | ------------------------------------------------------------------------------------------------- |
-| **Module** | `paths`                                                                                           |
-| **Source** | [`paths/paths.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/paths/paths.zirr) |
+|            |                                                                                                                                                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Module** | `paths`                                                                                                                                                                                                          |
+| **Source** | [`paths/module-docs.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/paths/module-docs.zirr), [`paths/paths.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/paths/paths.zirr) |
 
-Paths are slash-separated regardless of the host: they describe the [filesystem abstraction](../fs/index.md), not the machine the program runs on. Nothing here touches the disk — these are string operations, and a path that does not exist is manipulated exactly like one that does.
+> Path strings, independent of the host.
 
-[`match`](#match) is the exception to the "returns a plain value" rule: a malformed pattern is a mistake worth reporting, so it returns a [`Result`](../prelude/index.md#result) rather than silently answering `false`.
+Paths are slash-separated regardless of the host: they describe the filesystem [`fs`](../fs/index.md) presents, not the machine the program runs on. Nothing here touches the disk — these are string operations, and a path that does not exist is manipulated exactly like one that does.
+
+[`match`](#match) is the exception to the "returns a plain value" rule: a malformed pattern is a mistake worth reporting, so it returns a [`prelude.Result`](../prelude/index.md#result) rather than silently answering `false`.
 
 ## Contents
 
-- **Functions** — [`join`](#join), [`clean`](#clean), [`base`](#base), [`dir`](#dir), [`ext`](#ext), [`stem`](#stem), [`isAbs`](#isabs), [`segments`](#segments), [`match`](#match)
+- **Functions** — [`base`](#base), [`clean`](#clean), [`dir`](#dir), [`ext`](#ext), [`isAbs`](#isabs), [`join`](#join), [`match`](#match), [`segments`](#segments), [`stem`](#stem)
 
 ---
 
 ## Functions
 
-### `join` {#join}
+### `base` {#base}
 
-<small>`paths/paths.zirr:6`</small>
+<small>`paths/paths.zirr:12`</small>
 
 ```zirric
-extern fn join(parts: [String]) -> String
+extern fn base(p: String) -> String
 ```
 
-Joins every part into a single path, cleaning the result.
+Returns the last element of p.
 
 ---
 
@@ -49,18 +49,6 @@ extern fn clean(p: String) -> String
 ```
 
 Returns p with redundant separators and . or .. elements resolved.
-
----
-
-### `base` {#base}
-
-<small>`paths/paths.zirr:12`</small>
-
-```zirric
-extern fn base(p: String) -> String
-```
-
-Returns the last element of p.
 
 ---
 
@@ -88,18 +76,6 @@ Returns the extension of p's last element, including the leading dot, or "" if i
 
 ---
 
-### `stem` {#stem}
-
-<small>`paths/paths.zirr:21`</small>
-
-```zirric
-extern fn stem(p: String) -> String
-```
-
-Returns the last element of p without its extension.
-
----
-
 ### `isAbs` {#isabs}
 
 <small>`paths/paths.zirr:24`</small>
@@ -109,6 +85,31 @@ extern fn isAbs(p: String) -> Bool
 ```
 
 Returns whether p begins at the root.
+
+---
+
+### `join` {#join}
+
+<small>`paths/paths.zirr:6`</small>
+
+```zirric
+extern fn join(parts: [String]) -> String
+```
+
+Joins every part into a single path, cleaning the result.
+
+---
+
+### `match` {#match}
+
+<small>`paths/paths.zirr:31`</small>
+
+```zirric
+extern fn match(pattern: String, p: String) -> Result
+```
+
+Returns whether p matches pattern, where * matches any run of non-separator characters, ? matches one, and [abc] matches a character class.
+Fails with Err when the pattern is malformed, which is why this returns a Result rather than a Bool.
 
 ---
 
@@ -124,19 +125,12 @@ Returns p's non-empty elements, in order.
 
 ---
 
-### `match` {#match}
+### `stem` {#stem}
 
-<small>`paths/paths.zirr:31`</small>
+<small>`paths/paths.zirr:21`</small>
 
 ```zirric
-extern fn match(pattern: String, p: String) -> Result
+extern fn stem(p: String) -> String
 ```
 
-Returns whether p matches pattern, where * matches any run of non-separator characters, ? matches one, and [abc] matches a character class. Fails with Err when the pattern is malformed, which is why this returns a Result rather than a Bool.
-
----
-
-## See also
-
-- [`fs`](../fs/index.md) — reading and writing at these paths.
-- [`strings`](../strings/index.md) — general text operations.
+Returns the last element of p without its extension.

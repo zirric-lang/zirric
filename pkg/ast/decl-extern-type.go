@@ -13,7 +13,7 @@ var _ Overviewable = DeclExternType{}
 type DeclExternType struct {
 	Token      token.Token
 	Name       Identifier
-	Fields     map[string]DeclField
+	Fields     []DeclField
 	Attributes AttributeChain
 
 	Docs *Docs
@@ -40,7 +40,7 @@ func (e DeclExternType) DeclOverview() string {
 	}
 	fieldLines := make([]string, 0)
 	for _, field := range e.Fields {
-		fieldLines = append(fieldLines, "    "+field.DeclOverview())
+		fieldLines = append(fieldLines, "\t"+field.DeclOverview())
 	}
 	return fmt.Sprintf("extern type %s {\n%s\n}", e.Name, strings.Join(fieldLines, "\n"))
 }
@@ -56,17 +56,22 @@ func MakeDeclExternType(tok token.Token, name Identifier) *DeclExternType {
 	return &DeclExternType{
 		Token:  tok,
 		Name:   name,
-		Fields: make(map[string]DeclField),
+		Fields: []DeclField{},
 		Docs:   nil,
 	}
 }
 
 func (e *DeclExternType) AddField(decl DeclField) {
-	e.Fields[decl.Name.Value] = decl
+	e.Fields = append(e.Fields, decl)
 }
 
 func (decl DeclExternType) ProvidedDocs() *Docs {
 	return decl.Docs
+}
+
+// SetDocs implements Documentable.
+func (decl *DeclExternType) SetDocs(docs *Docs) {
+	decl.Docs = docs
 }
 
 // EnumerateChildNodes implements Decl.

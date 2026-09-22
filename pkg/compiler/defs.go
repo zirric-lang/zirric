@@ -69,10 +69,12 @@ type Compiler struct {
 	mainPackageErrs []error
 	// entryModule is the module passed to Compile, i.e. the program being run, which reflect.packages must not offer as a loadable package member.
 	entryModule *ast.ContextModule
-	plugins     *runtime.ExternPluginRegistry
-	resolver    resolver.ModuleResolver
-	analyzer    *analyzer.Analyzer
-	analyzed    map[*ast.ContextModule]struct{}
+	// symbolAttributes remembers the attributes compiled for each declaration, so that a module can report them for a member whose runtime value cannot carry any, such as a const holding an Int.
+	symbolAttributes map[*ast.Symbol]map[runtime.TypeId]int
+	plugins          *runtime.ExternPluginRegistry
+	resolver         resolver.ModuleResolver
+	analyzer         *analyzer.Analyzer
+	analyzed         map[*ast.ContextModule]struct{}
 
 	scopes   []*CompilationScope
 	scopeIdx int
@@ -92,17 +94,18 @@ func NewWithAnalyzer(moduleResolver resolver.ModuleResolver, analysis *analyzer.
 		symbols:      symbols,
 	}
 	return &Compiler{
-		constants:       []runtime.RuntimeValue{},
-		globals:         []*CompilationScope{},
-		moduleGlobals:   map[registry.LogicalURI]int{},
-		compiledModules: map[*ast.ContextModule]int{},
-		plugins:         runtime.NewExternPluginRegistry(&runtime.Prelude{}, &runtime.OSPlugin{}, &runtime.FmtPlugin{}, &runtime.BytesPlugin{}, &runtime.StringsPlugin{}, &runtime.ReflectPlugin{}, &runtime.ReflectPackagesPlugin{}, &runtime.MathPlugin{}, &runtime.PathsPlugin{}, &runtime.FSPlugin{}, &runtime.RandomPlugin{}, &runtime.TimePlugin{}, &runtime.JSONPlugin{}, &runtime.YAMLPlugin{}),
-		resolver:        moduleResolver,
-		analyzer:        analysis,
-		analyzed:        map[*ast.ContextModule]struct{}{},
-		scopes:          []*CompilationScope{mainScope},
-		scopeIdx:        0,
-		debug:           debuginfo.NewTable(),
+		constants:        []runtime.RuntimeValue{},
+		globals:          []*CompilationScope{},
+		moduleGlobals:    map[registry.LogicalURI]int{},
+		compiledModules:  map[*ast.ContextModule]int{},
+		symbolAttributes: map[*ast.Symbol]map[runtime.TypeId]int{},
+		plugins:          runtime.NewExternPluginRegistry(&runtime.Prelude{}, &runtime.OSPlugin{}, &runtime.FmtPlugin{}, &runtime.BytesPlugin{}, &runtime.StringsPlugin{}, &runtime.ReflectPlugin{}, &runtime.ReflectPackagesPlugin{}, &runtime.MathPlugin{}, &runtime.PathsPlugin{}, &runtime.FSPlugin{}, &runtime.RandomPlugin{}, &runtime.TimePlugin{}, &runtime.JSONPlugin{}, &runtime.YAMLPlugin{}),
+		resolver:         moduleResolver,
+		analyzer:         analysis,
+		analyzed:         map[*ast.ContextModule]struct{}{},
+		scopes:           []*CompilationScope{mainScope},
+		scopeIdx:         0,
+		debug:            debuginfo.NewTable(),
 	}
 }
 

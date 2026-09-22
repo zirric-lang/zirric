@@ -1,0 +1,8 @@
+// Assertions that produce the Result a test returns.
+//
+// > Assertions are values, not control flow.
+//
+// An assertion here returns a `prelude.Result` rather than aborting. A test returns one, and that is its outcome — so a failure is an ordinary value you can pass around, and `all` combines several into one.
+//
+// Because they are values, nothing stops after the first failure unless you make it. Return a single assertion for a single check, or gather several with `all` to report every one.
+mod code.knabel.dev.zirric_lang.zirric.tests.assert

@@ -1,0 +1,8 @@
+// A TAP version 14 reporter for test events.
+//
+// > Test output anything can read.
+//
+// `reporter` turns a `io.Writer` into the event handler `tests.runner.exec` expects, printing [TAP version 14](https://testanything.org) as the run proceeds.
+//
+// Because it takes a writer rather than reaching for standard output, the same reporter writes to a file, to a buffer, or to the terminal — and a test of the reporter itself can collect what it produced.
+mod code.knabel.dev.zirric_lang.zirric.tests.tap

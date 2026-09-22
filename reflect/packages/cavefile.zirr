@@ -1,0 +1,74 @@
+mod code.knabel.dev.zirric_lang.zirric.reflect.packages
+
+// The manifest a package declares itself with, as `zirric cave describe` reports it.
+// It describes the project rather than its code: what it is called, what it depends on, and what it can be asked to do.
+data Cavefile {
+	// The canonical name of the package, e.g. "code.knabel.dev.zirric_lang.zirric".
+	name: String
+	// Where the package comes from, as a URL or a file:// path, or the empty String when it declares none.
+	source: String
+	// The comment written above the Cavefile's own `mod` declaration.
+	docs: String
+	// Everything the package depends on, in the order the manifest declares it.
+	dependencies: [Dependency]
+	// Everything the package can be asked to do, in the order the manifest declares it.
+	tasks: [Task]
+	// The path patterns left unformatted, from @cave.FormattingExcludes.
+	formattingExcludes: [String]
+}
+
+// One dependency of a package.
+data Dependency {
+	// The name it is imported under in this package.
+	name: String
+	// How it is reached: "stdlib", "git" or "local".
+	kind: String
+	// Where it comes from, as a URL or a file:// path.
+	source: String
+	// The module a @cave.Stdlib dependency binds to, or the empty String for the other kinds.
+	module: String
+	// The version predicates it was declared with, joined as they were written.
+	version: String
+	// The comment written above the field that declares it.
+	docs: String
+}
+
+// One task a package can be asked to run.
+data Task {
+	// The name it is run under, which @tasks.Name may have changed from the declaration's own.
+	name: String
+	// How it runs: "exec" for a file, "call" for a function.
+	kind: String
+	// The name of the declaration it was written as.
+	declName: String
+	// The other names it answers to.
+	aliases: [String]
+	// The one-line help the CLI prints, from @tasks.Help.
+	help: String
+	// The file an "exec" task runs, or the empty String for a "call" task.
+	exec: String
+	// The comment written above the declaration, which is what it says about itself rather than what the CLI prints.
+	docs: String
+	// The flags it takes.
+	flags: [Param]
+	// The positional arguments it takes, in order.
+	args: [Param]
+}
+
+// One flag or positional argument of a task.
+data Param {
+	// The name it is written under on the command line.
+	name: String
+	// The name of the field it was declared as.
+	declName: String
+	// The type it takes: "Bool", "String" or "Int", or the empty String for one the CLI cannot pass.
+	type: String
+	// The single-character form of a flag, from @tasks.Short, or the empty String.
+	short: String
+	// The other names it answers to.
+	aliases: [String]
+	// The one-line help the CLI prints, from @tasks.Help.
+	help: String
+	// The comment written above the field that declares it.
+	docs: String
+}

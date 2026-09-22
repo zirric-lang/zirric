@@ -18,6 +18,9 @@ type DataType struct {
 	// FieldTypes holds the type hint written on each field, by the same index as FieldSymbols.
 	// It is nil when no field carries one, so reach for FieldTypeAt rather than indexing it directly.
 	FieldTypes []TypeRef
+	// FieldDocs holds the comment written above each field, by the same index as FieldSymbols.
+	// It is nil when no field carries one, so reach for FieldDocsAt rather than indexing it directly.
+	FieldDocs []string
 }
 
 func MakeDataType(symbol *ast.Symbol) (*DataType, error) {
@@ -44,6 +47,11 @@ func MakeDataType(symbol *ast.Symbol) (*DataType, error) {
 	}, nil
 }
 
+// Fields implements FieldedType.
+func (dt *DataType) Fields() []*ast.Symbol {
+	return dt.FieldSymbols
+}
+
 // FieldAttributesAt returns the attributes written on the field at index i, or nil when that field carries none.
 func (dt *DataType) FieldAttributesAt(i int) map[TypeId]int {
 	if i < 0 || i >= len(dt.FieldAttributes) {
@@ -58,6 +66,14 @@ func (dt *DataType) FieldTypeAt(i int) TypeRef {
 		return TypeRef{}
 	}
 	return dt.FieldTypes[i]
+}
+
+// FieldDocsAt returns the comment written above the field at index i, or the empty string when that field carries none.
+func (dt *DataType) FieldDocsAt(i int) string {
+	if i < 0 || i >= len(dt.FieldDocs) {
+		return ""
+	}
+	return dt.FieldDocs[i]
 }
 
 // Arity implements Callable.

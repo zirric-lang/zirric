@@ -5,25 +5,31 @@ description: Searching, slicing, splitting and transforming text.
 
 # Module `strings`
 
-> Text operations that count characters, not bytes.
-
 ```zirric
 import strings
 ```
 
-|            |                                                                                                           |
-| ---------- | --------------------------------------------------------------------------------------------------------- |
-| **Module** | `strings`                                                                                                 |
-| **Source** | [`strings/strings.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/strings/strings.zirr) |
+|            |                                                                                                                                                                                                                              |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Module** | `strings`                                                                                                                                                                                                                    |
+| **Source** | [`strings/module-docs.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/strings/module-docs.zirr), [`strings/strings.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/strings/strings.zirr) |
 
-`strings` works on [`Like`](#like) — a [`String`](../prelude/index.md#string) or a single [`Char`](../prelude/index.md#char) — so a one-character value can be passed anywhere text is expected.
+> Text operations that count characters, not bytes.
+
+`strings` works on [`Like`](#like) — a [`prelude.String`](../prelude/index.md#string) or a single [`prelude.Char`](../prelude/index.md#char) — so a one-character value can be passed anywhere text is expected.
 
 Positions here are character positions. [`count`](#count) returns the number of UTF-8 code points, which is not the same as `len()`: `len("café")` is 5 bytes, `count("café")` is 4 characters. Indexing a `String` directly gives bytes; [`charAt`](#charat) gives characters.
+
+## Dependencies
+
+- [`ranges`](../ranges/index.md)
+
+---
 
 ## Contents
 
 - **Unions** — [`Like`](#like)
-- **Functions** — [`from`](#from), [`count`](#count), [`charAt`](#charat), [`slice`](#slice), [`range`](#range), [`isEmpty`](#isempty), [`isDigit`](#isdigit), [`isLetter`](#isletter), [`isSpace`](#isspace), [`contains`](#contains), [`hasPrefix`](#hasprefix), [`hasSuffix`](#hassuffix), [`firstIndexOf`](#firstindexof), [`lastIndexOf`](#lastindexof), [`replace`](#replace), [`replaceFirst`](#replacefirst), [`replaceLast`](#replacelast), [`split`](#split), [`join`](#join), [`concat`](#concat), [`repeat`](#repeat), [`toUpper`](#toupper), [`toLower`](#tolower), [`trim`](#trim), [`trimPrefix`](#trimprefix), [`trimSuffix`](#trimsuffix), [`quote`](#quote), [`unquote`](#unquote)
+- **Functions** — [`charAt`](#charat), [`concat`](#concat), [`contains`](#contains), [`count`](#count), [`firstIndexOf`](#firstindexof), [`from`](#from), [`hasPrefix`](#hasprefix), [`hasSuffix`](#hassuffix), [`isDigit`](#isdigit), [`isEmpty`](#isempty), [`isLetter`](#isletter), [`isSpace`](#isspace), [`join`](#join), [`lastIndexOf`](#lastindexof), [`quote`](#quote), [`range`](#range), [`repeat`](#repeat), [`replace`](#replace), [`replaceFirst`](#replacefirst), [`replaceLast`](#replacelast), [`slice`](#slice), [`split`](#split), [`toLower`](#tolower), [`toUpper`](#toupper), [`trim`](#trim), [`trimPrefix`](#trimprefix), [`trimSuffix`](#trimsuffix), [`unquote`](#unquote)
 
 ---
 
@@ -40,42 +46,18 @@ union Like {
 }
 ```
 
-A single character or a sequence of characters, so a `Char` can be passed anywhere a `String` is expected.
+A single character or a sequence of characters.
 
 #### Cases
 
-| Case     | Interpretation      |
-| -------- | ------------------- |
-| `Char`   | One character.      |
-| `String` | Any number of them. |
+| Case     | Interpretation                                                        |
+| -------- | --------------------------------------------------------------------- |
+| `Char`   | A single character from a string.                                     |
+| `String` | A regular String. Can be indexed to get the Byte. Iterates over Char. |
 
 ---
 
 ## Functions
-
-### `from` {#from}
-
-<small>`strings/strings.zirr:12`</small>
-
-```zirric
-extern fn from(v: Like) -> String
-```
-
-Normalizes a Char or String to String.
-
----
-
-### `count` {#count}
-
-<small>`strings/strings.zirr:16`</small>
-
-```zirric
-extern fn count(v: Like) -> Int
-```
-
-Returns the number of characters (runes) in v. Unlike len(), which counts bytes, this counts UTF-8 code points — len("café") is 5, count("café") is 4.
-
----
 
 ### `charAt` {#charat}
 
@@ -89,75 +71,15 @@ Returns the character at index (0-based, counting characters, not bytes).
 
 ---
 
-### `slice` {#slice}
+### `concat` {#concat}
 
-<small>`strings/strings.zirr:23`</small>
-
-```zirric
-extern fn slice(v: Like, start: Int, end: Int) -> String
-```
-
-Returns the characters of v from start (inclusive) to end (exclusive), counting characters, not bytes.
-
----
-
-### `range` {#range}
-
-<small>`strings/strings.zirr:26`</small>
+<small>`strings/strings.zirr:102`</small>
 
 ```zirric
-fn range(v: Like, r: ranges.Like) -> String
+extern fn concat(parts: [Like]) -> String
 ```
 
-Returns the characters of v selected by r.
-
----
-
-### `isEmpty` {#isempty}
-
-<small>`strings/strings.zirr:38`</small>
-
-```zirric
-fn isEmpty(v: Like) -> Bool
-```
-
-Returns whether v has no characters.
-
----
-
-### `isDigit` {#isdigit}
-
-<small>`strings/strings.zirr:44`</small>
-
-```zirric
-extern fn isDigit(v: Like) -> Bool
-```
-
-Returns whether v is not empty and every character is a decimal digit. Unicode-aware — isDigit('٣') is true, isDigit("") is false.
-
----
-
-### `isLetter` {#isletter}
-
-<small>`strings/strings.zirr:48`</small>
-
-```zirric
-extern fn isLetter(v: Like) -> Bool
-```
-
-Returns whether v is not empty and every character is a letter. Unicode-aware — isLetter('é') is true, isLetter("") is false.
-
----
-
-### `isSpace` {#isspace}
-
-<small>`strings/strings.zirr:52`</small>
-
-```zirric
-extern fn isSpace(v: Like) -> Bool
-```
-
-Returns whether v is not empty and every character is whitespace. Unicode-aware — a non-breaking space counts, isSpace("") is false.
+Concatenates every part into a single String, in order.
 
 ---
 
@@ -170,6 +92,43 @@ extern fn contains(v: Like, needle: Like) -> Bool
 ```
 
 Returns whether needle occurs anywhere in v.
+
+---
+
+### `count` {#count}
+
+<small>`strings/strings.zirr:16`</small>
+
+```zirric
+extern fn count(v: Like) -> Int
+```
+
+Returns the number of characters (runes) in v. Unlike len(), which counts
+bytes, this counts UTF-8 code points — len("café") is 5, count("café") is 4.
+
+---
+
+### `firstIndexOf` {#firstindexof}
+
+<small>`strings/strings.zirr:67`</small>
+
+```zirric
+fn firstIndexOf(v: Like, needle: Like) -> Option
+```
+
+Returns the character index of needle's first occurrence in v, or None if absent.
+
+---
+
+### `from` {#from}
+
+<small>`strings/strings.zirr:12`</small>
+
+```zirric
+extern fn from(v: Like) -> String
+```
+
+Normalizes a Char or String to String.
 
 ---
 
@@ -197,15 +156,66 @@ Returns whether v ends with suffix.
 
 ---
 
-### `firstIndexOf` {#firstindexof}
+### `isDigit` {#isdigit}
 
-<small>`strings/strings.zirr:67`</small>
+<small>`strings/strings.zirr:44`</small>
 
 ```zirric
-fn firstIndexOf(v: Like, needle: Like) -> Option
+extern fn isDigit(v: Like) -> Bool
 ```
 
-Returns the character index of needle's first occurrence in v, or None if absent.
+Returns whether v is not empty and every character is a decimal digit.
+Unicode-aware — isDigit('٣') is true, isDigit("") is false.
+
+---
+
+### `isEmpty` {#isempty}
+
+<small>`strings/strings.zirr:38`</small>
+
+```zirric
+fn isEmpty(v: Like) -> Bool
+```
+
+Returns whether v has no characters.
+
+---
+
+### `isLetter` {#isletter}
+
+<small>`strings/strings.zirr:48`</small>
+
+```zirric
+extern fn isLetter(v: Like) -> Bool
+```
+
+Returns whether v is not empty and every character is a letter.
+Unicode-aware — isLetter('é') is true, isLetter("") is false.
+
+---
+
+### `isSpace` {#isspace}
+
+<small>`strings/strings.zirr:52`</small>
+
+```zirric
+extern fn isSpace(v: Like) -> Bool
+```
+
+Returns whether v is not empty and every character is whitespace.
+Unicode-aware — a non-breaking space counts, isSpace("") is false.
+
+---
+
+### `join` {#join}
+
+<small>`strings/strings.zirr:99`</small>
+
+```zirric
+extern fn join(parts: [Like], separator: Like) -> String
+```
+
+Joins parts into a single String, with separator between each.
 
 ---
 
@@ -218,6 +228,44 @@ fn lastIndexOf(v: Like, needle: Like) -> Option
 ```
 
 Returns the character index of needle's last occurrence in v, or None if absent.
+
+---
+
+### `quote` {#quote}
+
+<small>`strings/strings.zirr:127`</small>
+
+```zirric
+extern fn quote(v: Like) -> String
+```
+
+Returns v as a double-quoted string literal, escaping the characters that
+need it, so the result reads back as Zirric source. A Char is quoted as a
+String — quote('a') is the same as quote("a").
+
+---
+
+### `range` {#range}
+
+<small>`strings/strings.zirr:26`</small>
+
+```zirric
+fn range(v: Like, r: ranges.Like) -> String
+```
+
+Returns the characters of v selected by r.
+
+---
+
+### `repeat` {#repeat}
+
+<small>`strings/strings.zirr:105`</small>
+
+```zirric
+extern fn repeat(v: Like, n: Int) -> String
+```
+
+Returns v repeated n times.
 
 ---
 
@@ -257,6 +305,19 @@ Replaces only the last occurrence of target in v with replacement.
 
 ---
 
+### `slice` {#slice}
+
+<small>`strings/strings.zirr:23`</small>
+
+```zirric
+extern fn slice(v: Like, start: Int, end: Int) -> String
+```
+
+Returns the characters of v from start (inclusive) to end (exclusive),
+counting characters, not bytes.
+
+---
+
 ### `split` {#split}
 
 <small>`strings/strings.zirr:96`</small>
@@ -269,39 +330,16 @@ Splits v on every occurrence of separator.
 
 ---
 
-### `join` {#join}
+### `toLower` {#tolower}
 
-<small>`strings/strings.zirr:99`</small>
-
-```zirric
-extern fn join(parts: [Like], separator: Like) -> String
-```
-
-Joins parts into a single String, with separator between each.
-
----
-
-### `concat` {#concat}
-
-<small>`strings/strings.zirr:102`</small>
+<small>`strings/strings.zirr:113`</small>
 
 ```zirric
-extern fn concat(parts: [Like]) -> String
+extern fn toLower(v: Like) -> Like
 ```
 
-Concatenates every part into a single String, in order.
-
----
-
-### `repeat` {#repeat}
-
-<small>`strings/strings.zirr:105`</small>
-
-```zirric
-extern fn repeat(v: Like, n: Int) -> String
-```
-
-Returns v repeated n times.
+Returns v with every letter converted to lowercase. Preserves whether v
+was a Char or a String — toLower('A') is 'a', toLower("A") is "a".
 
 ---
 
@@ -313,19 +351,8 @@ Returns v repeated n times.
 extern fn toUpper(v: Like) -> Like
 ```
 
-Returns v with every letter converted to uppercase. Preserves whether v was a Char or a String — toUpper('a') is 'A', toUpper("a") is "A".
-
----
-
-### `toLower` {#tolower}
-
-<small>`strings/strings.zirr:113`</small>
-
-```zirric
-extern fn toLower(v: Like) -> Like
-```
-
-Returns v with every letter converted to lowercase. Preserves whether v was a Char or a String — toLower('A') is 'a', toLower("A") is "a".
+Returns v with every letter converted to uppercase. Preserves whether v
+was a Char or a String — toUpper('a') is 'A', toUpper("a") is "A".
 
 ---
 
@@ -365,18 +392,6 @@ Returns v with a trailing suffix removed, if present.
 
 ---
 
-### `quote` {#quote}
-
-<small>`strings/strings.zirr:127`</small>
-
-```zirric
-extern fn quote(v: Like) -> String
-```
-
-Returns v as a double-quoted string literal, escaping the characters that need it, so the result reads back as Zirric source. A Char is quoted as a String — quote('a') is the same as quote("a").
-
----
-
 ### `unquote` {#unquote}
 
 <small>`strings/strings.zirr:132`</small>
@@ -385,12 +400,6 @@ Returns v as a double-quoted string literal, escaping the characters that need i
 extern fn unquote(v: Like) -> Result
 ```
 
-Reads a quoted literal, returning Ok with the text it denotes and Err when v is not one. Both literal forms are accepted, "\"hi\"" and "'a'", and quote is inverted exactly.
-
----
-
-## See also
-
-- [`bytes`](../bytes/index.md) — the byte-level equivalents.
-- [`fmt`](../fmt/index.md) — turning arbitrary values into strings.
-- [`ranges`](../ranges/index.md) — the range values [`range`](#range) accepts.
+Reads a quoted literal, returning Ok with the text it denotes and Err when v
+is not one. Both literal forms are accepted, "\"hi\"" and "'a'", and quote
+is inverted exactly.

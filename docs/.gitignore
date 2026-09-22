@@ -1,1 +1,4 @@
 site/
+
+# Written by `zirric task run manifest`, which documents this project rather than the language.
+manifest.md

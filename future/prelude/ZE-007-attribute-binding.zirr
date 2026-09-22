@@ -11,16 +11,18 @@ const ZE_007 = "https://zirric.knabel.dev/proposals/ZE-007-attribute-binding"
 
 // A bound function of an attribute receives the targeted value as first argument.
 //
-//   attr Error {
-//     @Bound()
-//     debug(err) -> String
-//   }
+// ```zirric
+// attr Error {
+// 	@Bound()
+// 	debug(err) -> String
+// }
 //
-//   @Error(fn(err) { return err.message })
-//   data MessageError {
-//     message: String
-//   }
+// @Error(fn(err) { return err.message })
+// data MessageError {
+// 	message: String
+// }
 //
-//   MessageError("msg")[@Error].debug() // err-receiver passed automatically
+// MessageError("msg")[@Error].debug() // err-receiver passed automatically
+// ```
 @Proposal(ZE_007)
 attr Bound {}

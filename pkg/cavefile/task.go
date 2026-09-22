@@ -21,6 +21,10 @@ type Task struct {
 	Help    string
 	Kind    TaskKind
 
+	// Docs is the comment written above the declaration that declares the task.
+	// @tasks.Help is what the CLI prints; this is what the declaration says about itself.
+	Docs string
+
 	// DeclName is the data declaration's own name, independent of Name (which @tasks.Name may override).
 	DeclName string
 
@@ -37,6 +41,9 @@ type TaskParam struct {
 	Short   string
 	Help    string
 	Type    TaskParamType
+
+	// Docs is the comment written above the field that declares the flag or argument.
+	Docs string
 
 	// DeclName is the field's own declared name, independent of Name (which @tasks.Name may override).
 	DeclName string
@@ -75,7 +82,7 @@ func extractTasks(cavefileMod *ast.ContextModule, tasksMod *ast.ContextModule, a
 }
 
 func dataToTask(data *ast.DeclData, tasksMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) (Task, bool) {
-	task := Task{Name: strings.ToLower(data.Name.Value), DeclName: data.Name.Value}
+	task := Task{Name: strings.ToLower(data.Name.Value), DeclName: data.Name.Value, Docs: ast.DocsOf(data)}
 	found := false
 	for _, attr := range data.Attributes {
 		switch {
@@ -103,7 +110,7 @@ func dataToTask(data *ast.DeclData, tasksMod *ast.ContextModule, aliasMap map[st
 
 func fieldsToTaskParams(fields []ast.DeclField, tasksMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) (flags []TaskParam, args []TaskParam) {
 	for _, field := range fields {
-		param := TaskParam{Name: field.Name.Value, DeclName: field.Name.Value, Type: taskParamType(field.TypeHint)}
+		param := TaskParam{Name: field.Name.Value, DeclName: field.Name.Value, Type: taskParamType(field.TypeHint), Docs: ast.DocsOf(field)}
 		isFlag := false
 		isArg := false
 		for _, attr := range field.Attributes {

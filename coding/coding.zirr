@@ -40,11 +40,11 @@ fn decode(t: Any, tree: Any) -> Result {
 }
 
 // As `encode`, but consulting the format module's own attributes first, so `@json.Name` overrides `@coding.Name`.
-fn encodeWith(format: Module, value: Any) -> Result {
+fn encodeWith(format: AnyModule, value: Any) -> Result {
 	_encode(Some(format), value)
 }
 
 // As `decode`, but consulting the format module's own attributes first.
-fn decodeWith(format: Module, t: Any, tree: Any) -> Result {
+fn decodeWith(format: AnyModule, t: Any, tree: Any) -> Result {
 	_decode(Some(format), t, tree)
 }

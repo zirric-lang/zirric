@@ -5,24 +5,34 @@ description: Assertions that produce the Result a test returns.
 
 # Module `tests.assert`
 
-> Assertions are values, not control flow.
-
 ```zirric
 import tests.assert
 ```
 
-|            |                                                                                                                 |
-| ---------- | --------------------------------------------------------------------------------------------------------------- |
-| **Module** | `tests.assert`                                                                                                  |
-| **Source** | [`tests/assert/basic.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/tests/assert/basic.zirr) |
+|            |                                                                                                                                                                                                                                              |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Module** | `tests.assert`                                                                                                                                                                                                                               |
+| **Source** | [`tests/assert/basic.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/tests/assert/basic.zirr), [`tests/assert/module-docs.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/tests/assert/module-docs.zirr) |
 
-An assertion here returns a [`Result`](../../prelude/index.md#result) rather than aborting. A test returns one, and that is its outcome — so a failure is an ordinary value you can pass around, and [`all`](#all) combines several into one.
+> Assertions are values, not control flow.
 
-Because they are values, nothing stops after the first failure unless you make it. Return a single assertion for a single check, or gather several with `all` to report every one.
+An assertion here returns a [`prelude.Result`](../../prelude/index.md#result) rather than aborting. A test returns one, and that is its outcome — so a failure is an ordinary value you can pass around, and [`all`](#all) combines several into one.
+
+Because they are values, nothing stops after the first failure unless you make it. Return a single assertion for a single check, or gather several with [`all`](#all) to report every one.
+
+## Dependencies
+
+- [`fmt`](../../fmt/index.md)
+  - [`bytes`](../../bytes/index.md)
+    - [`ranges`](../../ranges/index.md)
+  - [`io`](../../io/index.md)
+- [`results`](../../results/index.md)
+
+---
 
 ## Contents
 
-- **Functions** — [`all`](#all), [`equal`](#equal), [`isTrue`](#istrue), [`isFalse`](#isfalse), [`isOk`](#isok), [`isErr`](#iserr), [`isError`](#iserror), [`fail`](#fail)
+- **Functions** — [`all`](#all), [`equal`](#equal), [`fail`](#fail), [`isErr`](#iserr), [`isError`](#iserror), [`isFalse`](#isfalse), [`isOk`](#isok), [`isTrue`](#istrue)
 
 ---
 
@@ -36,8 +46,6 @@ Because they are values, nothing stops after the first failure unless you make i
 fn all(res: [@AnyResult]) -> Result
 ```
 
-Combines several assertions into one, which is `Ok` only if every one of them is. Every failure is reported, not just the first.
-
 ---
 
 ### `equal` {#equal}
@@ -47,68 +55,6 @@ Combines several assertions into one, which is `Ok` only if every one of them is
 ```zirric
 fn equal(expect, got) -> Result
 ```
-
-Passes when the two values are equal, and otherwise fails with both of them rendered.
-
----
-
-### `isTrue` {#istrue}
-
-<small>`tests/assert/basic.zirr:18`</small>
-
-```zirric
-fn isTrue(val) -> Result
-```
-
-Passes when the value is `true`.
-
----
-
-### `isFalse` {#isfalse}
-
-<small>`tests/assert/basic.zirr:22`</small>
-
-```zirric
-fn isFalse(val) -> Result
-```
-
-Passes when the value is `false`.
-
----
-
-### `isOk` {#isok}
-
-<small>`tests/assert/basic.zirr:26`</small>
-
-```zirric
-fn isOk(val) -> Result
-```
-
-Passes when the value is an `Ok`.
-
----
-
-### `isErr` {#iserr}
-
-<small>`tests/assert/basic.zirr:43`</small>
-
-```zirric
-fn isErr(val) -> Result
-```
-
-Passes when the value is an `Err`.
-
----
-
-### `isError` {#iserror}
-
-<small>`tests/assert/basic.zirr:58`</small>
-
-```zirric
-fn isError(val) -> Result
-```
-
-Passes when the value carries the [`Error`](../../prelude/index.md#error) attribute.
 
 ---
 
@@ -120,11 +66,52 @@ Passes when the value carries the [`Error`](../../prelude/index.md#error) attrib
 fn fail(reason) -> Result
 ```
 
-Always fails, with the given reason. Use it for a branch that should not have been reached.
+---
+
+### `isErr` {#iserr}
+
+<small>`tests/assert/basic.zirr:43`</small>
+
+```zirric
+fn isErr(val) -> Result
+```
 
 ---
 
-## See also
+### `isError` {#iserror}
 
-- [`tests`](../index.md) — the attributes that mark a function as a test.
-- [`results`](../../results/index.md) — combining and transforming what these return.
+<small>`tests/assert/basic.zirr:58`</small>
+
+```zirric
+fn isError(val) -> Result
+```
+
+---
+
+### `isFalse` {#isfalse}
+
+<small>`tests/assert/basic.zirr:22`</small>
+
+```zirric
+fn isFalse(val) -> Result
+```
+
+---
+
+### `isOk` {#isok}
+
+<small>`tests/assert/basic.zirr:26`</small>
+
+```zirric
+fn isOk(val) -> Result
+```
+
+---
+
+### `isTrue` {#istrue}
+
+<small>`tests/assert/basic.zirr:18`</small>
+
+```zirric
+fn isTrue(val) -> Result
+```

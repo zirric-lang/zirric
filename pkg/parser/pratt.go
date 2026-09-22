@@ -400,7 +400,8 @@ func (p *Parser) parsePrattExprCall(fn ast.Expr) ast.Expr {
 
 func (p *Parser) parsePrattExprMember(owner ast.Expr) ast.Expr {
 	dotTok := p.nextToken()
-	identTok, ok := p.expect(token.IDENT)
+	// `type` is accepted for the same reason a field may be declared under it: after a dot there is nothing else the word could introduce, so a field named `type` can be read as well as written.
+	identTok, ok := p.expect(token.IDENT, token.TYPE)
 	if !ok {
 		return nil
 	}

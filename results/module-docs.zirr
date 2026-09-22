@@ -1,0 +1,8 @@
+// Working with values that may have failed.
+//
+// > Helpers for `Result`, and for anything carrying `@AnyResult`.
+//
+// `prelude.Result` is the type; `results` is what you use it with.
+//
+// Every function takes an `@prelude.AnyResult` rather than a `Result`, so a library can define its own Ok/Err union and still pass it here — `from` converts through the attribute. The pairs are deliberate: `map` and `mapErr` transform a value, `flatMap` and `flatMapErr` transform it into something that can fail again, and `catch` and `catchTo` turn a failure back into a success.
+mod code.knabel.dev.zirric_lang.zirric.results

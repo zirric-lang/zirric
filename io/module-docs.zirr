@@ -1,0 +1,10 @@
+// The reader and writer attributes, and the streams that carry bytes.
+//
+// > Bytes in, bytes out — described as attributes, not classes.
+//
+// `io` describes streams rather than implementing them. `Reader` and `Writer` are attributes, so any type becomes a stream by carrying one — a file, a socket, or a buffer you wrote yourself. Functions that move bytes take `@io.Reader` or `@io.Writer` and never care which.
+//
+// `ReadStream` and `WriteStream` are simply the ones the host hands out; `os.os.stdout` returns a `WriteStream`, and an open `fs.File` carries both attributes at once.
+//
+// The `Has…` attributes are the other half: a program declares that its environment provides a writer, and a test passes one that collects into memory instead of reaching for standard output.
+mod code.knabel.dev.zirric_lang.zirric.io

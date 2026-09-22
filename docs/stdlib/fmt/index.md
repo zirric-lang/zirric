@@ -5,40 +5,36 @@ description: Turning values into strings and writing them to a stream.
 
 # Module `fmt`
 
-> The bridge between a value and its text.
-
 ```zirric
 import fmt
 ```
 
-|            |                                                                                               |
-| ---------- | --------------------------------------------------------------------------------------------- |
-| **Module** | `fmt`                                                                                         |
-| **Source** | [`fmt/print.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/fmt/print.zirr) |
+|            |                                                                                                                                                                                                                                                                                                           |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Module** | `fmt`                                                                                                                                                                                                                                                                                                     |
+| **Source** | [`fmt/io-fmt.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/fmt/io-fmt.zirr), [`fmt/module-docs.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/fmt/module-docs.zirr), [`fmt/print.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/fmt/print.zirr) |
 
-`fmt` is how a value becomes text. [`sprint`](#sprint) converts anything at all — it prefers the value's [`Printable`](../prelude/index.md#printable) attribute and falls back to a plain rendering for built-in types — while [`fprint`](#fprint) and [`fprintln`](#fprintln) send that text to a writer.
+> The bridge between a value and its text.
+
+`fmt` is how a value becomes text. [`sprint`](#sprint) converts anything at all — it prefers the value's [`prelude.Printable`](../prelude/index.md#printable) attribute and falls back to a plain rendering for built-in types — while [`fprint`](#fprint) and [`fprintln`](#fprintln) send that text to a writer.
 
 There is no `print` here on purpose: writing needs somewhere to write to. Pass a writer from [`os`](../os/index.md), or use [`scripts`](../scripts/index.md), which pairs these functions with standard output for you.
 
+## Dependencies
+
+- [`bytes`](../bytes/index.md)
+  - [`ranges`](../ranges/index.md)
+- [`io`](../io/index.md)
+
+---
+
 ## Contents
 
-- **Functions** — [`sprint`](#sprint), [`fprint`](#fprint), [`fprintln`](#fprintln)
+- **Functions** — [`fprint`](#fprint), [`fprintln`](#fprintln), [`sprint`](#sprint)
 
 ---
 
 ## Functions
-
-### `sprint` {#sprint}
-
-<small>`fmt/print.zirr:9`</small>
-
-```zirric
-extern fn sprint(value: Any) -> String
-```
-
-Converts any value to its string representation. Prefers the value's @Printable attribute when it has one, otherwise falls back to a trivial conversion for builtin types (Int, Float, Char, Byte as hex, ...).
-
----
 
 ### `fprint` {#fprint}
 
@@ -64,8 +60,14 @@ Writes the string representation of a printable value followed by a newline to a
 
 ---
 
-## See also
+### `sprint` {#sprint}
 
-- [`scripts`](../scripts/index.md) — `println` and friends, for scripts that just want stdout.
-- [`io`](../io/index.md) — the `Writer` attribute these functions write through.
-- [`strings`](../strings/index.md) — operations on the text once you have it.
+<small>`fmt/print.zirr:9`</small>
+
+```zirric
+extern fn sprint(value: Any) -> String
+```
+
+Converts any value to its string representation. Prefers the value's
+@Printable attribute when it has one, otherwise falls back to a trivial
+conversion for builtin types (Int, Float, Char, Byte as hex, ...).

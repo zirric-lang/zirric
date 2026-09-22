@@ -1,0 +1,10 @@
+// Inspecting modules, types, fields and values at runtime.
+//
+// > What a program can learn about itself while running.
+//
+// `reflect` reads the structure a program declared: the members of a module, the fields of a `data` type, the members of a `union`, and the type of a value.
+//
+// It is what makes attribute-driven libraries possible. `coding` decides how to encode a type by walking its `Field` values and reading the attributes written on each one — and attributes are read off a `Field` exactly as off any other value, so `coding.Name(field).text` and `field is @coding.Ignore` both work.
+//
+// `TypeRef` describes a type _hint_ as it was written, which is not the same as what a value turns out to be. Hints are not enforced at runtime, so a `TypeRef` tells you what a declaration promises.
+mod code.knabel.dev.zirric_lang.zirric.reflect

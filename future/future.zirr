@@ -1,10 +1,3 @@
-// The future module contains Zirric proposal implementations.
-// Use them with care as they might break.
-// Once a proposal is accepted, the implementation will be moved to the appropriate module.
-// All declarations of rejected proposals will be removed without any notice.
-//
-// Not all proposals are implemented nor complete.
-// Some require addtional syntax not yet available in Zirric.
 mod code.knabel.dev.zirric_lang.zirric.future
 
 attr Proposal {

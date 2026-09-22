@@ -68,6 +68,11 @@ func (decl DeclField) ProvidedDocs() *Docs {
 	return decl.Docs
 }
 
+// SetDocs implements Documentable.
+func (decl *DeclField) SetDocs(docs *Docs) {
+	decl.Docs = docs
+}
+
 // EnumerateChildNodes implements Decl.
 func (f DeclField) EnumerateChildNodes(action func(child Node)) {
 	if len(f.Attributes) > 0 {

@@ -1,0 +1,8 @@
+// Working with values that may be absent.
+//
+// > Helpers for `Option`, and for anything shaped like one.
+//
+// `prelude.Option` is the type; `options` is what you use it with.
+//
+// Every function accepts a bare value as well as a `Some` or `None`, because `from` normalizes first: an existing option passes through, and anything else is lifted into `Some`. That means these helpers can be applied to a value whose origin you do not control, without checking whether it was already optional.
+mod code.knabel.dev.zirric_lang.zirric.options

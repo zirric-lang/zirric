@@ -84,7 +84,7 @@ line_comment = ("//" | "#"), {any_char}, newline;
 
 Comments run to the end of the line. Both markers are equivalent to the compiler; `//` is conventional, and `#` additionally allows a `#!` shebang on the first line of an executable script.
 
-A comment immediately preceding a declaration documents it, by convention written with `//`.
+A comment immediately preceding a declaration documents it, by convention written with `//`. The compiler keeps that comment and hands it back through [`reflect.docs`](/stdlib/reflect/index#docs) — see [Declarations § Documentation comments](/specification/declarations#documentation-comments).
 
 There are no block comments.
 

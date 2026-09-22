@@ -5,65 +5,67 @@ description: Discovering tests by reflection and running them.
 
 # Module `tests.runner`
 
-> Finding the tests, then executing them.
-
 ```zirric
 import tests.runner
-// or: import runner = tests.runner
 ```
 
-|            |                                                                                                                   |
-| ---------- | ----------------------------------------------------------------------------------------------------------------- |
-| **Module** | `tests.runner`                                                                                                    |
-| **Source** | [`tests/runner/runner.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/tests/runner/runner.zirr) |
+|            |                                                                                                                                                                                                                                                |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Module** | `tests.runner`                                                                                                                                                                                                                                 |
+| **Source** | [`tests/runner/module-docs.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/tests/runner/module-docs.zirr), [`tests/runner/runner.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/tests/runner/runner.zirr) |
 
-The runner finds tests by [reflection](../../reflect/index.md): it walks the modules of the running package, reads the functions carrying [`@tests.Test`](../index.md#test), and builds a [`TestCase`](../index.md#testcase) for each.
+> Finding the tests, then executing them.
 
-[`discover`](#discover) and its siblings only find; [`exec`](#exec) runs what it is given and emits a [`TestEvent`](../index.md#testevent) as each test starts and finishes, which is what a reporter subscribes to. [`runT`](#runt) is the two put together with TAP output, and is what a `Cavefile` test task normally calls.
+The runner finds tests through [`reflect`](../../reflect/index.md): it walks the modules of the running package, reads the functions carrying [`@tests.Test`](../../tests/index.md#test), and builds a [`tests.TestCase`](../../tests/index.md#testcase) for each.
 
-[`@tests.Only`](../index.md#only) is applied here rather than at discovery: if any discovered test carries it, the run narrows to those.
+[`discover`](#discover) and its siblings only find; [`exec`](#exec) runs what it is given and emits a [`tests.TestEvent`](../../tests/index.md#testevent) as each test starts and finishes, which is what a reporter subscribes to. [`runT`](#runt) is the two put together with TAP output, and is what a `Cavefile` test task normally calls.
 
-## Contents
+[`@tests.Only`](../../tests/index.md#only) is applied here rather than at discovery: if any discovered test carries it, the run narrows to those.
 
-- **Constants** — [`ignoreEvents`](#ignoreevents)
-- **Functions** — [`exec`](#exec), [`discover`](#discover), [`discoverAll`](#discoverall), [`discoverWhere`](#discoverwhere), [`runWhere`](#runwhere), [`runT`](#runt)
+## Dependencies
+
+- [`os`](../../os/index.md)
+  - [`clock`](../../clock/index.md)
+    - [`time`](../../time/index.md)
+  - [`fs`](../../fs/index.md)
+    - [`bytes`](../../bytes/index.md)
+      - [`ranges`](../../ranges/index.md)
+    - [`io`](../../io/index.md)
+    - [`paths`](../../paths/index.md)
+    - [`results`](../../results/index.md)
+  - [`io`](../../io/index.md)
+- [`reflect`](../../reflect/index.md)
+- [`reflect.packages`](../../reflect/packages/index.md)
+  - [`arrays`](../../arrays/index.md)
+    - [`ranges`](../../ranges/index.md)
+- [`strings`](../../strings/index.md)
+  - [`ranges`](../../ranges/index.md)
+- [`tests`](../../tests/index.md)
+- [`tests.tap`](../../tests/tap/index.md)
+  - [`fmt`](../../fmt/index.md)
+    - [`bytes`](../../bytes/index.md)
+      - [`ranges`](../../ranges/index.md)
+    - [`io`](../../io/index.md)
+  - [`io`](../../io/index.md)
+  - [`tests`](../../tests/index.md)
 
 ---
 
-## Constants
+## Contents
 
-### `ignoreEvents` {#ignoreevents}
-
-<small>`tests/runner/runner.zirr:11`</small>
-
-```zirric
-const ignoreEvents = fn(event: tests.TestEvent) {}
-```
-
-An event callback that discards everything, for runs without output.
+- **Functions** — [`discover`](#discover), [`discoverAll`](#discoverall), [`discoverWhere`](#discoverwhere), [`exec`](#exec), [`runT`](#runt), [`runWhere`](#runwhere)
+- **Constants** — [`ignoreEvents`](#ignoreevents)
 
 ---
 
 ## Functions
-
-### `exec` {#exec}
-
-<small>`tests/runner/runner.zirr:15`</small>
-
-```zirric
-fn exec(discovered: [tests.TestCase], onEvent: fn(tests.TestEvent)) -> tests.TestReport
-```
-
-Runs test cases, emitting events, and returns a report. This is the primitive the entry points below build on: it executes exactly the cases it is given and neither discovers nor reports anything itself.
-
----
 
 ### `discover` {#discover}
 
 <small>`tests/runner/runner.zirr:85`</small>
 
 ```zirric
-fn discover(module: Module) -> [tests.TestCase]
+fn discover(module: AnyModule) -> [tests.TestCase]
 ```
 
 Every @tests.Test function declared in module, as runnable cases.
@@ -75,7 +77,7 @@ Every @tests.Test function declared in module, as runnable cases.
 <small>`tests/runner/runner.zirr:99`</small>
 
 ```zirric
-fn discoverAll(modules: [Module]) -> [tests.TestCase]
+fn discoverAll(modules: [AnyModule]) -> [tests.TestCase]
 ```
 
 Every @tests.Test function declared in any of modules, as runnable cases.
@@ -90,19 +92,21 @@ Every @tests.Test function declared in any of modules, as runnable cases.
 fn discoverWhere(predicate: fn(String) -> Bool) -> [tests.TestCase]
 ```
 
-Every @tests.Test function declared in a project module whose name satisfies predicate. Only the modules the predicate accepts are loaded, so the rest never run.
+Every @tests.Test function declared in a project module whose name satisfies predicate.
+Only the modules the predicate accepts are loaded, so the rest never run.
 
 ---
 
-### `runWhere` {#runwhere}
+### `exec` {#exec}
 
-<small>`tests/runner/runner.zirr:138`</small>
+<small>`tests/runner/runner.zirr:15`</small>
 
 ```zirric
-fn runWhere(predicate: fn(String) -> Bool) -> tests.TestReport
+fn exec(discovered: [tests.TestCase], onEvent: fn(tests.TestEvent)) -> tests.TestReport
 ```
 
-Runs every test in the project modules whose name satisfies predicate, reporting TAP to stdout. Exits with a non-zero status when any test failed, so a task or CI step fails with the suite.
+Runs test cases, emitting events, and returns a report.
+This is the primitive the entry points below build on: it executes exactly the cases it is given and neither discovers nor reports anything itself.
 
 ---
 
@@ -114,12 +118,32 @@ Runs every test in the project modules whose name satisfies predicate, reporting
 fn runT() -> tests.TestReport
 ```
 
-Runs every test in the project modules whose name ends with "_t", the convention this repository follows. Both a `foo/_t` submodule and a sibling module named `foo_t` match.
+Runs every test in the project modules whose name ends with "_t", the convention this repository follows.
+Both a `foo/_t` submodule and a sibling module named `foo_t` match.
 
 ---
 
-## See also
+### `runWhere` {#runwhere}
 
-- [`tests`](../index.md) — the attributes and types being discovered.
-- [`tests.tap`](../tap/index.md) — the reporter `runT` uses.
-- [`reflect.packages`](../../reflect/packages/index.md) — the module discovery underneath.
+<small>`tests/runner/runner.zirr:138`</small>
+
+```zirric
+fn runWhere(predicate: fn(String) -> Bool) -> tests.TestReport
+```
+
+Runs every test in the project modules whose name satisfies predicate, reporting TAP to stdout.
+Exits with a non-zero status when any test failed, so a task or CI step fails with the suite.
+
+---
+
+## Constants
+
+### `ignoreEvents` {#ignoreevents}
+
+<small>`tests/runner/runner.zirr:11`</small>
+
+```zirric
+const ignoreEvents
+```
+
+An event callback that discards everything, for runs without output.

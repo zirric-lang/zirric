@@ -7,12 +7,6 @@ attr Default {
 	value
 }
 
-// Provides access to the documentation string of a declaration.
-attr Doc {
-	// The documentation string without leading comment markers and whitespace.
-	description: String
-}
-
 // Marks a declaration as deprecated with a reason.
 // IDEs and other tools can use this information to warn users about deprecated declarations.
 attr Deprecated {

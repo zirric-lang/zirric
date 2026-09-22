@@ -5,62 +5,49 @@ description: Reading and writing YAML text, and per-field YAML overrides.
 
 # Module `yaml`
 
-> YAML over the same value tree as JSON.
-
 ```zirric
 import yaml
 ```
 
-|            |                                                                                                                                                                                                          |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Module** | `yaml`                                                                                                                                                                                                   |
-| **Source** | [`yaml/yaml.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/yaml/yaml.zirr), [`yaml/attributes.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/yaml/attributes.zirr) |
+|            |                                                                                                                                                                                                                                                                                                                       |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Module** | `yaml`                                                                                                                                                                                                                                                                                                                |
+| **Source** | [`yaml/attributes.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/yaml/attributes.zirr), [`yaml/module-docs.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/yaml/module-docs.zirr), [`yaml/yaml.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/yaml/yaml.zirr) |
 
-`yaml` reads and writes the same native tree [`json`](../json/index.md) does — [`Dict`](../prelude/index.md#dict), [`Array`](../prelude/index.md#array), `String`, `Int`, `Float`, `Bool` and `void` — so the two formats are interchangeable as far as your own types are concerned.
+> YAML over the same value tree as JSON.
+
+`yaml` reads and writes the same native tree [`json`](../json/index.md) does — [`prelude.Dict`](../prelude/index.md#dict), [`prelude.Array`](../prelude/index.md#array), `String`, `Int`, `Float`, `Bool` and `void` — so the two formats are interchangeable as far as your own types are concerned.
 
 [`parseAll`](#parseall) is the one addition: a YAML file may hold several documents separated by `---`, and it returns all of them.
 
-Pass this module to [`coding`](../coding/index.md) to encode and decode your own `data` types through it; the attributes below override `@coding`'s for YAML only.
+Pass this module to [`coding`](../coding/index.md) to encode and decode your own `data` types through it; the attributes below override [`@coding`](../coding/index.md)'s for YAML only.
 
 ## Contents
 
-- **Attributes** — [`Name`](#name), [`Ignore`](#ignore), [`Default`](#default), [`Decode`](#decode), [`Encode`](#encode)
-- **Functions** — [`parse`](#parse), [`parseAll`](#parseall), [`format`](#format), [`formatIndented`](#formatindented)
+- **Attributes** — [`Decode`](#decode), [`Default`](#default), [`Encode`](#encode), [`Ignore`](#ignore), [`Name`](#name)
+- **Functions** — [`format`](#format), [`formatIndented`](#formatindented), [`parse`](#parse), [`parseAll`](#parseall)
 
 ---
 
 ## Attributes
 
-### `Name` {#name}
+### `Decode` {#decode}
 
-<small>`yaml/attributes.zirr:5`</small>
+<small>`yaml/attributes.zirr:20`</small>
 
 ```zirric
-attr Name {
-	// The key to use.
-	text
+attr Decode {
+	parse
 }
 ```
 
-The YAML key a field is read and written under, overriding `@coding.Name` for YAML only. `coding` finds these by name, so declaring them here is all it takes for them to win.
+Decodes a field from its raw YAML tree, overriding [`@coding.Decode`](../coding/index.md#decode-attr).
 
-#### Members
+#### Fields
 
-| Member | Description     |
-| ------ | --------------- |
-| `text` | The key to use. |
-
----
-
-### `Ignore` {#ignore}
-
-<small>`yaml/attributes.zirr:11`</small>
-
-```zirric
-attr Ignore {}
-```
-
-Marks a field as one that does not travel as YAML, overriding `@coding.Ignore`.
+| Field   | Description               |
+| ------- | ------------------------- |
+| `parse` | `fn(raw: Any) -> Result`. |
 
 ---
 
@@ -70,39 +57,17 @@ Marks a field as one that does not travel as YAML, overriding `@coding.Ignore`.
 
 ```zirric
 attr Default {
-	// The value to use.
 	value
 }
 ```
 
-The value a field takes when its YAML key is absent, overriding `@coding.Default`.
+The value a field takes when its YAML key is absent, overriding [`@coding.Default`](../coding/index.md#default).
 
-#### Members
+#### Fields
 
-| Member  | Description       |
+| Field   | Description       |
 | ------- | ----------------- |
 | `value` | The value to use. |
-
----
-
-### `Decode` {#decode}
-
-<small>`yaml/attributes.zirr:20`</small>
-
-```zirric
-attr Decode {
-	// `fn(raw: Any) -> Result`.
-	parse
-}
-```
-
-Decodes a field from its raw YAML tree, overriding `@coding.Decode`.
-
-#### Members
-
-| Member  | Description               |
-| ------- | ------------------------- |
-| `parse` | `fn(raw: Any) -> Result`. |
 
 ---
 
@@ -112,46 +77,54 @@ Decodes a field from its raw YAML tree, overriding `@coding.Decode`.
 
 ```zirric
 attr Encode {
-	// `fn(value: Any) -> Result`.
 	format
 }
 ```
 
-Encodes a field to a YAML tree, overriding `@coding.Encode`.
+Encodes a field to a YAML tree, overriding [`@coding.Encode`](../coding/index.md#encode-attr).
 
-#### Members
+#### Fields
 
-| Member   | Description                 |
+| Field    | Description                 |
 | -------- | --------------------------- |
 | `format` | `fn(value: Any) -> Result`. |
 
 ---
 
+### `Ignore` {#ignore}
+
+<small>`yaml/attributes.zirr:11`</small>
+
+```zirric
+attr Ignore
+```
+
+Marks a field as one that does not travel as YAML, overriding [`@coding.Ignore`](../coding/index.md#ignore).
+
+---
+
+### `Name` {#name}
+
+<small>`yaml/attributes.zirr:5`</small>
+
+```zirric
+attr Name {
+	text
+}
+```
+
+The YAML key a field is read and written under, overriding [`@coding.Name`](../coding/index.md#name) for YAML only.
+[`coding`](../coding/index.md) finds these by name, so declaring them here is all it takes for them to win.
+
+#### Fields
+
+| Field  | Description     |
+| ------ | --------------- |
+| `text` | The key to use. |
+
+---
+
 ## Functions
-
-### `parse` {#parse}
-
-<small>`yaml/yaml.zirr:5`</small>
-
-```zirric
-extern fn parse(text: String) -> Result
-```
-
-Reads one YAML document into the native tree: a mapping is a Dict, a sequence an Array, and null is void. A stream holding several documents is an `Err`, since that is not one value; use `parseAll` for those.
-
----
-
-### `parseAll` {#parseall}
-
-<small>`yaml/yaml.zirr:8`</small>
-
-```zirric
-extern fn parseAll(text: String) -> Result
-```
-
-Reads every document in a stream, in order.
-
----
 
 ### `format` {#format}
 
@@ -173,11 +146,29 @@ Renders a native tree as YAML text, indented by two spaces.
 extern fn formatIndented(value: Any, indent: Int) -> Result
 ```
 
-As `format`, indented by a given number of spaces.
+As [`format`](#format), indented by a given number of spaces.
 
 ---
 
-## See also
+### `parse` {#parse}
 
-- [`coding`](../coding/index.md) — encoding and decoding your own types.
-- [`json`](../json/index.md) — the same shape for JSON.
+<small>`yaml/yaml.zirr:5`</small>
+
+```zirric
+extern fn parse(text: String) -> Result
+```
+
+Reads one YAML document into the native tree: a mapping is a Dict, a sequence an Array, and null is void.
+A stream holding several documents is an `Err`, since that is not one value; use [`parseAll`](#parseall) for those.
+
+---
+
+### `parseAll` {#parseall}
+
+<small>`yaml/yaml.zirr:8`</small>
+
+```zirric
+extern fn parseAll(text: String) -> Result
+```
+
+Reads every document in a stream, in order.

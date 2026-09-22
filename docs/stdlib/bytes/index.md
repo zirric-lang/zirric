@@ -5,25 +5,31 @@ description: Building, slicing and searching Binary values.
 
 # Module `bytes`
 
-> Raw byte sequences and the conversions into them.
-
 ```zirric
 import bytes
 ```
 
-|            |                                                                                                   |
-| ---------- | ------------------------------------------------------------------------------------------------- |
-| **Module** | `bytes`                                                                                           |
-| **Source** | [`bytes/bytes.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/bytes/bytes.zirr) |
+|            |                                                                                                                                                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Module** | `bytes`                                                                                                                                                                                                          |
+| **Source** | [`bytes/bytes.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/bytes/bytes.zirr), [`bytes/module-docs.zirr`](https://code.knabel.dev/zirric-lang/zirric/src/branch/main/bytes/module-docs.zirr) |
 
-`bytes` works on [`Binary`](../prelude/index.md#binary), the type that carries raw bytes. Most functions accept [`Like`](#like), so a single [`Byte`](../prelude/index.md#byte) can be passed anywhere a `Binary` is expected.
+> Raw byte sequences and the conversions into them.
+
+`bytes` works on [`prelude.Binary`](../prelude/index.md#binary), the type that carries raw bytes. Most functions accept [`Like`](#like), so a single [`prelude.Byte`](../prelude/index.md#byte) can be passed anywhere a `Binary` is expected.
 
 Text crosses the boundary explicitly: [`fromString`](#fromstring) and [`toString`](#tostring) convert through UTF-8, and [`toHex`](#tohex) and [`fromHex`](#fromhex) through hexadecimal. Indexing a `Binary` yields a `Byte` and iterating one yields bytes, never characters — for characters, convert to `String` and use [`strings`](../strings/index.md).
+
+## Dependencies
+
+- [`ranges`](../ranges/index.md)
+
+---
 
 ## Contents
 
 - **Unions** — [`Like`](#like)
-- **Functions** — [`from`](#from), [`fromString`](#fromstring), [`fromChar`](#fromchar), [`toString`](#tostring), [`toHex`](#tohex), [`fromHex`](#fromhex), [`slice`](#slice), [`range`](#range), [`firstIndexOf`](#firstindexof), [`lastIndexOf`](#lastindexof), [`contains`](#contains), [`hasPrefix`](#hasprefix), [`hasSuffix`](#hassuffix), [`concat`](#concat), [`repeat`](#repeat)
+- **Functions** — [`concat`](#concat), [`contains`](#contains), [`firstIndexOf`](#firstindexof), [`from`](#from), [`fromChar`](#fromchar), [`fromHex`](#fromhex), [`fromString`](#fromstring), [`hasPrefix`](#hasprefix), [`hasSuffix`](#hassuffix), [`lastIndexOf`](#lastindexof), [`range`](#range), [`repeat`](#repeat), [`slice`](#slice), [`toHex`](#tohex), [`toString`](#tostring)
 
 ---
 
@@ -44,108 +50,36 @@ A single byte or a sequence of bytes.
 
 #### Cases
 
-| Case     | Interpretation      |
-| -------- | ------------------- |
-| `Byte`   | One byte.           |
-| `Binary` | Any number of them. |
+| Case     | Interpretation                                                  |
+| -------- | --------------------------------------------------------------- |
+| `Byte`   | A single byte.                                                  |
+| `Binary` | A sequence of raw bytes. Can be indexed and iterates over Byte. |
 
 ---
 
 ## Functions
 
-### `from` {#from}
+### `concat` {#concat}
 
-<small>`bytes/bytes.zirr:12`</small>
+<small>`bytes/bytes.zirr:93`</small>
 
 ```zirric
-extern fn from(v: Like) -> Binary
+fn concat(parts: [Like]) -> Binary
 ```
 
-Normalizes a Byte or Binary to Binary.
+Concatenates every part into a single Binary, in order.
 
 ---
 
-### `fromString` {#fromstring}
+### `contains` {#contains}
 
-<small>`bytes/bytes.zirr:15`</small>
-
-```zirric
-extern fn fromString(str: String) -> Binary
-```
-
-Returns the UTF-8 byte representation of str.
-
----
-
-### `fromChar` {#fromchar}
-
-<small>`bytes/bytes.zirr:18`</small>
+<small>`bytes/bytes.zirr:68`</small>
 
 ```zirric
-extern fn fromChar(c: Char) -> Binary
+fn contains(v: Like, needle: Like) -> Bool
 ```
 
-Returns the UTF-8 byte representation of c. A Char can be 1-4 bytes.
-
----
-
-### `toString` {#tostring}
-
-<small>`bytes/bytes.zirr:21`</small>
-
-```zirric
-extern fn toString(v: Like) -> String
-```
-
-Reinterprets v's bytes as a String.
-
----
-
-### `toHex` {#tohex}
-
-<small>`bytes/bytes.zirr:24`</small>
-
-```zirric
-extern fn toHex(v: Like) -> String
-```
-
-Returns v's hex representation, two lowercase digits per byte.
-
----
-
-### `fromHex` {#fromhex}
-
-<small>`bytes/bytes.zirr:27`</small>
-
-```zirric
-extern fn fromHex(str: String) -> Binary
-```
-
-Decodes a hex string (two digits per byte, either case) into Binary.
-
----
-
-### `slice` {#slice}
-
-<small>`bytes/bytes.zirr:30`</small>
-
-```zirric
-extern fn slice(v: Like, start: Int, end: Int) -> Binary
-```
-
-Returns the bytes of v from start (inclusive) to end (exclusive).
-
----
-
-### `range` {#range}
-
-<small>`bytes/bytes.zirr:33`</small>
-
-```zirric
-fn range(v: Like, r: ranges.Like) -> Binary
-```
-
-Returns the bytes of v selected by r.
+Returns whether needle occurs anywhere in v.
 
 ---
 
@@ -161,27 +95,51 @@ Returns the index of needle's first occurrence in v, or None if absent.
 
 ---
 
-### `lastIndexOf` {#lastindexof}
+### `from` {#from}
 
-<small>`bytes/bytes.zirr:58`</small>
+<small>`bytes/bytes.zirr:12`</small>
 
 ```zirric
-fn lastIndexOf(v: Like, needle: Like) -> Option
+extern fn from(v: Like) -> Binary
 ```
 
-Returns the index of needle's last occurrence in v, or None if absent.
+Normalizes a Byte or Binary to Binary.
 
 ---
 
-### `contains` {#contains}
+### `fromChar` {#fromchar}
 
-<small>`bytes/bytes.zirr:68`</small>
+<small>`bytes/bytes.zirr:18`</small>
 
 ```zirric
-fn contains(v: Like, needle: Like) -> Bool
+extern fn fromChar(c: Char) -> Binary
 ```
 
-Returns whether needle occurs anywhere in v.
+Returns the UTF-8 byte representation of c. A Char can be 1-4 bytes.
+
+---
+
+### `fromHex` {#fromhex}
+
+<small>`bytes/bytes.zirr:27`</small>
+
+```zirric
+extern fn fromHex(str: String) -> Binary
+```
+
+Decodes a hex string (two digits per byte, either case) into Binary.
+
+---
+
+### `fromString` {#fromstring}
+
+<small>`bytes/bytes.zirr:15`</small>
+
+```zirric
+extern fn fromString(str: String) -> Binary
+```
+
+Returns the UTF-8 byte representation of str.
 
 ---
 
@@ -209,15 +167,27 @@ Returns whether v ends with suffix.
 
 ---
 
-### `concat` {#concat}
+### `lastIndexOf` {#lastindexof}
 
-<small>`bytes/bytes.zirr:93`</small>
+<small>`bytes/bytes.zirr:58`</small>
 
 ```zirric
-fn concat(parts: [Like]) -> Binary
+fn lastIndexOf(v: Like, needle: Like) -> Option
 ```
 
-Concatenates every part into a single Binary, in order.
+Returns the index of needle's last occurrence in v, or None if absent.
+
+---
+
+### `range` {#range}
+
+<small>`bytes/bytes.zirr:33`</small>
+
+```zirric
+fn range(v: Like, r: ranges.Like) -> Binary
+```
+
+Returns the bytes of v selected by r.
 
 ---
 
@@ -233,7 +203,36 @@ Returns v repeated n times.
 
 ---
 
-## See also
+### `slice` {#slice}
 
-- [`strings`](../strings/index.md) — the same operations over text.
-- [`io`](../io/index.md) — readers and writers, which move `Binary` around.
+<small>`bytes/bytes.zirr:30`</small>
+
+```zirric
+extern fn slice(v: Like, start: Int, end: Int) -> Binary
+```
+
+Returns the bytes of v from start (inclusive) to end (exclusive).
+
+---
+
+### `toHex` {#tohex}
+
+<small>`bytes/bytes.zirr:24`</small>
+
+```zirric
+extern fn toHex(v: Like) -> String
+```
+
+Returns v's hex representation, two lowercase digits per byte.
+
+---
+
+### `toString` {#tostring}
+
+<small>`bytes/bytes.zirr:21`</small>
+
+```zirric
+extern fn toString(v: Like) -> String
+```
+
+Reinterprets v's bytes as a String.

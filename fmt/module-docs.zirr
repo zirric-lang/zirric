@@ -1,0 +1,8 @@
+// Turning values into strings and writing them to a stream.
+//
+// > The bridge between a value and its text.
+//
+// `fmt` is how a value becomes text. `sprint` converts anything at all — it prefers the value's `prelude.Printable` attribute and falls back to a plain rendering for built-in types — while `fprint` and `fprintln` send that text to a writer.
+//
+// There is no `print` here on purpose: writing needs somewhere to write to. Pass a writer from `os`, or use `scripts`, which pairs these functions with standard output for you.
+mod code.knabel.dev.zirric_lang.zirric.fmt

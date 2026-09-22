@@ -1,0 +1,8 @@
+// Mapping, filtering and reducing the built-in Dict type.
+//
+// > Operations over `Dict`, by key, by value, or by pair.
+//
+// `dicts` operates on the built-in `prelude.Dict` type and returns new dictionaries rather than changing the one passed in.
+//
+// Iterating a `Dict` yields `prelude.Pair` values, which is why `mapPairs` exists alongside `mapKeys` and `mapValues`: it is the one that can change both halves of an entry at once.
+mod code.knabel.dev.zirric_lang.zirric.dicts

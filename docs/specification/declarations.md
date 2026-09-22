@@ -148,8 +148,8 @@ attr Deprecated {
 	reason: String
 }
 
-attr Doc {
-	description: String
+attr Table {
+	name: String
 }
 ```
 
@@ -202,10 +202,10 @@ Only declared `attr` types can be applied as attributes. Applying a non-attribut
 Multiple attributes may be stacked on a single declaration or field:
 
 ```zirric
-@Doc("The user's full name")
 @Deprecated("use displayName")
+@json.HasKey("legacy_user")
 data LegacyUser {
-	@Doc("First and last name")
+	@Default("")
 	name: String
 }
 ```
@@ -278,10 +278,42 @@ mod here = code.knabel.dev.zirric_lang.ui.flow.node
 
 **Where it is checked.** These rules are checked for the modules of the package the `Cavefile` describes. A project with no `Cavefile` — a loose script, or the REPL — has no base to qualify against, and its files may declare any path. A dependency is checked when it is built as its own package.
 
+Attributes can be written on `mod`, and they are carried by the module value: `@Attr()` above `mod` is read back off the module exactly as off any other value. A module is declared once per file, so what it carries is every file's attributes together.
+
 | Context         | Valid | Visibility |
 | --------------- | ----- | ---------- |
 | First in file   | Yes   | File       |
 | Other positions | No    | —          |
+
+## Documentation comments
+
+The run of comments written directly above a declaration is its documentation. The compiler records it and `reflect.docs` reads it back, so a comment is part of what a program can learn about itself rather than something the lexer throws away.
+
+```zirric
+// The canonical name of a module, e.g. "code.knabel.dev.zirric_lang.zirric.arrays".
+extern fn moduleName(m: Module) -> String
+```
+
+**What counts.** Consecutive `//` or `#` comment lines immediately above the declaration. Each line loses its marker and the one space conventionally written after it; the lines are kept as written otherwise. A `#!` shebang is not documentation.
+
+**Where attributes are written.** A comment above the first attribute of a declaration documents it, and so does one written between the attributes and the keyword. Above the attributes is the conventional place; when both are written, the two are joined with a newline in the order they were written.
+
+```zirric
+// The first line.
+@Marker()
+// The second line.
+data X {}
+```
+
+`X` is documented as `"The first line.\nThe second line."`.
+
+**What ends the block.** A blank line between the comments and the declaration, and a comment that follows code on the same line. Both document the line they sit on rather than what comes next.
+
+**Where it can be written.** On any top-level declaration, on the fields of a `data`, `attr` or `extern type`, and on a `mod` declaration. A binding local to a function or a block carries none: nothing outside can reach it to ask.
+
+**Modules.** A module is declared once per file, so its documentation is the comment above each of its `mod` declarations, joined in file name order and separated by a blank line.
+
+**Reading it back.** [`reflect.docs`](/stdlib/reflect/index#docs) answers for a module, a type, an attribute and a function. A `const` exports its value rather than its declaration, and a value carries nothing of the declaration it came from, so a constant's documentation is reached through [`reflect.declarations`](/stdlib/reflect/index#declarations) instead.
 
 ## `import`
 

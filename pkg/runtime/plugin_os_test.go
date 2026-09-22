@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
+	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 )
 
 // mockBindContext provides symbol resolution for tests.
@@ -23,6 +24,10 @@ func (m *mockBindContext) ResolveModuleSymbol(moduleName string, symbolName stri
 
 func (m *mockBindContext) MainPackageModules() (string, map[string]int) {
 	return "", nil
+}
+
+func (m *mockBindContext) MainPackageCavefile() (cavefile.Cavefile, bool) {
+	return cavefile.Cavefile{}, false
 }
 
 func TestOSPluginModule(t *testing.T) {

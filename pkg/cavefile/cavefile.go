@@ -11,6 +11,9 @@ const StandardLibrarySource = "https://code.knabel.dev/zirric-lang/zirric"
 type Cavefile struct {
 	Package
 
+	// Docs is the comment written above the Cavefile's own `mod` declaration.
+	Docs string
+
 	// The dependencies of the Cavefile
 	Dependencies []Dependency
 
@@ -23,6 +26,9 @@ type Cavefile struct {
 
 type Dependency struct {
 	Package
+
+	// Docs is the comment written above the field that declares the dependency.
+	Docs string
 
 	// Module is the specific module this dependency binds to; set only for @cave.Stdlib.
 	Module registry.LogicalURI

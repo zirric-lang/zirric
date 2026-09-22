@@ -1,0 +1,8 @@
+// Printing and file helpers wired to the host, for short programs.
+//
+// > The convenient, already-wired versions.
+//
+// `scripts` is `fmt` and `fs` with the host already filled in. `println` is `fmt.fprintln(value, os.stdout())`; `readFile` is `fs.readFile(os.fs(), path)`.
+//
+// That convenience is also its limit. A function calling `scripts.println` writes to real standard output and a function calling `scripts.readFile` touches the real disk, neither of which a test can redirect. For anything beyond a script, take a `io.Writer` or a `fs.FileSystem` as a parameter instead.
+mod code.knabel.dev.zirric_lang.zirric.scripts

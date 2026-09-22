@@ -1,0 +1,8 @@
+// The original reflection sketch, superseded by the reflect module.
+//
+// > An early sketch, kept for reference.
+//
+// This is the reflection surface as it was first sketched, with empty bodies standing in for behaviour that did not exist yet.
+//
+// It has since been implemented for real: use `reflect`, which covers everything here and more. The sketch is kept because proposals and their early implementations are a record of their time.
+mod code.knabel.dev.zirric_lang.zirric.future.reflect

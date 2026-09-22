@@ -1,18 +1,33 @@
 mod code.knabel.dev.zirric_lang.zirric.reflect
 
 // The canonical name of a module, e.g. "code.knabel.dev.zirric_lang.zirric.arrays".
-extern fn moduleName(m: Module) -> String
+extern fn moduleName(m: AnyModule) -> String
 
 // Every public member of m, ordered by name.
-extern fn members(m: Module) -> [Any]
+extern fn members(m: AnyModule) -> [Any]
 
 // The name of every public member of m, in the same order as members.
-extern fn memberNames(m: Module) -> [String]
+extern fn memberNames(m: AnyModule) -> [String]
 
-extern fn _member(m: Module, name: String) -> Any
+// What m declared, gathered in one value: its name, its documentation, what it imports, the files it was read from, and every public declaration.
+// A Declaration answers what an exported value cannot: which keyword declared it, where it was written, and the attributes written on it even where the value itself can carry none.
+extern fn moduleOf(m: AnyModule) -> Module
+
+// The declaration of m called name, or None if m has no public member of that name.
+// m is the metadata rather than the module itself, so that looking several up costs one pass over the declarations.
+fn declaration(m: Module, name: String) -> Option {
+	for declared <- m.declarations {
+		if declared.name == name {
+			return Some(declared)
+		}
+	}
+	return None()
+}
+
+extern fn _member(m: AnyModule, name: String) -> Any
 
 // The public member of m called name, or None if it has none.
-fn member(m: Module, name: String) -> Option {
+fn member(m: AnyModule, name: String) -> Option {
 	const value = _member(m, name)
 	switch value {
 	case is Void:
@@ -23,8 +38,25 @@ fn member(m: Module, name: String) -> Option {
 }
 
 // Whether m has a public member called name.
-fn hasMember(m: Module, name: String) -> Bool {
+fn hasMember(m: AnyModule, name: String) -> Bool {
 	member(m, name) is Some
+}
+
+extern fn _docs(value: Any) -> String
+
+// The comment written above the declaration a value came from, or the empty String when none was written.
+// A module, a type, an attribute and a function each answer for their own declaration; a Module, a Declaration or a Field answers for the declaration it describes, which is the only way to reach the documentation of a const, whose value is an ordinary value with no declaration behind it.
+fn docs(value: Any) -> String {
+	switch value {
+	case is Module:
+		value.docs
+	case is Declaration:
+		value.docs
+	case is Field:
+		value.docs
+	case _:
+		_docs(value)
+	}
 }
 
 // The declared name of a type, or the empty String for anything that is not a type.
@@ -36,7 +68,7 @@ extern fn isDataType(t: Any) -> Bool
 // Whether t is a union type, and so has members to enumerate.
 extern fn isUnionType(t: Any) -> Bool
 
-// Whether t is an attribute type, and so can be called on a value to read that attribute.
+// Whether t is an attribute type, and so can be called on a value to read that attribute, as well as having fields to enumerate.
 extern fn isAttributeType(t: Any) -> Bool
 
 // Whether a value is of a type, decided exactly as the `is` operator decides it.
@@ -49,7 +81,7 @@ extern fn construct(t: Any, values: [Any]) -> Result
 // The field values of a data value, in declaration order and so aligned with `fieldsOf`, or an empty array for anything else.
 extern fn fieldValues(value: Any) -> [Any]
 
-// The fields of a data type, in declaration order, or an empty array for anything else.
+// The fields of a data or attribute type, in declaration order, or an empty array for anything else.
 extern fn fieldsOf(t: Any) -> [Field]
 
 // The member types of a union type, in declaration order, or an empty array for anything else.

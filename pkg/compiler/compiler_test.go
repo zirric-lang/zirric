@@ -951,7 +951,7 @@ func TestModuleDecl(t *testing.T) {
 			},
 			expectedConstants: []any{
 				0,
-				"module.test",
+				moduleInfoNamed("module.test"),
 			},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.Const, 0),
@@ -980,7 +980,7 @@ func TestModuleDecl(t *testing.T) {
 					},
 				},
 				0,
-				"module.test",
+				moduleInfoNamed("module.test"),
 			},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.Const, 0),
@@ -2124,12 +2124,12 @@ func moduleValueExports(t *testing.T, ins code.Instructions, constants []runtime
 				exportNames = append(exportNames, string(name))
 			}
 			sort.Strings(exportNames)
-			moduleNameVal := constants[operands[0]]
-			moduleName, ok := moduleNameVal.(runtime.String)
+			infoVal := constants[operands[0]]
+			info, ok := infoVal.(*runtime.ModuleInfo)
 			if !ok {
-				t.Fatalf("module name must be String, got %T", moduleNameVal)
+				t.Fatalf("module info must be a ModuleInfo, got %T", infoVal)
 			}
-			return string(moduleName), exportNames
+			return info.Name, exportNames
 		default:
 			t.Fatalf("unexpected opcode in module build: %s", def.Name)
 		}
@@ -2173,6 +2173,9 @@ func concatInstructions(s []code.Instructions) code.Instructions {
 	return out
 }
 
+// moduleInfoNamed expects the ModuleInfo constant a module build refers to, identified by the module's name.
+type moduleInfoNamed string
+
 func testConstants(
 	t *testing.T,
 	expected []any,
@@ -2195,6 +2198,11 @@ func testConstants(
 
 	for i, cons := range expected {
 		switch want := cons.(type) {
+		case moduleInfoNamed:
+			got, ok := actual[i].(*runtime.ModuleInfo)
+			if !ok || string(want) != got.Name {
+				return fmt.Errorf("wrong constant at %d.\nwant=module %s\ngot=%q", i, string(want), actual[i].Inspect())
+			}
 		case bool:
 			got, ok := actual[i].(runtime.Bool)
 			if !ok || want != bool(got) {

@@ -111,15 +111,15 @@ Extern types are built-in types provided by the runtime. They cannot be construc
 Attribute types are declared with `attr` and follow the same field syntax as `data`. However, they differ in a critical way: attribute instances can only be created through the `@Attr(args)` application syntax on declarations or fields. They cannot be called as constructor functions at runtime.
 
 ```zirric
-attr Doc {
-	description: String
+attr Table {
+	name: String
 }
 
-@Doc("A person record")
+@Table("people")
 data Person { name }
 ```
 
-**Role in the type system.** Attribute types participate in type checking through `is @Attr` expressions and `switch case is @Attr` patterns. When you write `value is @Doc`, the runtime checks whether the value's _type declaration_ carries the `@Doc` attribute — not whether the value itself is a `Doc` instance.
+**Role in the type system.** Attribute types participate in type checking through `is @Attr` expressions and `switch case is @Attr` patterns. When you write `value is @Table`, the runtime checks whether the value's _type declaration_ carries the `@Table` attribute — not whether the value itself is a `Table` instance.
 
 For how to declare and apply attributes, see [Declarations § attr](/specification/declarations#attr) and [Declarations § Attributes on Declarations](/specification/declarations#attributes-on-declarations).
 
@@ -271,4 +271,4 @@ union Number {
 
 **`Any`** — the universal type. Every value is an `Any`. Useful as a type hint when no constraint is needed.
 
-The prelude also defines common attributes (`@Doc`, `@Deprecated`, `@Default`, `@Numeric`) and protocol attributes (`@Countable`, `@Iterable`). See [Standard Library § Prelude](/stdlib/prelude) for the full list.
+The prelude also defines common attributes (`@Deprecated`, `@Default`, `@Numeric`) and protocol attributes (`@Countable`, `@Iterable`). See [Standard Library § Prelude](/stdlib/prelude) for the full list.

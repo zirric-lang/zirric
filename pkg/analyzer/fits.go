@@ -174,7 +174,7 @@ func builtinNameForKind(kind typeKind) string {
 	case kindFunc:
 		return "Func"
 	case kindModule:
-		return "Module"
+		return "AnyModule"
 	}
 	return ""
 }

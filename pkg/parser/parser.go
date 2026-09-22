@@ -88,6 +88,9 @@ func (p *Parser) ParseSourceFile() *ast.SourceFile {
 		stmt, childDecls := p.parseStatementInContext(inPosition, nil)
 		inPosition = IN_GLOBAL
 		if stmt != nil {
+			if mod, ok := stmt.(*ast.DeclModule); ok {
+				p.srcFile.Module = mod
+			}
 			p.srcFile.Add(stmt)
 			for _, d := range childDecls {
 				p.srcFile.Add(d)
@@ -219,21 +222,45 @@ func (p *Parser) parseUnionDecl(pos StatementPosition, annos ast.AttributeChain)
 //	<optional:attributes> <union_decl>
 func (p *Parser) parseUnionDeclMember(pos StatementPosition) (*ast.DeclUnionMember, []ast.StatementDeclaration) {
 	if p.curToken.Type == token.IDENT {
+		docs := ast.MakeDocs(ast.LeadingDocComments(p.curToken))
 		ref := p.parseStaticIdentifierReference()
-		return ast.MakeDeclUnionMember(ref.TokenLiteral(), ref), nil
+		member := ast.MakeDeclUnionMember(ref.TokenLiteral(), ref)
+		applyDocs(member, docs)
+		return member, nil
 	}
+	docs := ast.MakeDocs(ast.LeadingDocComments(p.curToken))
 	attributes := p.parseAttributeChain()
+	afterAttributes := docsAfterAttributes(p.curToken, attributes)
 	switch p.curToken.Type {
 	case token.DATA:
 		dataDecl := p.parseDataDecl(pos, attributes)
-		return ast.MakeDeclUnionMember(dataDecl.Token, ast.StaticReference{dataDecl.DeclName()}), []ast.StatementDeclaration{dataDecl}
+		applyDocs(dataDecl, afterAttributes)
+		applyDocs(dataDecl, docs)
+		member := ast.MakeDeclUnionMember(dataDecl.Token, ast.StaticReference{dataDecl.DeclName()})
+		applyDocs(member, afterAttributes)
+		applyDocs(member, docs)
+		return member, []ast.StatementDeclaration{dataDecl}
 	case token.UNION:
 		unionDecl, childDecls := p.parseUnionDecl(pos, attributes)
-		return ast.MakeDeclUnionMember(unionDecl.Token, ast.StaticReference{unionDecl.DeclName()}), append(childDecls, unionDecl)
+		applyDocs(unionDecl, afterAttributes)
+		applyDocs(unionDecl, docs)
+		member := ast.MakeDeclUnionMember(unionDecl.Token, ast.StaticReference{unionDecl.DeclName()})
+		applyDocs(member, afterAttributes)
+		applyDocs(member, docs)
+		return member, append(childDecls, unionDecl)
 	default:
 		p.errUnexpectedToken(token.DATA, token.UNION)
 		return nil, nil
 	}
+}
+
+// docsAfterAttributes reads the comment written between a declaration's attributes and its keyword.
+// With no attributes written there is nothing between them, and the current token still carries the comment already read from above it, which must not be counted a second time.
+func docsAfterAttributes(tok token.Token, attributes ast.AttributeChain) *ast.Docs {
+	if len(attributes) == 0 {
+		return nil
+	}
+	return ast.MakeDocs(ast.LeadingDocComments(tok))
 }
 
 func (p *Parser) parseStaticIdentifierReference() ast.StaticReference {
@@ -305,7 +332,9 @@ func (p *Parser) parseDataDecl(_ StatementPosition, annos ast.AttributeChain) *a
 //	@Attribute() field: Type
 //	@Attribute() method()
 func (p *Parser) parseDataDeclField() *ast.DeclField {
+	docs := ast.MakeDocs(ast.LeadingDocComments(p.curToken))
 	attributes := p.parseAttributeChain()
+	afterAttributes := docsAfterAttributes(p.curToken, attributes)
 	identTok, _ := p.expect(token.IDENT, token.TYPE)
 	name := ast.MakeIdentifier(identTok)
 
@@ -318,7 +347,10 @@ func (p *Parser) parseDataDeclField() *ast.DeclField {
 			p.expect(token.RIGHT_ARROW)
 			returnType = p.parseTypeHintExpr()
 		}
-		return ast.MakeDeclField(name, params, attributes, returnType)
+		field := ast.MakeDeclField(name, params, attributes, returnType)
+		applyDocs(field, afterAttributes)
+		applyDocs(field, docs)
+		return field
 	}
 
 	var typeHint ast.TypeExpr
@@ -331,7 +363,10 @@ func (p *Parser) parseDataDeclField() *ast.DeclField {
 		p.expect(token.COMMA)
 	}
 
-	return ast.MakeDeclField(name, nil, attributes, typeHint)
+	field := ast.MakeDeclField(name, nil, attributes, typeHint)
+	applyDocs(field, afterAttributes)
+	applyDocs(field, docs)
+	return field
 }
 
 // parseAttrDecl parses the declaration of an attribute type.

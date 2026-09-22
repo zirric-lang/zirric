@@ -1,10 +1,77 @@
 mod code.knabel.dev.zirric_lang.zirric.reflect
 
+// What a module is, as metadata: everything reflection can say about it without reaching into the values it exports.
+// `AnyModule` is the module itself, which members are looked up on; this is what it declared.
+data Module {
+	// The canonical name, e.g. "reflect.packages".
+	name: String
+	// The comment written above each of its `mod` declarations, joined in file name order.
+	docs: String
+	// The name of every module it imports, ordered by name.
+	imports: [String]
+	// The path of every file it was read from, ordered by name.
+	sources: [String]
+	// Every public declaration, ordered by name and so aligned with `members` and `memberNames`.
+	declarations: [Declaration]
+}
+
+// Where a declaration was written.
+data Source {
+	// The file it was read from, named as the module reached it, e.g. "reflect/types.zirr".
+	path: String
+	// The line the declaration starts on, counted from 1, or 0 when it was not read from a file at all.
+	line: Int
+}
+
+// A public declaration of a module, carrying the attributes written on it.
+// Attributes are read off a Declaration exactly as off any other value, so `tests.Comment(declaration).text` and `declaration is @Deprecated` both work, even for a declaration whose value can carry none, such as a const holding an Int.
+data Declaration {
+	// The name it was declared under, which is the name `member` takes.
+	name: String
+	// The comment written above it, or the empty String when none was.
+	docs: String
+	// The form it was written in.
+	kind: DeclarationKind
+	// The declaration as it was written, without its body, e.g. "extern fn typeName(t: Any) -> String".
+	signature: String
+	// Where it was written.
+	source: Source
+}
+
+// The form a declaration was written in, which is the keyword that introduced it.
+union DeclarationKind {
+	// A data declaration.
+	data DataDecl
+
+	// A union declaration.
+	data UnionDecl
+
+	// An attribute declaration.
+	data AttrDecl
+
+	// An extern type declaration.
+	data TypeDecl
+
+	// A function, declared with fn or extern fn.
+	data FuncDecl
+
+	// A constant, declared with const or extern const.
+	data ConstDecl
+
+	// A variable, declared with var.
+	data VarDecl
+
+	// A declaration in a form reflection does not describe.
+	data UnknownDecl
+}
+
 // A field of a data type, carrying the attributes written on it.
 // Attributes are read off a Field exactly as off any other value, so `coding.Name(field).text` and `field is @coding.Ignore` both work.
 data Field {
 	// The name the field was declared under.
 	name: String
+	// The comment written above the field, or the empty String when none was.
+	docs: String
 	// The type hint written on the field, which is an UnknownType when none was.
 	declaredType: TypeRef
 }

@@ -1,3 +1,4 @@
+// Cavefile for code.knabel.dev.zirric_lang.zirric
 mod code.knabel.dev.zirric_lang.zirric
 
 import cave
@@ -10,3 +11,37 @@ import tasks
 @cave.Description("Early development, experimental programming language with an implicit but strong and dynamic type system.")
 @cave.Documentation("https://zirric.knabel.dev")
 data Zirric {}
+
+@tasks.Name("docs")
+@tasks.Help("Write one Markdown page per standard library module")
+@tasks.Exec("_tasks/docs/docs.zirr")
+data GenerateDocs {
+	@tasks.Flag()
+	@tasks.Name("out")
+	@tasks.Help("Directory the pages are written to, relative to the working directory")
+	@Default("docs/stdlib")
+	out: String
+
+	@tasks.Flag()
+	@tasks.Name("source")
+	@tasks.Help("Repository root the Source links point into, branch included")
+	@Default("https://code.knabel.dev/zirric-lang/zirric/src/branch/main")
+	source: String
+}
+
+@tasks.Name("manifest")
+@tasks.Help("Write the package's dependencies and tasks as a Markdown page")
+@tasks.Exec("_tasks/manifest/manifest.zirr")
+data GenerateManifest {
+	@tasks.Flag()
+	@tasks.Name("out")
+	@tasks.Help("File the page is written to, relative to the working directory")
+	@Default("docs/manifest.md")
+	out: String
+
+	@tasks.Flag()
+	@tasks.Name("source")
+	@tasks.Help("Repository root the links point into, branch included")
+	@Default("https://code.knabel.dev/zirric-lang/zirric/src/branch/main")
+	source: String
+}

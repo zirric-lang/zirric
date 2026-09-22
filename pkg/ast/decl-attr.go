@@ -40,7 +40,7 @@ func (e DeclAttr) DeclOverview() string {
 	}
 	fieldLines := make([]string, 0)
 	for _, field := range e.Fields {
-		fieldLines = append(fieldLines, "    "+field.DeclOverview())
+		fieldLines = append(fieldLines, "\t"+field.DeclOverview())
 	}
 	return fmt.Sprintf("attr %s {\n%s\n}", e.Name, strings.Join(fieldLines, "\n"))
 }
@@ -67,6 +67,11 @@ func (e *DeclAttr) AddField(field DeclField) {
 
 func (decl DeclAttr) ProvidedDocs() *Docs {
 	return decl.Docs
+}
+
+// SetDocs implements Documentable.
+func (decl *DeclAttr) SetDocs(docs *Docs) {
+	decl.Docs = docs
 }
 
 // EnumerateChildNodes implements Decl.
