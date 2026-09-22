@@ -15,8 +15,8 @@ import tests.runner
 import pkgs = reflect.packages
 ```
 
-::: callout warning In progress
-[ZE-020 Standard Library](/proposals/ZE-020-standard-library) is still open. These modules are usable today, but names and signatures can still change.
+::: callout warning Experimental
+[ZE-020 Standard Library](/proposals/ZE-020-standard-library) landed in [v0.1.0](/changelog/v0.1.0). These modules are usable today, but names and signatures can still change.
 :::
 
 ## Core

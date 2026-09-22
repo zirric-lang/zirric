@@ -9,7 +9,7 @@ import (
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/diag"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 )
 

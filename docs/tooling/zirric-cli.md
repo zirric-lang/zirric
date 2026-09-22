@@ -190,4 +190,4 @@ The same diagnostics reach your editor through the [Language Server](/tooling/la
 
 ## Not there yet
 
-`zirric lint` and `zirric docs` are not built in. Declare a task by that name and it becomes the command. The longer plan is in [ZE-011 Zirric CLI](/proposals/ZE-011-zirric-cli).
+`zirric lint` and `zirric docs` are not built in. Declare a task by that name and it becomes the command. [ZE-011 Zirric CLI](/proposals/ZE-011-zirric-cli) describes the CLI this one grew out of.

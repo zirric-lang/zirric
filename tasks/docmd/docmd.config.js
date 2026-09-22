@@ -434,9 +434,9 @@ module.exports = {
       collapsible: true,
       children: [
         {
-          title: "v0.1.0-next",
+          title: "v0.1.0",
           path: "/changelog/v0.1.0",
-          icon: "git-branch"
+          icon: "tag"
         },
         {
           title: "v0.0.1",
@@ -502,7 +502,7 @@ module.exports = {
           path: "/proposals/ZE-010-iterable"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-11 Zirric CLI",
           path: "/proposals/ZE-011-zirric-cli"
         },

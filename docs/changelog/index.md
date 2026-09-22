@@ -7,7 +7,7 @@ description: Release history of the Zirric programming language.
 
 ::: changelog
 
-== v0.1.0-next
+== v0.1.0
 
 Explicit mutability, unified `fn` syntax, type hints with `is`/`switch` matching, qualified module names, new declaration keywords, iterable and more. [Full release notes →](/changelog/v0.1.0)
 
