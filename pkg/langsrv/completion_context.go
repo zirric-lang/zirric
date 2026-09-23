@@ -18,6 +18,7 @@ type completionScope struct {
 	isFirstStmt   bool            // no statements precede the cursor (for 'mod')
 	usedAttrs     map[string]bool // attr names already present in the current @-chain
 	dirName       string          // base name of the current file's directory (for mod completion)
+	moduleName    string          // the module name this file's location implies, fully qualified (for mod completion)
 }
 
 // detectCompletionScope analyzes the text and AST to determine cursor context.

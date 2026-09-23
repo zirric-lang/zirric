@@ -94,3 +94,38 @@ func labelsOf(items []protocol.CompletionItem) []string {
 	}
 	return out
 }
+
+// A module of this package can be imported by its fully qualified name, which is what a file has to write when the short one is ambiguous — and the only way to name the package's own root module.
+func TestImportModuleNameCompletionOffersQualifiedNames(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "Cavefile", "mod code.knabel.dev.zirric_lang.scripts\n\nimport cave\n\n@cave.Package()\ndata Package {}\n")
+	writeFile(t, base, "fs-scripts.zirr", "mod code.knabel.dev.zirric_lang.scripts\nconst x = 1\n")
+	writeFile(t, base, "_t/scripts_t.zirr", "mod code.knabel.dev.zirric_lang.scripts._t\nimport \n")
+
+	ls := zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+
+	items, err := ls.completionItemsForFile("_t/scripts_t.zirr", protocol.Position{Line: 1, Character: 7})
+	if err != nil {
+		t.Fatalf("completionItemsForFile: %v", err)
+	}
+
+	labels := make(map[string]bool, len(items))
+	for _, item := range items {
+		labels[item.Label] = true
+	}
+
+	for _, want := range []string{
+		"code.knabel.dev.zirric_lang.scripts",
+		"code.knabel.dev.zirric_lang.scripts._t",
+		"_t",
+	} {
+		if !labels[want] {
+			t.Errorf("expected import completion to include %q, got %v", want, labelsOf(items))
+		}
+	}
+}

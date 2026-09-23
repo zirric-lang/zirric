@@ -54,6 +54,12 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 		scope              = detectCompletionScope(text, pos, module, sourceURI, cursorOffset)
 	)
 	scope.dirName = sanitizeModuleName(filepath.Base(filepath.Dir(path)))
+	scope.moduleName = ls.impliedModuleName(path)
+
+	// The dotted module path of a `mod` declaration ("mod <cursor>"), which has exactly one right answer.
+	if startPos, ok := modNameContext(text, pos); ok {
+		return ls.modModuleNameCompletions(path, startPos, pos), nil
+	}
 
 	// Import statement's dotted module path ("import <cursor>"), distinct from scope.isImportBlock's member list.
 	if startPos, ok := importNameContext(text, pos); ok {
@@ -527,9 +533,19 @@ func contextKeywordItems(scope completionScope) []protocol.CompletionItem {
 
 	// 'mod' only at first top-level position.
 	if scope.isFirstStmt && scope.isTopLevel {
-		if scope.dirName != "" && scope.dirName != "." {
+		switch {
+		// The name is not a guess: the Cavefile fixes the base and the file's directory names the rest, so it is offered whole rather than as a placeholder to overwrite.
+		case scope.moduleName != "":
+			insert := "mod " + scope.moduleName
+			items = append(items, protocol.CompletionItem{
+				Label:      "mod",
+				Detail:     &scope.moduleName,
+				Kind:       &kind,
+				InsertText: &insert,
+			})
+		case scope.dirName != "" && scope.dirName != ".":
 			addSnippet("mod", "mod ${1:"+scope.dirName+"}")
-		} else {
+		default:
 			addSnippet("mod", "mod ${1:name}")
 		}
 	}

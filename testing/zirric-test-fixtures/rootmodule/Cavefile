@@ -1,0 +1,7 @@
+mod rootmodule
+
+import cave
+
+@cave.Package()
+data Package {
+}

@@ -82,8 +82,8 @@ data Dependencies {
   missing
 }
 `)
-	writeFile(t, base, "main.zirr", "mod main\nimport missing\n")
-	writeFile(t, base, "other/other.zirr", "mod other\nconst x = 1\n")
+	writeFile(t, base, "main.zirr", "mod proj\nimport missing\n")
+	writeFile(t, base, "other/other.zirr", "mod proj.other\nconst x = 1\n")
 
 	ls := zirricLangserver{
 		docs:     newDocumentStore(),
@@ -266,4 +266,33 @@ func TestRefreshDiagnosticsReportsUndefinedNames(t *testing.T) {
 		}
 	}
 	t.Fatalf("expected a diagnostic naming the undefined identifier, got %v", rec.DiagnosticsFor(ls.fileURI("main.zirr")))
+}
+
+// A file naming a module other than the one its directory implies is an error the CLI reports; the editor has to report it too.
+func TestRefreshDiagnosticsReportsWrongModuleName(t *testing.T) {
+	base := memfs.New()
+	writeFile(t, base, "Cavefile", "mod proj\n\nimport cave\n\n@cave.Package()\ndata Package {}\n")
+	writeFile(t, base, "thing/thing.zirr", "mod totally.elsewhere\n\nfn f() {}\n")
+
+	ls := zirricLangserver{
+		docs:     newDocumentStore(),
+		diagURIs: make(map[protocol.DocumentUri]struct{}),
+		openDocs: make(map[string]protocol.DocumentUri),
+	}
+	ls.setFilesystem(base, "/")
+	ls.openDocs["thing/thing.zirr"] = ls.fileURI("thing/thing.zirr")
+
+	rec := &diagnosticRecorder{}
+	ctx := &glsp.Context{Notify: rec.Notify}
+	if err := ls.refreshDiagnosticsSync(ctx); err != nil {
+		t.Fatalf("refresh diagnostics: %v", err)
+	}
+
+	diagnostics := rec.DiagnosticsFor(ls.fileURI("thing/thing.zirr"))
+	for _, d := range diagnostics {
+		if strings.Contains(d.Message, "wrong module name") {
+			return
+		}
+	}
+	t.Errorf("expected a wrong module name diagnostic, got %v", diagnostics)
 }

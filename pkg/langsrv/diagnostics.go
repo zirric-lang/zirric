@@ -188,7 +188,8 @@ func (ls *zirricLangserver) parseModuleFiles(moduleDir string) (*ast.ContextModu
 	}
 
 	var (
-		moduleURI       = registry.JoinModuleURI("", moduleDir)
+		// Under the base the Cavefile fixed, so that the module carries the name its location implies — the same name the CLI gives it, and the one `mod` declarations are held to. Source URIs stay workspace-relative below, since diagnostics are matched against them by path.
+		moduleURI       = registry.JoinModuleURI(ls.declaredPackageBase(), moduleDir)
 		parseErrsByFile = make(map[string][]parser.ParseError)
 		sourceURIToPath = make(map[string]string)
 	)
@@ -274,6 +275,14 @@ func (ls *zirricLangserver) parseModuleFilesForPath(path string) (*ast.ContextMo
 		return ls.parseCavefileModule(path)
 	}
 	return ls.parseModuleFiles(filepath.Dir(path))
+}
+
+// declaredPackageBase is the module path the project's Cavefile declares with its own `mod`, or "" when there is no Cavefile yet — the base every module of this package sits under.
+func (ls *zirricLangserver) declaredPackageBase() registry.LogicalURI {
+	if ls.orch == nil {
+		return ""
+	}
+	return registry.LogicalURI(ls.orch.Cavefile().ModulePath)
 }
 
 // isCavefilePath reports whether path is the project's Cavefile, per ls.orch's own resolved Cavefile path (defaults to "Cavefile" at the workspace root when no Orchestra is set up yet).

@@ -1,0 +1,6 @@
+mod rootmodule
+
+// A package small enough to keep its declarations at its own root, rather than in a module below it.
+fn greet(name: String) -> String {
+	"Hello, " + name
+}

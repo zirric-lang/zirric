@@ -16,6 +16,17 @@ teardown() {
   [[ "$output" == *"PASSED"* ]]
 }
 
+@test "test reaches the declarations of the package's own root module" {
+  # The generated runner used to be registered as the root module itself, which shadowed the real one:
+  # a package keeping its declarations at its root saw them vanish from its own tests.
+  setup_fixture "$BATS_TEST_DIRNAME/zirric-test-fixtures/rootmodule"
+
+  run_zirric test
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"rootmodule._t.testGreet"* ]]
+  [[ "$output" == *"PASSED"* ]]
+}
+
 @test "test exits non-zero when a test fails" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-test-fixtures/failing"
 

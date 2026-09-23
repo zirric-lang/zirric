@@ -8,6 +8,7 @@ import (
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/cavefile"
 	"code.knabel.dev/zirric-lang/zirric/pkg/orchestra"
+	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
@@ -111,11 +112,18 @@ func (ls *zirricLangserver) importModuleNameCandidates() []string {
 		}
 	}
 
+	// Both forms of the project's own modules: the path relative to the project root, and the fully qualified name under the base its Cavefile declares. Each resolves, and the qualified one is what a file outside the package has to write — including the package's own root module, which has no relative form at all.
+	base := ls.declaredPackageBase()
 	for _, dir := range ls.collectModuleDirs(".") {
-		if dir == "" || dir == "." {
+		if dir == "" {
 			continue
 		}
-		add(strings.ReplaceAll(filepath.ToSlash(dir), "/", "."))
+		relative := ""
+		if dir != "." {
+			relative = strings.ReplaceAll(filepath.ToSlash(dir), "/", ".")
+		}
+		add(relative)
+		add(string(registry.JoinModuleURI(base, relative)))
 	}
 
 	sort.Strings(names)

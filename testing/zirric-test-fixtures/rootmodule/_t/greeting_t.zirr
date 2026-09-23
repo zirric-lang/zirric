@@ -1,0 +1,11 @@
+mod rootmodule._t
+
+import tests
+import tests.assert
+
+import rootmodule
+
+@tests.Test()
+fn testGreet() {
+	assert.equal("Hello, Zirric", rootmodule.greet("Zirric"))
+}

@@ -255,21 +255,30 @@ func (o *Orchestra) RunFile(ctx context.Context, filePath string) error {
 	return o.runBytecode(bytecode)
 }
 
-// RunSource compiles and runs body as a program of the project's root module.
+// generatedModuleSegment names the module a generated program is given, one level beneath the project's root.
+// The leading underscore keeps it out of reach of a real directory, which cannot start with one.
+const generatedModuleSegment = "_generated"
+
+// RunSource compiles and runs body as a program of a module beneath the project's root.
 //
-// The module declaration is written here, since it has to name the module the project's Cavefile puts at that path. A project with no Cavefile fixed no base, and none is written.
+// The module declaration is written here, since it has to name a module under the base the project's Cavefile fixed. A project with no Cavefile fixed no base, and none is written.
+//
+// It is deliberately not the root module itself. Registering a synthesized single-source module under the root URI would shadow the real root module, so a package whose own declarations live at its root — the usual shape of a small one-module package — would see them vanish: anything importing that package by name, its own tests included, would resolve to this program instead and find it empty.
 func (o *Orchestra) RunSource(ctx context.Context, name string, body string) error {
+	// A project with no Cavefile fixed no base, so there is no root module to step out of and nothing to name.
+	uri := o.projectBaseURI
 	source := body
-	if registry.IsModulePath(string(o.projectBaseURI)) {
-		source = "mod " + string(o.projectBaseURI) + "\n\n" + body
+	if registry.IsModulePath(string(uri)) {
+		uri = registry.JoinModuleURI(uri, generatedModuleSegment)
+		source = "mod " + string(uri) + "\n\n" + body
 	}
 
 	resolver, err := o.NewResolver()
 	if err != nil {
 		return err
 	}
-	mod := staticmodule.NewModule(o.projectBaseURI, []registry.Source{
-		staticmodule.NewSource(o.projectBaseURI.Join(name), []byte(source)),
+	mod := staticmodule.NewModule(uri, []registry.Source{
+		staticmodule.NewSource(uri.Join(name), []byte(source)),
 	})
 	module, err := o.ParseModule(ctx, mod, resolver)
 	if err != nil {
