@@ -3,17 +3,20 @@ mod code.knabel.dev.zirric_lang.zirric.io
 // Provides a standard out writer.
 // In production, this usually points to `os.stdout`.
 attr HasStandardWriter {
+	// Returns the standard output writer this value provides.
 	writer(self) -> @Writer
 }
 
 // Provides a standard error writer.
 // In production, this usually points to `os.stderr`.
 attr HasErrorWriter {
+	// Returns the standard error writer this value provides.
 	writer(self) -> @Writer
 }
 
 // Provides a standard input writer.
 // In production, this usually points to `os.stdin`.
 attr HasStandardReader {
+	// Returns the standard input reader this value provides.
 	reader(self) -> @Reader
 }

@@ -4,8 +4,7 @@ import future {
 	Proposal
 }
 
-// ZE-002: Error Handling
-// https://zirric.knabel.dev/proposals/ze-002-the-cavefile/
+// The proposal every declaration here links back to: ZE-002, The Cavefile.
 const ZE_002 = "https://zirric.knabel.dev/proposals/ze-002-the-cavefile/"
 
 // Marks a data declaration as a task.
@@ -27,8 +26,8 @@ attr Exec {
 // Indicates that this task is implemented by a function.
 @Proposal(ZE_002)
 attr Call {
-	// The function to run for the task.
-	function: Function
+	// The function to run for the task. It takes one argument: an instance of the declaration the attribute sits on.
+	function: Func
 }
 
 // Renames the task, flag or argument.

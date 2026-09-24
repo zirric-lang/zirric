@@ -22,6 +22,8 @@ The runner finds tests through [`reflect`](../../reflect/index.md): it walks the
 
 [`@tests.Only`](../../tests/index.md#only) is applied here rather than at discovery: if any discovered test carries it, the run narrows to those.
 
+[`runT`](#runt) is what `zirric test` does with no `test` task declared: it runs every project module whose name ends in `_t`. See [`tests`](../index.md) for the convention and an example test module.
+
 ## Dependencies
 
 - [`os`](../../os/index.md)

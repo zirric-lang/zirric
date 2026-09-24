@@ -124,7 +124,7 @@ A value was taken from channel.
 
 ### `TimedOut` {#timedout}
 
-<small>`co/timers.zirr:44`</small>
+<small>`co/timers.zirr:46`</small>
 
 ```zirric
 data TimedOut {
@@ -144,7 +144,7 @@ data TimedOut {
 
 ### `Timer` {#timer}
 
-<small>`co/timers.zirr:12`</small>
+<small>`co/timers.zirr:13`</small>
 
 ```zirric
 data Timer {
@@ -157,9 +157,9 @@ It is a plain value holding a function, so a test hands over one that fires at o
 
 #### Fields
 
-| Field   | Description |
-| ------- | ----------- |
-| `after` |             |
+| Field   | Description                                                                              |
+| ------- | ---------------------------------------------------------------------------------------- |
+| `after` | Returns a channel that receives one value once the duration has passed, and then closes. |
 
 ---
 
@@ -179,9 +179,9 @@ Provides the capability to wait for time to pass, the way clock.HasMonotonicCloc
 
 #### Fields
 
-| Field   | Description |
-| ------- | ----------- |
-| `timer` |             |
+| Field   | Description                            |
+| ------- | -------------------------------------- |
+| `timer` | Returns the timer this value provides. |
 
 ---
 
@@ -227,7 +227,7 @@ Owns routines. Only [`scope`](#scope-fn) creates one, so every [`spawn`](#spawn)
 
 ### `after` {#after}
 
-<small>`co/timers.zirr:17`</small>
+<small>`co/timers.zirr:19`</small>
 
 ```zirric
 fn after(timer: Timer, d: Duration) -> Channel
@@ -301,7 +301,7 @@ The result of whichever body finishes first. The rest are stopped.
 
 ### `immediateTimer` {#immediatetimer}
 
-<small>`co/timers.zirr:28`</small>
+<small>`co/timers.zirr:30`</small>
 
 ```zirric
 fn immediateTimer() -> Timer
@@ -337,7 +337,7 @@ All values from all channels in one, which closes once the last of them has.
 
 ### `neverTimer` {#nevertimer}
 
-<small>`co/timers.zirr:38`</small>
+<small>`co/timers.zirr:40`</small>
 
 ```zirric
 fn neverTimer() -> Timer
@@ -413,7 +413,7 @@ Sending on a closed channel is a bug in the caller, so it stops the program.
 
 ### `sleep` {#sleep}
 
-<small>`co/timers.zirr:22`</small>
+<small>`co/timers.zirr:24`</small>
 
 ```zirric
 fn sleep(timer: Timer, d: Duration)

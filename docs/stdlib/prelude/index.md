@@ -35,7 +35,7 @@ Nothing here has to be imported, and nothing here can be avoided: [`Int`](#int),
 
 ### `Number` {#number}
 
-<small>`prelude/shim.zirr:61`</small>
+<small>`prelude/shim.zirr:65`</small>
 
 ```zirric
 union Number {
@@ -103,7 +103,7 @@ Used for functions that can fail.
 
 ### `ClosedRange` {#closedrange}
 
-<small>`prelude/iterable.zirr:14`</small>
+<small>`prelude/iterable.zirr:18`</small>
 
 ```zirric
 data ClosedRange {
@@ -112,14 +112,15 @@ data ClosedRange {
 }
 ```
 
-Represents a closed range of integers from start (inclusive) to end (inclusive).
+The integers from start to end, both included, written `[start, end]`.
+`ClosedRange(0, 3)` iterates 0, 1, 2, 3. It is the only form that can name any non-empty span exactly, which is why [`ranges`](../ranges/index.md) returns it.
 
 #### Fields
 
-| Field   | Description |
-| ------- | ----------- |
-| `start` |             |
-| `end`   |             |
+| Field   | Description                     |
+| ------- | ------------------------------- |
+| `start` | The first integer in the range. |
+| `end`   | The last integer in the range.  |
 
 ---
 
@@ -177,7 +178,7 @@ The successful result.
 
 ### `OpenRange` {#openrange}
 
-<small>`prelude/iterable.zirr:22`</small>
+<small>`prelude/iterable.zirr:29`</small>
 
 ```zirric
 data OpenRange {
@@ -186,20 +187,21 @@ data OpenRange {
 }
 ```
 
-Represents an open range of integers strictly between start and end (both exclusive).
+The integers strictly between start and end, both excluded, written `(start, end)`.
+`OpenRange(0, 3)` iterates 1, 2.
 
 #### Fields
 
-| Field   | Description |
-| ------- | ----------- |
-| `start` |             |
-| `end`   |             |
+| Field   | Description                        |
+| ------- | ---------------------------------- |
+| `start` | The integer just before the range. |
+| `end`   | The integer just past the range.   |
 
 ---
 
 ### `Pair` {#pair}
 
-<small>`prelude/iterable.zirr:28`</small>
+<small>`prelude/iterable.zirr:37`</small>
 
 ```zirric
 data Pair {
@@ -212,16 +214,16 @@ A key/value pair, as yielded when iterating a Dict.
 
 #### Fields
 
-| Field   | Description |
-| ------- | ----------- |
-| `key`   |             |
-| `value` |             |
+| Field   | Description                        |
+| ------- | ---------------------------------- |
+| `key`   | The key the entry is stored under. |
+| `value` | The value stored under it.         |
 
 ---
 
 ### `Range` {#range}
 
-<small>`prelude/iterable.zirr:6`</small>
+<small>`prelude/iterable.zirr:7`</small>
 
 ```zirric
 data Range {
@@ -230,14 +232,15 @@ data Range {
 }
 ```
 
-Represents an open range of integers from start (inclusive) to end (exclusive).
+The integers from start up to but excluding end, written `[start, end)`.
+`Range(0, 3)` iterates 0, 1, 2. This is the form to reach for by default: it counts `end - start` values, so it pairs with a length.
 
 #### Fields
 
-| Field   | Description |
-| ------- | ----------- |
-| `start` |             |
-| `end`   |             |
+| Field   | Description                       |
+| ------- | --------------------------------- |
+| `start` | The first integer in the range.   |
+| `end`   | The first integer past the range. |
 
 ---
 
@@ -311,7 +314,7 @@ Write it on each member type as well as on the union, the way this module annota
 
 ### `Countable` {#countable}
 
-<small>`prelude/attributes.zirr:29`</small>
+<small>`prelude/attributes.zirr:30`</small>
 
 ```zirric
 attr Countable {
@@ -365,9 +368,9 @@ IDEs and other tools can use this information to warn users about deprecated dec
 
 #### Fields
 
-| Field    | Description |
-| -------- | ----------- |
-| `reason` |             |
+| Field    | Description                                    |
+| -------- | ---------------------------------------------- |
+| `reason` | Why it is deprecated, and what to use instead. |
 
 ---
 
@@ -393,7 +396,7 @@ Marks a type as an error type.
 
 ### `Iterable` {#iterable}
 
-<small>`prelude/attributes.zirr:35`</small>
+<small>`prelude/attributes.zirr:36`</small>
 
 ```zirric
 attr Iterable {
@@ -413,7 +416,7 @@ Marks a type as iterable, allowing `for element <- value`.
 
 ### `Numeric` {#numeric}
 
-<small>`prelude/attributes.zirr:17`</small>
+<small>`prelude/attributes.zirr:18`</small>
 
 ```zirric
 attr Numeric {
@@ -433,7 +436,7 @@ Marks a declaration as numeric, providing a way to convert it to a number.
 
 ### `Printable` {#printable}
 
-<small>`prelude/attributes.zirr:23`</small>
+<small>`prelude/attributes.zirr:24`</small>
 
 ```zirric
 attr Printable {
@@ -491,7 +494,7 @@ All types are of type `AnyType`.
 
 ### `Array` {#array}
 
-<small>`prelude/shim.zirr:23`</small>
+<small>`prelude/shim.zirr:25`</small>
 
 ```zirric
 extern type Array
@@ -527,7 +530,7 @@ All attribute types are of type `AttributeType`.
 
 ### `Binary` {#binary}
 
-<small>`prelude/shim.zirr:80`</small>
+<small>`prelude/shim.zirr:84`</small>
 
 ```zirric
 extern type Binary
@@ -540,20 +543,20 @@ Can be indexed and iterates over Byte.
 
 ### `Bool` {#bool}
 
-<small>`prelude/shim.zirr:30`</small>
+<small>`prelude/shim.zirr:34`</small>
 
 ```zirric
 extern type Bool
 ```
 
-Represents boolean values like `True` and `False`.
-Typically used for conditionals and flags.
+One of the two values [`true`](#true) and [`false`](#false).
+Typically used for conditionals and flags. Comparisons produce one, and `if`, `for` and `&&`/`||` require one.
 
 ---
 
 ### `Byte` {#byte}
 
-<small>`prelude/shim.zirr:83`</small>
+<small>`prelude/shim.zirr:87`</small>
 
 ```zirric
 extern type Byte
@@ -565,7 +568,7 @@ A single byte.
 
 ### `Char` {#char}
 
-<small>`prelude/shim.zirr:33`</small>
+<small>`prelude/shim.zirr:37`</small>
 
 ```zirric
 extern type Char
@@ -577,7 +580,7 @@ A single character from a string.
 
 ### `Dict` {#dict}
 
-<small>`prelude/shim.zirr:40`</small>
+<small>`prelude/shim.zirr:44`</small>
 
 ```zirric
 extern type Dict {
@@ -593,7 +596,7 @@ Iterates over Pair.
 
 ### `Float` {#float}
 
-<small>`prelude/shim.zirr:55`</small>
+<small>`prelude/shim.zirr:59`</small>
 
 ```zirric
 extern type Float
@@ -605,7 +608,7 @@ A floating point number.
 
 ### `Func` {#func}
 
-<small>`prelude/shim.zirr:46`</small>
+<small>`prelude/shim.zirr:50`</small>
 
 ```zirric
 extern type Func {
@@ -620,7 +623,7 @@ A callable function.
 
 ### `Int` {#int}
 
-<small>`prelude/shim.zirr:59`</small>
+<small>`prelude/shim.zirr:63`</small>
 
 ```zirric
 extern type Int
@@ -644,7 +647,7 @@ All module types are of type `ModuleType`.
 
 ### `String` {#string}
 
-<small>`prelude/shim.zirr:72`</small>
+<small>`prelude/shim.zirr:76`</small>
 
 ```zirric
 extern type String {
@@ -660,7 +663,7 @@ Iterates over Char.
 
 ### `Void` {#void-type}
 
-<small>`prelude/shim.zirr:88`</small>
+<small>`prelude/shim.zirr:92`</small>
 
 ```zirric
 extern type Void
@@ -674,27 +677,33 @@ The type of the [`void`](#void-const) value.
 
 ### `append` {#append}
 
-<small>`prelude/shim.zirr:18`</small>
+<small>`prelude/shim.zirr:20`</small>
 
 ```zirric
-extern fn append(Array, Any) -> Array
+extern fn append(collection, value)
 ```
+
+Returns a new collection with value added to the end, leaving the original untouched.
+An [`Array`](#array) takes any value; a [`Binary`](#binary) takes a [`Byte`](#byte) or another [`Binary`](#binary).
 
 ---
 
 ### `len` {#len}
 
-<small>`prelude/countable.zirr:3`</small>
+<small>`prelude/countable.zirr:5`</small>
 
 ```zirric
 fn len(v: @Countable) -> Int
 ```
 
+The number of elements in a countable value, read through its [`Countable`](#countable) attribute.
+Counts a [`String`](#string) in characters, an [`Array`](#array) in elements, a [`Dict`](#dict) in entries and a [`Binary`](#binary) in bytes.
+
 ---
 
 ### `panic` {#panic}
 
-<small>`prelude/shim.zirr:91`</small>
+<small>`prelude/shim.zirr:95`</small>
 
 ```zirric
 extern fn panic(message: String) -> Void
@@ -708,27 +717,31 @@ Terminates execution with the given message.
 
 ### `false` {#false}
 
-<small>`prelude/shim.zirr:26`</small>
+<small>`prelude/shim.zirr:30`</small>
 
 ```zirric
 const false
 ```
 
+The false value of type [`Bool`](#bool).
+
 ---
 
 ### `true` {#true}
 
-<small>`prelude/shim.zirr:25`</small>
+<small>`prelude/shim.zirr:28`</small>
 
 ```zirric
 const true
 ```
 
+The true value of type [`Bool`](#bool).
+
 ---
 
 ### `void` {#void-const}
 
-<small>`prelude/shim.zirr:86`</small>
+<small>`prelude/shim.zirr:90`</small>
 
 ```zirric
 extern const void: Void

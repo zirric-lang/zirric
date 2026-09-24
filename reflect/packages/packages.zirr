@@ -4,7 +4,9 @@ import arrays
 
 // A package and the modules it declares.
 data Package {
+	// The package's base module path, which every module of it is named under.
 	name: String
+	// The canonical name of every module it declares, ordered by name.
 	moduleNames: [String]
 	// The manifest the package declares itself with, or None for a project running without a Cavefile.
 	cavefile: Option

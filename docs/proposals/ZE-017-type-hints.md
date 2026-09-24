@@ -7,6 +7,8 @@ description: Replace attribute-based type hints with first-class type syntax, in
 
 ::: callout tip Implemented
 This proposal has been accepted and implemented. You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
+
+One part of it has since been amended: this proposal describes type hints as documentation that is never verified, and [ZE-022 Static Checks](/proposals/ZE-022-static-checks) made a written hint binding. Hints are still optional. See [Type System § Type Hints](/specification/typesystem#type-hints) for the current rules.
 :::
 
 ## Introduction

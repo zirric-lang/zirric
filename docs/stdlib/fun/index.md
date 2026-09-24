@@ -46,10 +46,10 @@ A pair of values at the same position in zip's two source sequences.
 
 #### Fields
 
-| Field    | Description |
-| -------- | ----------- |
-| `first`  |             |
-| `second` |             |
+| Field    | Description                                     |
+| -------- | ----------------------------------------------- |
+| `first`  | The element from the first sequence.            |
+| `second` | The element at the same position in the second. |
 
 ---
 
@@ -213,7 +213,7 @@ Applies fun to val and returns the result. Useful for starting a pipe()-style ch
 
 ### `zip` {#zip}
 
-<small>`fun/fun.zirr:144`</small>
+<small>`fun/fun.zirr:146`</small>
 
 ```zirric
 fn zip(a: @Iterable, b: @Iterable) -> @Iterable

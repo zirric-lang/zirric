@@ -44,7 +44,7 @@ Everything that can fail returns a [`prelude.Result`](../prelude/index.md#result
 
 ### `Entry` {#entry}
 
-<small>`fs/fs.zirr:36`</small>
+<small>`fs/fs.zirr:51`</small>
 
 ```zirric
 data Entry {
@@ -58,17 +58,17 @@ One entry of a directory listing.
 
 #### Fields
 
-| Field   | Description |
-| ------- | ----------- |
-| `name`  |             |
-| `isDir` |             |
-| `size`  |             |
+| Field   | Description                                                         |
+| ------- | ------------------------------------------------------------------- |
+| `name`  | The entry's own name, without the directory it was listed from.     |
+| `isDir` | Whether it is a directory rather than a file.                       |
+| `size`  | The file's size in bytes, which carries no meaning for a directory. |
 
 ---
 
 ### `File` {#file}
 
-<small>`fs/fs.zirr:29`</small>
+<small>`fs/fs.zirr:41`</small>
 
 ```zirric
 data File {
@@ -82,17 +82,17 @@ An open file. It is both a reader and a writer, and must be closed.
 
 #### Fields
 
-| Field       | Description |
-| ----------- | ----------- |
-| `readFrom`  |             |
-| `writeTo`   |             |
-| `closeWith` |             |
+| Field       | Description                                                                         |
+| ----------- | ----------------------------------------------------------------------------------- |
+| `readFrom`  | Reads up to the given number of bytes. An empty result means the file is exhausted. |
+| `writeTo`   | Writes the buffer and returns the number of bytes written.                          |
+| `closeWith` | Closes the file, releasing what the host holds for it.                              |
 
 ---
 
 ### `FileSystem` {#filesystem}
 
-<small>`fs/fs.zirr:12`</small>
+<small>`fs/fs.zirr:13`</small>
 
 ```zirric
 data FileSystem {
@@ -115,19 +115,19 @@ Each field has a matching module function taking the filesystem first, which is 
 
 #### Fields
 
-| Field       | Description |
-| ----------- | ----------- |
-| `readFile`  |             |
-| `writeFile` |             |
-| `open`      |             |
-| `create`    |             |
-| `exists`    |             |
-| `remove`    |             |
-| `move`      |             |
-| `list`      |             |
-| `mkdirAll`  |             |
-| `cd`        |             |
-| `root`      |             |
+| Field       | Description                                                                                    |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| `readFile`  | Returns the contents of a path.                                                                |
+| `writeFile` | Writes content to a path, replacing it if it exists, and returns the number of bytes written.  |
+| `open`      | Opens a path for reading. The file must be closed.                                             |
+| `create`    | Creates a path for writing, replacing it if it exists. The file must be closed.                |
+| `exists`    | Returns whether a path exists.                                                                 |
+| `remove`    | Removes a path.                                                                                |
+| `move`      | Moves the file at the first path to the second.                                                |
+| `list`      | Returns the entries of the directory at a path, as Entry values.                               |
+| `mkdirAll`  | Creates a path and any missing parent directories.                                             |
+| `cd`        | Returns a filesystem rooted at a path, which is how a confined view of this one is handed out. |
+| `root`      | Returns the path this filesystem is rooted at.                                                 |
 
 ---
 
@@ -147,9 +147,9 @@ Provides a filesystem, so that code can require one instead of reaching for os d
 
 #### Fields
 
-| Field        | Description |
-| ------------ | ----------- |
-| `fileSystem` |             |
+| Field        | Description                                 |
+| ------------ | ------------------------------------------- |
+| `fileSystem` | Returns the filesystem this value provides. |
 
 ---
 
@@ -241,7 +241,7 @@ Returns the entries of the directory at path.
 
 ### `memory` {#memory}
 
-<small>`fs/fs.zirr:51`</small>
+<small>`fs/fs.zirr:69`</small>
 
 ```zirric
 extern fn memory() -> FileSystem

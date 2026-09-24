@@ -4,22 +4,34 @@ import io
 
 // Provides a filesystem, so that code can require one instead of reaching for os directly.
 attr HasFileSystem {
+	// Returns the filesystem this value provides.
 	fileSystem(self: @HasFileSystem) -> FileSystem
 }
 
 // A filesystem. Every operation that can fail returns a Result rather than stopping the program.
 // Each field has a matching module function taking the filesystem first, which is usually the nicer way to call it.
 data FileSystem {
+	// Returns the contents of a path.
 	readFile: fn(String) -> Result
+	// Writes content to a path, replacing it if it exists, and returns the number of bytes written.
 	writeFile: fn(String, Binary) -> Result
+	// Opens a path for reading. The file must be closed.
 	open: fn(String) -> Result
+	// Creates a path for writing, replacing it if it exists. The file must be closed.
 	create: fn(String) -> Result
+	// Returns whether a path exists.
 	exists: fn(String) -> Bool
+	// Removes a path.
 	remove: fn(String) -> Result
+	// Moves the file at the first path to the second.
 	move: fn(String, String) -> Result
+	// Returns the entries of the directory at a path, as Entry values.
 	list: fn(String) -> Result
+	// Creates a path and any missing parent directories.
 	mkdirAll: fn(String) -> Result
+	// Returns a filesystem rooted at a path, which is how a confined view of this one is handed out.
 	cd: fn(String) -> Result
+	// Returns the path this filesystem is rooted at.
 	root: fn() -> String
 }
 
@@ -27,15 +39,21 @@ data FileSystem {
 @io.Reader(_readFrom)
 @io.Writer(_writeTo)
 data File {
+	// Reads up to the given number of bytes. An empty result means the file is exhausted.
 	readFrom: fn(Int) -> Binary
+	// Writes the buffer and returns the number of bytes written.
 	writeTo: fn(Binary) -> Int
+	// Closes the file, releasing what the host holds for it.
 	closeWith: fn() -> Result
 }
 
 // One entry of a directory listing.
 data Entry {
+	// The entry's own name, without the directory it was listed from.
 	name: String
+	// Whether it is a directory rather than a file.
 	isDir: Bool
+	// The file's size in bytes, which carries no meaning for a directory.
 	size: Int
 }
 

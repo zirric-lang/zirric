@@ -391,7 +391,7 @@ import docs
 import reflect
 import tests
 import tests.assert
-import code.knabel.dev.zirric_lang.zirric.docs._t.fixture // verify: import form for a package's own module
+import code.knabel.dev.zirric_lang.zirric.docs._t.fixture
 
 @tests.Test()
 fn testSummaryAndDetails() -> Result {

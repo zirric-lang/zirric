@@ -21,7 +21,7 @@ data Dependencies {
 }
 
 // Define a task named "generate" with a help description and specify the script to run.
-// Can be executed with `zirric task run generate [arg] [--dry]` (or `zirric x generate ...`).
+// Can be executed with `zirric task generate [arg] [--dry]`, or as `zirric generate ...` while no built-in command holds that name.
 @tasks.Name("generate")
 @tasks.Help("Generates something")
 @tasks.Exec("tasks/generate.zirr")

@@ -23,15 +23,15 @@ mod    import   fn      const   var
 data   union    extern  type    attr
 if     else     for     switch  case
 is     return   break   continue
-true   false    _
+true   false    void    _
 ```
 
 ### Literal Tokens
 
 ```ebnf
-INT    = "0" | ("1"..."9"), {digit}
+INT    = "0", {octal_digit}
+       | ("1"..."9"), {digit}
        | "0x", hex_digit, {hex_digit}
-       | "0o", octal_digit, {octal_digit}
        | "0b", ("0" | "1"), {("0" | "1")};
 
 FLOAT  = digits, ".", digits, [("e" | "E"), ["-"], digits]
@@ -54,6 +54,8 @@ backslash = ? the "\" character ?;
 BOOL   = "true" | "false";
 ```
 
+An integer written with a leading `0` is octal — `0777` is 511. There is no `0o` prefix.
+
 String and char literals accept the same escapes, except that each escapes only its own delimiter: `\"` belongs to a string and `\'` to a char. `\u` and `\U` name a code point, which a `STRING` holds UTF-8 encoded, while `\x` and the three-digit octal form name a single byte. Any other escape is an error rather than literal text.
 
 ### Operator and Punctuation Tokens
@@ -68,6 +70,11 @@ LTE      = "<=";    GTE      = ">=";
 AND      = "&&";    OR       = "||";
 
 ASSIGN   = "=";     ARROW    = "->";    LARROW   = "<-";
+
+PLUS_ASSIGN    = "+=";   MINUS_ASSIGN = "-=";
+STAR_ASSIGN    = "*=";   SLASH_ASSIGN = "/=";
+PERCENT_ASSIGN = "%=";
+
 COLON    = ":";     DOT      = ".";     COMMA    = ",";
 AT       = "@";
 
@@ -293,17 +300,19 @@ SwitchExpr = "switch", Expression, "{", {SwitchCase}, "}";
 SwitchCase = "case", ("is", TypeExpr | "_" | Expression), ":", Expression;
 ```
 
-Type matching requires the `is` keyword (`case is Type:`). Value matching uses a plain expression (`case value:`). The default case uses `_`. Switch expressions require a `_` fallback case. See [Expressions § Switch](/specification/expressions#switch).
+Type matching requires the `is` keyword (`case is Type:`). Value matching uses a plain expression (`case value:`). The default case uses `_`. Switch expressions require a `_` fallback case, including where the `is` cases appear to cover every member of a union. See [Expressions § Switch](/specification/expressions#switch).
 
 ### Assignment
 
 ```ebnf
-Assignment      = Identifier, "=", Expression;
-FieldAssignment = Expression, ".", Identifier, "=", Expression;
-IndexAssignment = Expression, "[", Expression, "]", "=", Expression;
+Assignment      = Identifier, AssignOp, Expression;
+FieldAssignment = Expression, ".", Identifier, AssignOp, Expression;
+IndexAssignment = Expression, "[", Expression, "]", AssignOp, Expression;
+
+AssignOp = "=" | "+=" | "-=" | "*=" | "/=" | "%=";
 ```
 
-Only `var` bindings and mutable locations accept assignment. A guarded access (`?.` or `!.`) is not an assignment target, since it may produce no field to assign to. See [Expressions § Assignment](/specification/expressions#assignment).
+Only `var` bindings and mutable locations accept assignment. A guarded access (`?.` or `!.`) is not an assignment target, since it may produce no field to assign to. The augmented forms read the location, apply the operator, and write the result back. See [Expressions § Assignment](/specification/expressions#assignment).
 
 ## Statements
 
@@ -314,8 +323,10 @@ Block = {Statement};
 
 Statement = ScopeLevelDeclaration | Return | If | For | SwitchStmt | Expression;
 
-ScopeLevelDeclaration = Function | Const | Var | Union | Data;
+ScopeLevelDeclaration = Function | Const | Var;
 ```
+
+`data`, `union`, `attr`, `extern` and `import` are top-level forms only. The parser shares one routine across both positions, so writing one inside a block is rejected after parsing rather than at it. See [Declarations](/specification/declarations) for the position each form is valid in.
 
 ### Return
 

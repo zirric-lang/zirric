@@ -5,35 +5,70 @@ description: "Start here for Zirric language docs, guides, and references."
 
 Zirric is an experimental programming language with a reference implementation in Go. This documentation focuses on how the language feels to use, how the tooling is shaped, and where to dig deeper into the implementation.
 
-It favors small, explicit building blocks: declarations over inheritance, attributes over interfaces, and expression-oriented control flow. The standard library is written in Zirric itself, and the language is designed so Zirric code is easy to reason about.
-
 ::: callout warning Experimental
-Zirric is evolving quickly. Expect incomplete features, shifting syntax, and ongoing proposals. Use the proposals as the authoritative roadmap.
+Zirric is evolving quickly. Expect incomplete features and shifting syntax. The [Specification](/specification/syntax) describes the language as it is implemented; the [proposals](/proposals) record how it got there and are not kept in step with it.
 :::
+
+## Philosophy
+
+Zirric is built on composability, simplicity and transparency. Just [data types](/specification/typesystem#data-types), [unions](/specification/typesystem#union-types) and [attributes](/specification/typesystem#attribute-types). No classes, inheritance, generics, interfaces, optional conformances or ambiguity. No magic. No exceptions.
+
+Zirric lacks many features and has only a few powerful ones, and those that exist are curated to work well together:
+
+| Declaration                                  | What it is for                     |
+| -------------------------------------------- | ---------------------------------- |
+| [`data`](/specification/declarations#data)   | holds value                        |
+| [`union`](/specification/declarations#union) | gives structure                    |
+| [`attr`](/specification/declarations#attr)   | provides context                   |
+| [`fn`](/specification/declarations#fn)       | does stuff                         |
+| [`mod`](/specification/declarations#mod)     | prevents you from losing your mind |
+
+The other half of the philosophy is to leverage features that already exist rather than to add new ones. Take `for` loops. Used as an expression, a loop collects what its body produces, and `continue` drops a value — so the same loop you would write for its side effects is also the map and the filter. Literally.
+
+```zirric
+const evenSquares = for n <- Range(0, 10) {
+	if n % 2 == 0 {
+		n * n
+	} else {
+		continue
+	}
+}
+// [0, 4, 16, 36, 64]
+```
+
+The pattern repeats. `for element <- value` is a call into the [`Iterable`](/stdlib/prelude#iterable) attribute rather than a built-in over built-in types, so any type carrying it can be looped over. `len` is a call into [`Countable`](/stdlib/prelude#countable). The [Cavefile](/cavefile) is Zirric source rather than a config format — a `data` declaration carrying attributes, read back with the same [reflection](/stdlib/reflect) a program can use on itself. Nothing in that list needed a language feature of its own.
+
+The standard library is basic, but it tries to make the right choices easier than the ones that bite you. Everything is built with testing in mind, and you notice bad habits right at the import: [`os`](/stdlib/os) is the only module that talks to the machine, so a function reaching for it directly cannot be tested without one. Take a [`fs.FileSystem`](/stdlib/fs), a [`clock.SystemClock`](/stdlib/clock) or a [`random.Source`](/stdlib/random) as a parameter instead, and a test hands over `fs.memory()`, `clock.fixed(…)` or `random.seeded(…)` without anything else changing.
 
 ## Zirric in a nutshell
 
 ```zirric
-attr Countable {
-	length(value: @Countable) -> Int
+import math
+
+attr Area {
+	of(shape: @Area) -> Float
 }
 
-@Countable(fn(v) { return v.length })
-data Bag {
-	items
-	length
+union Shape {
+	@Area(fn(c) { math.pi * c.radius * c.radius })
+	data Circle { radius: Float }
+
+	@Area(fn(r) { r.width * r.height })
+	data Rect { width: Float, height: Float }
 }
 
-fn summarize(bag: Bag) -> Result {
-	const length = Countable(bag).length(bag)
-
-	return if length > 0 {
-		Ok(length)
-	} else {
-		Err("empty")
+fn largest(shapes: [Shape]) -> Shape? {
+	var best = None()
+	for shape <- shapes {
+		if best is None || Area(shape).of(shape) > Area(best.value).of(best.value) {
+			best = Some(shape)
+		}
 	}
+	return best
 }
 ```
+
+A `data` type holds the values, the `union` says which shapes there are, the attribute says what each one can do, and `Shape?` says the answer may be absent. No interface was declared and no base type was inherited from.
 
 ## Start here
 

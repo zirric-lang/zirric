@@ -135,7 +135,9 @@ fn skip(v: @Iterable, n: Int) -> @Iterable {
 
 // A pair of values at the same position in zip's two source sequences.
 data Zipped {
+	// The element from the first sequence.
 	first
+	// The element at the same position in the second.
 	second
 }
 

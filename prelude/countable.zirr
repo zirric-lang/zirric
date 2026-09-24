@@ -1,5 +1,7 @@
 mod code.knabel.dev.zirric_lang.zirric.prelude
 
+// The number of elements in a countable value, read through its `Countable` attribute.
+// Counts a `String` in characters, an `Array` in elements, a `Dict` in entries and a `Binary` in bytes.
 fn len(v: @Countable) -> Int {
 	Countable(v).length(v)
 }

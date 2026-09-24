@@ -49,15 +49,15 @@ Any type can be a reader by carrying @Reader; this is simply the one the host ha
 
 #### Fields
 
-| Field      | Description |
-| ---------- | ----------- |
-| `readFrom` |             |
+| Field      | Description                                          |
+| ---------- | ---------------------------------------------------- |
+| `readFrom` | Reads up to the given number of bytes from the host. |
 
 ---
 
 ### `WriteStream` {#writestream}
 
-<small>`io/reader-writer.zirr:41`</small>
+<small>`io/reader-writer.zirr:42`</small>
 
 ```zirric
 data WriteStream {
@@ -69,9 +69,9 @@ A writable stream backed by the host, such as standard output or an open file.
 
 #### Fields
 
-| Field     | Description |
-| --------- | ----------- |
-| `writeTo` |             |
+| Field     | Description                                                            |
+| --------- | ---------------------------------------------------------------------- |
+| `writeTo` | Writes the buffer to the host and returns the number of bytes written. |
 
 ---
 
@@ -79,7 +79,7 @@ A writable stream backed by the host, such as standard output or an open file.
 
 ### `HasErrorWriter` {#haserrorwriter}
 
-<small>`io/capabilities.zirr:11`</small>
+<small>`io/capabilities.zirr:12`</small>
 
 ```zirric
 attr HasErrorWriter {
@@ -92,15 +92,15 @@ In production, this usually points to [`os.stderr`](../os/index.md#stderr).
 
 #### Fields
 
-| Field    | Description |
-| -------- | ----------- |
-| `writer` |             |
+| Field    | Description                                            |
+| -------- | ------------------------------------------------------ |
+| `writer` | Returns the standard error writer this value provides. |
 
 ---
 
 ### `HasStandardReader` {#hasstandardreader}
 
-<small>`io/capabilities.zirr:17`</small>
+<small>`io/capabilities.zirr:19`</small>
 
 ```zirric
 attr HasStandardReader {
@@ -113,9 +113,9 @@ In production, this usually points to [`os.stdin`](../os/index.md#stdin).
 
 #### Fields
 
-| Field    | Description |
-| -------- | ----------- |
-| `reader` |             |
+| Field    | Description                                            |
+| -------- | ------------------------------------------------------ |
+| `reader` | Returns the standard input reader this value provides. |
 
 ---
 
@@ -134,9 +134,9 @@ In production, this usually points to [`os.stdout`](../os/index.md#stdout).
 
 #### Fields
 
-| Field    | Description |
-| -------- | ----------- |
-| `writer` |             |
+| Field    | Description                                             |
+| -------- | ------------------------------------------------------- |
+| `writer` | Returns the standard output writer this value provides. |
 
 ---
 

@@ -5,7 +5,9 @@ description: "Declaring Result and Option as unions of attribute constraints, so
 
 # Result and Option as Constraint Unions
 
-> **Draft.** This proposal is still a draft and is subject to change. It cannot be used right now.
+::: callout draft Draft
+This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design. Features described here may not be implemented as described and cannot be used right now.
+:::
 
 ## Introduction
 

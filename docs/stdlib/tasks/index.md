@@ -16,11 +16,13 @@ import tasks
 
 > Declaring a subcommand, with typed flags and arguments.
 
-A task is a `data` declaration in the `Cavefile` carrying either [`Exec`](#exec) or [`Call`](#call). `zirric task` lists them and `zirric task run` — or `zirric x` — runs them.
+A task is a `data` declaration in the `Cavefile` carrying either [`Exec`](#exec) or [`Call`](#call). `zirric task` lists them and `zirric task <name>` runs one; a task whose name no built-in command claims also answers to `zirric <name>` directly.
 
 The difference between the two is what happens when it runs. [`Exec`](#exec) runs a script as its own program, which reads its own arguments through `os.args()`. [`Call`](#call) invokes a function directly with an instance of the declaration, built from the parsed flag and argument values — so the fields are typed and the CLI does the parsing.
 
 The remaining attributes describe the command line: [`Name`](#name) and [`Alias`](#alias) name it, [`Short`](#short) and [`Help`](#help) document it, and [`Flag`](#flag) and [`Arg`](#arg) mark which fields are flags and which are positional.
+
+The dependency on [`future`](../future/index.md) is for one declaration only: [`future.Proposal`](../future/index.md#proposal), the marker every attribute here carries to link itself back to [ZE-002](https://zirric.knabel.dev/proposals/ZE-002-the-cavefile/). Nothing unlanded is used, and none of it reaches a `Cavefile`.
 
 ## Dependencies
 
@@ -40,7 +42,7 @@ The remaining attributes describe the command line: [`Name`](#name) and [`Alias`
 
 ### `Task` {#task}
 
-<small>`tasks/manifest.zirr:15`</small>
+<small>`tasks/manifest.zirr:14`</small>
 
 ```zirric
 union Task {
@@ -66,7 +68,7 @@ Exactly one of @Exec or @Call is required.
 
 ### `Alias` {#alias}
 
-<small>`tasks/manifest.zirr:43`</small>
+<small>`tasks/manifest.zirr:42`</small>
 
 ```zirric
 attr Alias {
@@ -86,7 +88,7 @@ Provides alternative names for the task, flag or argument.
 
 ### `Arg` {#arg}
 
-<small>`tasks/manifest.zirr:69`</small>
+<small>`tasks/manifest.zirr:68`</small>
 
 ```zirric
 attr Arg
@@ -98,11 +100,11 @@ Marks this field as a positional commandline argument.
 
 ### `Call` {#call}
 
-<small>`tasks/manifest.zirr:29`</small>
+<small>`tasks/manifest.zirr:28`</small>
 
 ```zirric
 attr Call {
-	function: Function
+	function: Func
 }
 ```
 
@@ -110,15 +112,15 @@ Indicates that this task is implemented by a function.
 
 #### Fields
 
-| Field      | Description                       |
-| ---------- | --------------------------------- |
-| `function` | The function to run for the task. |
+| Field      | Description                                                                                                    |
+| ---------- | -------------------------------------------------------------------------------------------------------------- |
+| `function` | The function to run for the task. It takes one argument: an instance of the declaration the attribute sits on. |
 
 ---
 
 ### `Exec` {#exec}
 
-<small>`tasks/manifest.zirr:22`</small>
+<small>`tasks/manifest.zirr:21`</small>
 
 ```zirric
 attr Exec {
@@ -138,7 +140,7 @@ Indicates that this task is implemented in an external file.
 
 ### `Flag` {#flag}
 
-<small>`tasks/manifest.zirr:65`</small>
+<small>`tasks/manifest.zirr:64`</small>
 
 ```zirric
 attr Flag
@@ -150,7 +152,7 @@ Marks this field as a commandline flag.
 
 ### `Help` {#help}
 
-<small>`tasks/manifest.zirr:58`</small>
+<small>`tasks/manifest.zirr:57`</small>
 
 ```zirric
 attr Help {
@@ -170,7 +172,7 @@ A short help text for the task, flag or argument.
 
 ### `Name` {#name}
 
-<small>`tasks/manifest.zirr:36`</small>
+<small>`tasks/manifest.zirr:35`</small>
 
 ```zirric
 attr Name {
@@ -190,7 +192,7 @@ Renames the task, flag or argument.
 
 ### `Short` {#short}
 
-<small>`tasks/manifest.zirr:51`</small>
+<small>`tasks/manifest.zirr:50`</small>
 
 ```zirric
 attr Short {
@@ -213,11 +215,10 @@ Not applicable to arguments.
 
 ### `ZE_002` {#ze_002}
 
-<small>`tasks/manifest.zirr:9`</small>
+<small>`tasks/manifest.zirr:8`</small>
 
 ```zirric
 const ZE_002
 ```
 
-ZE-002: Error Handling
-https://zirric.knabel.dev/proposals/ze-002-the-cavefile/
+The proposal every declaration here links back to: ZE-002, The Cavefile.

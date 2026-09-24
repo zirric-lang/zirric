@@ -115,8 +115,8 @@ A package and the modules it declares.
 
 | Field         | Description                                                                                      |
 | ------------- | ------------------------------------------------------------------------------------------------ |
-| `name`        |                                                                                                  |
-| `moduleNames` |                                                                                                  |
+| `name`        | The package's base module path, which every module of it is named under.                         |
+| `moduleNames` | The canonical name of every module it declares, ordered by name.                                 |
 | `cavefile`    | The manifest the package declares itself with, or None for a project running without a Cavefile. |
 
 ---
@@ -193,7 +193,7 @@ One task a package can be asked to run.
 
 ### `mainPackage` {#mainpackage}
 
-<small>`reflect/packages/packages.zirr:21`</small>
+<small>`reflect/packages/packages.zirr:23`</small>
 
 ```zirric
 fn mainPackage() -> Package
@@ -207,7 +207,7 @@ Left out are the entry module, since the running program cannot be loaded again,
 
 ### `module` {#module}
 
-<small>`reflect/packages/packages.zirr:34`</small>
+<small>`reflect/packages/packages.zirr:36`</small>
 
 ```zirric
 fn module(p: Package, name: String) -> Option
@@ -220,7 +220,7 @@ Loading a module runs its top-level code the first time it is reached.
 
 ### `modulesExcept` {#modulesexcept}
 
-<small>`reflect/packages/packages.zirr:65`</small>
+<small>`reflect/packages/packages.zirr:67`</small>
 
 ```zirric
 fn modulesExcept(p: Package, names: [String]) -> [AnyModule]
@@ -233,7 +233,7 @@ Loading a module runs its top-level code, so naming the ones to leave out is the
 
 ### `modulesWhere` {#moduleswhere}
 
-<small>`reflect/packages/packages.zirr:46`</small>
+<small>`reflect/packages/packages.zirr:48`</small>
 
 ```zirric
 fn modulesWhere(p: Package, predicate: fn(String) -> Bool) -> [AnyModule]

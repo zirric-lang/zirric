@@ -1,6 +1,6 @@
 # Type System
 
-Zirric is dynamically typed but strongly typed. Values carry their type at runtime and can flow through any variable, field, or parameter. There are no implicit conversions — a `String` is never silently treated as an `Int`. Type information is communicated through [type hints](#type-hints) and checked at runtime through [`is` expressions](/specification/expressions#is-expression) and [`switch` matching](/specification/expressions#switch).
+Zirric is dynamically typed but strongly typed. Values carry their type at runtime and can flow through any variable, field, or parameter. There are no implicit conversions — a `String` is never silently treated as an `Int`. Type information is communicated through [type hints](#type-hints), which are optional but binding where they are written: analysis reports a hint a value cannot satisfy, and [`is` expressions](/specification/expressions#is-expression) and [`switch` matching](/specification/expressions#switch) check types at runtime.
 
 This page covers the type categories, their construction and identity rules, type hints, runtime type checking, and protocol attributes.
 
@@ -88,23 +88,33 @@ See [Expressions § Switch](/specification/expressions#switch) for the full matc
 
 Extern types are built-in types provided by the runtime. They cannot be constructed from Zirric code — instances are created by literals, declarations, or runtime operations.
 
-| Type     | Created by                  | Fields        |
-| -------- | --------------------------- | ------------- |
-| `Int`    | Integer literals            | —             |
-| `Float`  | Float literals              | —             |
-| `Bool`   | `true`, `false`             | `toggle()`    |
-| `String` | String literals             | `length: Int` |
-| `Char`   | Runtime operations          | —             |
-| `Array`  | Array literals              | `length: Int` |
-| `Dict`   | Dict literals               | `length: Int` |
-| `Func`   | `fn` declarations, closures | `arity: Int`  |
-| `Void`   | `void` constant             | —             |
-| `Module` | `mod` declarations          | (members)     |
-| `Any`    | —                           | —             |
+| Type            | Created by                                                 | Fields                       |
+| --------------- | ---------------------------------------------------------- | ---------------------------- |
+| `Int`           | Integer literals                                           | —                            |
+| `Float`         | Float literals                                             | —                            |
+| `Bool`          | `true`, `false`                                            | —                            |
+| `String`        | String literals                                            | `chars() -> [Char]`          |
+| `Char`          | Iterating a `String`, or `chars()`                         | —                            |
+| `Binary`        | Runtime operations, `bytes`                                | —                            |
+| `Byte`          | Indexing a `String` or a `Binary`, or iterating a `Binary` | —                            |
+| `Array`         | Array literals                                             | —                            |
+| `Dict`          | Dict literals                                              | `keys() -> Array`            |
+| `Func`          | `fn` declarations, closures                                | `name: String`, `arity: Int` |
+| `Void`          | `void` constant                                            | —                            |
+| `Any`           | —                                                          | —                            |
+| `AnyType`       | —                                                          | —                            |
+| `Attribute`     | `@Attr()` application                                      | the attribute's own fields   |
+| `AttributeType` | `attr` declarations                                        | —                            |
+| `AnyModule`     | `mod` declarations                                         | (members)                    |
+| `ModuleType`    | —                                                          | —                            |
 
-`Any` is a special type that all values belong to. It acts as a universal supertype.
+The four `Any…`/`…Type` entries are the types the others are described in terms of: every value is an `Any`, every type is an `AnyType`, every attribute is an `Attribute`, and every module is an `AnyModule`. They are what a hint names when it must accept anything of that kind — `reflect.members(m: AnyModule) -> [Any]`, for instance.
 
-**Field access on extern types.** Some extern types expose fields (like `String.length`). These are accessed with `.` just like `data` fields.
+`len(value)` counts a `String`, `Array`, `Dict` or `Binary` through [`@Countable`](#protocol-attributes) rather than through a `length` field.
+
+**Field access on extern types.** Some extern types expose fields and methods (like `String.chars()`). These are accessed with `.` just like `data` fields.
+
+For the full list with documentation, see [Standard Library § Prelude](/stdlib/prelude).
 
 ## Attribute Types
 
@@ -133,18 +143,16 @@ attr Countable {
 }
 
 attr Iterable {
-	iterate(value: @Iterable, yield: Func) -> Void
+	iterate(value: @Iterable, yield: fn(Any) -> Bool)
 }
 ```
 
 Types opt into a protocol by applying the attribute with a function implementation:
 
 ```zirric
-@Countable(fn(v) { return v.length })
+@Countable(_arrayLen)
 @Iterable(_arrayIterate)
-extern type Array {
-	length: Int
-}
+extern type Array {}
 ```
 
 **How `for` uses `@Iterable`.** When a `for` loop iterates over a value, the runtime looks up the `@Iterable` attribute on the value's type and calls the `iterate` function. The function receives the value and a `yield` callback. It calls `yield` with each element; if `yield` returns `false`, iteration stops (implementing `break`).
@@ -177,12 +185,26 @@ case _:
 Attribute values attached to a type can be accessed at runtime through the `reflect` module:
 
 ```zirric
-import future.reflect
+import reflect
+import coding
 
-const personType = reflect.typeOf(person)
+data Person {
+	@coding.Name("user_name")
+	name: String
+}
+
+const personType = reflect.typeOf(person) ?? void
 const fields = reflect.fieldsOf(personType)
-const attr = reflect.attribute(fields[0], json.HasKey)
+
+const key = switch fields[0] {
+case is @coding.Name:
+	coding.Name(fields[0]).text
+case _:
+	fields[0].name
+}
 ```
+
+An attribute type is called on a value to read the attribute written on that value's declaration — `coding.Name(field).text` above. `reflect.typeOf` returns an [`Option`](/stdlib/prelude), since not every value has a type with a runtime representation. See [`reflect`](/stdlib/reflect) for the full surface.
 
 ## Type Hints
 
@@ -203,7 +225,9 @@ const x: Int = 42
 
 ### What type hints express
 
-Type hints communicate intended types to readers, editors, and the language server. The compiler records them for `is` checks and `switch` matching. Zirric does not perform static type checking — values flow dynamically regardless of hints.
+Type hints communicate intended types to readers, editors, and the language server, and the compiler records them for `is` checks and `switch` matching. They are also **binding**: where a hint is written, analysis reports a value that cannot satisfy it — a wrong argument, a returned value that contradicts `->`, an initializer or assignment that contradicts `:`, or an attribute constraint the value's type does not carry.
+
+Hints stay optional, and the checker reports only what it is certain of. Where it cannot infer a type — an unhinted parameter, a mixed collection, a value that arrives from a call with no declared return — anything fits, and the program runs as it always did. Writing a hint is what turns a mistake from a runtime failure into a reported one.
 
 ### Composite type hints
 
@@ -293,4 +317,4 @@ union Number {
 
 **`Any`** — the universal type. Every value is an `Any`. Useful as a type hint when no constraint is needed.
 
-The prelude also defines common attributes (`@Deprecated`, `@Default`, `@Numeric`) and protocol attributes (`@Countable`, `@Iterable`). See [Standard Library § Prelude](/stdlib/prelude) for the full list.
+The prelude also defines descriptive attributes (`@Deprecated`, `@Default`) and the attributes types opt into behavior with: `@Countable` and `@Iterable` for the collection protocols, `@Numeric` and `@Printable` for conversion, `@Error` for what an error can say about itself, and `@AnyOption` and `@AnyResult` for unions of your own that `?.`, `!.`, `??` and `!!` should read through. See [Standard Library § Prelude](/stdlib/prelude) for the full list.

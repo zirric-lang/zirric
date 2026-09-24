@@ -4,12 +4,14 @@ import time
 
 // Provides the capability to wait for time to pass, the way clock.HasMonotonicClock provides a clock.
 attr HasTimer {
+	// Returns the timer this value provides.
 	timer(self: @HasTimer) -> Timer
 }
 
 // The capability to wait for time to pass.
 // It is a plain value holding a function, so a test hands over one that fires at once or one that never fires, and waits for nothing.
 data Timer {
+	// Returns a channel that receives one value once the duration has passed, and then closes.
 	after: fn(Duration) -> Channel
 }
 

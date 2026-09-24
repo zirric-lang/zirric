@@ -2,9 +2,11 @@
 //
 // > Declaring a subcommand, with typed flags and arguments.
 //
-// A task is a `data` declaration in the `Cavefile` carrying either `Exec` or `Call`. `zirric task` lists them and `zirric task run` — or `zirric x` — runs them.
+// A task is a `data` declaration in the `Cavefile` carrying either `Exec` or `Call`. `zirric task` lists them and `zirric task <name>` runs one; a task whose name no built-in command claims also answers to `zirric <name>` directly.
 //
 // The difference between the two is what happens when it runs. `Exec` runs a script as its own program, which reads its own arguments through `os.args()`. `Call` invokes a function directly with an instance of the declaration, built from the parsed flag and argument values — so the fields are typed and the CLI does the parsing.
 //
 // The remaining attributes describe the command line: `Name` and `Alias` name it, `Short` and `Help` document it, and `Flag` and `Arg` mark which fields are flags and which are positional.
+//
+// The dependency on `future` is for one declaration only: `future.Proposal`, the marker every attribute here carries to link itself back to [ZE-002](https://zirric.knabel.dev/proposals/ZE-002-the-cavefile/). Nothing unlanded is used, and none of it reaches a `Cavefile`.
 mod code.knabel.dev.zirric_lang.zirric.tasks

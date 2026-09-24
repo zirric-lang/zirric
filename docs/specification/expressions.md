@@ -4,6 +4,8 @@ Zirric is expression-first: most constructs produce a value. This page covers al
 
 For the grammar of each form, see [Syntax § Expressions](/specification/syntax#expressions) and [Syntax § Statements](/specification/syntax#statements).
 
+Examples that write output assume `import fmt` and a writer named `out`, as `const out = os.stdout()` gives. There is no bare `print`: writing goes to a writer you name. See [`fmt`](/stdlib/fmt) and [`os`](/stdlib/os).
+
 ## Literals
 
 Zirric supports the following literal forms. Each produces a value of the corresponding built-in type.
@@ -12,7 +14,7 @@ Zirric supports the following literal forms. Each produces a value of the corres
 42 // Int
 3.14 // Float
 0x8899aa // Int (hexadecimal)
-0 o777 // Int (octal)
+0777 // Int (octal — a leading zero)
 0b101010 // Int (binary)
 1e10 // Float (scientific)
 true // Bool
@@ -24,7 +26,7 @@ false // Bool
 
 **Array literals** create a new `Array` value. Elements are evaluated left to right.
 
-**Dict literals** create a new `Dict` value. Keys and values are evaluated left to right. Keys must be `String` values.
+**Dict literals** create a new `Dict` value. Keys and values are evaluated left to right. Keys must be primitive values — `String`, `Int`, `Float`, `Bool`, `Char` or `Byte`; `String` is by far the most common. An `Array` or a `Dict` cannot be a key.
 
 See [Type System](/specification/typesystem) for details on each type.
 
@@ -131,7 +133,7 @@ Because `!.` returns from the function it sits in, it is only allowed inside one
 
 ### Index access
 
-The `[]` operator accesses elements by index (`Array`, `String`) or by key (`Dict`).
+The `[]` operator accesses elements by index (`Array`, `String`, `Binary`) or by key (`Dict`). Indexing a `String` or a `Binary` produces a `Byte`; iterating a `String` yields `Char` values instead, and `chars()` collects those.
 
 ```zirric
 const arr = [10, 20, 30]
@@ -146,12 +148,26 @@ dict["a"] // 1
 Assignment uses `=` and is only valid for mutable locations:
 
 - **`var` bindings**: `count = count + 1`
-- **Field assignment**: `person.name = "Bob"` (on `data` instances with `var` binding)
-- **Index assignment**: `arr[0] = 99`
+- **Field assignment**: `person.name = "Bob"`
+- **Index assignment**: `arr[0] = 99`, `dict["a"] = 2`
 
-Assigning to a `const` binding is a compile error. The discard pattern `_ = expr` evaluates `expr` and discards the result.
+Assigning to a `const` binding is a compile error. What a `const` _holds_ stays mutable, though: `const p = Person("Alice", 30)` then `p.name = "Bob"` is allowed, because it is the field being written and not the binding.
+
+The discard pattern `_ = expr` evaluates `expr` and discards the result.
 
 A guarded access is not an assignment target: `user?.name = "Bob"` is a compile error, since `?.` and `!.` may produce no field to assign to.
+
+### Augmented assignment
+
+`+=`, `-=`, `*=`, `/=` and `%=` read the location, apply the operator to what they find and the right operand, and write the result back. They work wherever `=` does — a `var` binding, a field, an index — and mean exactly what the written-out form means, so `+=` concatenates two `String` values as `+` does.
+
+```zirric
+var count = 0
+count += 1 // 1
+
+const totals = ["a": 1]
+totals["a"] *= 3 // ["a": 3]
+```
 
 ## Closures
 
@@ -234,11 +250,11 @@ An `if` statement executes a branch for its side effects and produces no value. 
 
 ```zirric
 if answer == 42 {
-	print("yes")
+	fmt.fprintln("yes", out)
 } else if answer == 0 {
-	print("zero")
+	fmt.fprintln("zero", out)
 } else {
-	print("no")
+	fmt.fprintln("no", out)
 }
 ```
 
@@ -266,7 +282,7 @@ Iterates over a collection using `<-`. The binding variable receives each elemen
 
 ```zirric
 for item <- [1, 2, 3] {
-	print(item)
+	fmt.fprintln(fmt.sprint(item), out)
 }
 ```
 
@@ -334,13 +350,13 @@ Each `case` matches against one of:
 ```zirric
 switch value {
 case 1:
-	print("one")
+	fmt.fprintln("one", out)
 case is String:
-	print("a string")
+	fmt.fprintln("a string", out)
 case is @Iterable:
-	print("iterable")
+	fmt.fprintln("iterable", out)
 case _:
-	print("other")
+	fmt.fprintln("other", out)
 }
 ```
 
@@ -348,7 +364,7 @@ Cases are evaluated top to bottom. The first matching case executes.
 
 ### Switch expression
 
-A `switch` expression produces a value. Each case body is a single expression. A `_` wildcard case is required.
+A `switch` expression produces a value. Each case body is a single expression. A `_` wildcard case is required: a switch expression whose cases all fail has no value to produce, and nothing checks the `is` cases for having covered every member of a union — so write the `_` case even where they appear to.
 
 ```zirric
 const label = switch code {

@@ -3,10 +3,14 @@ mod code.knabel.dev.zirric_lang.zirric.tests.assert
 import fmt
 import results
 
+// Combines several assertions into one: an `Ok` when every one of them is, and otherwise an `Err` naming every failure.
+// Nothing short-circuits, so a test written with `all` reports every check that failed rather than only the first.
 fn all(res: [@AnyResult]) -> Result {
 	results.all(res)
 }
 
+// An `Ok` when the two values are equal, and otherwise an `Err` naming both.
+// Equality is the language's own `==`, so a `data` value is compared field by field.
 fn equal(expect, got) -> Result {
 	if expect == got {
 		Ok(true)
@@ -15,14 +19,17 @@ fn equal(expect, got) -> Result {
 	}
 }
 
+// An `Ok` when the value is `true`.
 fn isTrue(val) -> Result {
 	equal(true, val)
 }
 
+// An `Ok` when the value is `false`.
 fn isFalse(val) -> Result {
 	equal(false, val)
 }
 
+// An `Ok` when the value is a successful result, reading it through `@AnyResult` when it is not an `Ok` or an `Err` itself.
 fn isOk(val) -> Result {
 	switch val {
 	case is Ok:
@@ -42,6 +49,7 @@ fn isOk(val) -> Result {
 	}
 }
 
+// An `Ok` when the value is a failed result, reading it through `@AnyResult` when it is not an `Ok` or an `Err` itself.
 fn isErr(val) -> Result {
 	switch val {
 	case is Err:
@@ -59,6 +67,7 @@ fn isErr(val) -> Result {
 	}
 }
 
+// An `Ok` when the value's type carries `@Error`, whatever else it is.
 fn isError(val) -> Result {
 	switch val {
 	case is @Error:
@@ -68,6 +77,7 @@ fn isError(val) -> Result {
 	}
 }
 
+// Always an `Err` with the given reason. For the branch a test should never reach.
 fn fail(reason) -> Result {
 	Err(reason)
 }

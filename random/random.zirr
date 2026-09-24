@@ -3,21 +3,27 @@ mod code.knabel.dev.zirric_lang.zirric.random
 // Provides a fast source of randomness, for simulations, sampling and anything else where predictability is not a hazard.
 // A seeded source satisfies this, which is what lets a test pin down behaviour that depends on randomness.
 attr HasFastRandom {
+	// Returns the fast source this value provides.
 	random(self: @HasFastRandom) -> Source
 }
 
 // Provides a cryptographically strong source of randomness, for tokens, keys and anything an adversary should not predict.
 // Kept apart from HasFastRandom so that code needing secrecy says so, and cannot be handed a seeded generator by mistake.
 attr HasStrongRandom {
+	// Returns the cryptographically strong source this value provides.
 	random(self: @HasStrongRandom) -> Source
 }
 
 // A source of randomness. The constructors differ only in where the bits come from, so code written against a Source works with any of them.
 // Each field has a matching module function taking the source first, which is usually the nicer way to call it.
 data Source {
+	// Returns a whole number from 0 up to but excluding the bound, which must be above zero.
 	int: fn(Int) -> Int
+	// Returns a number from 0 up to but excluding 1.
 	float: fn() -> Float
+	// Returns the requested number of random bytes.
 	bytes: fn(Int) -> Binary
+	// Returns true or false with equal likelihood.
 	bool: fn() -> Bool
 }
 

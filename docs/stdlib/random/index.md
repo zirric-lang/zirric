@@ -41,7 +41,7 @@ A [`Source`](#source) is a value carrying four functions, and every function her
 
 ### `Source` {#source}
 
-<small>`random/random.zirr:17`</small>
+<small>`random/random.zirr:19`</small>
 
 ```zirric
 data Source {
@@ -57,12 +57,12 @@ Each field has a matching module function taking the source first, which is usua
 
 #### Fields
 
-| Field   | Description |
-| ------- | ----------- |
-| `int`   |             |
-| `float` |             |
-| `bytes` |             |
-| `bool`  |             |
+| Field   | Description                                                                            |
+| ------- | -------------------------------------------------------------------------------------- |
+| `int`   | Returns a whole number from 0 up to but excluding the bound, which must be above zero. |
+| `float` | Returns a number from 0 up to but excluding 1.                                         |
+| `bytes` | Returns the requested number of random bytes.                                          |
+| `bool`  | Returns true or false with equal likelihood.                                           |
 
 ---
 
@@ -83,15 +83,15 @@ A seeded source satisfies this, which is what lets a test pin down behaviour tha
 
 #### Fields
 
-| Field    | Description |
-| -------- | ----------- |
-| `random` |             |
+| Field    | Description                                  |
+| -------- | -------------------------------------------- |
+| `random` | Returns the fast source this value provides. |
 
 ---
 
 ### `HasStrongRandom` {#hasstrongrandom}
 
-<small>`random/random.zirr:11`</small>
+<small>`random/random.zirr:12`</small>
 
 ```zirric
 attr HasStrongRandom {
@@ -104,9 +104,9 @@ Kept apart from HasFastRandom so that code needing secrecy says so, and cannot b
 
 #### Fields
 
-| Field    | Description |
-| -------- | ----------- |
-| `random` |             |
+| Field    | Description                                                      |
+| -------- | ---------------------------------------------------------------- |
+| `random` | Returns the cryptographically strong source this value provides. |
 
 ---
 
@@ -198,7 +198,7 @@ Returns a whole number from low up to but excluding high.
 
 ### `seeded` {#seeded}
 
-<small>`random/random.zirr:27`</small>
+<small>`random/random.zirr:33`</small>
 
 ```zirric
 extern fn seeded(seed: Int) -> Source

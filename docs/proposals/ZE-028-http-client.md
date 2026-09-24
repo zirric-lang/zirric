@@ -5,8 +5,8 @@ description: "HTTP requests as a standard library module, with the client as a v
 
 # HTTP Client
 
-::: callout warning Draft
-This proposal is an early draft. It may change significantly and can't be used yet.
+::: callout draft Draft
+This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design. Features described here may not be implemented as described and cannot be used right now.
 :::
 
 ## Introduction

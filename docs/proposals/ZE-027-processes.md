@@ -5,8 +5,8 @@ description: "Running other programs and shell scripts through a process runner 
 
 # Processes
 
-::: callout info Draft
-This proposal is an early draft. It may change significantly and cannot be used yet.
+::: callout draft Draft
+This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design. Features described here may not be implemented as described and cannot be used right now.
 :::
 
 ## Introduction

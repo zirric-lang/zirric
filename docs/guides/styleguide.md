@@ -231,8 +231,8 @@ const name = "John"
 const person = Person("John", 42)
 const err = http.Error("Not found")
 
-fn printPersonName(p) {
-	println(p.name)
+fn writePersonName(p, writer: @io.Writer) {
+	fmt.fprintln(p.name, writer)
 }
 
 // bad
@@ -240,8 +240,8 @@ const n = "John"
 const p = Person("John", 42)
 const error = http.Error("Not found")
 
-fn printName(n) {
-	println(n.name)
+fn writeName(n, w) {
+	fmt.fprintln(n.name, w)
 }
 ```
 

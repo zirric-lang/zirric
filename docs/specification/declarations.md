@@ -203,7 +203,7 @@ Multiple attributes may be stacked on a single declaration or field:
 
 ```zirric
 @Deprecated("use displayName")
-@json.HasKey("legacy_user")
+@json.Name("legacy_user")
 data LegacyUser {
 	@Default("")
 	name: String
@@ -217,7 +217,7 @@ Attributes from other modules are accessed through their qualified name:
 ```zirric
 import json
 
-@json.HasKey("user_name")
+@json.Name("user_name")
 data User { name: String }
 ```
 
@@ -231,7 +231,7 @@ Declares an opaque type whose implementation is in the runtime. Fields may be de
 
 ```zirric
 extern type String {
-	length: Int
+	chars() -> [Char]
 }
 ```
 
@@ -240,7 +240,7 @@ extern type String {
 Declares a function provided by the runtime.
 
 ```zirric
-extern fn print(msg)
+extern fn panic(message: String) -> Void
 ```
 
 ### `extern const`
@@ -313,7 +313,13 @@ data X {}
 
 **Modules.** A module is declared once per file, so its documentation is the comment above each of its `mod` declarations, joined in file name order and separated by a blank line.
 
-**Reading it back.** [`reflect.docs`](/stdlib/reflect/index#docs) answers for a module, a type, an attribute and a function. A `const` exports its value rather than its declaration, and a value carries nothing of the declaration it came from, so a constant's documentation is reached through [`reflect.declarations`](/stdlib/reflect/index#declarations) instead.
+**Reading it back.** [`reflect.docs`](/stdlib/reflect#docs) answers for a module, a type, an attribute and a function. A `const` exports its value rather than its declaration, and a value carries nothing of the declaration it came from, so a constant's documentation is reached through its declaration instead: [`reflect.moduleOf`](/stdlib/reflect#moduleof) gathers what a module declared, and [`reflect.declaration`](/stdlib/reflect#declaration-fn) picks one out of it by name.
+
+```zirric
+const meta = reflect.moduleOf(target)
+const answer = reflect.declaration(meta, "answer") ?? void
+answer.docs // "The answer to everything."
+```
 
 ## `import`
 
@@ -325,7 +331,7 @@ import tasks { Call }
 import xprelude = future.prelude
 ```
 
-**Module path.** The import path is a dot-separated sequence of identifiers.
+**Module path.** The import path is a dot-separated sequence of identifiers. It names either a module's fully qualified path, or its path relative to the importing package's base — so a package based at `example.greeter` reaches its own `example.greeter.report.html` as `report.html` as well as in full. A module directly under the package root is therefore reached by its directory name alone.
 
 **Alias.** The last segment of the path is the default alias. An explicit alias can be provided with `alias = path`.
 
@@ -364,6 +370,6 @@ Type hints can appear in several positions on declarations:
 
 ### What type hints express
 
-Type hints are documentation and tooling aids. They communicate the intended type to readers, editors, and the language server. The compiler records them for runtime `is` checks and `switch` matching, but Zirric does not perform static type checking — values may still flow dynamically.
+Type hints communicate the intended type to readers, editors, and the language server, and the compiler records them for runtime `is` checks and `switch` matching. Writing one is also a commitment: analysis reports an argument, a returned value, an initializer or an assignment that contradicts the hint it is measured against. Hints remain optional, and a value whose type the checker cannot determine fits anywhere. See [Type System § What type hints express](/specification/typesystem#what-type-hints-express).
 
 For the full type hint grammar and composite forms (`[T]`, `[K: V]`, `fn(P) -> R`, `@Attr`), see [Syntax § Type Expressions](/specification/syntax#type-expressions) and [Type System § Type Hints](/specification/typesystem#type-hints).

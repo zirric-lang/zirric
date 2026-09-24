@@ -5,4 +5,16 @@
 // An assertion here returns a `prelude.Result` rather than aborting. A test returns one, and that is its outcome — so a failure is an ordinary value you can pass around, and `all` combines several into one.
 //
 // Because they are values, nothing stops after the first failure unless you make it. Return a single assertion for a single check, or gather several with `all` to report every one.
+//
+// ```zirric
+// @Test()
+// fn testSplitsOnEverySeparator() {
+// 	assert.all([
+// 		assert.equal(["a", "b"], strings.split("a,b", ",")),
+// 		assert.equal([""], strings.split("", ",")),
+// 	])
+// }
+// ```
+//
+// See [`tests`](../index.md) for where a test module goes and how `zirric test` finds it.
 mod code.knabel.dev.zirric_lang.zirric.tests.assert

@@ -1,5 +1,5 @@
 ---
-title: "ZE-003: Named Data Construction"
+title: "ZE-003 - Named Data Construction"
 description: "Proposal for named argument syntax in data type construction and function calls."
 ---
 

@@ -1,32 +1,43 @@
 mod code.knabel.dev.zirric_lang.zirric.prelude
 
-// Represents an open range of integers from start (inclusive) to end (exclusive).
+// The integers from start up to but excluding end, written `[start, end)`.
+// `Range(0, 3)` iterates 0, 1, 2. This is the form to reach for by default: it counts `end - start` values, so it pairs with a length.
 @Countable(_rangeCount)
 @Iterable(_rangeIterate)
 data Range {
+	// The first integer in the range.
 	start: Int
+	// The first integer past the range.
 	end: Int
 }
 
-// Represents a closed range of integers from start (inclusive) to end (inclusive).
+// The integers from start to end, both included, written `[start, end]`.
+// `ClosedRange(0, 3)` iterates 0, 1, 2, 3. It is the only form that can name any non-empty span exactly, which is why `ranges` returns it.
 @Countable(_closedRangeCount)
 @Iterable(_closedRangeIterate)
 data ClosedRange {
+	// The first integer in the range.
 	start: Int
+	// The last integer in the range.
 	end: Int
 }
 
-// Represents an open range of integers strictly between start and end (both exclusive).
+// The integers strictly between start and end, both excluded, written `(start, end)`.
+// `OpenRange(0, 3)` iterates 1, 2.
 @Countable(_openRangeCount)
 @Iterable(_openRangeIterate)
 data OpenRange {
+	// The integer just before the range.
 	start: Int
+	// The integer just past the range.
 	end: Int
 }
 
 // A key/value pair, as yielded when iterating a Dict.
 data Pair {
+	// The key the entry is stored under.
 	key
+	// The value stored under it.
 	value
 }
 

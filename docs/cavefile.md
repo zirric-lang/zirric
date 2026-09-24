@@ -1,6 +1,6 @@
 # Cavefile manifests
 
-Zirric packages declare themselves, their dependencies and their tasks in a `Cavefile`. A Cavefile is regular Zirric source code that uses attributes from the `cave` and `tasks` standard library modules. For implementation details, see `proposals/ZE-002-the-cavefile.md` and `cave/manifest.zirr`.
+Zirric packages declare themselves, their dependencies and their tasks in a `Cavefile`. A Cavefile is regular Zirric source code that uses attributes from the `cave` and `tasks` standard library modules — see [`cave`](/stdlib/cave) and [`tasks`](/stdlib/tasks) for every attribute with its fields.
 
 ## The package
 
@@ -78,3 +78,5 @@ data GenerateTask {
 ```
 
 Tasks are registered by attributes such as `@tasks.Exec` or `@tasks.Call`. Flags and positional arguments are expressed as fields with type hints and task attributes.
+
+`zirric task` lists them and `zirric task <name>` runs one; a task whose name no built-in command claims also answers to `zirric <name>` directly. See [the CLI](/tooling/zirric-cli#tasks).

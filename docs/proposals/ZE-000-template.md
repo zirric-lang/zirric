@@ -1,6 +1,6 @@
 ---
 title: "ZE-000 - Template Proposal"
-description: "Template for Zirric Enhancement Proposals"
+description: "Template for Zirric Evolution Proposals"
 ---
 
 # Template Proposal

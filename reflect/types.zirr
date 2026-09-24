@@ -89,6 +89,7 @@ union TypeRef {
 
 	// An array type, e.g. [String].
 	data ArrayType {
+		// What the array holds, as written, on the same terms as OptionType's element.
 		element: TypeRef
 	}
 
@@ -106,7 +107,9 @@ union TypeRef {
 
 	// A dict type, e.g. [String: Int].
 	data DictType {
+		// What the keys are written as.
 		key: TypeRef
+		// What the values are written as.
 		value: TypeRef
 	}
 

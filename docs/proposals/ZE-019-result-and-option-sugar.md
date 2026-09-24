@@ -9,6 +9,8 @@ description: "Syntax sugar for ergonomic result unwrapping, optional chaining, f
 This proposal has been accepted and implemented. You can use this feature since Zirric [v0.1.0](/changelog/v0.1.0).
 
 What shipped differs from the design below in one respect: `?.` and `!.` read the field off what the wrapper holds, so the `.value` written throughout this proposal is not part of the syntax — `user?.address?.city`, not `user?.value.address?.value.city`. See [Expressions § Guarded Member Access](/specification/expressions#guarded-member-access) for the current rules.
+
+The desugarings below are written in a `switch` syntax that predates [ZE-017](/proposals/ZE-017-type-hints): where they say `case Err(e):`, `case None:` and `default:`, Zirric writes `case is Err:`, `case is None:` and `case _:`, and the matched value is read through its own fields rather than bound by the pattern. They are kept as written, as illustrations of the operators' meaning rather than as code to copy — see [Expressions § Switch](/specification/expressions#switch) for the syntax.
 :::
 
 ## Introduction

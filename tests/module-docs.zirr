@@ -7,4 +7,37 @@
 // The other attributes adjust what happens to one. `Skip` keeps it out of the run, `Todo` marks it as expected to be unfinished, `Only` narrows the run to itself, and `Comment` attaches a note that reporters print.
 //
 // This module is only the vocabulary. `tests.assert` writes the assertions, `tests.runner` finds and runs them, and `tests.tap` reports what happened.
+//
+// ## Where tests live
+//
+// `zirric test` runs every module of the project whose name ends in `_t`. Both shapes count: a `foo/_t/foo_t.zirr` submodule beside the code it tests, and a sibling module named `foo_t`. Nothing has to be registered — the name is the whole convention, and a project has a working `zirric test` before it has written anything about testing. A `Cavefile` that declares a `test` task takes over from the built-in entirely.
+//
+// ```zirric
+// mod example.strings._t
+//
+// import tests { Test, Skip, Comment }
+// import tests.assert
+// import strings
+//
+// @Test()
+// fn testJoinsWithSeparator() {
+// 	assert.equal("a,b", strings.join(["a", "b"], ","))
+// }
+//
+// @Test()
+// fn testReportsEveryFailedCheck() {
+// 	assert.all([
+// 		assert.equal(0, len("")),
+// 		assert.isTrue(strings.hasPrefix("abc", "a")),
+// 	])
+// }
+//
+// @Skip()
+// @Comment("waiting on the parser")
+// fn testNotYet() {
+// 	assert.fail("unreachable")
+// }
+// ```
+//
+// A test takes no arguments and returns a `prelude.Result` — which the assertions above already are, so returning one is the whole body. `zirric test` exits non-zero when any of them is an `Err`.
 mod code.knabel.dev.zirric_lang.zirric.tests

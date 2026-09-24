@@ -40,7 +40,7 @@ Both are plain data holding a function, so a test supplies its own. [`fixed`](#f
 
 ### `MonotonicClock` {#monotonicclock}
 
-<small>`clock/clock.zirr:22`</small>
+<small>`clock/clock.zirr:25`</small>
 
 ```zirric
 data MonotonicClock {
@@ -52,15 +52,15 @@ A clock that only ever moves forward, whose origin carries no meaning.
 
 #### Fields
 
-| Field | Description |
-| ----- | ----------- |
-| `now` |             |
+| Field | Description                                     |
+| ----- | ----------------------------------------------- |
+| `now` | Reads the current point on the monotonic scale. |
 
 ---
 
 ### `SystemClock` {#systemclock}
 
-<small>`clock/clock.zirr:17`</small>
+<small>`clock/clock.zirr:19`</small>
 
 ```zirric
 data SystemClock {
@@ -72,9 +72,9 @@ A clock reading civil time, which can jump when the host is corrected.
 
 #### Fields
 
-| Field | Description |
-| ----- | ----------- |
-| `now` |             |
+| Field | Description                   |
+| ----- | ----------------------------- |
+| `now` | Reads the current civil time. |
 
 ---
 
@@ -82,7 +82,7 @@ A clock reading civil time, which can jump when the host is corrected.
 
 ### `HasMonotonicClock` {#hasmonotonicclock}
 
-<small>`clock/clock.zirr:12`</small>
+<small>`clock/clock.zirr:13`</small>
 
 ```zirric
 attr HasMonotonicClock {
@@ -95,9 +95,9 @@ Kept apart from HasSystemClock because a wall clock can jump, so code measuring 
 
 #### Fields
 
-| Field   | Description |
-| ------- | ----------- |
-| `clock` |             |
+| Field   | Description                                      |
+| ------- | ------------------------------------------------ |
+| `clock` | Returns the monotonic clock this value provides. |
 
 ---
 
@@ -115,9 +115,9 @@ Provides the wall clock, for timestamping and calendar work.
 
 #### Fields
 
-| Field   | Description |
-| ------- | ----------- |
-| `clock` |             |
+| Field   | Description                                 |
+| ------- | ------------------------------------------- |
+| `clock` | Returns the wall clock this value provides. |
 
 ---
 
@@ -125,7 +125,7 @@ Provides the wall clock, for timestamping and calendar work.
 
 ### `fixed` {#fixed}
 
-<small>`clock/clock.zirr:37`</small>
+<small>`clock/clock.zirr:41`</small>
 
 ```zirric
 fn fixed(at: Timestamp) -> SystemClock
@@ -137,7 +137,7 @@ A wall clock frozen at one time, for tests that must see a fixed date.
 
 ### `instant` {#instant}
 
-<small>`clock/clock.zirr:32`</small>
+<small>`clock/clock.zirr:36`</small>
 
 ```zirric
 fn instant(c: MonotonicClock) -> Instant
@@ -149,7 +149,7 @@ The current monotonic reading. Subtract two to learn how much time passed betwee
 
 ### `now` {#now}
 
-<small>`clock/clock.zirr:27`</small>
+<small>`clock/clock.zirr:31`</small>
 
 ```zirric
 fn now(c: SystemClock) -> Timestamp
@@ -161,7 +161,7 @@ The current wall-clock time.
 
 ### `stepping` {#stepping}
 
-<small>`clock/clock.zirr:42`</small>
+<small>`clock/clock.zirr:46`</small>
 
 ```zirric
 fn stepping(from: Timestamp, step: Duration) -> SystemClock
@@ -173,7 +173,7 @@ A wall clock starting at from and advancing by step on every reading, for tests 
 
 ### `steppingMonotonic` {#steppingmonotonic}
 
-<small>`clock/clock.zirr:53`</small>
+<small>`clock/clock.zirr:57`</small>
 
 ```zirric
 fn steppingMonotonic(step: Duration) -> MonotonicClock

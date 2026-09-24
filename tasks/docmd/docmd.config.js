@@ -471,168 +471,173 @@ module.exports = {
       children: [
         {
           icon: "circle-check",
-          title: "ZE-01 Language",
+          title: "ZE-001 Language",
           path: "/proposals/ZE-001-base-language"
         },
         {
           icon: "circle-check",
-          title: "ZE-02 Cavefile",
+          title: "ZE-002 Cavefile",
           path: "/proposals/ZE-002-the-cavefile"
         },
         {
           icon: "circle-x",
-          title: "ZE-03 Named Params",
+          title: "ZE-003 Named Params",
           path: "/proposals/ZE-003-named-data-construction"
         },
         {
           icon: "circle-x",
-          title: "ZE-04 Variadic Attributes",
+          title: "ZE-004 Variadic Attributes",
           path: "/proposals/ZE-004-Variadic-Attributes"
         },
         {
           icon: "circle",
-          title: "ZE-05 Mixins",
+          title: "ZE-005 Mixins",
           path: "/proposals/ZE-005-Mixin-Type-Declarations"
         },
         {
           icon: "circle-x",
-          title: "ZE-06 Parsing",
+          title: "ZE-006 Parsing",
           path: "/proposals/ZE-006-Attribute-Based-Parsing-System"
         },
         {
           icon: "circle",
-          title: "ZE-07 Attribute Binding",
+          title: "ZE-007 Attribute Binding",
           path: "/proposals/ZE-007-attribute-binding"
         },
         {
           icon: "circle-check",
-          title: "ZE-08 Errors",
+          title: "ZE-008 Errors",
           path: "/proposals/ZE-008-error-handling"
         },
         {
           icon: "circle-check",
-          title: "ZE-09 Option",
+          title: "ZE-009 Option",
           path: "/proposals/ZE-009-option-values"
         },
         {
           icon: "circle-check",
-          title: "ZE-10 Iterable",
+          title: "ZE-010 Iterable",
           path: "/proposals/ZE-010-iterable"
         },
         {
           icon: "circle-check",
-          title: "ZE-11 Zirric CLI",
+          title: "ZE-011 Zirric CLI",
           path: "/proposals/ZE-011-zirric-cli"
         },
         {
           icon: "circle-x",
-          title: "ZE-12 Type and Returns Sugar",
+          title: "ZE-012 Type and Returns Sugar",
           path: "/proposals/ZE-012-type-and-returns-sugar"
         },
         {
           icon: "circle-check",
-          title: "ZE-13 Mutability and Constants",
+          title: "ZE-013 Mutability and Constants",
           path: "/proposals/ZE-013-mutability-and-constants"
         },
         {
           icon: "circle-check",
-          title: "ZE-14 Attribute and Declaration Keywords",
+          title: "ZE-014 Attribute and Declaration Keywords",
           path: "/proposals/ZE-014-attribute-and-declaration-keywords"
         },
         {
           icon: "circle",
-          title: "ZE-15 Extern Type Constructors",
+          title: "ZE-015 Extern Type Constructors",
           path: "/proposals/ZE-015-extern-type-constructors"
         },
         {
           icon: "circle-check",
-          title: "ZE-16 Closure Syntax",
+          title: "ZE-016 Closure Syntax",
           path: "/proposals/ZE-016-closure-syntax"
         },
         {
           icon: "circle-check",
-          title: "ZE-17 Type Hints",
+          title: "ZE-017 Type Hints",
           path: "/proposals/ZE-017-type-hints"
         },
         {
           icon: "circle-check",
-          title: "ZE-18 I/O, Fmt, OS",
+          title: "ZE-018 I/O, Fmt, OS",
           path: "/proposals/ZE-018-io-fmt-os"
         },
         {
           icon: "circle-check",
-          title: "ZE-19 Result & Option Sugar",
+          title: "ZE-019 Result & Option Sugar",
           path: "/proposals/ZE-019-result-and-option-sugar"
         },
         {
           icon: "circle-check",
-          title: "ZE-20 Standard Library",
+          title: "ZE-020 Standard Library",
           path: "/proposals/ZE-020-standard-library"
         },
         {
           icon: "circle-check",
-          title: "ZE-21 Encoding and Decoding",
+          title: "ZE-021 Encoding and Decoding",
           path: "/proposals/ZE-021-encoding-and-decoding"
         },
         {
           icon: "circle-check",
-          title: "ZE-22 Static Checks",
+          title: "ZE-022 Static Checks",
           path: "/proposals/ZE-022-static-checks"
         },
         {
           icon: "circle-check",
-          title: "ZE-23 Code Formatting",
+          title: "ZE-023 Code Formatting",
           path: "/proposals/ZE-023-code-formatting"
         },
         {
           icon: "circle-check",
-          title: "ZE-24 Module Names",
+          title: "ZE-024 Module Names",
           path: "/proposals/ZE-024-qualified-module-names"
         },
         {
           icon: "circle-check",
-          title: "ZE-25 Routines and Channels",
+          title: "ZE-025 Routines and Channels",
           path: "/proposals/ZE-025-routines-and-channels"
         },
         {
           icon: "circle",
-          title: "ZE-26 Terminal User Interfaces",
+          title: "ZE-026 Terminal User Interfaces",
           path: "/proposals/ZE-026-terminal-user-interfaces"
         },
         {
           icon: "circle",
-          title: "ZE-27 Processes",
+          title: "ZE-027 Processes",
           path: "/proposals/ZE-027-processes"
         },
         {
           icon: "circle",
-          title: "ZE-28 HTTP Client",
+          title: "ZE-028 HTTP Client",
           path: "/proposals/ZE-028-http-client"
         },
         {
           icon: "circle",
-          title: "ZE-29 Documentation Structure",
+          title: "ZE-029 Documentation Structure",
           path: "/proposals/ZE-029-documentation-structure"
         },
         {
           icon: "circle",
-          title: "ZE-30 Attribute Constraints in Unions",
+          title: "ZE-030 Attribute Constraints in Unions",
           path: "/proposals/ZE-030-attribute-constraints-in-unions"
         },
         {
           icon: "circle-x",
-          title: "ZE-31 Attributes Required on Members",
+          title: "ZE-031 Attributes Required on Members",
           path: "/proposals/ZE-031-attributes-required-on-members"
         },
         {
           icon: "circle",
-          title: "ZE-32 String Interpolation",
+          title: "ZE-032 String Interpolation",
           path: "/proposals/ZE-032-string-interpolation"
         },
         {
           icon: "circle",
-          title: "ZE-33 Result and Option as Constraint Unions",
+          title: "ZE-033 Result and Option as Constraint Unions",
           path: "/proposals/ZE-033-result-and-option-as-constraint-unions"
+        },
+        {
+          icon: "circle-dot",
+          title: "ZE-034 Writer-First Printing",
+          path: "/proposals/ZE-034-writer-first-printing"
         }
       ]
     },

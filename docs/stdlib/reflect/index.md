@@ -117,9 +117,9 @@ An array type, e.g. [String].
 
 #### Fields
 
-| Field     | Description |
-| --------- | ----------- |
-| `element` |             |
+| Field     | Description                                                                  |
+| --------- | ---------------------------------------------------------------------------- |
+| `element` | What the array holds, as written, on the same terms as OptionType's element. |
 
 ---
 
@@ -137,7 +137,7 @@ An attribute declaration.
 
 ### `AttrsType` {#attrstype}
 
-<small>`reflect/types.zirr:122`</small>
+<small>`reflect/types.zirr:125`</small>
 
 ```zirric
 data AttrsType {
@@ -210,7 +210,7 @@ Attributes are read off a Declaration exactly as off any other value, so `tests.
 
 ### `DictType` {#dicttype}
 
-<small>`reflect/types.zirr:108`</small>
+<small>`reflect/types.zirr:109`</small>
 
 ```zirric
 data DictType {
@@ -223,10 +223,10 @@ A dict type, e.g. [String: Int].
 
 #### Fields
 
-| Field   | Description |
-| ------- | ----------- |
-| `key`   |             |
-| `value` |             |
+| Field   | Description                     |
+| ------- | ------------------------------- |
+| `key`   | What the keys are written as.   |
+| `value` | What the values are written as. |
 
 ---
 
@@ -269,7 +269,7 @@ A function, declared with fn or extern fn.
 
 ### `FuncType` {#functype}
 
-<small>`reflect/types.zirr:114`</small>
+<small>`reflect/types.zirr:117`</small>
 
 ```zirric
 data FuncType {
@@ -342,7 +342,7 @@ A type referred to by name, e.g. String or Person.
 
 ### `OptionType` {#optiontype}
 
-<small>`reflect/types.zirr:96`</small>
+<small>`reflect/types.zirr:97`</small>
 
 ```zirric
 data OptionType {
@@ -362,7 +362,7 @@ An optional type, e.g. String?.
 
 ### `ResultType` {#resulttype}
 
-<small>`reflect/types.zirr:102`</small>
+<small>`reflect/types.zirr:103`</small>
 
 ```zirric
 data ResultType {
@@ -440,7 +440,7 @@ A declaration in a form reflection does not describe.
 
 ### `UnknownType` {#unknowntype}
 
-<small>`reflect/types.zirr:128`</small>
+<small>`reflect/types.zirr:131`</small>
 
 ```zirric
 data UnknownType

@@ -33,12 +33,14 @@ fn write(writer: @Writer, buf: Binary) -> Int {
 // Any type can be a reader by carrying @Reader; this is simply the one the host hands out.
 @Reader(_readFromStream)
 data ReadStream {
+	// Reads up to the given number of bytes from the host.
 	readFrom: fn(Int) -> Binary
 }
 
 // A writable stream backed by the host, such as standard output or an open file.
 @Writer(_writeToStream)
 data WriteStream {
+	// Writes the buffer to the host and returns the number of bytes written.
 	writeTo: fn(Binary) -> Int
 }
 

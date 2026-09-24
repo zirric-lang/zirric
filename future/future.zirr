@@ -1,5 +1,8 @@
 mod code.knabel.dev.zirric_lang.zirric.future
 
+// Links a declaration to the proposal that describes it.
+// Written on anything a proposal introduced, here or elsewhere, so a reader can find the design the declaration came from.
 attr Proposal {
+	// The proposal's page, e.g. "https://zirric.knabel.dev/proposals/ZE-002-the-cavefile/".
 	link: String
 }

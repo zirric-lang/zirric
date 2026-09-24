@@ -43,11 +43,11 @@ union Like {
 
 #### Cases
 
-| Case          | Interpretation                                                                        |
-| ------------- | ------------------------------------------------------------------------------------- |
-| `Range`       | Represents an open range of integers from start (inclusive) to end (exclusive).       |
-| `ClosedRange` | Represents a closed range of integers from start (inclusive) to end (inclusive).      |
-| `OpenRange`   | Represents an open range of integers strictly between start and end (both exclusive). |
+| Case          | Interpretation                                                                                                                                                                                                  |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Range`       | The integers from start up to but excluding end, written `[start, end)`. `Range(0, 3)` iterates 0, 1, 2. This is the form to reach for by default: it counts `end - start` values, so it pairs with a length.   |
+| `ClosedRange` | The integers from start to end, both included, written `[start, end]`. `ClosedRange(0, 3)` iterates 0, 1, 2, 3. It is the only form that can name any non-empty span exactly, which is why `ranges` returns it. |
+| `OpenRange`   | The integers strictly between start and end, both excluded, written `(start, end)`. `OpenRange(0, 3)` iterates 1, 2.                                                                                            |
 
 ---
 

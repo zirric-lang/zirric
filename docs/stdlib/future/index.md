@@ -32,7 +32,7 @@ Once a proposal is accepted, its implementation moves to the module it belongs i
 
 ### `Proposal` {#proposal}
 
-<small>`future/future.zirr:3`</small>
+<small>`future/future.zirr:5`</small>
 
 ```zirric
 attr Proposal {
@@ -40,8 +40,11 @@ attr Proposal {
 }
 ```
 
+Links a declaration to the proposal that describes it.
+Written on anything a proposal introduced, here or elsewhere, so a reader can find the design the declaration came from.
+
 #### Fields
 
-| Field  | Description |
-| ------ | ----------- |
-| `link` |             |
+| Field  | Description                                                                           |
+| ------ | ------------------------------------------------------------------------------------- |
+| `link` | The proposal's page, e.g. "https://zirric.knabel.dev/proposals/ZE-002-the-cavefile/". |

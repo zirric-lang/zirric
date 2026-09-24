@@ -5,7 +5,9 @@ description: "A union member may be an attribute constraint, letting a union mix
 
 # Attribute Constraints in Unions
 
-> **Draft.** This proposal is still a draft and is subject to change. It cannot be used right now.
+::: callout draft Draft
+This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design. Features described here may not be implemented as described and cannot be used right now.
+:::
 
 ## Introduction
 

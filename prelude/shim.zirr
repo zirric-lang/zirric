@@ -15,18 +15,22 @@ extern type AnyModule {}
 // All module types are of type `ModuleType`.
 extern type ModuleType {}
 
-extern fn append(Array, Any) -> Array
+// Returns a new collection with value added to the end, leaving the original untouched.
+// An `Array` takes any value; a `Binary` takes a `Byte` or another `Binary`.
+extern fn append(collection, value)
 
 // A finite list of values.
 @Countable(_arrayLen)
 @Iterable(_arrayIterate)
 extern type Array {}
 
+// The true value of type `Bool`.
 const true = 0 == 0
+// The false value of type `Bool`.
 const false = 0 != 0
 
-// Represents boolean values like `True` and `False`.
-// Typically used for conditionals and flags.
+// One of the two values `true` and `false`.
+// Typically used for conditionals and flags. Comparisons produce one, and `if`, `for` and `&&`/`||` require one.
 extern type Bool {}
 
 // A single character from a string.

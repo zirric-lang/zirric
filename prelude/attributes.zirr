@@ -10,6 +10,7 @@ attr Default {
 // Marks a declaration as deprecated with a reason.
 // IDEs and other tools can use this information to warn users about deprecated declarations.
 attr Deprecated {
+	// Why it is deprecated, and what to use instead.
 	@Default("without alternative") reason: String
 }
 

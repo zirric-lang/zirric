@@ -1,21 +1,40 @@
 mod code.knabel.dev.zirric_lang.zirric.tests
 
+// Marks a function as a test. The function takes no arguments and returns a `Result`.
+// This is the whole of what makes a test: the runner finds functions carrying it by reading a module through `reflect`.
 attr Test {}
+
+// Keeps a test out of the run. It is reported as skipped rather than omitted.
 attr Skip {}
+
+// Narrows the run to the tests carrying it. With no such test, every test runs.
 attr Only {}
+
+// Marks a test as expected to be unfinished. It runs, and its outcome is reported as a todo either way.
 attr Todo {}
+
+// Attaches a note to a test that reporters print alongside it.
 attr Comment {
+	// The note to print.
 	text: String
 }
 
+// One test, as the runner will execute it.
 data TestCase {
+	// The fully qualified name, which is the module's name and the function's joined with a dot.
 	name: String
+	// The test function itself.
 	impl: fn() -> Result
+	// Whether the runner will report it without running it.
 	skipped: Bool
+	// The `Comment` written on it, or the empty String when none was.
 	comment: String
+	// What `Skip`, `Todo` or `Only` was written on it, if any.
 	details: TestCaseDetails
 }
 
+// What `Skip`, `Todo` or `Only` was written on a test, or `None` when none of them was.
+//
 // Each member says how to be read as an Option, the way prelude's own Result members do: a union's attributes are not read off a value of one of its members.
 @AnyOption(fn(v) {
 	switch v {
@@ -26,29 +45,67 @@ data TestCase {
 	}
 })
 union TestCaseDetails {
+	// Nothing of the three was written on the test.
 	None
 
+	// The test carries `Skip`.
 	@AnyOption(fn(d) { Some(d) })
 	data TestCaseDetailsSkip {}
+	// The test carries `Todo`.
 	@AnyOption(fn(d) { Some(d) })
 	data TestCaseDetailsTodo {}
+	// The test carries `Only`.
 	@AnyOption(fn(d) { Some(d) })
 	data TestCaseDetailsOnly {}
 }
 
+// What a run emits as it proceeds, in the order a reporter sees it.
 union TestEvent {
-	data Discovered { cases: [TestCase] }
-	data Skipped { test: TestCase }
-	data Started { test: TestCase }
-	data Finished { test: TestCase, outcome: Result }
-	data Completed { report: TestReport }
+	// Emitted once, before anything runs, with every case the run will cover.
+	data Discovered {
+		// Every case the run will cover, skipped ones included.
+		cases: [TestCase]
+	}
+	// A case that will not run.
+	data Skipped {
+		// The case being skipped.
+		test: TestCase
+	}
+	// A case that is about to run.
+	data Started {
+		// The case about to run.
+		test: TestCase
+	}
+	// A case that has run, with what it returned.
+	data Finished {
+		// The case that ran.
+		test: TestCase
+		// What it returned: an `Ok`, or an `Err` whose `reason` says what went wrong.
+		outcome: Result
+	}
+	// Emitted once, after everything has run.
+	data Completed {
+		// What the run amounted to.
+		report: TestReport
+	}
 }
 
+// What a run amounted to. A case appears in exactly one of the four.
 data TestReport {
+	// The cases that returned an `Ok`.
 	pass: [TestCase]
+	// The cases that returned an `Err`, with the error each returned.
 	fail: [FailureRecord]
+	// The cases that carried `Skip` and so were not run.
 	skip: [TestCase]
+	// The cases that carried `Todo`, whatever they returned.
 	todo: [TestCase]
 }
 
-data FailureRecord { test: TestCase, error: Err }
+// A failed case together with the error it returned.
+data FailureRecord {
+	// The case that failed.
+	test: TestCase
+	// The `Err` it returned, whose `reason` says what went wrong.
+	error: Err
+}

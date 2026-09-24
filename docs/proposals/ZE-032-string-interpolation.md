@@ -5,7 +5,9 @@ description: "A string literal may embed an expression as \\(expression), render
 
 # String Interpolation
 
-> **Draft.** This proposal is at an early stage and may change significantly. It can't be used yet.
+::: callout draft Draft
+This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design. Features described here may not be implemented as described and cannot be used right now.
+:::
 
 ## Introduction
 
