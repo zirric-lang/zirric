@@ -18,7 +18,7 @@ import io
 
 `io` describes streams rather than implementing them. [`Reader`](#reader) and [`Writer`](#writer) are attributes, so any type becomes a stream by carrying one — a file, a socket, or a buffer you wrote yourself. Functions that move bytes take [`@io.Reader`](#reader) or [`@io.Writer`](#writer) and never care which.
 
-[`ReadStream`](#readstream) and [`WriteStream`](#writestream) are simply the ones the host hands out; `os.os.stdout` returns a [`WriteStream`](#writestream), and an open [`fs.File`](../fs/index.md#file) carries both attributes at once.
+[`ReadStream`](#readstream) and [`WriteStream`](#writestream) are simply the ones the host hands out; `os.stdout()` returns a [`WriteStream`](#writestream), and an open [`fs.File`](../fs/index.md#file) carries both attributes at once.
 
 The `Has…` attributes are the other half: a program declares that its environment provides a writer, and a test passes one that collects into memory instead of reaching for standard output.
 

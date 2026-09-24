@@ -168,7 +168,7 @@ func isValidLValue(expr ast.Expr) bool {
 	return false
 }
 
-// guardedAccessIn finds a `?.` or `!.` anywhere along a postfix chain. Anywhere is what matters for an assignment target: `user?.value.name` ends in a plain dot, yet the place it would write to only exists when the guard lets the chain through.
+// guardedAccessIn finds a `?.` or `!.` anywhere along a postfix chain. Anywhere is what matters for an assignment target: `user?.name` ends in a plain dot, yet the place it would write to only exists when the guard lets the chain through.
 func guardedAccessIn(expr ast.Expr) (ast.MemberAccess, bool) {
 	for {
 		switch node := expr.(type) {

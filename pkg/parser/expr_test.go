@@ -152,7 +152,7 @@ func TestExprGuardedMemberAccess(t *testing.T) {
 	}{
 		{"user.name", "user.name", []ast.MemberAccess{ast.MemberAccessPlain}},
 		{"user?.name", "user?.name", []ast.MemberAccess{ast.MemberAccessOption}},
-		{"result!.value", "result!.value", []ast.MemberAccess{ast.MemberAccessResult}},
+		{"result!.field", "result!.field", []ast.MemberAccess{ast.MemberAccessResult}},
 		{
 			"user?.address?.city",
 			"user?.address?.city",
@@ -169,7 +169,7 @@ func TestExprGuardedMemberAccess(t *testing.T) {
 		{"a ?? b + 1", "(a??(b+1))", nil},
 		{"a ?? b ?? c", "(a??(b??c))", nil},
 		{"a ?? b == c", "((a??b)==c)", nil},
-		{"readFile(path)!.value", "readFile(pathreadFile)!.value", []ast.MemberAccess{ast.MemberAccessResult}},
+		{"readFile(path)!.field", "readFile(pathreadFile)!.field", []ast.MemberAccess{ast.MemberAccessResult}},
 	}
 
 	for i, tt := range tests {
@@ -209,7 +209,7 @@ func TestExprGuardedMemberAccess(t *testing.T) {
 	}
 }
 
-// TestGuardedAccessIsNotAnAssignmentTarget covers a guard anywhere along the chain, not just at its end: `user?.value.name` ends in a plain dot, yet the place it would write to only exists when the guard lets the chain through.
+// TestGuardedAccessIsNotAnAssignmentTarget covers a guard anywhere along the chain, not just at its end: `user?.name` ends in a plain dot, yet the place it would write to only exists when the guard lets the chain through.
 func TestGuardedAccessIsNotAnAssignmentTarget(t *testing.T) {
 	rejected := []string{
 		"user?.name = 1",

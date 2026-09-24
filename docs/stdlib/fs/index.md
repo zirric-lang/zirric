@@ -18,7 +18,7 @@ import fs
 
 A filesystem in Zirric is a value, not a global. [`FileSystem`](#filesystem) carries one function per operation, and every module function here takes it as its first argument — so `fs.readFile(fsys, "a.txt")` and `fsys.readFile("a.txt")` do the same thing, and the first reads better in a chain.
 
-Because it is a value, it can be swapped. `memory()` returns an empty in-memory filesystem that touches no disk and needs no cleaning up; `os.os.fs` returns the real one. Code that accepts a [`FileSystem`](#filesystem) — or requires [`HasFileSystem`](#hasfilesystem) — works with either.
+Because it is a value, it can be swapped. `memory()` returns an empty in-memory filesystem that touches no disk and needs no cleaning up; `os.fs()` returns the real one. Code that accepts a [`FileSystem`](#filesystem) — or requires [`HasFileSystem`](#hasfilesystem) — works with either.
 
 Everything that can fail returns a [`prelude.Result`](../prelude/index.md#result) rather than stopping the program.
 
