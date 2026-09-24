@@ -9,8 +9,7 @@ var _ RuntimeValue = SimpleType{}
 type SimpleType struct {
 	Decl       *ast.Symbol
 	Attributes map[TypeId]int
-	// builtinTypeId overrides the TypeConstantId for prelude builtin types
-	// whose runtime values use hardcoded iota-based TypeIds.
+	// builtinTypeId overrides the TypeConstantId for prelude builtin types whose runtime values use hardcoded iota-based TypeIds.
 	builtinTypeId *TypeId
 }
 
@@ -32,8 +31,7 @@ func (i SimpleType) TypeConstantId() TypeId {
 	return TypeId(*i.Decl.ConstantId)
 }
 
-// MakeBuiltinSimpleType creates a SimpleType for a prelude builtin type,
-// using the hardcoded TypeId that matches the runtime value types.
+// MakeBuiltinSimpleType creates a SimpleType for a prelude builtin type, using the hardcoded TypeId that matches the runtime value types.
 func MakeBuiltinSimpleType(decl *ast.Symbol, builtinTypeId TypeId) SimpleType {
 	return SimpleType{Decl: decl, builtinTypeId: &builtinTypeId}
 }

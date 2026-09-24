@@ -3,9 +3,7 @@ mod code.knabel.dev.zirric_lang.zirric.fmt
 import io
 import bytes
 
-// Converts any value to its string representation. Prefers the value's
-// @Printable attribute when it has one, otherwise falls back to a trivial
-// conversion for builtin types (Int, Float, Char, Byte as hex, ...).
+// Converts any value to its string representation. Prefers the value's @Printable attribute when it has one, otherwise falls back to a trivial conversion for builtin types (Int, Float, Char, Byte as hex, ...).
 extern fn sprint(value: Any) -> String
 
 // Writes the string representation of a printable value to a writer.

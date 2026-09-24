@@ -7,8 +7,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/compiler"
 )
 
-// TestNonAttributeTypeRejectedOnDataField verifies that using a non-attribute
-// type (like Bool) as @Bool() on a data field produces a compile error.
+// TestNonAttributeTypeRejectedOnDataField verifies that using a non-attribute type (like Bool) as @Bool() on a data field produces a compile error.
 func TestNonAttributeTypeRejectedOnDataField(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -144,8 +143,7 @@ func TestNonAttributeTypeRejectedOnDataField(t *testing.T) {
 	}
 }
 
-// TestFieldTypeHintParsesCorrectly verifies that `: Type` syntax
-// on fields, parameters, constants and variables parses and compiles.
+// TestFieldTypeHintParsesCorrectly verifies that `: Type` syntax on fields, parameters, constants and variables parses and compiles.
 func TestFieldTypeHintParsesCorrectly(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -225,8 +223,7 @@ func TestFieldTypeHintParsesCorrectly(t *testing.T) {
 	}
 }
 
-// TestFieldTypeHintWithAttribute verifies that fields can have
-// both attributes and type hints simultaneously.
+// TestFieldTypeHintWithAttribute verifies that fields can have both attributes and type hints simultaneously.
 func TestFieldTypeHintWithAttribute(t *testing.T) {
 	input := `
 		attr Default {

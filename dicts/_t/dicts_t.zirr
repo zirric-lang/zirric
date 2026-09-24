@@ -6,7 +6,7 @@ import tests.assert
 import dicts
 
 @Test()
-fn testIsEmpty() {
+fn testIsEmpty() -> Result {
 	assert.all([
 		assert.equal(true, dicts.isEmpty([:])),
 		assert.equal(false, dicts.isEmpty(["a": 1])),
@@ -14,7 +14,7 @@ fn testIsEmpty() {
 }
 
 @Test()
-fn testMap() {
+fn testMap() -> Result {
 	assert.equal(
 		["a": "a1", "b": "b2"],
 		dicts.map(["a": 1, "b": 2], fn(k, v) { k + v })
@@ -22,7 +22,7 @@ fn testMap() {
 }
 
 @Test()
-fn testMapKeys() {
+fn testMapKeys() -> Result {
 	assert.equal(
 		["a!": 1, "b!": 2],
 		dicts.mapKeys(["a": 1, "b": 2], fn(k) { k + "!" })
@@ -30,7 +30,7 @@ fn testMapKeys() {
 }
 
 @Test()
-fn testMapValues() {
+fn testMapValues() -> Result {
 	assert.equal(
 		["a": 10, "b": 20],
 		dicts.mapValues(["a": 1, "b": 2], fn(v) { v * 10 })
@@ -38,7 +38,7 @@ fn testMapValues() {
 }
 
 @Test()
-fn testMapPairs() {
+fn testMapPairs() -> Result {
 	assert.equal(
 		["a!": 10, "b!": 20],
 		dicts.mapPairs(["a": 1, "b": 2], fn(p) { Pair(p.key + "!", p.value * 10) })
@@ -46,7 +46,7 @@ fn testMapPairs() {
 }
 
 @Test()
-fn testFilter() {
+fn testFilter() -> Result {
 	assert.all([
 		assert.equal(["b": 2], dicts.filter(["a": 1, "b": 2], fn(k, v) { v > 1 })),
 		assert.equal(["a": 1], dicts.filter(["a": 1, "b": 2], fn(k, v) { k == "a" })),
@@ -55,7 +55,7 @@ fn testFilter() {
 }
 
 @Test()
-fn testReduce() {
+fn testReduce() -> Result {
 	assert.all([
 		assert.equal(3, dicts.reduce(["a": 1, "b": 2], 0, fn(acc, k, v) { acc + v })),
 		assert.equal(0, dicts.reduce([:], 0, fn(acc, k, v) { acc + v })),
@@ -63,7 +63,7 @@ fn testReduce() {
 }
 
 @Test()
-fn testHasKey() {
+fn testHasKey() -> Result {
 	assert.all([
 		assert.equal(true, dicts.hasKey(["a": 1], "a")),
 		assert.equal(false, dicts.hasKey(["a": 1], "b")),

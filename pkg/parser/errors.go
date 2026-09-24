@@ -31,8 +31,7 @@ func (e ParseError) Position() *token.Source {
 	return e.Token.Source
 }
 
-// ParseErrors is a collection of parse errors that implements the error
-// interface. Callers can unwrap it via errors.As to access individual errors.
+// ParseErrors is a collection of parse errors that implements the error interface. Callers can unwrap it via errors.As to access individual errors.
 type ParseErrors []ParseError
 
 // Unwrap implements the convention for an error holding several errors, which is what lets errors.As reach an individual ParseError and what a renderer walks to show each one.

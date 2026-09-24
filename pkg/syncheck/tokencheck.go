@@ -7,10 +7,10 @@ import (
 
 // to test tokens and highlighting, we follow the format:
 // https://tree-sitter.github.io/tree-sitter/syntax-highlighting#unit-testing
-// Test lines always connect to the previous non-test-line
-// There are Carot ^ tests testing the token in the same column above
-// And arrow <- tests that test at the column of the comment `//`
-// Negation with `!`
+// Test lines always connect to the previous non-test-line.
+// There are Carot ^ tests testing the token in the same column above.
+// And arrow <- tests that test at the column of the comment `//`.
+// Negation with `!`.
 // Test lines will stripped from the output.
 
 // TODO: migrate to offset based assertions

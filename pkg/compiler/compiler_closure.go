@@ -6,8 +6,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/runtime"
 )
 
-// compileExprFunc compiles an anonymous function literal (ExprFunc) into
-// either a plain Const (no captures) or a MakeClosure instruction.
+// compileExprFunc compiles an anonymous function literal (ExprFunc) into either a plain Const (no captures) or a MakeClosure instruction.
 func (c *Compiler) compileExprFunc(fn *ast.ExprFunc) error {
 	symbols := fn.Symbols
 	if symbols == nil {
@@ -15,8 +14,7 @@ func (c *Compiler) compileExprFunc(fn *ast.ExprFunc) error {
 	}
 
 	// Build free mapping: which FreeSymbols actually need runtime captures.
-	// Globals and module-level constants are accessible directly and don't
-	// need entries in the Free array.
+	// Globals and module-level constants are accessible directly and don't need entries in the Free array.
 	freeMapping := map[int]int{}
 	freeCount := 0
 	if symbols != nil {
@@ -28,7 +26,6 @@ func (c *Compiler) compileExprFunc(fn *ast.ExprFunc) error {
 		}
 	}
 
-	// Compile function body in a new scope.
 	c.enterScope(symbols)
 	c.scopes[c.scopeIdx].freeMapping = freeMapping
 
@@ -87,10 +84,8 @@ func (c *Compiler) compileExprFunc(fn *ast.ExprFunc) error {
 	return nil
 }
 
-// needsCapture reports whether a parent symbol referenced by a FreeScope
-// symbol requires a runtime capture slot in the closure's Free array.
-// Module-level globals and constants with ConstantId (types, named functions)
-// are accessible via GetGlobal/Const and don't need capturing.
+// needsCapture reports whether a parent symbol referenced by a FreeScope symbol requires a runtime capture slot in the closure's Free array.
+// Module-level globals and constants with ConstantId (types, named functions) are accessible via GetGlobal/Const and don't need capturing.
 func needsCapture(parentSym *ast.Symbol) bool {
 	orig := parentSym.Original()
 	if orig.GlobalId != nil {
@@ -102,18 +97,15 @@ func needsCapture(parentSym *ast.Symbol) bool {
 	return true
 }
 
-// emitPushCapture emits instructions to push a captured value onto the stack
-// when building a closure. Called from the enclosing scope after leaveScope.
+// emitPushCapture emits instructions to push a captured value onto the stack when building a closure. Called from the enclosing scope after leaveScope.
 func (c *Compiler) emitPushCapture(parentSym *ast.Symbol) error {
 	switch parentSym.Scope {
 	case ast.LocalScope, "":
-		// Default empty scope means the symbol is local to its owning
-		// SymbolTable (same frame). Push its value/cell via GetLocal.
+		// Default empty scope means the symbol is local to its owning SymbolTable (same frame). Push its value/cell via GetLocal.
 		if parentSym.LocalId == nil {
 			return errInvariant(parentSym.Decl, "the captured %s was never given a local slot, which the analyzer assigns before compilation", parentSym.Name)
 		}
-		// GetLocal pushes the raw value for const/param captures,
-		// or the *UpvalueCell pointer for var captures (already wrapped).
+		// GetLocal pushes the raw value for const/param captures, or the *UpvalueCell pointer for var captures (already wrapped).
 		c.emit(op.GetLocal, *parentSym.LocalId)
 		return nil
 	case ast.FreeScope:
@@ -139,11 +131,7 @@ func (c *Compiler) emitPushCapture(parentSym *ast.Symbol) error {
 	}
 }
 
-// compileFreeIdentifier compiles a read of a FreeScope identifier. If the
-// original symbol is a module-level global or constant, the corresponding
-// GetGlobal/Const is emitted. Otherwise it walks one .Parent hop at a time
-// (see resolveFreeAccess) to find either a real closure capture or a
-// same-frame local, dereferencing an UpvalueCell for mutable var bindings.
+// compileFreeIdentifier compiles a read of a FreeScope identifier. If the original symbol is a module-level global or constant, the corresponding GetGlobal/Const is emitted. Otherwise it walks one .Parent hop at a time (see resolveFreeAccess) to find either a real closure capture or a same-frame local, dereferencing an UpvalueCell for mutable var bindings.
 func (c *Compiler) compileFreeIdentifier(symbol *ast.Symbol) error {
 	orig := symbol.Original()
 

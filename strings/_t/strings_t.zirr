@@ -7,7 +7,7 @@ import results
 import strings
 
 @Test()
-fn testFrom() {
+fn testFrom() -> Result {
 	assert.all([
 		assert.equal("a", strings.from('a')),
 		assert.equal("hello", strings.from("hello")),
@@ -15,7 +15,7 @@ fn testFrom() {
 }
 
 @Test()
-fn testCount() {
+fn testCount() -> Result {
 	assert.all([
 		assert.equal(0, strings.count("")),
 		assert.equal(5, strings.count("hello")),
@@ -26,7 +26,7 @@ fn testCount() {
 }
 
 @Test()
-fn testCharAt() {
+fn testCharAt() -> Result {
 	assert.all([
 		assert.equal('h', strings.charAt("hello", 0)),
 		assert.equal('o', strings.charAt("hello", 4)),
@@ -36,7 +36,7 @@ fn testCharAt() {
 }
 
 @Test()
-fn testSlice() {
+fn testSlice() -> Result {
 	assert.all([
 		assert.equal("ell", strings.slice("hello", 1, 4)),
 		assert.equal("", strings.slice("hello", 2, 2)),
@@ -47,7 +47,7 @@ fn testSlice() {
 }
 
 @Test()
-fn testRange() {
+fn testRange() -> Result {
 	assert.all([
 		assert.equal("ell", strings.range("hello", Range(1, 4))),
 		assert.equal("ell", strings.range("hello", ClosedRange(1, 3))),
@@ -56,7 +56,7 @@ fn testRange() {
 }
 
 @Test()
-fn testIsEmpty() {
+fn testIsEmpty() -> Result {
 	assert.all([
 		assert.equal(true, strings.isEmpty("")),
 		assert.equal(false, strings.isEmpty("x")),
@@ -64,7 +64,7 @@ fn testIsEmpty() {
 }
 
 @Test()
-fn testIsDigit() {
+fn testIsDigit() -> Result {
 	assert.all([
 		assert.equal(true, strings.isDigit('7')),
 		assert.equal(true, strings.isDigit("2026")),
@@ -78,7 +78,7 @@ fn testIsDigit() {
 }
 
 @Test()
-fn testIsLetter() {
+fn testIsLetter() -> Result {
 	assert.all([
 		assert.equal(true, strings.isLetter('a')),
 		assert.equal(true, strings.isLetter("hello")),
@@ -93,7 +93,7 @@ fn testIsLetter() {
 }
 
 @Test()
-fn testIsSpace() {
+fn testIsSpace() -> Result {
 	assert.all([
 		assert.equal(true, strings.isSpace(' ')),
 		assert.equal(true, strings.isSpace('\t')),
@@ -109,7 +109,7 @@ fn testIsSpace() {
 }
 
 @Test()
-fn testContains() {
+fn testContains() -> Result {
 	assert.all([
 		assert.equal(true, strings.contains("hello", "ell")),
 		assert.equal(true, strings.contains("hello", "")),
@@ -118,7 +118,7 @@ fn testContains() {
 }
 
 @Test()
-fn testHasPrefix() {
+fn testHasPrefix() -> Result {
 	assert.all([
 		assert.equal(true, strings.hasPrefix("hello", "he")),
 		assert.equal(false, strings.hasPrefix("hello", "lo")),
@@ -126,7 +126,7 @@ fn testHasPrefix() {
 }
 
 @Test()
-fn testHasSuffix() {
+fn testHasSuffix() -> Result {
 	assert.all([
 		assert.equal(true, strings.hasSuffix("hello", "lo")),
 		assert.equal(false, strings.hasSuffix("hello", "he")),
@@ -134,7 +134,7 @@ fn testHasSuffix() {
 }
 
 @Test()
-fn testFirstIndexOf() {
+fn testFirstIndexOf() -> Result {
 	assert.all([
 		assert.equal(2, strings.firstIndexOf("hello", "l").value),
 		// Character index, not byte index — the é before it is 2 bytes.
@@ -144,7 +144,7 @@ fn testFirstIndexOf() {
 }
 
 @Test()
-fn testLastIndexOf() {
+fn testLastIndexOf() -> Result {
 	assert.all([
 		assert.equal(3, strings.lastIndexOf("hello", "l").value),
 		assert.equal(true, strings.lastIndexOf("hello", "xyz") is None),
@@ -152,7 +152,7 @@ fn testLastIndexOf() {
 }
 
 @Test()
-fn testReplace() {
+fn testReplace() -> Result {
 	assert.all([
 		assert.equal("bonono", strings.replace("banana", "a", "o")),
 		assert.equal("hello", strings.replace("hello", "xyz", "o")),
@@ -160,17 +160,17 @@ fn testReplace() {
 }
 
 @Test()
-fn testReplaceFirst() {
+fn testReplaceFirst() -> Result {
 	assert.equal("bonana", strings.replaceFirst("banana", "a", "o"))
 }
 
 @Test()
-fn testReplaceLast() {
+fn testReplaceLast() -> Result {
 	assert.equal("banano", strings.replaceLast("banana", "a", "o"))
 }
 
 @Test()
-fn testSplit() {
+fn testSplit() -> Result {
 	const parts = strings.split("a,b,c", ",")
 	assert.all([
 		assert.equal(3, len(parts)),
@@ -181,7 +181,7 @@ fn testSplit() {
 }
 
 @Test()
-fn testJoin() {
+fn testJoin() -> Result {
 	assert.all([
 		assert.equal("a, b, c", strings.join(["a", "b", "c"], ", ")),
 		assert.equal("", strings.join([], ", ")),
@@ -189,7 +189,7 @@ fn testJoin() {
 }
 
 @Test()
-fn testConcat() {
+fn testConcat() -> Result {
 	assert.all([
 		assert.equal("", strings.concat([])),
 		assert.equal("abc", strings.concat(["a", "b", 'c'])),
@@ -197,7 +197,7 @@ fn testConcat() {
 }
 
 @Test()
-fn testRepeat() {
+fn testRepeat() -> Result {
 	assert.all([
 		assert.equal("", strings.repeat("ab", 0)),
 		assert.equal("ababab", strings.repeat("ab", 3)),
@@ -205,7 +205,7 @@ fn testRepeat() {
 }
 
 @Test()
-fn testToUpperToLower() {
+fn testToUpperToLower() -> Result {
 	assert.all([
 		assert.equal("HELLO", strings.toUpper("Hello")),
 		assert.equal("hello", strings.toLower("Hello")),
@@ -219,7 +219,7 @@ fn testToUpperToLower() {
 }
 
 @Test()
-fn testTrim() {
+fn testTrim() -> Result {
 	assert.all([
 		assert.equal("hi", strings.trim("  hi  ")),
 		assert.equal("hi", strings.trim("hi")),
@@ -227,7 +227,7 @@ fn testTrim() {
 }
 
 @Test()
-fn testTrimPrefixSuffix() {
+fn testTrimPrefixSuffix() -> Result {
 	assert.all([
 		assert.equal("llo", strings.trimPrefix("hello", "he")),
 		assert.equal("hello", strings.trimPrefix("hello", "xyz")),
@@ -237,7 +237,7 @@ fn testTrimPrefixSuffix() {
 }
 
 @Test()
-fn testQuote() {
+fn testQuote() -> Result {
 	assert.all([
 		assert.equal("\"hi\"", strings.quote("hi")),
 		assert.equal("\"\"", strings.quote("")),
@@ -249,7 +249,7 @@ fn testQuote() {
 }
 
 @Test()
-fn testUnquote() {
+fn testUnquote() -> Result {
 	assert.all([
 		assert.equal("hi", strings.unquote("\"hi\"").value),
 		assert.equal("", strings.unquote("\"\"").value),
@@ -263,7 +263,7 @@ fn testUnquote() {
 }
 
 @Test()
-fn testQuoteRoundTrips() {
+fn testQuoteRoundTrips() -> Result {
 	const text = "café \"quoted\"\tand\ttabbed"
 	assert.equal(text, strings.unquote(strings.quote(text)).value)
 }

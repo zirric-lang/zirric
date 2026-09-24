@@ -5,7 +5,7 @@ import tests.assert
 import bytes
 
 @tests.Test()
-fn testAppendArray() {
+fn testAppendArray() -> Result {
 	assert.all([
 		assert.equal([1], append([], 1)),
 		assert.equal([1, 2, 3], append([1, 2], 3)),
@@ -13,7 +13,7 @@ fn testAppendArray() {
 }
 
 @tests.Test()
-fn testAppendBinary() {
+fn testAppendBinary() -> Result {
 	assert.all([
 		assert.equal(bytes.fromString(""), append(
 			bytes.fromString(""),

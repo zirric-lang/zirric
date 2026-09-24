@@ -363,8 +363,7 @@ fn sample() {
 	}
 }
 
-// TestParseAttrNoPanic ensures the parser does not panic on malformed
-// attributes (regression test for invariant panic in parseStaticIdentifierReference).
+// TestParseAttrNoPanic ensures the parser does not panic on malformed attributes (regression test for invariant panic in parseStaticIdentifierReference).
 func TestParseAttrNoPanic(t *testing.T) {
 	inputs := []string{
 		"@@Numeric",

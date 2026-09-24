@@ -36,7 +36,7 @@ fn fieldNamed(name: String) -> reflect.Field {
 }
 
 @Test()
-fn testFieldsAreEveryFieldInDeclarationOrder() {
+fn testFieldsAreEveryFieldInDeclarationOrder() -> Result {
 	assert.equal(
 		["plain", "name", "tags", "scores", "parse", "nested", "maybe", "attempt"],
 		arrays.map(reflect.fieldsOf(Sample), fn(field) { field.name }),
@@ -44,7 +44,7 @@ fn testFieldsAreEveryFieldInDeclarationOrder() {
 }
 
 @Test()
-fn testAFieldCarriesItsOwnAttributes() {
+fn testAFieldCarriesItsOwnAttributes() -> Result {
 	// The attribute is read off the field exactly as it would be off a declaration.
 	assert.all([
 		assert.equal("id", Label(fieldNamed("name")).text),
@@ -54,12 +54,12 @@ fn testAFieldCarriesItsOwnAttributes() {
 }
 
 @Test()
-fn testAFieldWithoutAHintIsUnknown() {
+fn testAFieldWithoutAHintIsUnknown() -> Result {
 	assert.equal(true, fieldNamed("plain").declaredType is reflect.UnknownType)
 }
 
 @Test()
-fn testANamedHintResolvesToItsType() {
+fn testANamedHintResolvesToItsType() -> Result {
 	const declared = fieldNamed("name").declaredType
 	assert.all([
 		assert.equal(true, declared is reflect.NamedType),
@@ -70,7 +70,7 @@ fn testANamedHintResolvesToItsType() {
 }
 
 @Test()
-fn testAHintCanNameTheTypeItIsDeclaredOn() {
+fn testAHintCanNameTheTypeItIsDeclaredOn() -> Result {
 	const declared = reflect.fieldsOf(SelfRef)[0].declaredType
 	assert.all([
 		assert.equal("SelfRef", declared.name),
@@ -79,7 +79,7 @@ fn testAHintCanNameTheTypeItIsDeclaredOn() {
 }
 
 @Test()
-fn testArrayAndDictHintsKeepTheirElementTypes() {
+fn testArrayAndDictHintsKeepTheirElementTypes() -> Result {
 	const tags = fieldNamed("tags").declaredType
 	const scores = fieldNamed("scores").declaredType
 	assert.all([
@@ -92,7 +92,7 @@ fn testArrayAndDictHintsKeepTheirElementTypes() {
 }
 
 @Test()
-fn testOptionAndResultHintsKeepTheirElementTypes() {
+fn testOptionAndResultHintsKeepTheirElementTypes() -> Result {
 	const maybe = fieldNamed("maybe").declaredType
 	const attempt = fieldNamed("attempt").declaredType
 	assert.all([
@@ -104,7 +104,7 @@ fn testOptionAndResultHintsKeepTheirElementTypes() {
 }
 
 @Test()
-fn testAFunctionHintKeepsItsParametersAndResult() {
+fn testAFunctionHintKeepsItsParametersAndResult() -> Result {
 	const parse = fieldNamed("parse").declaredType
 	assert.all([
 		assert.equal(true, parse is reflect.FuncType),
@@ -114,7 +114,7 @@ fn testAFunctionHintKeepsItsParametersAndResult() {
 }
 
 @Test()
-fn testTypesReportWhatTheyAre() {
+fn testTypesReportWhatTheyAre() -> Result {
 	assert.all([
 		assert.equal(true, reflect.isDataType(Sample)),
 		assert.equal(false, reflect.isUnionType(Sample)),
@@ -128,7 +128,7 @@ fn testTypesReportWhatTheyAre() {
 }
 
 @Test()
-fn testUnionMembersAreItsMemberTypes() {
+fn testUnionMembersAreItsMemberTypes() -> Result {
 	assert.equal(
 		["NamedType", "ArrayType", "OptionType", "ResultType", "DictType", "FuncType", "AttrsType", "UnknownType"],
 		arrays.map(reflect.unionMembers(reflect.TypeRef), fn(m) { reflect.typeName(m) }),
@@ -136,7 +136,7 @@ fn testUnionMembersAreItsMemberTypes() {
 }
 
 @Test()
-fn testTypeOfFindsTheTypeAValueWasBuiltFrom() {
+fn testTypeOfFindsTheTypeAValueWasBuiltFrom() -> Result {
 	const value = Sample(1, "a", [], [:], fn(text) { 0 }, None(), None(), Ok(1))
 	const found = reflect.typeOf(value)
 	assert.all([
@@ -149,7 +149,7 @@ fn testTypeOfFindsTheTypeAValueWasBuiltFrom() {
 }
 
 @Test()
-fn testFieldValuesAlignWithFields() {
+fn testFieldValuesAlignWithFields() -> Result {
 	const value = Sample(1, "a", ["t"], ["k": 2], fn(text) { 0 }, None(), None(), Ok(1))
 	assert.all([
 		assert.equal(
@@ -165,7 +165,7 @@ fn testFieldValuesAlignWithFields() {
 }
 
 @Test()
-fn testConstructBuildsAValueFromItsFields() {
+fn testConstructBuildsAValueFromItsFields() -> Result {
 	const built = reflect.construct(Sample, [1, "a", [], [:], void, void, void, void])
 	assert.all([
 		assert.equal(true, built is Ok),
@@ -176,7 +176,7 @@ fn testConstructBuildsAValueFromItsFields() {
 }
 
 @Test()
-fn testConstructRefusesTheWrongNumberOfFields() {
+fn testConstructRefusesTheWrongNumberOfFields() -> Result {
 	assert.all([
 		assert.equal(true, reflect.construct(Sample, [1]) is Err),
 		assert.equal(true, reflect.construct(42, []) is Err),
@@ -184,7 +184,7 @@ fn testConstructRefusesTheWrongNumberOfFields() {
 }
 
 @Test()
-fn testIsInstanceDecidesAsTheIsOperatorDoes() {
+fn testIsInstanceDecidesAsTheIsOperatorDoes() -> Result {
 	const value = Sample(1, "a", [], [:], fn(text) { 0 }, None(), None(), Ok(1))
 	assert.all([
 		assert.equal(true, reflect.isInstance(value, Sample)),
@@ -198,7 +198,7 @@ fn testIsInstanceDecidesAsTheIsOperatorDoes() {
 }
 
 @Test()
-fn testAttributeTypesAreRecognizable() {
+fn testAttributeTypesAreRecognizable() -> Result {
 	assert.all([
 		assert.equal(true, reflect.isAttributeType(Label)),
 		assert.equal(false, reflect.isAttributeType(Sample)),
@@ -207,7 +207,7 @@ fn testAttributeTypesAreRecognizable() {
 }
 
 @Test()
-fn testTypesCompareByIdentity() {
+fn testTypesCompareByIdentity() -> Result {
 	// A type is a value now that reflection hands them out, so comparing two must answer rather than stop the program.
 	assert.all([
 		assert.equal(true, Sample == Sample),
@@ -224,7 +224,7 @@ fn testTypesCompareByIdentity() {
 }
 
 @Test()
-fn testTypeOfAFunctionIsTheFuncType() {
+fn testTypeOfAFunctionIsTheFuncType() -> Result {
 	// Every compiled function reports Func as its type, so the type table must not let one of them stand in for Func itself.
 	const anonymous = fn(x) { x }
 	assert.all([

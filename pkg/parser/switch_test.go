@@ -168,7 +168,6 @@ case _:
 	if len(sw.Cases[0].Body) != 2 {
 		t.Errorf("case 0: expected 2 body stmts, got %d", len(sw.Cases[0].Body))
 	}
-	// Default case should have 1 statement
 	if len(sw.Cases[1].Body) != 1 {
 		t.Errorf("case 1: expected 1 body stmt, got %d", len(sw.Cases[1].Body))
 	}

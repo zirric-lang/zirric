@@ -7,7 +7,7 @@ import paths
 import results
 
 @Test()
-fn testJoin() {
+fn testJoin() -> Result {
 	assert.all([
 		assert.equal("a/b/c", paths.join(["a", "b", "c"])),
 		assert.equal("a/b", paths.join(["a/", "/b"])),
@@ -17,7 +17,7 @@ fn testJoin() {
 }
 
 @Test()
-fn testClean() {
+fn testClean() -> Result {
 	assert.all([
 		assert.equal("a/c", paths.clean("a/b/../c")),
 		assert.equal("a/b", paths.clean("a//b/")),
@@ -26,7 +26,7 @@ fn testClean() {
 }
 
 @Test()
-fn testBaseAndDir() {
+fn testBaseAndDir() -> Result {
 	assert.all([
 		assert.equal("c.txt", paths.base("a/b/c.txt")),
 		assert.equal("a/b", paths.dir("a/b/c.txt")),
@@ -36,7 +36,7 @@ fn testBaseAndDir() {
 }
 
 @Test()
-fn testExtAndStem() {
+fn testExtAndStem() -> Result {
 	assert.all([
 		assert.equal(".txt", paths.ext("a/b/c.txt")),
 		assert.equal("", paths.ext("a/b/c")),
@@ -47,7 +47,7 @@ fn testExtAndStem() {
 }
 
 @Test()
-fn testIsAbs() {
+fn testIsAbs() -> Result {
 	assert.all([
 		assert.equal(true, paths.isAbs("/a/b")),
 		assert.equal(false, paths.isAbs("a/b")),
@@ -55,7 +55,7 @@ fn testIsAbs() {
 }
 
 @Test()
-fn testSegments() {
+fn testSegments() -> Result {
 	assert.all([
 		assert.equal(["a", "b", "c"], paths.segments("a/b/c")),
 		assert.equal(["a", "b"], paths.segments("/a/b/")),
@@ -64,7 +64,7 @@ fn testSegments() {
 }
 
 @Test()
-fn testMatch() {
+fn testMatch() -> Result {
 	assert.all([
 		assert.equal(true, results.from(paths.match("*.zirr", "main.zirr")).value),
 		assert.equal(false, results.from(paths.match("*.zirr", "main.go")).value),
@@ -74,7 +74,7 @@ fn testMatch() {
 }
 
 @Test()
-fn testMatchRejectsAMalformedPattern() {
+fn testMatchRejectsAMalformedPattern() -> Result {
 	const result = paths.match("[", "anything")
 	assert.all([
 		assert.equal(true, results.isErr(result)),

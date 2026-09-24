@@ -8,7 +8,7 @@ import arrays
 import os
 
 @Test()
-fn testSeededIsReproducible() {
+fn testSeededIsReproducible() -> Result {
 	// The whole point of a seeded source: the same seed gives the same run, so code using randomness can be tested.
 	const first = random.seeded(42)
 	const second = random.seeded(42)
@@ -24,7 +24,7 @@ fn testSeededIsReproducible() {
 }
 
 @Test()
-fn testDifferentSeedsDiffer() {
+fn testDifferentSeedsDiffer() -> Result {
 	const a = random.seeded(1)
 	const b = random.seeded(2)
 	var differences = 0
@@ -39,7 +39,7 @@ fn testDifferentSeedsDiffer() {
 }
 
 @Test()
-fn testIntStaysInRange() {
+fn testIntStaysInRange() -> Result {
 	const source = random.seeded(7)
 	var withinRange = true
 	var i = 0
@@ -57,7 +57,7 @@ fn testIntStaysInRange() {
 }
 
 @Test()
-fn testFloatStaysInRange() {
+fn testFloatStaysInRange() -> Result {
 	const source = random.seeded(7)
 	var withinRange = true
 	var i = 0
@@ -75,7 +75,7 @@ fn testFloatStaysInRange() {
 }
 
 @Test()
-fn testBytes() {
+fn testBytes() -> Result {
 	const source = random.seeded(3)
 	assert.all([
 		assert.equal(8, len(random.bytes(source, 8))),
@@ -84,7 +84,7 @@ fn testBytes() {
 }
 
 @Test()
-fn testBoolProducesBoth() {
+fn testBoolProducesBoth() -> Result {
 	const source = random.seeded(11)
 	var trues = 0
 	var falses = 0
@@ -105,7 +105,7 @@ fn testBoolProducesBoth() {
 }
 
 @Test()
-fn testIntBetween() {
+fn testIntBetween() -> Result {
 	const source = random.seeded(5)
 	var withinRange = true
 	var i = 0
@@ -123,7 +123,7 @@ fn testIntBetween() {
 }
 
 @Test()
-fn testFloatBetween() {
+fn testFloatBetween() -> Result {
 	const source = random.seeded(5)
 	const value = random.floatBetween(source, 2.0, 3.0)
 	assert.all([
@@ -133,7 +133,7 @@ fn testFloatBetween() {
 }
 
 @Test()
-fn testChoice() {
+fn testChoice() -> Result {
 	const source = random.seeded(9)
 	const picked = random.choice(source, ["a", "b", "c"])
 	assert.all([
@@ -144,7 +144,7 @@ fn testChoice() {
 }
 
 @Test()
-fn testShuffleKeepsEveryElement() {
+fn testShuffleKeepsEveryElement() -> Result {
 	const source = random.seeded(13)
 	const original = [1, 2, 3, 4, 5]
 	const shuffled = random.shuffle(source, original)
@@ -164,7 +164,7 @@ fn testShuffleKeepsEveryElement() {
 }
 
 @Test()
-fn testShuffleIsReproducible() {
+fn testShuffleIsReproducible() -> Result {
 	assert.equal(
 		random.shuffle(random.seeded(21), [1, 2, 3, 4, 5, 6, 7, 8]),
 		random.shuffle(random.seeded(21), [1, 2, 3, 4, 5, 6, 7, 8])
@@ -172,7 +172,7 @@ fn testShuffleIsReproducible() {
 }
 
 @Test()
-fn testTheHostStrongSourceProducesValues() {
+fn testTheHostStrongSourceProducesValues() -> Result {
 	const source = os.strongRandom()
 	assert.all([
 		assert.equal(16, len(random.bytes(source, 16))),
@@ -182,7 +182,7 @@ fn testTheHostStrongSourceProducesValues() {
 }
 
 @Test()
-fn testTheHostFastSourceProducesValues() {
+fn testTheHostFastSourceProducesValues() -> Result {
 	const source = os.fastRandom()
 	assert.all([
 		assert.equal(4, len(random.bytes(source, 4))),
@@ -191,7 +191,7 @@ fn testTheHostFastSourceProducesValues() {
 }
 
 @Test()
-fn testShuffleActuallyReorders() {
+fn testShuffleActuallyReorders() -> Result {
 	// Without this, a shuffle that simply returned its input would satisfy every other test here.
 	const original = [1, 2, 3, 4, 5, 6, 7, 8]
 	var reordered = false
@@ -206,7 +206,7 @@ fn testShuffleActuallyReorders() {
 }
 
 @Test()
-fn testTheHostStrongSourceDiffersBetweenCalls() {
+fn testTheHostStrongSourceDiffersBetweenCalls() -> Result {
 	assert.equal(false, random.bytes(os.strongRandom(), 16) == random.bytes(os.strongRandom(), 16))
 }
 
@@ -227,7 +227,7 @@ fn _strongOf(self: Environment) -> random.Source {
 }
 
 @Test()
-fn testCapabilitiesAreSeparate() {
+fn testCapabilitiesAreSeparate() -> Result {
 	const env = Environment(random.seeded(99), os.strongRandom())
 
 	const fast = random.HasFastRandom(env).random(env)
@@ -254,7 +254,7 @@ fn _onlyFastOf(self: FastOnlyEnvironment) -> random.Source {
 }
 
 @Test()
-fn testFastOnlyEnvironmentIsNotStrong() {
+fn testFastOnlyEnvironmentIsNotStrong() -> Result {
 	const env = FastOnlyEnvironment(random.seeded(1))
 	assert.all([
 		assert.equal(true, env is @random.HasFastRandom),

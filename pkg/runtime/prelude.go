@@ -33,8 +33,7 @@ const (
 )
 
 // allBuiltinTypeIds lists every hardcoded builtin TypeId in declaration order.
-// Its length is the number of reserved builtin TypeIds; the analyzer uses
-// len(allBuiltinTypeIds) to ensure user-defined ConstantIds never collide with them.
+// Its length is the number of reserved builtin TypeIds; the analyzer uses len(allBuiltinTypeIds) to ensure user-defined ConstantIds never collide with them.
 var allBuiltinTypeIds = []TypeId{
 	typeIdArray,
 	typeIdBool,
@@ -57,13 +56,11 @@ var allBuiltinTypeIds = []TypeId{
 }
 
 // NumBuiltinTypeIds is the number of reserved builtin TypeIds.
-// The analyzer reserves this many ConstantId slots so user-defined types
-// never receive a ConstantId that collides with a hardcoded builtin TypeId.
+// The analyzer reserves this many ConstantId slots so user-defined types never receive a ConstantId that collides with a hardcoded builtin TypeId.
 var NumBuiltinTypeIds = len(allBuiltinTypeIds)
 
 // BuiltinTypeIds maps prelude type names to their hardcoded TypeIds.
-// Used by the compiler to create SimpleType values that match the runtime
-// TypeConstantId of builtin literal values (Array, Dict, Int, etc.).
+// Used by the compiler to create SimpleType values that match the runtime TypeConstantId of builtin literal values (Array, Dict, Int, etc.).
 var BuiltinTypeIds = map[string]TypeId{
 	"Array":     typeIdArray,
 	"Bool":      typeIdBool,

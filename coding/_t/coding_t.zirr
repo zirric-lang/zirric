@@ -49,13 +49,13 @@ fn samplePerson() -> Person {
 }
 
 @Test()
-fn testAFieldTravelsUnderItsDeclaredName() {
+fn testAFieldTravelsUnderItsDeclaredName() -> Result {
 	const tree = coding.encode(Address("London", "E1")).value
 	assert.equal(["city": "London", "zip": "E1"], tree)
 }
 
 @Test()
-fn testNameOverridesTheDeclaredName() {
+fn testNameOverridesTheDeclaredName() -> Result {
 	const tree = coding.encode(samplePerson()).value
 	assert.all([
 		// The attribute renames the key, so the declared name must be gone entirely.
@@ -65,7 +65,7 @@ fn testNameOverridesTheDeclaredName() {
 }
 
 @Test()
-fn testIgnoredFieldsDoNotTravel() {
+fn testIgnoredFieldsDoNotTravel() -> Result {
 	const tree = coding.encode(samplePerson()).value
 	assert.all([
 		assert.equal(void, tree["secret"]),
@@ -74,7 +74,7 @@ fn testIgnoredFieldsDoNotTravel() {
 }
 
 @Test()
-fn testNestedTypesAndArraysAreWalked() {
+fn testNestedTypesAndArraysAreWalked() -> Result {
 	const tree = coding.encode(samplePerson()).value
 	assert.all([
 		assert.equal("London", tree["home"]["city"]),
@@ -85,7 +85,7 @@ fn testNestedTypesAndArraysAreWalked() {
 }
 
 @Test()
-fn testARoundTripKeepsEveryTravellingField() {
+fn testARoundTripKeepsEveryTravellingField() -> Result {
 	const back = coding.decode(Person, coding.encode(samplePerson()).value).value
 	assert.all([
 		assert.equal("Ada", back.name),
@@ -98,14 +98,14 @@ fn testARoundTripKeepsEveryTravellingField() {
 }
 
 @Test()
-fn testAPresentOptionTravelsAsItsValue() {
+fn testAPresentOptionTravelsAsItsValue() -> Result {
 	const tree = coding.encode(samplePerson()).value
 	// Not as an object of its own, which is what lets absence and None be the same thing.
 	assert.equal("A", tree["nickname"])
 }
 
 @Test()
-fn testAnAbsentOptionLeavesNoKey() {
+fn testAnAbsentOptionLeavesNoKey() -> Result {
 	const tree = coding.encode(Person("Ada", 1, Address("a", "b"), [], None(), "s", void)).value
 	assert.all([
 		assert.equal(false, dicts.hasKey(tree, "nickname")),
@@ -114,7 +114,7 @@ fn testAnAbsentOptionLeavesNoKey() {
 }
 
 @Test()
-fn testAFormatAttributeWinsOverTheGenericOne() {
+fn testAFormatAttributeWinsOverTheGenericOne() -> Result {
 	const value = Renamed("v")
 	assert.all([
 		assert.equal("v", coding.encode(value).value["generic"]),
@@ -125,7 +125,7 @@ fn testAFormatAttributeWinsOverTheGenericOne() {
 }
 
 @Test()
-fn testAFormatAttributeAlsoDecidesWhatIsRead() {
+fn testAFormatAttributeAlsoDecidesWhatIsRead() -> Result {
 	assert.all([
 		assert.equal("v", coding.decodeWith(json, Renamed, ["specific": "v"]).value.value),
 		// Reading the generic key under a format that names its own is a missing key, not a fallback.
@@ -134,19 +134,19 @@ fn testAFormatAttributeAlsoDecidesWhatIsRead() {
 }
 
 @Test()
-fn testDefaultFillsAnAbsentKey() {
+fn testDefaultFillsAnAbsentKey() -> Result {
 	const decoded = coding.decode(Fallbacks, ["note": "n"]).value
 	assert.equal(7, decoded.count)
 }
 
 @Test()
-fn testDecodeAttributeReplacesTheGeneralRules() {
+fn testDecodeAttributeReplacesTheGeneralRules() -> Result {
 	const decoded = coding.decode(Fallbacks, ["note": "n"]).value
 	assert.equal("n!", decoded.note)
 }
 
 @Test()
-fn testAMissingKeyWithNoDefaultIsAnError() {
+fn testAMissingKeyWithNoDefaultIsAnError() -> Result {
 	const decoded = coding.decode(Address, ["city": "London"])
 	assert.all([
 		assert.equal(true, results.isErr(decoded)),
@@ -157,7 +157,7 @@ fn testAMissingKeyWithNoDefaultIsAnError() {
 }
 
 @Test()
-fn testAValueOfTheWrongTypeIsAnError() {
+fn testAValueOfTheWrongTypeIsAnError() -> Result {
 	const decoded = coding.decode(Address, ["city": 1, "zip": "E1"])
 	assert.all([
 		assert.equal(true, results.isErr(decoded)),
@@ -166,7 +166,7 @@ fn testAValueOfTheWrongTypeIsAnError() {
 }
 
 @Test()
-fn testAUnionIsDecodedByTryingEachMember() {
+fn testAUnionIsDecodedByTryingEachMember() -> Result {
 	assert.all([
 		assert.equal(Square(4), coding.decode(Shape, ["side": 4]).value),
 		assert.equal(Circle(2), coding.decode(Shape, ["radius": 2]).value),
@@ -175,7 +175,7 @@ fn testAUnionIsDecodedByTryingEachMember() {
 }
 
 @Test()
-fn testATreeSurvivesRealJSONText() {
+fn testATreeSurvivesRealJSONText() -> Result {
 	const text = json.format(coding.encodeWith(json, samplePerson()).value).value
 	const back = coding.decodeWith(json, Person, json.parse(text).value).value
 	assert.all([
@@ -216,7 +216,7 @@ data Custom {
 }
 
 @Test()
-fn testAnIgnoredFieldStandsWhereAMissingKeyDoes() {
+fn testAnIgnoredFieldStandsWhereAMissingKeyDoes() -> Result {
 	const decoded = coding.decode(Ignored, ["kept": "k"]).value
 	assert.all([
 		// An ignored Option is absent, not void, the same as a key that was never written.
@@ -229,7 +229,7 @@ fn testAnIgnoredFieldStandsWhereAMissingKeyDoes() {
 }
 
 @Test()
-fn testACustomOptionUnionIsNotTreatedAsPreludesOption() {
+fn testACustomOptionUnionIsNotTreatedAsPreludesOption() -> Result {
 	// Wrapping in prelude's Some would build a value of the wrong type, so the ordinary union rules apply and say so instead.
 	const decoded = coding.decode(Custom, ["maybe": 1])
 	assert.all([
@@ -244,7 +244,7 @@ union Untyped {
 }
 
 @Test()
-fn testAMissingKeyIsAnErrorEvenForAnUntypedField() {
+fn testAMissingKeyIsAnErrorEvenForAnUntypedField() -> Result {
 	// An untyped field is not an optional one, or a union member made of them would match every object.
 	assert.all([
 		assert.equal(true, results.isErr(coding.decode(First, [:]))),
@@ -256,7 +256,7 @@ fn testAMissingKeyIsAnErrorEvenForAnUntypedField() {
 }
 
 @Test()
-fn testUnionMembersWithUntypedFieldsAreStillToldApart() {
+fn testUnionMembersWithUntypedFieldsAreStillToldApart() -> Result {
 	assert.all([
 		assert.equal(Second(2), coding.decode(Untyped, ["b": 2]).value),
 		assert.equal(First(1), coding.decode(Untyped, ["a": 1]).value),
@@ -273,7 +273,7 @@ data Unhintable {
 }
 
 @Test()
-fn testEncodeRefusesWhatATreeCannotHold() {
+fn testEncodeRefusesWhatATreeCannotHold() -> Result {
 	// Refused by coding rather than left for the format, so the error can name the field it came from.
 	assert.all([
 		assert.equal(true, results.isErr(coding.encode('c'))),

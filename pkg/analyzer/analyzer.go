@@ -60,28 +60,21 @@ func (a *Analyzer) Snapshot() AnalyzerSnapshot {
 	return snap
 }
 
-// Restore resets the ID counters to a previously captured snapshot,
-// freeing any IDs allocated since the snapshot was taken.
+// Restore resets the ID counters to a previously captured snapshot, freeing any IDs allocated since the snapshot was taken.
 func (a *Analyzer) Restore(snap AnalyzerSnapshot) {
 	a.nextGlobal = snap.nextGlobal
 	a.nextConstant = snap.nextConstant
 	a.moduleGlobals = snap.moduleGlobals
 }
 
-// Both the analyzer (for user-declared symbols) and the compiler (for internal
-// constants such as literal strings) must allocate through this single counter
-// to avoid collisions.
+// Both the analyzer (for user-declared symbols) and the compiler (for internal constants such as literal strings) must allocate through this single counter to avoid collisions.
 func (a *Analyzer) AllocateConstantId() int {
 	id := a.nextConstant
 	a.nextConstant++
 	return id
 }
 
-// allocateTypeConstantId allocates a constant ID for a type declaration,
-// ensuring the ID is >= runtime.NumBuiltinTypeIds. This prevents user-defined
-// types from receiving an ID that collides with a hardcoded builtin TypeId
-// (e.g. typeIdArray = 0), which would cause IsType checks to incorrectly
-// match values of the builtin type against the user-defined type.
+// allocateTypeConstantId allocates a constant ID for a type declaration, ensuring the ID is >= runtime.NumBuiltinTypeIds. This prevents user-defined types from receiving an ID that collides with a hardcoded builtin TypeId (e.g. typeIdArray = 0), which would cause IsType checks to incorrectly match values of the builtin type against the user-defined type.
 func (a *Analyzer) allocateTypeConstantId() int {
 	if a.nextConstant < runtime.NumBuiltinTypeIds {
 		a.nextConstant = runtime.NumBuiltinTypeIds
@@ -90,9 +83,7 @@ func (a *Analyzer) allocateTypeConstantId() int {
 }
 
 // AllocateGlobalId returns the next available global ID and advances the counter.
-// Both the analyzer (for module-level symbols) and the compiler (for attribute
-// instances and other dynamic globals) must allocate through this single counter
-// to avoid collisions.
+// Both the analyzer (for module-level symbols) and the compiler (for attribute instances and other dynamic globals) must allocate through this single counter to avoid collisions.
 func (a *Analyzer) AllocateGlobalId() int {
 	id := a.nextGlobal
 	a.nextGlobal++
@@ -265,15 +256,13 @@ func (a *Analyzer) canonicalModuleURI(name registry.LogicalURI) registry.Logical
 }
 
 // AnalyzeSourceFile incrementally analyzes a single source file against an existing module.
-// The module must already be analyzed. New declarations from the file are merged into
-// module.Symbols, and new IDs are assigned continuing from the analyzer's current counters.
+// The module must already be analyzed. New declarations from the file are merged into module.Symbols, and new IDs are assigned continuing from the analyzer's current counters.
 func (a *Analyzer) AnalyzeSourceFile(module *ast.ContextModule, file *ast.SourceFile) []AnalysisError {
 	if module == nil || module.Symbols == nil {
 		return []AnalysisError{{Summary: "module or symbols is nil"}}
 	}
 
-	// Populate field and parameter decl tables before building symbol tables so that
-	// function parameters and data fields are present when symbol tables are constructed.
+	// Populate field and parameter decl tables before building symbol tables so that function parameters and data fields are present when symbol tables are constructed.
 	a.populateFieldDecls(module)
 	a.populateFunctionParams(module)
 
@@ -296,12 +285,10 @@ func (a *Analyzer) AnalyzeSourceFile(module *ast.ContextModule, file *ast.Source
 		module.Symbols.Symbols[name] = sym
 	}
 
-	// Build the new file's symbol table.
 	if file.Decls != nil && file.Decls.Resolved == nil {
 		buildSymbolTableFromDeclTable(file.Decls, module.Symbols)
 	}
 
-	// Build ExprFor symbol tables for the new file.
 	if file.Symbols != nil {
 		file.EnumerateChildNodes(func(child ast.Node) {
 			switch expr := child.(type) {

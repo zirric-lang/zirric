@@ -6,10 +6,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
 )
 
-// TestTrailingCommaInArrayLiteral is a regression test: parsePrattExprArrayElements
-// unconditionally parsed another element after each comma, so a trailing comma before
-// `]` hit the closing bracket's unrecognized-prefix error and discarded the whole
-// array expression (returned nil), not just a soft parse error.
+// TestTrailingCommaInArrayLiteral is a regression test: parsePrattExprArrayElements unconditionally parsed another element after each comma, so a trailing comma before `]` hit the closing bracket's unrecognized-prefix error and discarded the whole array expression (returned nil), not just a soft parse error.
 func TestTrailingCommaInArrayLiteral(t *testing.T) {
 	tests := []struct {
 		input string
@@ -37,8 +34,7 @@ func TestTrailingCommaInArrayLiteral(t *testing.T) {
 	}
 }
 
-// TestTrailingCommaInDictLiteral mirrors TestTrailingCommaInArrayLiteral for dict
-// literals (parsePrattExprDictEntries had the same bug).
+// TestTrailingCommaInDictLiteral mirrors TestTrailingCommaInArrayLiteral for dict literals (parsePrattExprDictEntries had the same bug).
 func TestTrailingCommaInDictLiteral(t *testing.T) {
 	tests := []struct {
 		input string
@@ -65,10 +61,7 @@ func TestTrailingCommaInDictLiteral(t *testing.T) {
 	}
 }
 
-// TestTrailingCommaInCallArguments is a regression test: parsePrattExprCall's
-// argument loop unconditionally parsed another argument after each comma, so a
-// trailing comma before `)` recorded a spurious "unexpected )" error and appended a
-// nil argument to the call.
+// TestTrailingCommaInCallArguments is a regression test: parsePrattExprCall's argument loop unconditionally parsed another argument after each comma, so a trailing comma before `)` recorded a spurious "unexpected )" error and appended a nil argument to the call.
 func TestTrailingCommaInCallArguments(t *testing.T) {
 	tests := []struct {
 		input string
@@ -100,9 +93,7 @@ func TestTrailingCommaInCallArguments(t *testing.T) {
 	}
 }
 
-// TestTrailingCommaInFunctionParameters confirms trailing commas in function
-// declaration and closure parameter lists — already handled correctly by
-// parseDeclParameterListWithInsert before this change — continue to work.
+// TestTrailingCommaInFunctionParameters confirms trailing commas in function declaration and closure parameter lists — already handled correctly by parseDeclParameterListWithInsert before this change — continue to work.
 func TestTrailingCommaInFunctionParameters(t *testing.T) {
 	t.Run("fn f(a, b,) { a }", func(t *testing.T) {
 		srcFile := prepareSourceFileParsing(t, "fn f(a, b,) { a }")

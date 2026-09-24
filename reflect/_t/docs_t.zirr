@@ -62,47 +62,47 @@ fn declaredAs(name: String) -> reflect.Declaration {
 }
 
 @Test()
-fn testADeclarationAnswersWithItsOwnComment() {
+fn testADeclarationAnswersWithItsOwnComment() -> Result {
 	assert.equal("Whether m has a public member called name.", reflect.docs(reflect.hasMember))
 }
 
 @Test()
-fn testATypeAnswersWithItsOwnComment() {
+fn testATypeAnswersWithItsOwnComment() -> Result {
 	assert.equal(true, strings.hasPrefix(reflect.docs(Documented), "Documented so that reflection"))
 }
 
 @Test()
-fn testAnUndocumentedDeclarationAnswersWithNothing() {
+fn testAnUndocumentedDeclarationAnswersWithNothing() -> Result {
 	assert.equal("", reflect.docs(Undocumented))
 }
 
 @Test()
-fn testEveryLineOfACommentIsKept() {
+fn testEveryLineOfACommentIsKept() -> Result {
 	assert.equal("The first line.\n\nThe third line, after an empty one.", reflect.docs(multiline))
 }
 
 @Test()
-fn testACommentAfterCodeDocumentsItsOwnLine() {
+fn testACommentAfterCodeDocumentsItsOwnLine() -> Result {
 	assert.equal("", reflect.docs(afterTrailing))
 }
 
 @Test()
-fn testAnEmptyLineEndsTheComment() {
+fn testAnEmptyLineEndsTheComment() -> Result {
 	assert.equal("", reflect.docs(afterBlankLine))
 }
 
 @Test()
-fn testACommentDocumentsOnlyWhatFollowsIt() {
+fn testACommentDocumentsOnlyWhatFollowsIt() -> Result {
 	assert.equal("Only its own documentation, not the one written on the declaration above it.", reflect.docs(documented))
 }
 
 @Test()
-fn testBothSidesOfAnAttributeChainAreJoined() {
+fn testBothSidesOfAnAttributeChainAreJoined() -> Result {
 	assert.equal("Above the attributes.\nBetween the attributes and the keyword.", reflect.docs(documentedTwice))
 }
 
 @Test()
-fn testAModuleAnswersWithTheCommentAboveItsModDeclaration() {
+fn testAModuleAnswersWithTheCommentAboveItsModDeclaration() -> Result {
 	assert.all([
 		assert.equal(true, strings.hasPrefix(reflect.docs(reflect), "Inspecting modules, types, fields and values at runtime.")),
 		assert.equal(reflect.docs(reflect), reflect.docs(metadata)),
@@ -110,7 +110,7 @@ fn testAModuleAnswersWithTheCommentAboveItsModDeclaration() {
 }
 
 @Test()
-fn testAModuleNamesTheFilesItWasReadFrom() {
+fn testAModuleNamesTheFilesItWasReadFrom() -> Result {
 	assert.all([
 		assert.equal(true, arrays.contains(metadata.sources, "reflect/reflect.zirr")),
 		assert.equal(true, arrays.contains(metadata.sources, "reflect/types.zirr")),
@@ -120,7 +120,7 @@ fn testAModuleNamesTheFilesItWasReadFrom() {
 }
 
 @Test()
-fn testAModuleNamesWhatItImports() {
+fn testAModuleNamesWhatItImports() -> Result {
 	const theirs = reflect.moduleOf(runner)
 	assert.all([
 		assert.equal([], metadata.imports),
@@ -130,7 +130,7 @@ fn testAModuleNamesWhatItImports() {
 }
 
 @Test()
-fn testAFieldAnswersForItself() {
+fn testAFieldAnswersForItself() -> Result {
 	const fields = reflect.fieldsOf(Documented)
 	assert.all([
 		assert.equal("What the field is for.", reflect.docs(fields[0])),
@@ -139,7 +139,7 @@ fn testAFieldAnswersForItself() {
 }
 
 @Test()
-fn testAnAttributeTypeHasFieldsToEnumerate() {
+fn testAnAttributeTypeHasFieldsToEnumerate() -> Result {
 	const fields = reflect.fieldsOf(Marked)
 	assert.all([
 		assert.equal(1, len(fields)),
@@ -149,13 +149,13 @@ fn testAnAttributeTypeHasFieldsToEnumerate() {
 }
 
 @Test()
-fn testDeclarationsCoverEveryPublicMember() {
+fn testDeclarationsCoverEveryPublicMember() -> Result {
 	const names = arrays.map(metadata.declarations, fn(d) { d.name })
 	assert.equal(reflect.memberNames(reflect), names)
 }
 
 @Test()
-fn testADeclarationSaysWhatFormItWasWrittenIn() {
+fn testADeclarationSaysWhatFormItWasWrittenIn() -> Result {
 	assert.all([
 		assert.equal(true, declaredAs("hasMember").kind is reflect.FuncDecl),
 		assert.equal(true, declaredAs("Field").kind is reflect.DataDecl),
@@ -164,12 +164,12 @@ fn testADeclarationSaysWhatFormItWasWrittenIn() {
 }
 
 @Test()
-fn testADeclarationSaysHowItWasWritten() {
+fn testADeclarationSaysHowItWasWritten() -> Result {
 	assert.equal("extern fn moduleName(m: AnyModule) -> String", declaredAs("moduleName").signature)
 }
 
 @Test()
-fn testADeclarationSaysWhereItWasWritten() {
+fn testADeclarationSaysWhereItWasWritten() -> Result {
 	const source = declaredAs("moduleName").source
 	assert.all([
 		assert.equal(true, strings.hasSuffix(source.path, "reflect/reflect.zirr")),
@@ -178,12 +178,12 @@ fn testADeclarationSaysWhereItWasWritten() {
 }
 
 @Test()
-fn testADeclarationCarriesItsOwnDocumentation() {
+fn testADeclarationCarriesItsOwnDocumentation() -> Result {
 	assert.equal("Whether m has a public member called name.", declaredAs("hasMember").docs)
 }
 
 @Test()
-fn testDeclarationLooksOneUpByName() {
+fn testDeclarationLooksOneUpByName() -> Result {
 	assert.all([
 		assert.equal(true, reflect.declaration(metadata, "hasMember") is Some),
 		assert.equal(true, reflect.declaration(metadata, "nope") is None),

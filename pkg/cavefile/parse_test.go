@@ -215,9 +215,7 @@ func TestParseModuleWithoutGitAttribute(t *testing.T) {
 }
 
 func TestParsePackageViaAlias(t *testing.T) {
-	// @cave.Package and @cave.Git must resolve through import aliases just like
-	// every other cave attribute (regression guard: the package lookup must not
-	// hardcode the "cave" prefix).
+	// @cave.Package and @cave.Git must resolve through import aliases just like every other cave attribute (regression guard: the package lookup must not hardcode the "cave" prefix).
 	src := `mod mymodule
 
 import x = cave
@@ -242,8 +240,7 @@ func TestParseNoCavefileBlock(t *testing.T) {
 }
 
 func TestParseAttributeAliasingIrrelevant(t *testing.T) {
-	// Using an explicit alias (x = cave) should still work
-	// because we resolve the alias via the import declaration
+	// Using an explicit alias (x = cave) should still work because we resolve the alias via the import declaration
 	src := `mod mymodule
 
 import x = cave
@@ -264,8 +261,7 @@ data Dependencies {
 }
 
 func TestParseNoNameCollision(t *testing.T) {
-	// An import with a coincidentally-named attribute should NOT be treated as cave.Package
-	// because the alias maps to a different module URI
+	// An import with a coincidentally-named attribute should NOT be treated as cave.Package because the alias maps to a different module URI
 	src := `mod mymodule
 
 import notcave = tasks

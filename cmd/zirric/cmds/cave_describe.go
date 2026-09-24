@@ -63,8 +63,7 @@ type dependencyDoc struct {
 	Documentation   string `yaml:"documentation,omitempty" json:"documentation,omitempty"`
 }
 
-// dependencyKind classifies how a dependency resolves, mirroring the distinction
-// pkg/cavefile/parse.go draws between @cave.Stdlib, @cave.Local, and @cave.Git.
+// dependencyKind classifies how a dependency resolves, mirroring the distinction pkg/cavefile/parse.go draws between @cave.Stdlib, @cave.Local, and @cave.Git.
 func dependencyKind(dep cavefile.Dependency) string {
 	switch {
 	case dep.Module != "":

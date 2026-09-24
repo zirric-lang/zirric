@@ -8,8 +8,7 @@ import (
 )
 
 // BindContext provides cross-module symbol resolution during extern plugin binding.
-// Plugins use this to look up symbols from other modules (e.g., os plugin resolving
-// Writer/Reader from the io module).
+// Plugins use this to look up symbols from other modules (e.g., os plugin resolving Writer/Reader from the io module).
 type BindContext interface {
 	// ResolveModuleSymbol looks up a symbol by name in the given module's symbol table.
 	// Returns the original symbol (with ConstantId set) or nil if not found.

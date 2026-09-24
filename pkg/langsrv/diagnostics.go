@@ -32,8 +32,7 @@ func (ls *zirricLangserver) refreshDiagnostics(ctx *glsp.Context) error {
 	}
 	diagCtx, openDocs, prevDiagURIs, current := ls.beginDiagnosticsPass()
 
-	// Run the slow parse/analyze work in the background so that other LSP
-	// requests (hover, completion, …) are not blocked while diagnostics compute.
+	// Run the slow parse/analyze work in the background so that other LSP requests (hover, completion, …) are not blocked while diagnostics compute.
 	go ls.runDiagnosticsPass(diagCtx, ctx, openDocs, prevDiagURIs, current)
 
 	return nil
@@ -171,14 +170,10 @@ func (ls *zirricLangserver) parseDiagnosticsForFileInner(path string) ([]protoco
 	return diagnostics, nil, nil
 }
 
-// parseModuleFiles parses all .zirr files in the given directory into a shared
-// module, so that all symbols are visible across files. It returns the module,
-// a map from source URI string to that file's parse errors, and a map from
-// source URI string to the relative file path (for go-to-definition).
+// parseModuleFiles parses all .zirr files in the given directory into a shared module, so that all symbols are visible across files. It returns the module, a map from source URI string to that file's parse errors, and a map from source URI string to the relative file path (for go-to-definition).
 // Results are cached by directory and invalidated whenever documents change.
 //
-// When an Orchestra is available, the module gets prelude injection and the
-// resolver is used for proper symbol resolution.
+// When an Orchestra is available, the module gets prelude injection and the resolver is used for proper symbol resolution.
 func (ls *zirricLangserver) parseModuleFiles(moduleDir string) (*ast.ContextModule, map[string][]parser.ParseError, map[string]string, error) {
 	ls.moduleCacheMu.Lock()
 	defer ls.moduleCacheMu.Unlock()
@@ -200,7 +195,6 @@ func (ls *zirricLangserver) parseModuleFiles(moduleDir string) (*ast.ContextModu
 		return module, parseErrsByFile, sourceURIToPath, err
 	}
 
-	// Build sources from directory
 	var sources []registry.Source
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".zirr") {

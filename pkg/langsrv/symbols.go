@@ -133,12 +133,7 @@ func (ls *zirricLangserver) workspaceSymbol(
 	return results, nil
 }
 
-// collectModuleDirs returns all directories (including root) that contain .zirr
-// files, found by recursively walking from the given root via the overlay
-// filesystem. The root should be a relative path (e.g. ".") since the overlay
-// filesystem is chrooted to the project root. Only directories with valid
-// module names (identifier characters) are traversed, matching the convention
-// used by fsmodule.DiscoverModules.
+// collectModuleDirs returns all directories (including root) that contain .zirr files, found by recursively walking from the given root via the overlay filesystem. The root should be a relative path (e.g. ".") since the overlay filesystem is chrooted to the project root. Only directories with valid module names (identifier characters) are traversed, matching the convention used by fsmodule.DiscoverModules.
 func (ls *zirricLangserver) collectModuleDirs(root string) []string {
 	entries, err := ls.fs.ReadDir(root)
 	if err != nil {
@@ -149,7 +144,6 @@ func (ls *zirricLangserver) collectModuleDirs(root string) []string {
 	hasZirr := false
 	for _, e := range entries {
 		if e.IsDir() {
-			// Only descend into directories with valid module names.
 			if !isValidModuleDirName(e.Name()) {
 				continue
 			}
@@ -165,9 +159,7 @@ func (ls *zirricLangserver) collectModuleDirs(root string) []string {
 	return dirs
 }
 
-// isValidModuleDirName returns true if the directory name is a valid module
-// identifier: starts with a letter or underscore, followed by letters, digits,
-// underscores, or hyphens. This matches fsmodule's recursive discovery rules.
+// isValidModuleDirName returns true if the directory name is a valid module identifier: starts with a letter or underscore, followed by letters, digits, underscores, or hyphens. This matches fsmodule's recursive discovery rules.
 func isValidModuleDirName(name string) bool {
 	if name == "" {
 		return false
@@ -186,9 +178,7 @@ func isValidModuleDirName(name string) bool {
 	return true
 }
 
-// moduleContainerName returns a human-readable module identifier for use as
-// ContainerName in workspace symbol results. It converts the relative directory
-// path to a dot-separated module path (e.g. "examples/project" → "examples.project").
+// moduleContainerName returns a human-readable module identifier for use as ContainerName in workspace symbol results. It converts the relative directory path to a dot-separated module path (e.g. "examples/project" → "examples.project").
 // The root module (dir ".") returns an empty string.
 func moduleContainerName(dir string) string {
 	if dir == "." || dir == "" {
@@ -229,7 +219,6 @@ func documentSymbolForDecl(decl ast.Decl, text string) *protocol.DocumentSymbol 
 		SelectionRange: selRange,
 	}
 
-	// Add children for composite types.
 	ds.Children = childSymbols(decl, text)
 	return ds
 }

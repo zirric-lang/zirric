@@ -317,8 +317,7 @@ func TestReplEvalLine_CompileError_RollsBack(t *testing.T) {
 func TestReplEvalLine_CompileError_DoesNotCorruptSubsequentLines(t *testing.T) {
 	state := newTestReplState(t)
 
-	// Multiple failed lines must not accumulate zombie state that
-	// corrupts the index mapping of later successful declarations.
+	// Multiple failed lines must not accumulate zombie state that corrupts the index mapping of later successful declarations.
 	for i := 0; i < 3; i++ {
 		if _, err := replEvalLine(state, "const y = undeclaredVar"); err == nil {
 			t.Fatalf("iteration %d: expected compile error, got nil", i)
@@ -362,13 +361,11 @@ func TestReplEvalLine_LineIndexIncrements(t *testing.T) {
 }
 
 func TestReplEvalLine_RollbackReclaims_AnalyzerIDs(t *testing.T) {
-	// After a failed line, the analyzer's ID counters must be restored so that
-	// successful declarations following failures receive contiguous IDs with no gaps.
+	// After a failed line, the analyzer's ID counters must be restored so that successful declarations following failures receive contiguous IDs with no gaps.
 	state := newTestReplState(t)
 
 	snapBefore := state.analysis.Snapshot()
 
-	// Three failed compile attempts.
 	for i := 0; i < 3; i++ {
 		if _, err := replEvalLine(state, "const z = undeclaredVar"); err == nil {
 			t.Fatalf("iteration %d: expected error, got nil", i)

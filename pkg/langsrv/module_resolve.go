@@ -11,8 +11,7 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-// qualifiedContext detects if the cursor is immediately after "alias." and returns
-// the alias name, the position just after the dot, and true.
+// qualifiedContext detects if the cursor is immediately after "alias." and returns the alias name, the position just after the dot, and true.
 // For example: "mymod.Foo" with cursor on/after "Foo" → ("mymod", posAfterDot, true).
 // Also works for attribute context, e.g. "@alias.Foo".
 func qualifiedContext(text string, pos protocol.Position) (alias string, afterDot protocol.Position, ok bool) {
@@ -22,18 +21,15 @@ func qualifiedContext(text string, pos protocol.Position) (alias string, afterDo
 		col = len(line)
 	}
 
-	// Scan backward past simple ident chars to find start of the current member name.
 	memberStart := col
 	for memberStart > 0 && isSimpleIdentByte(line[memberStart-1]) {
 		memberStart--
 	}
-	// Must have '.' immediately before the member.
 	if memberStart == 0 || line[memberStart-1] != '.' {
 		return "", protocol.Position{}, false
 	}
 	dotIdx := memberStart - 1
 
-	// Scan backward to extract the alias identifier before the dot.
 	aliasEnd := dotIdx
 	aliasStart := aliasEnd
 	for aliasStart > 0 && isSimpleIdentByte(line[aliasStart-1]) {
@@ -269,14 +265,12 @@ func (ls *zirricLangserver) resolveImportMemberLocation(dim ast.DeclImportMember
 	return ls.locationForDecl(resolved)
 }
 
-// locationForDecl returns the LSP Location of a declaration's name token,
-// reading the source file to compute line/column positions.
+// locationForDecl returns the LSP Location of a declaration's name token, reading the source file to compute line/column positions.
 func (ls *zirricLangserver) locationForDecl(decl ast.Decl) *protocol.Location {
 	return ls.locationForDeclWithPaths(decl, nil)
 }
 
-// locationForDeclWithPaths returns the LSP Location of a declaration's name token,
-// using srcToPath to translate source URIs to filesystem paths when available.
+// locationForDeclWithPaths returns the LSP Location of a declaration's name token, using srcToPath to translate source URIs to filesystem paths when available.
 func (ls *zirricLangserver) locationForDeclWithPaths(decl ast.Decl, srcToPath map[string]string) *protocol.Location {
 	nameToken := decl.DeclName().Token
 	if nameToken.Source == nil {

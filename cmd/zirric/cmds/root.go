@@ -68,8 +68,7 @@ func readSourceForDiagnostic(file string) ([]byte, error) {
 
 var cavefilePath string
 
-// banner heads the help of `zirric` itself. Subcommands keep their own
-// descriptions, so it is shown once rather than above every usage screen.
+// banner heads the help of `zirric` itself. Subcommands keep their own descriptions, so it is shown once rather than above every usage screen.
 const banner = `
  ███ █ ██▄ ██▄ █ ▄██
   ▄▀ █ █▄█ █▄█ █ █
@@ -77,14 +76,10 @@ const banner = `
  ███ █ █ █ █ █ █ ▀██
 `
 
-// bannerStyle paints the banner yellow. lipgloss reads the color profile from
-// stdout, so a redirected `zirric --help`, a dumb terminal and NO_COLOR each
-// get the plain drawing rather than the escape sequences around it.
+// bannerStyle paints the banner yellow. lipgloss reads the color profile from stdout, so a redirected `zirric --help`, a dumb terminal and NO_COLOR each get the plain drawing rather than the escape sequences around it.
 var bannerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 
-// renderBanner paints the drawing a line at a time. Rendering it as one block
-// would pad every line out to the widest, padding the blank ones into runs of
-// spaces, and the art is written to sit exactly as it is.
+// renderBanner paints the drawing a line at a time. Rendering it as one block would pad every line out to the widest, padding the blank ones into runs of spaces, and the art is written to sit exactly as it is.
 func renderBanner() string {
 	lines := strings.Split(banner, "\n")
 	for i, line := range lines {

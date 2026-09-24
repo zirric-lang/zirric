@@ -309,8 +309,7 @@ func TestSwitchCaseMultipleAttributes(t *testing.T) {
 }
 
 func TestSwitchValueCompiledOnce(t *testing.T) {
-	// This test verifies the switch value is evaluated only once,
-	// not re-evaluated per case. We use a function with a side effect (counter).
+	// This test verifies the switch value is evaluated only once, not re-evaluated per case. We use a function with a side effect (counter).
 	tests := []vmTestCase{
 		{
 			label: "switch expr evaluates value once",

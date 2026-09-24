@@ -9,8 +9,7 @@ import (
 var _ Expr = ExprIs{}
 
 // ExprIs represents a type-check expression: `value is TypeExpr`.
-// TypeRef holds the type expression which can be a named type, composite type,
-// or attribute constraint (TypeExprAttrs for @A @B @C).
+// TypeRef holds the type expression which can be a named type, composite type, or attribute constraint (TypeExprAttrs for @A @B @C).
 type ExprIs struct {
 	Token   token.Token // the `is` token
 	Value   Expr

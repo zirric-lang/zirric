@@ -38,9 +38,7 @@ func (ls *zirricLangserver) textDocumentDefinition(
 		return nil, nil
 	}
 
-	// Check qualified/dot-chain context: "alias.member" or "expr.field.subfield"
 	if segments, _, isDotChain := dotChainContext(text, params.Position); isDotChain {
-		// Try module/import alias first (single-segment).
 		if len(segments) == 1 {
 			alias := segments[0]
 			if imp, ok := findImportDecl(currentSF, alias); ok {
@@ -57,7 +55,6 @@ func (ls *zirricLangserver) textDocumentDefinition(
 			}
 		}
 
-		// Multi-segment or non-module single segment: type-aware resolution.
 		cursorOffset := offsetForPosition(text, params.Position)
 		result := ls.resolveDotChain(module, currentSF, path, cursorOffset, segments)
 		if result != nil && len(result.fields) > 0 {
@@ -99,8 +96,7 @@ func (ls *zirricLangserver) textDocumentDefinition(
 
 	defFilePath, ok := sourceURIToPath[nameToken.Source.File]
 	if !ok {
-		// Local declarations may have source files not in sourceURIToPath;
-		// fall back to reading the file directly.
+		// Local declarations may have source files not in sourceURIToPath, so fall back to reading the file directly.
 		if loc := ls.locationForDecl(sym.Decl); loc != nil {
 			return loc, nil
 		}

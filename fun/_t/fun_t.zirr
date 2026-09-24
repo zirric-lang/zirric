@@ -14,7 +14,7 @@ fn toArray(v) {
 }
 
 @Test()
-fn testWith() {
+fn testWith() -> Result {
 	assert.all([
 		assert.equal(6, fun.with(5, fn(v) { v + 1 })),
 		assert.equal("5", fun.with(5, fn(v) { "" + v })),
@@ -22,7 +22,7 @@ fn testWith() {
 }
 
 @Test()
-fn testPipe() {
+fn testPipe() -> Result {
 	const addOneThenDouble = fun.pipe([
 		fn(v) { v + 1 },
 		fn(v) { v * 2 },
@@ -34,7 +34,7 @@ fn testPipe() {
 }
 
 @Test()
-fn testIdentity() {
+fn testIdentity() -> Result {
 	assert.all([
 		assert.equal(5, fun.identity(5)),
 		assert.equal("a", fun.identity("a")),
@@ -42,7 +42,7 @@ fn testIdentity() {
 }
 
 @Test()
-fn testConstant() {
+fn testConstant() -> Result {
 	const always5 = fun.constant(5)
 	assert.all([
 		assert.equal(5, always5(1)),
@@ -51,7 +51,7 @@ fn testConstant() {
 }
 
 @Test()
-fn testNegate() {
+fn testNegate() -> Result {
 	const isEven = fn(x) { x % 2 == 0 }
 	const isOdd = fun.negate(isEven)
 	assert.all([
@@ -61,7 +61,7 @@ fn testNegate() {
 }
 
 @Test()
-fn testCompose() {
+fn testCompose() -> Result {
 	const addOne = fn(x) { x + 1 }
 	const double = fn(x) { x * 2 }
 	const composed = fun.compose(double, addOne)
@@ -71,7 +71,7 @@ fn testCompose() {
 }
 
 @Test()
-fn testFlip() {
+fn testFlip() -> Result {
 	const subtract = fn(a, b) { a - b }
 	const flipped = fun.flip(subtract)
 	assert.all([
@@ -81,22 +81,22 @@ fn testFlip() {
 }
 
 @Test()
-fn testMap() {
+fn testMap() -> Result {
 	assert.equal([2, 4, 6], toArray(fun.map([1, 2, 3], fn(x) { x * 2 })))
 }
 
 @Test()
-fn testFilter() {
+fn testFilter() -> Result {
 	assert.equal([2, 4], toArray(fun.filter([1, 2, 3, 4, 5], fn(x) { x % 2 == 0 })))
 }
 
 @Test()
-fn testFlatMap() {
+fn testFlatMap() -> Result {
 	assert.equal([1, 10, 2, 20, 3, 30], toArray(fun.flatMap([1, 2, 3], fn(x) { [x, x * 10] })))
 }
 
 @Test()
-fn testReduce() {
+fn testReduce() -> Result {
 	assert.all([
 		assert.equal(15, fun.reduce([1, 2, 3, 4, 5], 0, fn(acc, x) { acc + x })),
 		assert.equal(0, fun.reduce([], 0, fn(acc, x) { acc + x })),
@@ -104,14 +104,12 @@ fn testReduce() {
 }
 
 @Test()
-fn testMapFilterChain() {
+fn testMapFilterChain() -> Result {
 	const result = fun.filter(fun.map([1, 2, 3, 4, 5], fn(x) { x * 2 }), fn(x) { x > 4 })
 	assert.equal([6, 8, 10], toArray(result))
 }
 
-// An infinite @Iterable, used only to prove map/filter/flatMap are lazy: if they eagerly
-// materialized their whole result, iterating this would hang forever instead of stopping
-// after a handful of elements.
+// An infinite @Iterable, used only to prove map/filter/flatMap are lazy: if they eagerly materialized their whole result, iterating this would hang forever instead of stopping after a handful of elements.
 @Iterable(_counterIterate)
 data Counter
 
@@ -126,7 +124,7 @@ fn _counterIterate(v, yield) {
 }
 
 @Test()
-fn testMapIsLazy() {
+fn testMapIsLazy() -> Result {
 	const doubled = fun.map(Counter(), fn(x) { x * 2 })
 	var result = []
 	for x <- doubled {
@@ -139,7 +137,7 @@ fn testMapIsLazy() {
 }
 
 @Test()
-fn testFilterIsLazy() {
+fn testFilterIsLazy() -> Result {
 	const evens = fun.filter(Counter(), fn(x) { x % 2 == 0 })
 	var result = []
 	for x <- evens {
@@ -152,7 +150,7 @@ fn testFilterIsLazy() {
 }
 
 @Test()
-fn testTake() {
+fn testTake() -> Result {
 	assert.all([
 		assert.equal([1, 2, 3], toArray(fun.take([1, 2, 3, 4, 5], 3))),
 		assert.equal([1, 2, 3, 4, 5], toArray(fun.take([1, 2, 3, 4, 5], 10))),
@@ -161,7 +159,7 @@ fn testTake() {
 }
 
 @Test()
-fn testSkip() {
+fn testSkip() -> Result {
 	assert.all([
 		assert.equal([3, 4, 5], toArray(fun.skip([1, 2, 3, 4, 5], 2))),
 		assert.equal([1, 2, 3], toArray(fun.skip([1, 2, 3], 0))),
@@ -170,17 +168,17 @@ fn testSkip() {
 }
 
 @Test()
-fn testTakeIsLazy() {
+fn testTakeIsLazy() -> Result {
 	assert.equal([1, 2, 3], toArray(fun.take(Counter(), 3)))
 }
 
 @Test()
-fn testSkipThenTakeIsLazy() {
+fn testSkipThenTakeIsLazy() -> Result {
 	assert.equal([6, 7, 8], toArray(fun.take(fun.skip(Counter(), 5), 3)))
 }
 
 @Test()
-fn testZip() {
+fn testZip() -> Result {
 	const result = toArray(fun.zip([1, 2, 3], ["a", "b", "c"]))
 	assert.all([
 		assert.equal(3, len(result)),
@@ -194,7 +192,7 @@ fn testZip() {
 }
 
 @Test()
-fn testZipStopsAtShorterSide() {
+fn testZipStopsAtShorterSide() -> Result {
 	assert.all([
 		assert.equal(2, len(toArray(fun.zip([1, 2, 3, 4], ["a", "b"])))),
 		assert.equal(2, len(toArray(fun.zip([1, 2], ["a", "b", "c", "d"])))),
@@ -202,10 +200,8 @@ fn testZipStopsAtShorterSide() {
 }
 
 @Test()
-fn testZipIsLazyInFirstArgument() {
-	// b (the second argument) is buffered eagerly, but a must still be walked lazily — if it
-	// weren't, zipping an infinite a against a finite b would hang instead of stopping once
-	// b is exhausted.
+fn testZipIsLazyInFirstArgument() -> Result {
+	// b (the second argument) is buffered eagerly, but a must still be walked lazily — if it weren't, zipping an infinite a against a finite b would hang instead of stopping once b is exhausted.
 	const result = toArray(fun.zip(Counter(), [10, 20, 30]))
 	assert.all([
 		assert.equal(3, len(result)),

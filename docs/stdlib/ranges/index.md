@@ -67,7 +67,7 @@ Returns whether value lies within r.
 
 ### `intersect` {#intersect}
 
-<small>`ranges/ranges.zirr:49`</small>
+<small>`ranges/ranges.zirr:48`</small>
 
 ```zirric
 fn intersect(a: Like, b: Like) -> Option
@@ -79,21 +79,19 @@ Returns the values a and b have in common, or None if they don't overlap.
 
 ### `merge` {#merge}
 
-<small>`ranges/ranges.zirr:74`</small>
+<small>`ranges/ranges.zirr:71`</small>
 
 ```zirric
 fn merge(a: Like, b: Like) -> Option
 ```
 
-Combines a and b into a single range spanning both, if they overlap or are
-adjacent (e.g. [1,3] and [4,6] merge into [1,6]). Returns None if there's
-a gap between them, since the result wouldn't be a single contiguous range.
+Combines a and b into a single range spanning both, if they overlap or are adjacent (e.g. [1,3] and [4,6] merge into [1,6]). Returns None if there's a gap between them, since the result wouldn't be a single contiguous range.
 
 ---
 
 ### `overlap` {#overlap}
 
-<small>`ranges/ranges.zirr:44`</small>
+<small>`ranges/ranges.zirr:43`</small>
 
 ```zirric
 fn overlap(a: Like, b: Like) -> Bool
@@ -105,11 +103,10 @@ Returns whether a and b share any values.
 
 ### `toClosedRange` {#toclosedrange}
 
-<small>`ranges/ranges.zirr:23`</small>
+<small>`ranges/ranges.zirr:22`</small>
 
 ```zirric
 fn toClosedRange(r: Like) -> Option
 ```
 
-Returns r's equivalent closed, inclusive bounds, or None if r contains no
-integers (e.g. Range(5, 5), or OpenRange(5, 6)).
+Returns r's equivalent closed, inclusive bounds, or None if r contains no integers (e.g. Range(5, 5), or OpenRange(5, 6)).

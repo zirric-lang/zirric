@@ -11,9 +11,7 @@ import (
 // Parse extracts Cavefile information from a parsed (and analyzed) Zirric module.
 //
 // cavefileMod is the Cavefile parsed as a ContextModule (already run through the analyzer).
-// caveMod and tasksMod are the parsed cave and tasks stdlib modules,
-// used to verify attribute types against actual DeclAttr declarations — preventing false
-// matches from name collisions or unrelated imports.
+// caveMod and tasksMod are the parsed cave and tasks stdlib modules, used to verify attribute types against actual DeclAttr declarations — preventing false matches from name collisions or unrelated imports.
 // fallbackName is used as Package.Name if no mod declaration is found.
 // projectDir is used to resolve @cave.Local("../rel") paths to absolute paths.
 func Parse(cavefileMod *ast.ContextModule, caveMod *ast.ContextModule, tasksMod *ast.ContextModule, fallbackName string, projectDir string) Cavefile {
@@ -130,8 +128,7 @@ func extractModulePath(mod *ast.ContextModule) string {
 	return ""
 }
 
-// buildAliasMap collects import declarations from the Cavefile's file-level symbol tables
-// and maps each local alias to the imported module's LogicalURI.
+// buildAliasMap collects import declarations from the Cavefile's file-level symbol tables and maps each local alias to the imported module's LogicalURI.
 // DeclImport has ExportScopeLocal so it stays in the file-level DeclTable (not module-level).
 func buildAliasMap(mod *ast.ContextModule) map[string]registry.LogicalURI {
 	result := map[string]registry.LogicalURI{}
@@ -196,9 +193,7 @@ func hasCaveAttr(attrs ast.AttributeChain, attrName string, caveMod *ast.Context
 	return false
 }
 
-// isFutureCaveAttr checks that an attribute instance refers to a specific DeclAttr
-// declared in caveMod (identified by caveMod.Name), using aliasMap to
-// resolve the local alias to the module URI.
+// isFutureCaveAttr checks that an attribute instance refers to a specific DeclAttr declared in caveMod (identified by caveMod.Name), using aliasMap to resolve the local alias to the module URI.
 func isFutureCaveAttr(attr *ast.DeclAttrInstance, attrName string, caveMod *ast.ContextModule, aliasMap map[string]registry.LogicalURI) bool {
 	ref := attr.Reference
 	if len(ref) < 2 {
@@ -216,7 +211,6 @@ func isFutureCaveAttr(attr *ast.DeclAttrInstance, attrName string, caveMod *ast.
 	if uri != caveMod.Name {
 		return false
 	}
-	// Verify the declaration is a DeclAttr in the referenced module (type system check)
 	sym, ok := caveMod.Decls.Symbols[attrName]
 	if !ok {
 		return false

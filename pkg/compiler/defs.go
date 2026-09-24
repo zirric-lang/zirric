@@ -22,10 +22,7 @@ type CompilationScope struct {
 	positions []debuginfo.Entry
 	symbols   *ast.SymbolTable
 	locals    []*ast.Symbol
-	// freeMapping maps a FreeScope symbol's Index (position in
-	// SymbolTable.FreeSymbols) to its actual position in the Closure.Free
-	// array. Globals and constants are excluded from the Free array and
-	// therefore have no entry.
+	// freeMapping maps a FreeScope symbol's Index (position in SymbolTable.FreeSymbols) to its actual position in the Closure.Free array. Globals and constants are excluded from the Free array and therefore have no entry.
 	freeMapping map[int]int
 	// freeTable is the SymbolTable freeMapping's indices belong to, kept because `symbols` is swapped for a `for` expression body.
 	freeTable *ast.SymbolTable
@@ -55,8 +52,7 @@ type Bytecode struct {
 	Instructions op.Instructions
 	Constants    []runtime.RuntimeValue
 	Globals      []*CompilationScope
-	// MainLocals is the number of local slots required by the top-level script frame,
-	// including any temporaries allocated by the compiler.
+	// MainLocals is the number of local slots required by the top-level script frame, including any temporaries allocated by the compiler.
 	MainLocals int
 	// ModuleGlobals maps each compiled module's URI to the global slot holding its ModuleValue, so the VM can reach a module's exports by name at runtime.
 	ModuleGlobals map[registry.LogicalURI]int
@@ -146,8 +142,7 @@ func (c *Compiler) currentSymbols() *ast.SymbolTable {
 	return nil
 }
 
-// lookupTypeSymbol traverses the symbol table chain without side effects
-// to find a declared type symbol by name. Returns nil if not found.
+// lookupTypeSymbol traverses the symbol table chain without side effects to find a declared type symbol by name. Returns nil if not found.
 func (c *Compiler) lookupTypeSymbol(name string) *ast.Symbol {
 	for st := c.currentSymbols(); st != nil; st = st.Parent {
 		if sym, ok := st.Symbols[name]; ok && sym.Decl != nil {

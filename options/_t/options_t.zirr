@@ -6,7 +6,7 @@ import tests.assert
 import options
 
 @Test()
-fn testFrom() {
+fn testFrom() -> Result {
 	assert.all([
 		assert.equal(true, options.from(None()) is None),
 		assert.equal(true, options.from(Some(1)) is Some),
@@ -17,7 +17,7 @@ fn testFrom() {
 }
 
 @Test()
-fn testIsSomeIsNone() {
+fn testIsSomeIsNone() -> Result {
 	assert.all([
 		assert.equal(true, options.isSome(Some(1))),
 		assert.equal(false, options.isNone(Some(1))),
@@ -28,7 +28,7 @@ fn testIsSomeIsNone() {
 }
 
 @Test()
-fn testMap() {
+fn testMap() -> Result {
 	assert.all([
 		assert.equal(20, options.map(Some(2), fn(v) { v * 10 }).value),
 		assert.equal(true, options.map(None(), fn(v) { v * 10 }) is None),
@@ -37,7 +37,7 @@ fn testMap() {
 }
 
 @Test()
-fn testFlatMap() {
+fn testFlatMap() -> Result {
 	assert.all([
 		assert.equal(20, options.flatMap(Some(2), fn(v) { Some(v * 10) }).value),
 		assert.equal(true, options.flatMap(Some(2), fn(v) { None() }) is None),
@@ -46,7 +46,7 @@ fn testFlatMap() {
 }
 
 @Test()
-fn testOr() {
+fn testOr() -> Result {
 	assert.all([
 		assert.equal(2, options.or(Some(2), 99)),
 		assert.equal(99, options.or(None(), 99)),

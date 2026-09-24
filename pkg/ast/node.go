@@ -5,7 +5,6 @@ import "code.knabel.dev/zirric-lang/zirric/pkg/token"
 type Node interface {
 	TokenLiteral() token.Token
 	EnumerateChildNodes(func(child Node))
-	// String() string
 }
 
 // Expressions produce values.

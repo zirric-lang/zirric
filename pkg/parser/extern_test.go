@@ -47,8 +47,7 @@ func TestParseExternDeclarations(t *testing.T) {
 			expectedType: "*ast.DeclExternValue",
 			expectedName: "myvalue",
 		},
-		// Note: Cannot use reserved keywords like 'void' as identifiers
-		// The lexer tokenizes them as keywords, not IDENT tokens
+		// Note: Cannot use reserved keywords like 'void' as identifiers; the lexer tokenizes them as keywords, not IDENT tokens.
 	}
 
 	for _, tc := range testCases {
@@ -63,7 +62,6 @@ func TestParseExternDeclarations(t *testing.T) {
 			p := parser.NewSourceParser(l, parentTable, "test.zirr")
 			srcFile := p.ParseSourceFile()
 
-			// Check for parser errors
 			if len(p.Errors()) > 0 {
 				for _, err := range p.Errors() {
 					t.Errorf("Parser error: %v", err)
@@ -71,7 +69,6 @@ func TestParseExternDeclarations(t *testing.T) {
 				return
 			}
 
-			// Check that the declaration was added to the symbol table
 			if srcFile.Decls == nil || srcFile.Decls.Parent == nil || srcFile.Decls.Parent.Symbols == nil {
 				t.Fatal("Decl table is nil")
 			}
@@ -85,24 +82,20 @@ func TestParseExternDeclarations(t *testing.T) {
 				t.Fatalf("Symbol %q has nil declaration", tc.expectedName)
 			}
 
-			// Check the type of the declaration
 			declType := getTypeName(symbol.Decl)
 			if declType != tc.expectedType {
 				t.Errorf("Expected declaration type %s, got %s", tc.expectedType, declType)
 			}
 
-			// Check the declaration name
 			declName := symbol.Decl.DeclName().Value
 			if declName != tc.expectedName {
 				t.Errorf("Expected declaration name %s, got %s", tc.expectedName, declName)
 			}
 
-			// Verify DeclOverview shows new syntax
 			if overviewable, ok := symbol.Decl.(ast.Overviewable); ok {
 				overview := overviewable.DeclOverview()
 				t.Logf("Declaration overview: %s", overview)
 
-				// Basic checks for the overview format
 				switch tc.expectedType {
 				case "*ast.DeclExternType":
 					if !contains(overview, "extern type") {
@@ -149,7 +142,6 @@ func TestParseExternDeclarationErrors(t *testing.T) {
 			p := parser.NewSourceParser(l, parentTable, "test.zirr")
 			p.ParseSourceFile()
 
-			// Should have parser errors
 			if len(p.Errors()) == 0 {
 				t.Error("Expected parser errors but got none")
 			}
@@ -157,7 +149,6 @@ func TestParseExternDeclarationErrors(t *testing.T) {
 	}
 }
 
-// Helper functions
 func getTypeName(v interface{}) string {
 	switch v.(type) {
 	case *ast.DeclExternType:

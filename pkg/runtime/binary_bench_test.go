@@ -4,15 +4,7 @@ import (
 	"testing"
 )
 
-// Compares Binary ([]byte, unboxed) against an Array of Byte (each element
-// boxed as a RuntimeValue interface) for the operations a byte sequence is
-// actually used for: building one up (via raw Go append, and via the
-// `append` extern function Zirric code actually calls), indexed access,
-// iteration, and producing its hex Inspect() representation. The point
-// isn't absolute throughput — it's whether boxing every byte as an
-// interface value (what [Byte] necessarily does, since Array is
-// []RuntimeValue) costs enough to justify Binary existing as its own type
-// alongside [Byte].
+// Compares Binary ([]byte, unboxed) against an Array of Byte (each element boxed as a RuntimeValue interface) for the operations a byte sequence is actually used for: building one up (via raw Go append, and via the `append` extern function Zirric code actually calls), indexed access, iteration, and producing its hex Inspect() representation. The point isn't absolute throughput — it's whether boxing every byte as an interface value (what [Byte] necessarily does, since Array is []RuntimeValue) costs enough to justify Binary existing as its own type alongside [Byte].
 
 var byteSizes = []int{16, 256, 4096}
 
@@ -65,11 +57,7 @@ func benchConstructByteArray(n int) func(b *testing.B) {
 	}
 }
 
-// BenchmarkAppendExtern benchmarks the actual `append` extern function
-// (pkg/runtime/prelude.go's Prelude.Bind("append")) that Zirric code calls —
-// not just raw Go append (already exercised, incidentally, by
-// BenchmarkConstruct) — since both Binary and Array accept it, per its
-// "append expects an Array argument" special-case for Binary.
+// BenchmarkAppendExtern benchmarks the actual `append` extern function (pkg/runtime/prelude.go's Prelude.Bind("append")) that Zirric code calls — not just raw Go append (already exercised, incidentally, by BenchmarkConstruct) — since both Binary and Array accept it, per its "append expects an Array argument" special-case for Binary.
 func BenchmarkAppendExtern(b *testing.B) {
 	var p Prelude
 	appendFn := p.Bind(nil, nil, makeExternFuncSymbol("append", 2)).(*ExternFunc)

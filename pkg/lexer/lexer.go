@@ -41,7 +41,7 @@ func (l *Lexer) NextToken() token.Token {
 	leading, src := tok.Leading, tok.Source
 
 	switch l.ch {
-	case '!': // BANG, NEQ, BANG_DOT, BANG_BANG
+	case '!':
 		switch l.peekChar() {
 		case '=':
 			tok = token.Token{Type: token.NEQ, Literal: "!="}
@@ -55,7 +55,7 @@ func (l *Lexer) NextToken() token.Token {
 		default:
 			tok = l.newToken(token.BANG, l.ch)
 		}
-	case '?': // QUESTION, QUESTION_DOT, QUESTION_QUESTION
+	case '?':
 		switch l.peekChar() {
 		case '.':
 			tok = token.Token{Type: token.QUESTION_DOT, Literal: "?."}
@@ -66,14 +66,14 @@ func (l *Lexer) NextToken() token.Token {
 		default:
 			tok = l.newToken(token.QUESTION, l.ch)
 		}
-	case '+': // PLUS, PLUS_ASSIGN
+	case '+':
 		if l.peekChar() == '=' {
 			tok = token.Token{Type: token.PLUS_ASSIGN, Literal: "+="}
 			l.advance()
 		} else {
 			tok = l.newToken(token.PLUS, l.ch)
 		}
-	case '-': // MINUS, MINUS_ASSIGN, RIGHT_ARROW
+	case '-':
 		switch l.peekChar() {
 		case '>':
 			tok = token.Token{Type: token.RIGHT_ARROW, Literal: "->"}
@@ -84,21 +84,21 @@ func (l *Lexer) NextToken() token.Token {
 		default:
 			tok = l.newToken(token.MINUS, l.ch)
 		}
-	case '*': // ASTERISK, STAR_ASSIGN
+	case '*':
 		if l.peekChar() == '=' {
 			tok = token.Token{Type: token.STAR_ASSIGN, Literal: "*="}
 			l.advance()
 		} else {
 			tok = l.newToken(token.ASTERISK, l.ch)
 		}
-	case '/': // SLASH, SLASH_ASSIGN
+	case '/':
 		if l.peekChar() == '=' {
 			tok = token.Token{Type: token.SLASH_ASSIGN, Literal: "/="}
 			l.advance()
 		} else {
 			tok = l.newToken(token.SLASH, l.ch)
 		}
-	case '%': // PERCENT, PERCENT_ASSIGN
+	case '%':
 		if l.peekChar() == '=' {
 			tok = token.Token{Type: token.PERCENT_ASSIGN, Literal: "%="}
 			l.advance()
@@ -106,7 +106,7 @@ func (l *Lexer) NextToken() token.Token {
 			tok = l.newToken(token.PERCENT, l.ch)
 		}
 
-	case '<': // LT, LTE
+	case '<':
 		switch l.peekChar() {
 		case '=':
 			tok = token.Token{Type: token.LTE, Literal: "<="}
@@ -117,14 +117,14 @@ func (l *Lexer) NextToken() token.Token {
 		default:
 			tok = l.newToken(token.LT, l.ch)
 		}
-	case '>': // GT, GTE
+	case '>':
 		if l.peekChar() == '=' {
 			tok = token.Token{Type: token.GTE, Literal: ">="}
 			l.advance()
 		} else {
 			tok = l.newToken(token.GT, l.ch)
 		}
-	case '=': // ASSIGN, EQ, ARROW
+	case '=':
 		switch l.peekChar() {
 		case '=':
 			tok = token.Token{Type: token.EQ, Literal: "=="}
@@ -135,14 +135,14 @@ func (l *Lexer) NextToken() token.Token {
 		default:
 			tok = l.newToken(token.ASSIGN, l.ch)
 		}
-	case '&': // AND
+	case '&':
 		if l.peekChar() == '&' {
 			tok = token.Token{Type: token.AND, Literal: "&&"}
 			l.advance()
 		} else {
 			tok = l.newToken(token.ILLEGAL, l.ch)
 		}
-	case '|': // OR
+	case '|':
 		if l.peekChar() == '|' {
 			tok = token.Token{Type: token.OR, Literal: "||"}
 			l.advance()
@@ -150,31 +150,31 @@ func (l *Lexer) NextToken() token.Token {
 			tok = l.newToken(token.ILLEGAL, l.ch)
 		}
 
-	case ':': // COLON
+	case ':':
 		tok = l.newToken(token.COLON, l.ch)
-	case '.': // DOT
+	case '.':
 		tok = l.newToken(token.DOT, l.ch)
-	case ',': // COMMA
+	case ',':
 		tok = l.newToken(token.COMMA, l.ch)
-	case '(': // LPAREN
+	case '(':
 		tok = l.newToken(token.LPAREN, l.ch)
-	case ')': // RPAREN
+	case ')':
 		tok = l.newToken(token.RPAREN, l.ch)
-	case '{': // LBRACE
+	case '{':
 		tok = l.newToken(token.LBRACE, l.ch)
-	case '}': // RBRACE
+	case '}':
 		tok = l.newToken(token.RBRACE, l.ch)
-	case '[': // LBRACKET
+	case '[':
 		tok = l.newToken(token.LBRACKET, l.ch)
-	case ']': // RBRACKET
+	case ']':
 		tok = l.newToken(token.RBRACKET, l.ch)
-	case '@': // AT
+	case '@':
 		tok = l.newToken(token.AT, l.ch)
 
-	case '"': // STRING
+	case '"':
 		tok.Type = token.STRING
 		tok.Literal = l.parseString()
-	case '\'': // CHAR
+	case '\'':
 		tok.Type = token.CHAR
 		literal, ok := l.parseChar()
 		if !ok {
@@ -183,9 +183,9 @@ func (l *Lexer) NextToken() token.Token {
 			break
 		}
 		tok.Literal = literal
-	case 0: // EOF
+	case 0:
 		tok.Type = token.EOF
-	default: // IDENT, INT, FLOAT
+	default:
 		if isLetter(l.ch) {
 			tok.Literal = l.parseIdentifier()
 			tok.Type = token.LookupIdent(tok.Literal)
@@ -206,11 +206,8 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
-// parseString scans a double-quoted string literal and returns its raw source,
-// escapes included. Decoding happens in the parser, the same way char literals
-// are handled, so both literal forms accept exactly one set of escapes.
-// An unterminated literal ends at EOF rather than being rejected, which keeps
-// a half-typed line usable while it is being edited.
+// parseString scans a double-quoted string literal and returns its raw source, escapes included. Decoding happens in the parser, the same way char literals are handled, so both literal forms accept exactly one set of escapes.
+// An unterminated literal ends at EOF rather than being rejected, which keeps a half-typed line usable while it is being edited.
 func (l *Lexer) parseString() string {
 	position := l.currPos + 1
 	escaped := false
@@ -301,11 +298,9 @@ func (l *Lexer) parseIdentifier() string {
 func (l *Lexer) parseNumber() (string, token.TokenType) {
 	position := l.currPos
 
-	// Handle special prefixes: 0x, 0b, 0B
 	if l.ch == '0' && l.peekChar() == 'x' {
-		// Hexadecimal: 0x...
-		l.advance() // consume '0'
-		l.advance() // consume 'x'
+		l.advance()
+		l.advance()
 		for isHexDigit(l.ch) {
 			l.advance()
 		}
@@ -313,31 +308,27 @@ func (l *Lexer) parseNumber() (string, token.TokenType) {
 	}
 
 	if l.ch == '0' && (l.peekChar() == 'b' || l.peekChar() == 'B') {
-		// Binary: 0b... or 0B...
-		l.advance() // consume '0'
-		l.advance() // consume 'b' or 'B'
+		l.advance()
+		l.advance()
 		for isBinaryDigit(l.ch) {
 			l.advance()
 		}
 		return l.input[position:l.currPos], token.INT
 	}
 
-	// Parse regular decimal number (including octal starting with 0)
 	for isDigit(l.ch) {
 		l.advance()
 	}
 
-	// Check for decimal point
 	if l.ch == '.' && isDigit(l.peekChar()) {
-		l.advance() // consume '.'
+		l.advance()
 		for isDigit(l.ch) {
 			l.advance()
 		}
-		// Check for scientific notation in float
 		if l.ch == 'e' || l.ch == 'E' {
-			l.advance() // consume 'e' or 'E'
+			l.advance()
 			if l.ch == '+' || l.ch == '-' {
-				l.advance() // consume sign
+				l.advance()
 			}
 			for isDigit(l.ch) {
 				l.advance()
@@ -346,11 +337,10 @@ func (l *Lexer) parseNumber() (string, token.TokenType) {
 		return l.input[position:l.currPos], token.FLOAT
 	}
 
-	// Check for scientific notation in integer (e.g., 2e10)
 	if l.ch == 'e' || l.ch == 'E' {
-		l.advance() // consume 'e' or 'E'
+		l.advance()
 		if l.ch == '+' || l.ch == '-' {
-			l.advance() // consume sign
+			l.advance()
 		}
 		for isDigit(l.ch) {
 			l.advance()
@@ -358,7 +348,6 @@ func (l *Lexer) parseNumber() (string, token.TokenType) {
 		return l.input[position:l.currPos], token.FLOAT
 	}
 
-	// Regular integer (decimal or octal)
 	return l.input[position:l.currPos], token.INT
 }
 

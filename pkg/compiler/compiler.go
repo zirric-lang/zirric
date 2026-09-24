@@ -236,10 +236,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		switch symbol.Decl.(type) {
 		case *ast.DeclFunc, *ast.DeclData, *ast.DeclUnion, *ast.DeclExternFunc, *ast.DeclExternType, *ast.DeclExternValue, *ast.DeclAttr:
 			sym := symbol.Original()
-			// A local DeclFunc with captures gets a LocalId pointing to
-			// its runtime Closure object. Check the direct symbol first
-			// (FreeScope copies receive LocalId from DeclFunc compilation)
-			// before the Original (which may be at module level).
+			// A local DeclFunc with captures gets a LocalId pointing to its runtime Closure object. Check the direct symbol first (FreeScope copies receive LocalId from DeclFunc compilation) before the Original (which may be at module level).
 			if symbol.LocalId != nil {
 				c.emit(op.GetLocal, *symbol.LocalId)
 				return nil
@@ -258,16 +255,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return nil
 
 		case *ast.DeclVariable, *ast.DeclConstant, *ast.DeclForBinding:
-			// FreeScope symbols without a LocalId are actual cross-function
-			// captures (the variable lives in a different frame). FreeScope
-			// symbols WITH a LocalId are promoted locals that still live in
-			// the current frame.
+			// FreeScope symbols without a LocalId are actual cross-function captures (the variable lives in a different frame). FreeScope symbols WITH a LocalId are promoted locals that still live in the current frame.
 			if symbol.Scope == ast.FreeScope && symbol.LocalId == nil {
 				return c.compileFreeIdentifier(symbol)
 			}
 
-			// Use the symbol's own LocalId first (covers both LocalScope
-			// locals and FreeScope promoted locals).
+			// Use the symbol's own LocalId first (covers both LocalScope locals and FreeScope promoted locals).
 			if symbol.LocalId != nil {
 				if _, isVar := symbol.Decl.(*ast.DeclVariable); isVar && symbol.IsCaptured {
 					c.emit(op.GetLocalCell, *symbol.LocalId)
@@ -339,10 +332,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return errAt(node.Function, "a call cannot be part of an optional chain", "?. produces an Option, which is not callable: read the value out of it first")
 		}
 		for i := 0; i < len(node.Arguments); i++ {
-			// compile arguments in left-to-right order
-			// so they are pushed onto the stack in that order
-			// and can be popped off in reverse order by the callee
-			// (first argument is on the bottom of the stack)
+			// compile arguments in left-to-right order so they are pushed onto the stack in that order and can be popped off in reverse order by the callee (first argument is on the bottom of the stack)
 			err := c.Compile(node.Arguments[i])
 			if err != nil {
 				return err
@@ -1395,8 +1385,7 @@ func (c *Compiler) compileExprOperatorUnary(node *ast.ExprOperatorUnary) error {
 	}
 	switch node.Operator.Type {
 	case token.PLUS:
-		// all numbers are positive by default
-		// technically we would need to check the type of the expr
+		// all numbers are positive by default technically we would need to check the type of the expr
 		return nil
 	case token.BANG:
 		c.emit(op.Invert)
@@ -1674,9 +1663,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 
 	case *ast.DeclFunc:
 		// Skip promoted nested functions at file/module scope.
-		// DeclTable promotion causes inner DeclFuncs to appear at module
-		// level, but they must be compiled in their enclosing function's
-		// scope so that free variable captures work correctly.
+		// DeclTable promotion causes inner DeclFuncs to appear at module level, but they must be compiled in their enclosing function's scope so that free variable captures work correctly.
 		if sym.Scope != ast.FreeScope && decl.Impl != nil && decl.Impl.Symbols != nil {
 			parentST := decl.Impl.Symbols.Parent
 			if parentST != nil {
@@ -1703,7 +1690,6 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 			return err
 		}
 
-		// Build free mapping for the function body.
 		symbols := decl.Impl.Symbols
 		freeMapping := map[int]int{}
 		freeCount := 0
@@ -1743,8 +1729,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		function.Attributes = functionAttributes
 		function.ParamAttributes = paramAttributes
 		c.recordAttributes(sym, functionAttributes)
-		// Use Original() to access ConstantId: FreeScope copies created by
-		// resolve_identifiers (before assignModuleIDs) have nil ConstantId.
+		// Use Original() to access ConstantId: FreeScope copies created by resolve_identifiers (before assignModuleIDs) have nil ConstantId.
 		origSym := sym.Original()
 		if origSym.ConstantId == nil {
 			return errInvariant(sym.Decl, "the function %s was never given a constant slot, which the analyzer assigns before compilation", sym.Name)
@@ -1752,9 +1737,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 		c.ensureConstantSlot(*origSym.ConstantId)
 		c.constants[*origSym.ConstantId] = function
 
-		// If the function captures local variables, create a closure at
-		// runtime and store it in a temp local so references use GetLocal
-		// instead of Const.
+		// If the function captures local variables, create a closure at runtime and store it in a temp local so references use GetLocal instead of Const.
 		if freeCount > 0 {
 			for i, parentSym := range symbols.FreeSymbols {
 				if _, ok := freeMapping[i]; !ok {
@@ -1808,8 +1791,7 @@ func (c *Compiler) compileSymbol(sym *ast.Symbol) error {
 
 			c.emit(op.SetLocal, *sym.LocalId)
 
-			// If captured by a closure, wrap in an UpvalueCell so
-			// inner scopes share the same mutable slot.
+			// If captured by a closure, wrap in an UpvalueCell so inner scopes share the same mutable slot.
 			if sym.IsCaptured {
 				c.emit(op.WrapLocal, *sym.LocalId)
 			}
@@ -1927,8 +1909,7 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 	if scope := c.globals[id]; scope != nil {
 		return nil
 	}
-	// Prevent double compilation when the same module is imported under
-	// different global IDs (e.g. prelude imported by both fmt and main).
+	// Prevent double compilation when the same module is imported under different global IDs (e.g. prelude imported by both fmt and main).
 	if firstId, ok := c.compiledModules[module]; ok {
 		c.globals[id] = c.globals[firstId]
 		return nil
@@ -1947,9 +1928,7 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 	}
 
 	// Reserve file-level imports before compiling module-level symbols.
-	// Promoted declarations (e.g. data) may reference file-local imports
-	// in their attributes (e.g. @cave.Package), so the import's
-	// module global must be registered before attribute resolution.
+	// Promoted declarations (e.g. data) may reference file-local imports in their attributes (e.g. @cave.Package), so the import's module global must be registered before attribute resolution.
 	for _, src := range module.Files {
 		if src.Symbols == nil {
 			continue
@@ -1958,9 +1937,7 @@ func (c *Compiler) compileContextModule(module *ast.ContextModule, id int) error
 			if sym.Decl == nil {
 				continue
 			}
-			// Skip FreeScope symbols — these are captures from parent scopes
-			// (e.g. prelude imports resolved during identifier resolution),
-			// not actual file-level declarations.
+			// Skip FreeScope symbols — these are captures from parent scopes (e.g. prelude imports resolved during identifier resolution), not actual file-level declarations.
 			if sym.Scope == ast.FreeScope {
 				continue
 			}
@@ -2058,8 +2035,7 @@ func (c *Compiler) compileSourceFileDecls(node *ast.SourceFile) error {
 	return nil
 }
 
-// ModuleSymbol returns the symbol for the module's own declaration (the `module X` statement),
-// searching through the module's source files. Returns nil if no module declaration is found.
+// ModuleSymbol returns the symbol for the module's own declaration (the `module X` statement), searching through the module's source files. Returns nil if no module declaration is found.
 func ModuleSymbol(module *ast.ContextModule) *ast.Symbol {
 	for _, file := range module.Files {
 		if file.Symbols == nil {
@@ -2077,8 +2053,7 @@ func ModuleSymbol(module *ast.ContextModule) *ast.Symbol {
 	return nil
 }
 
-// compileInitFunction compiles the given statements into a synthetic __init__ CompiledFunction
-// and emits Const <id>; Call 0; Pop in the current scope.
+// compileInitFunction compiles the given statements into a synthetic __init__ CompiledFunction and emits Const <id>; Call 0; Pop in the current scope.
 // sym should be the module's own symbol (from ModuleSymbol) so the function is identifiable.
 func (c *Compiler) compileInitFunction(statements []ast.Statement, symbols *ast.SymbolTable, sym *ast.Symbol) error {
 	c.enterScope(symbols)
@@ -2103,8 +2078,7 @@ func (c *Compiler) compileInitFunction(statements []ast.Statement, symbols *ast.
 }
 
 // CompileSourceFileIncremental compiles a single source file incrementally for the REPL.
-// It adds new declarations to the compiler's globals/constants and wraps any statements
-// into a synthetic __init__ function stored as a constant.
+// It adds new declarations to the compiler's globals/constants and wraps any statements into a synthetic __init__ function stored as a constant.
 // Returns the constant ID of the __init__ function, or -1 if there are no statements.
 // The caller is responsible for ensuring the source file is analyzed before calling this.
 func (c *Compiler) CompileSourceFileIncremental(node *ast.SourceFile) (int, error) {
@@ -2566,8 +2540,7 @@ func (c *Compiler) resolveAttributeReference(ref ast.StaticReference, symbols *a
 		if sym == nil {
 			return nil, errAt(ref, "unknown attribute", "%s", ref.String())
 		}
-		// If the symbol is an import member, resolve the actual attribute
-		// from the imported module.
+		// If the symbol is an import member, resolve the actual attribute from the imported module.
 		if member, ok := sym.Original().Decl.(ast.DeclImportMember); ok {
 			return c.resolveAttributeFromModuleName(member.ModuleName, ast.StaticReference{ref[0]}, ref)
 		}
@@ -2597,18 +2570,14 @@ func (c *Compiler) resolveAttributeReference(ref ast.StaticReference, symbols *a
 
 // lookupAttributeSymbol finds a symbol by name for attribute resolution.
 // Unlike LookupIdentifier, it does not create phantom symbols.
-// When at module scope, it also checks file scopes for file-local
-// declarations like imports that are not promoted to module level.
+// When at module scope, it also checks file scopes for file-local declarations like imports that are not promoted to module level.
 func (c *Compiler) lookupAttributeSymbol(name string, symbols *ast.SymbolTable) *ast.Symbol {
 	for cur := symbols; cur != nil; cur = cur.Parent {
 		if sym, ok := cur.Symbols[name]; ok && sym != nil && sym.Decl != nil {
 			return sym
 		}
 	}
-	// Declarations like data/func are promoted to module scope but imports
-	// stay file-local. When compiling a promoted symbol's attributes in
-	// module scope, the import is only visible in the originating file's
-	// SymbolTable.
+	// Declarations like data/func are promoted to module scope but imports stay file-local. When compiling a promoted symbol's attributes in module scope, the import is only visible in the originating file's SymbolTable.
 	if module, ok := symbols.OpenedBy.(*ast.ContextModule); ok {
 		for _, file := range module.Files {
 			if file.Symbols == nil {
@@ -2720,8 +2689,7 @@ func (c *Compiler) resolveUnionMemberTypeIds(decl *ast.DeclUnion) ([]runtime.Typ
 	return memberTypeIds, nil
 }
 
-// resolveTypeSymbolFromImport follows a DeclImportMember to the actual symbol in the imported
-// module and returns it. The module is analyzed if not yet analyzed.
+// resolveTypeSymbolFromImport follows a DeclImportMember to the actual symbol in the imported module and returns it. The module is analyzed if not yet analyzed.
 func (c *Compiler) resolveTypeSymbolFromImport(importMember ast.DeclImportMember) (*ast.Symbol, error) {
 	if c.resolver == nil {
 		return nil, errInvariant(importMember, "an imported type cannot be resolved without a module resolver, which the compiler is always built with")
@@ -2828,7 +2796,6 @@ func (c *Compiler) compileIdentAssign(target *ast.ExprIdentifier, augOp token.To
 	}
 
 	if augOp != "" {
-		// Read current value, compile rhs, apply op, then write.
 		if err := c.Compile(target); err != nil {
 			return err
 		}

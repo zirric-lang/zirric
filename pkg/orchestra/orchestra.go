@@ -186,8 +186,7 @@ func (o *Orchestra) ParseModule(ctx context.Context, mod registry.ResolvedModule
 		// Sources() failed — return whatever partial module we have
 		return module, err
 	}
-	// Auto-import prelude so that `prelude.X` references work in all modules
-	// except the prelude itself.
+	// Auto-import prelude so that `prelude.X` references work in all modules except the prelude itself.
 	if mod.URI() != preludeModuleURI {
 		injectPreludeImport(module, prelude)
 	}
@@ -383,10 +382,8 @@ func (o *Orchestra) readSourceFile(filePath string) (registry.Source, error) {
 	return staticmodule.NewSource(logicalURI, data), nil
 }
 
-// injectPreludeImport adds a synthetic `import prelude = <preludeURI>` into
-// the module's DeclTable so that `prelude.X` references work automatically.
-// It also injects DeclImportMember entries for each public prelude symbol
-// so that bare identifiers like `String` resolve without a prefix.
+// injectPreludeImport adds a synthetic `import prelude = <preludeURI>` into the module's DeclTable so that `prelude.X` references work automatically.
+// It also injects DeclImportMember entries for each public prelude symbol so that bare identifiers like `String` resolve without a prefix.
 func injectPreludeImport(module *ast.ContextModule, prelude *ast.ContextModule) {
 	if module == nil || module.Decls == nil {
 		return
@@ -411,7 +408,6 @@ func injectPreludeImport(module *ast.ContextModule, prelude *ast.ContextModule) 
 	}
 	importDecl := ast.MakeDeclAliasImport(syntheticTok, alias, refs)
 
-	// Add DeclImportMember for each public prelude export.
 	if prelude != nil && prelude.Decls != nil {
 		for name, sym := range prelude.Decls.Symbols {
 			if sym == nil || sym.Decl == nil {
@@ -434,8 +430,7 @@ func injectPreludeImport(module *ast.ContextModule, prelude *ast.ContextModule) 
 		Decl: importDecl,
 	}
 
-	// Insert each import member into the module's DeclTable so bare
-	// identifiers like `String` can be resolved without the `prelude.` prefix.
+	// Insert each import member into the module's DeclTable so bare identifiers like `String` can be resolved without the `prelude.` prefix.
 	for _, member := range importDecl.Members {
 		name := member.Name.Value
 		if _, exists := module.Decls.Symbols[name]; exists {

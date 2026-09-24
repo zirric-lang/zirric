@@ -48,8 +48,7 @@ func newOrchestraWith(projectFS billy.Filesystem, packageName string, ignoreLang
 }
 
 // cwdFS returns a filesystem rooted at the current working directory's absolute path.
-// osfs.New(".") would work too, but its Root() stays the literal string ".", which breaks anything
-// deriving a project identity from it (e.g. ParseCavefile's fallback package name).
+// osfs.New(".") would work too, but its Root() stays the literal string ".", which breaks anything deriving a project identity from it (e.g. ParseCavefile's fallback package name).
 func cwdFS() (billy.Filesystem, error) {
 	wd, err := os.Getwd()
 	if err != nil {

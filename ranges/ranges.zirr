@@ -18,8 +18,7 @@ fn contains(r: Like, value: Int) -> Bool {
 	}
 }
 
-// Returns r's equivalent closed, inclusive bounds, or None if r contains no
-// integers (e.g. Range(5, 5), or OpenRange(5, 6)).
+// Returns r's equivalent closed, inclusive bounds, or None if r contains no integers (e.g. Range(5, 5), or OpenRange(5, 6)).
 fn toClosedRange(r: Like) -> Option {
 	switch r {
 	case is Range:
@@ -68,9 +67,7 @@ fn intersect(a: Like, b: Like) -> Option {
 	return Some(ClosedRange(lo, hi))
 }
 
-// Combines a and b into a single range spanning both, if they overlap or are
-// adjacent (e.g. [1,3] and [4,6] merge into [1,6]). Returns None if there's
-// a gap between them, since the result wouldn't be a single contiguous range.
+// Combines a and b into a single range spanning both, if they overlap or are adjacent (e.g. [1,3] and [4,6] merge into [1,6]). Returns None if there's a gap between them, since the result wouldn't be a single contiguous range.
 fn merge(a: Like, b: Like) -> Option {
 	const boundsA = toClosedRange(a)
 	const boundsB = toClosedRange(b)

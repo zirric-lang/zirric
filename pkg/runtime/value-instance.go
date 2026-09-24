@@ -8,10 +8,7 @@ type DataValue struct {
 	Values []RuntimeValue
 	Fields map[string]int
 
-	// TypeName is captured at construction time, from the DataType that
-	// created this value, purely for Inspect() — a DataValue otherwise has
-	// no way to reach its type's declared name later (TypeId is just a
-	// number).
+	// TypeName is captured at construction time, from the DataType that created this value, purely for Inspect() — a DataValue otherwise has no way to reach its type's declared name later (TypeId is just a number).
 	TypeName string
 }
 
@@ -61,8 +58,7 @@ func (dv *DataValue) TypeConstantId() TypeId {
 }
 
 // TypeAttributes implements Attributable.
-// Returns the attribute map from the DataType that created this value,
-// allowing attribute lookups (e.g. @Printable) to work without a TypeId table lookup.
+// Returns the attribute map from the DataType that created this value, allowing attribute lookups (e.g. @Printable) to work without a TypeId table lookup.
 func (dv *DataValue) TypeAttributes() map[TypeId]int {
 	return dv.Attrs
 }

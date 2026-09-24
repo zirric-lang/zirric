@@ -10,8 +10,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/version"
 )
 
-// InstallEvent reports a dependency having finished installing. More granular phases
-// (e.g. discovered/installing) may be added here in the future.
+// InstallEvent reports a dependency having finished installing. More granular phases (e.g. discovered/installing) may be added here in the future.
 type InstallEvent struct {
 	Dependency cavefile.Dependency
 	Package    registry.ResolvedPackage

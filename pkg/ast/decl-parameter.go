@@ -17,8 +17,7 @@ type DeclParameter struct {
 	Docs *Docs
 }
 
-// formatParamList formats a slice of DeclParameter for display, including
-// type hints where present. E.g. "name: String, age: Int" or "a, b".
+// formatParamList formats a slice of DeclParameter for display, including type hints where present. E.g. "name: String, age: Int" or "a, b".
 func formatParamList(params []DeclParameter) string {
 	parts := make([]string, len(params))
 	for i, p := range params {

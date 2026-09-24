@@ -66,9 +66,7 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 		return ls.importModuleNameCompletions(startPos, pos), nil
 	}
 
-	// Handle dot-chain context: "alias.member", "modname.member", or "expr.field.subfield"
 	if segments, afterDot, isDotChain := dotChainContext(text, pos); isDotChain {
-		// Single-segment chains: try module/import alias first (existing behavior).
 		if len(segments) == 1 {
 			alias := segments[0]
 			if imp, ok := findImportDecl(currentSF, alias); ok {
@@ -81,7 +79,6 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 			}
 		}
 
-		// Multi-segment chains or single-segment non-module: type-aware resolution.
 		result := ls.resolveDotChain(module, currentSF, path, cursorOffset, segments)
 		if result != nil {
 			if result.isModuleScope {
@@ -106,7 +103,6 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 		}
 
 		if inAttribute {
-			// Skip attrs already present in the current @-chain.
 			if scope.usedAttrs[sym.Name] {
 				continue
 			}
@@ -127,7 +123,6 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 		}
 	}
 
-	// Add import aliases and directly imported members from the current file's local scope.
 	if currentSF != nil {
 		for _, sym := range currentSF.Decls.Symbols {
 			if sym == nil || sym.Decl == nil {
@@ -135,7 +130,6 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 			}
 
 			if inAttribute {
-				// Skip attrs already present in the current @-chain.
 				if scope.usedAttrs[sym.Name] {
 					continue
 				}
@@ -195,7 +189,6 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 			}
 		}
 
-		// Also offer qualified @alias.Attr completions from imported modules.
 		for _, sym := range currentSF.Decls.Symbols {
 			if sym == nil || sym.Decl == nil {
 				continue
@@ -239,12 +232,10 @@ func (ls *zirricLangserver) completionItemsForFile(path string, pos protocol.Pos
 		}
 	}
 
-	// Add context-aware keyword completions in non-attribute context.
 	if !inAttribute {
 		items = append(items, contextKeywordItems(scope)...)
 	}
 
-	// Add local bindings (params, local lets, for bindings) in non-attribute context.
 	if !inAttribute {
 		for _, decl := range collectLocalsBeforeCursor(module, sourceURI, cursorOffset) {
 			kind := protocol.CompletionItemKindVariable
@@ -301,7 +292,6 @@ func importedModuleCompletions(
 				}
 			}
 		} else {
-			// In module.Member context, show all symbols with context-aware formatting.
 			kind := completionKindForDecl(sym.Decl)
 			format := protocol.InsertTextFormatPlainText
 			newText := sym.Name
@@ -360,9 +350,7 @@ func isDeclaredInModule(decl ast.Decl, mod *ast.ContextModule) bool {
 	return false
 }
 
-// attributeContextStart returns the position of '@' and true when the cursor
-// is directly after a '@' sign (possibly followed by partial identifier chars),
-// indicating the user is completing an attribute reference.
+// attributeContextStart returns the position of '@' and true when the cursor is directly after a '@' sign (possibly followed by partial identifier chars), indicating the user is completing an attribute reference.
 func attributeContextStart(text string, pos protocol.Position) (protocol.Position, bool) {
 	lineNum := int(pos.Line)
 	start := 0
@@ -389,7 +377,6 @@ func attributeContextStart(text string, pos protocol.Position) (protocol.Positio
 
 	prefix := line[:col]
 
-	// Walk backward past identifier chars to find the preceding non-identifier character.
 	i := len(prefix) - 1
 	for i >= 0 && isIdentByte(prefix[i]) {
 		i--
@@ -413,10 +400,8 @@ func isIdentByte(b byte) bool {
 }
 
 // attributeContextCompletionItem returns a completion item for use after '@'.
-// Only attribute declarations get completions; data, union, and extern types
-// are excluded from @ context.
-// The TextEdit replaces from the '@' character up to the cursor so that the
-// resulting text always contains the leading '@'.
+// Only attribute declarations get completions; data, union, and extern types are excluded from @ context.
+// The TextEdit replaces from the '@' character up to the cursor so that the resulting text always contains the leading '@'.
 func attributeContextCompletionItem(sym *ast.DeclSymbol, atPos, cursorPos protocol.Position) (protocol.CompletionItem, bool) {
 	editRange := protocol.Range{Start: atPos, End: cursorPos}
 
@@ -431,8 +416,7 @@ func attributeContextCompletionItem(sym *ast.DeclSymbol, atPos, cursorPos protoc
 }
 
 // attributeSnippetItem builds a CompletionItem for an attribute declaration.
-// Always includes () syntax — even with zero fields — because attributes before
-// declarations use call syntax. The TextEdit replaces from '@' to the cursor.
+// Always includes () syntax — even with zero fields — because attributes before declarations use call syntax. The TextEdit replaces from '@' to the cursor.
 func attributeSnippetItem(name string, fields []ast.DeclField, editRange protocol.Range) protocol.CompletionItem {
 	var (
 		kind       = protocol.CompletionItemKindInterface
@@ -451,8 +435,7 @@ func attributeSnippetItem(name string, fields []ast.DeclField, editRange protoco
 	}
 }
 
-// qualifiedAttributeSnippetItem builds an attribute completion for a qualified @alias.Name in
-// declaration context (with call syntax).
+// qualifiedAttributeSnippetItem builds an attribute completion for a qualified @alias.Name in declaration context (with call syntax).
 func qualifiedAttributeSnippetItem(alias, name string, fields []ast.DeclField, editRange protocol.Range) protocol.CompletionItem {
 	qualName := alias + "." + name
 	var (
@@ -494,9 +477,7 @@ func completionItemForDeclSymbol(sym *ast.DeclSymbol) protocol.CompletionItem {
 	return item
 }
 
-// attributeNonContextItem returns a completion item for an attribute when
-// there is no '@' before the cursor. The '@' is prepended to the label and
-// included in the insertText snippet so it is always part of the result.
+// attributeNonContextItem returns a completion item for an attribute when there is no '@' before the cursor. The '@' is prepended to the label and included in the insertText snippet so it is always part of the result.
 func attributeNonContextItem(name string, fields []ast.DeclField) protocol.CompletionItem {
 	var (
 		kind       = protocol.CompletionItemKindInterface
@@ -667,8 +648,7 @@ func typeAttributeMemberItem(name string, memberRange protocol.Range) protocol.C
 	}
 }
 
-// contextAwareCompletionItem returns a completion item for a symbol, adjusted
-// based on the cursor's scope context.
+// contextAwareCompletionItem returns a completion item for a symbol, adjusted based on the cursor's scope context.
 func contextAwareCompletionItem(sym *ast.DeclSymbol, scope completionScope) protocol.CompletionItem {
 	if scope.isTypeExpr {
 		// In type expressions, data types appear as Struct kind.
@@ -688,8 +668,7 @@ func contextAwareCompletionItem(sym *ast.DeclSymbol, scope completionScope) prot
 	}
 }
 
-// dataConstructorCompletionItem creates a snippet completion for a data type
-// used as a constructor: Data($0). Parameters are shown via signature help.
+// dataConstructorCompletionItem creates a snippet completion for a data type used as a constructor: Data($0). Parameters are shown via signature help.
 func dataConstructorCompletionItem(name string, decl *ast.DeclData) protocol.CompletionItem {
 	kind := protocol.CompletionItemKindConstructor
 	format := protocol.InsertTextFormatSnippet
@@ -717,7 +696,6 @@ func funcCompletionItem(sym *ast.DeclSymbol) protocol.CompletionItem {
 	kind := completionKindForDecl(sym.Decl)
 	format := protocol.InsertTextFormatSnippet
 
-	// For functions, add parentheses snippet.
 	insertText := sym.Name + "($0)"
 
 	item := protocol.CompletionItem{
@@ -735,8 +713,7 @@ func funcCompletionItem(sym *ast.DeclSymbol) protocol.CompletionItem {
 	return item
 }
 
-// typeExprAttributeItem returns a simple @TypeName completion without call syntax
-// for use in type expression positions (after : or ->). Only attributes are valid here.
+// typeExprAttributeItem returns a simple @TypeName completion without call syntax for use in type expression positions (after : or ->). Only attributes are valid here.
 // Uses a TextEdit from atPos so the existing '@' is replaced, preventing '@@'.
 func typeExprAttributeItem(sym *ast.DeclSymbol, atPos, cursorPos protocol.Position) (protocol.CompletionItem, bool) {
 	switch sym.Decl.(type) {
@@ -806,7 +783,6 @@ func sanitizeModuleName(name string) string {
 	return string(result)
 }
 
-// isAttrDecl returns true if the declaration is a DeclAttr.
 func isAttrDecl(decl ast.Decl) bool {
 	switch decl.(type) {
 	case *ast.DeclAttr, ast.DeclAttr:
@@ -826,7 +802,6 @@ func extractImportDecl(decl ast.Decl) (*ast.DeclImport, bool) {
 	return nil, false
 }
 
-// asAttrDecl returns the DeclAttr if the declaration is one.
 func asAttrDecl(decl ast.Decl) (*ast.DeclAttr, bool) {
 	switch d := decl.(type) {
 	case *ast.DeclAttr:
@@ -838,8 +813,7 @@ func asAttrDecl(decl ast.Decl) (*ast.DeclAttr, bool) {
 }
 
 // importBlockCompletions returns completions for members inside an import { } block.
-// It finds the enclosing import using brace matching, loads the imported module,
-// and returns only the members that haven't been imported yet.
+// It finds the enclosing import using brace matching, loads the imported module, and returns only the members that haven't been imported yet.
 func (ls *zirricLangserver) importBlockCompletions(
 	text string,
 	pos protocol.Position,
@@ -851,7 +825,6 @@ func (ls *zirricLangserver) importBlockCompletions(
 
 	cursorOffset := offsetForPosition(text, pos)
 
-	// Find the enclosing import by checking which import's braces contain the cursor.
 	var enclosingImport *ast.DeclImport
 	for _, sym := range currentSF.Decls.Symbols {
 		if sym == nil || sym.Decl == nil {
@@ -867,7 +840,6 @@ func (ls *zirricLangserver) importBlockCompletions(
 			continue
 		}
 
-		// Use brace matching from the import's token offset.
 		importOffset := nodeOffset(sym.Decl)
 		if importOffset < 0 || importOffset >= cursorOffset {
 			continue
@@ -882,7 +854,6 @@ func (ls *zirricLangserver) importBlockCompletions(
 		return nil
 	}
 
-	// Load the imported module.
 	importedMod, _, ok := ls.loadImportedModule(enclosingImport)
 	if !ok {
 		return nil
@@ -894,7 +865,6 @@ func (ls *zirricLangserver) importBlockCompletions(
 		alreadyImported[m.Name.Value] = true
 	}
 
-	// Add completions for module-declared symbols not already imported.
 	// Inside import blocks, all names are plain (no @ prefix, no call syntax).
 	var items []protocol.CompletionItem
 	for _, sym := range importedMod.Decls.Symbols {
@@ -949,9 +919,7 @@ func offsetForPosition(text string, pos protocol.Position) int {
 	return i
 }
 
-// collectLocalsBeforeCursor walks top-level declarations from the current file
-// and returns all local declarations (DeclParameter, local DeclVariable,
-// DeclForBinding) whose defining token starts before cursorOffset.
+// collectLocalsBeforeCursor walks top-level declarations from the current file and returns all local declarations (DeclParameter, local DeclVariable, DeclForBinding) whose defining token starts before cursorOffset.
 func collectLocalsBeforeCursor(module *ast.ContextModule, sourceURI string, cursorOffset int) []ast.Decl {
 	var results []ast.Decl
 	for _, sym := range module.Decls.Symbols {
@@ -981,7 +949,6 @@ func collectLocalsBeforeCursor(module *ast.ContextModule, sourceURI string, curs
 		}
 	}
 
-	// Walk top-level statements (global for-loops, if-blocks, etc.) for locals.
 	for _, sf := range module.Files {
 		if sf.Path != sourceURI {
 			continue
@@ -1007,8 +974,7 @@ func exprFuncLocals(fn *ast.ExprFunc, cursorOffset int) []ast.Decl {
 	return results
 }
 
-// blockLocals walks a Block (slice of statements) and collects local declarations
-// whose token starts before cursorOffset.
+// blockLocals walks a Block (slice of statements) and collects local declarations whose token starts before cursorOffset.
 func blockLocals(block ast.Block, cursorOffset int) []ast.Decl {
 	var results []ast.Decl
 	for _, stmt := range block {

@@ -63,7 +63,6 @@ func (ls *zirricLangserver) textDocumentSignatureHelp(
 			}
 		}
 
-		// Multi-segment or non-module: resolve through type chain.
 		if !resolved {
 			result := ls.resolveDotChain(module, currentSF, path, offset, qualChain)
 			if result != nil {
@@ -100,12 +99,9 @@ func (ls *zirricLangserver) textDocumentSignatureHelp(
 }
 
 // callChainContext scans backward from offset to find the enclosing function call.
-// It returns the function name, the full dot-chain qualifier (if any),
-// active parameter index, and whether found.
+// It returns the function name, the full dot-chain qualifier (if any), active parameter index, and whether found.
 //
-// For "person.name.toggle(": funcName="toggle", qualChain=["person", "name"], activeParam=0
-// For "alias.func(a, ": funcName="func", qualChain=["alias"], activeParam=1
-// For "func(": funcName="func", qualChain=nil, activeParam=0
+// For "person.name.toggle(": funcName="toggle", qualChain=["person", "name"], activeParam=0 For "alias.func(a, ": funcName="func", qualChain=["alias"], activeParam=1 For "func(": funcName="func", qualChain=nil, activeParam=0
 func callChainContext(text string, offset int) (funcName string, qualChain []string, activeParam int, found bool) {
 	depth := 0
 	commas := 0
@@ -128,7 +124,6 @@ func callChainContext(text string, offset int) (funcName string, qualChain []str
 
 				funcName = text[start:end]
 
-				// Scan backward collecting "ident." chain segments.
 				cursor := start
 				for cursor > 1 && text[cursor-1] == '.' {
 					segEnd := cursor - 1
@@ -142,7 +137,6 @@ func callChainContext(text string, offset int) (funcName string, qualChain []str
 					qualChain = append(qualChain, text[segStart:segEnd])
 					cursor = segStart
 				}
-				// Reverse chain (collected backwards).
 				for i, j := 0, len(qualChain)-1; i < j; i, j = i+1, j-1 {
 					qualChain[i], qualChain[j] = qualChain[j], qualChain[i]
 				}
@@ -161,8 +155,7 @@ func callChainContext(text string, offset int) (funcName string, qualChain []str
 	return
 }
 
-// callableParamsFromFields looks up a field by name and returns its parameters
-// for signature help. Works for method-like fields with parameters.
+// callableParamsFromFields looks up a field by name and returns its parameters for signature help. Works for method-like fields with parameters.
 func callableParamsFromFields(fields []ast.DeclField, name string) (label string, params []protocol.ParameterInformation, resolved bool) {
 	for _, f := range fields {
 		if f.Name.Value != name {
@@ -190,8 +183,7 @@ func declFieldParamNames(params []ast.DeclParameter) []string {
 	return names
 }
 
-// callableParamsFromModule looks up a declaration by name and returns its parameters
-// for signature help. Works for functions, data constructors, and attribute calls.
+// callableParamsFromModule looks up a declaration by name and returns its parameters for signature help. Works for functions, data constructors, and attribute calls.
 func callableParamsFromModule(mod *ast.ContextModule, name string) (label string, params []protocol.ParameterInformation, resolved bool) {
 	sym, _ := mod.Decls.Resolve(name)
 	if sym == nil || sym.Decl == nil {

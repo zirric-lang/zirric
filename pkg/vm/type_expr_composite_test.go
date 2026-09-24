@@ -2,8 +2,7 @@ package vm_test
 
 import "testing"
 
-// Preamble declares all builtin types in the exact iota order from runtime/prelude.go
-// so the analyzer assigns constant IDs that match the hardcoded typeId values.
+// Preamble declares all builtin types in the exact iota order from runtime/prelude.go so the analyzer assigns constant IDs that match the hardcoded typeId values.
 const compositeTypePreamble = `
 extern type Array {}
 extern type Bool {}

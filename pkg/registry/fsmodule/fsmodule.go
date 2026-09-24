@@ -42,8 +42,7 @@ func (m *FSModule) String() string {
 func DiscoverModules(base registry.LogicalURI, fs billy.Filesystem) ([]*FSModule, error) {
 	rootSrcs := make(map[registry.LogicalURI]*FSModule)
 
-	// TODO: replace glob with cusom logic
-	// matches, err := billyutil.Glob(fs, "**/*.zirr")
+	// TODO: replace glob with custom logic
 	matches, err := recursiveGlob(fs, 5)
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover modules of %q, %w", base, err)

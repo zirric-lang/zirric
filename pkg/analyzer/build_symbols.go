@@ -39,11 +39,7 @@ func attachExprForSymbols(table *ast.DeclTable) {
 	}
 	var parent *ast.SymbolTable
 	if table.Parent != nil {
-		// buildExprForSymbols runs before buildExprFuncSymbols, so an expr-for
-		// nested inside a closure literal has an unresolved parent (the
-		// closure's own DeclTable) at this point — build it eagerly instead
-		// of leaving this table parentless, mirroring buildExprFuncSymbols's
-		// own defensive handling of the same ordering gap.
+		// buildExprForSymbols runs before buildExprFuncSymbols, so an expr-for nested inside a closure literal has an unresolved parent (the closure's own DeclTable) at this point — build it eagerly instead of leaving this table parentless, mirroring buildExprFuncSymbols's own defensive handling of the same ordering gap.
 		if table.Parent.Resolved == nil {
 			buildSymbolTableFromDeclTable(table.Parent, resolveParentSymbolTable(table.Parent.Parent))
 		}
@@ -56,7 +52,6 @@ func buildSymbolTableFromDeclTable(dt *ast.DeclTable, parent *ast.SymbolTable) *
 	if dt == nil {
 		return nil
 	}
-	// Avoid re-building if already resolved.
 	if dt.Resolved != nil {
 		return dt.Resolved
 	}
@@ -81,13 +76,9 @@ func buildSymbolTableFromDeclTable(dt *ast.DeclTable, parent *ast.SymbolTable) *
 			Errs: declSym.Errs,
 		}
 		if declSym.ChildTable != nil {
-			// Use the ChildTable's DeclTable.Parent to determine the
-			// correct parent SymbolTable. DeclTable promotion flattens
-			// nesting, but the DeclTable.Parent chain preserves the
-			// original lexical hierarchy required for closures.
+			// Use the ChildTable's DeclTable.Parent to determine the correct parent SymbolTable. DeclTable promotion flattens nesting, but the DeclTable.Parent chain preserves the original lexical hierarchy required for closures.
 			childParent := st
 			if declSym.ChildTable.Parent != nil {
-				// Eagerly resolve the parent DeclTable if needed.
 				parentDT := declSym.ChildTable.Parent
 				if parentDT.Resolved == nil {
 					buildSymbolTableFromDeclTable(parentDT, resolveParentSymbolTable(parentDT.Parent))
@@ -104,8 +95,7 @@ func buildSymbolTableFromDeclTable(dt *ast.DeclTable, parent *ast.SymbolTable) *
 	return st
 }
 
-// resolveParentSymbolTable walks up the DeclTable.Parent chain to find a
-// resolved SymbolTable. Returns nil if none is found.
+// resolveParentSymbolTable walks up the DeclTable.Parent chain to find a resolved SymbolTable. Returns nil if none is found.
 func resolveParentSymbolTable(dt *ast.DeclTable) *ast.SymbolTable {
 	for dt != nil {
 		if dt.Resolved != nil {
@@ -127,9 +117,7 @@ func attachSymbols(node ast.Node, st *ast.SymbolTable) {
 	}
 }
 
-// buildExprFuncSymbols walks the AST and builds symbol tables for ExprFunc
-// nodes whose DeclTable was not already processed (i.e. standalone lambdas
-// used as expression values, not DeclFunc.Impl which is handled via ChildTable).
+// buildExprFuncSymbols walks the AST and builds symbol tables for ExprFunc nodes whose DeclTable was not already processed (i.e. standalone lambdas used as expression values, not DeclFunc.Impl which is handled via ChildTable).
 func buildExprFuncSymbols(module *ast.ContextModule) {
 	walkNode(module, func(node ast.Node) {
 		fn, ok := node.(*ast.ExprFunc)

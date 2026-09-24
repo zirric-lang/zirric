@@ -90,7 +90,5 @@ extern type Void {}
 // Terminates execution with the given message.
 extern fn panic(message: String) -> Void
 
-// Returns a debug string representation of any value, regardless of whether
-// it has a @Printable attribute. Intended for diagnostics/debugging, not
-// user-facing output — see fmt.sprint for that.
+// Returns a debug string representation of any value, regardless of whether it has a @Printable attribute. Intended for diagnostics/debugging, not user-facing output — see fmt.sprint for that.
 extern fn _inspect(v: Any) -> String

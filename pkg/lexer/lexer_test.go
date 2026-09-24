@@ -41,7 +41,6 @@ test "any in unions matches all types", { fail ->
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
-		// {token.COMMENT, "!/usr/bin/env zirric"},
 		{token.MODULE, "mod"},
 		{token.IDENT, "example"},
 		{token.IMPORT, "import"},
@@ -557,7 +556,6 @@ func TestAllTokens(t *testing.T) {
 				expectedType    token.TokenType
 				expectedLiteral string
 			}{
-				// {token.COMMENT, " abc def"},
 				{token.EOF, ""},
 			},
 		},
@@ -568,7 +566,6 @@ func TestAllTokens(t *testing.T) {
 				expectedType    token.TokenType
 				expectedLiteral string
 			}{
-				// {token.COMMENT, " abc def"},
 				{token.EOF, ""},
 			},
 		},

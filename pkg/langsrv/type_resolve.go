@@ -6,10 +6,7 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-// dotChainContext extracts the full dot-separated chain of identifiers before
-// the cursor position. For text like "example.person.name.le" with cursor after
-// "le", it returns segments=["example", "person", "name"], afterDot is the
-// position just after the last '.', and ok=true.
+// dotChainContext extracts the full dot-separated chain of identifiers before the cursor position. For text like "example.person.name.le" with cursor after "le", it returns segments=["example", "person", "name"], afterDot is the position just after the last '.', and ok=true.
 //
 // For "alias.member" it returns segments=["alias"], afterDot after the dot.
 // Returns ok=false if no dot-qualified access is present.
@@ -20,19 +17,16 @@ func dotChainContext(text string, pos protocol.Position) (segments []string, aft
 		col = len(line)
 	}
 
-	// Scan backward past the current (partial) member name.
 	memberStart := col
 	for memberStart > 0 && isSimpleIdentByte(line[memberStart-1]) {
 		memberStart--
 	}
-	// Must have '.' immediately before the member.
 	if memberStart == 0 || line[memberStart-1] != '.' {
 		return nil, protocol.Position{}, false
 	}
 
 	afterDot = protocol.Position{Line: pos.Line, Character: uint32(memberStart)}
 
-	// Scan backward collecting "ident." segments.
 	cursor := memberStart - 1 // pointing at the '.'
 	for {
 		// We're pointing at a '.'. Scan backward past the ident before it.
@@ -47,7 +41,6 @@ func dotChainContext(text string, pos protocol.Position) (segments []string, aft
 		}
 		segments = append(segments, line[identStart:identEnd])
 
-		// Check if there's another '.' before this identifier.
 		if identStart == 0 || line[identStart-1] != '.' {
 			break
 		}
@@ -63,8 +56,7 @@ func dotChainContext(text string, pos protocol.Position) (segments []string, aft
 
 // resolvedChain holds the result of resolving a dot-separated member chain.
 type resolvedChain struct {
-	// fields contains the members available on the resolved type
-	// (for completion after the final dot).
+	// fields contains the members available on the resolved type (for completion after the final dot).
 	fields []ast.DeclField
 
 	// lastDecl is the declaration of the last resolved segment.
@@ -78,17 +70,14 @@ type resolvedChain struct {
 	// module is the module context used for symbol resolution.
 	module *ast.ContextModule
 
-	// isModuleScope is true when the chain resolved entirely as a module
-	// reference (import alias or mod declaration) with no type-based steps.
+	// isModuleScope is true when the chain resolved entirely as a module reference (import alias or mod declaration) with no type-based steps.
 	isModuleScope bool
 }
 
-// resolveDotChain resolves a chain of dot-separated segments through
-// type-aware member access. The segments are everything BEFORE the final dot.
+// resolveDotChain resolves a chain of dot-separated segments through type-aware member access. The segments are everything BEFORE the final dot.
 //
 // For example, for "example.person.name." the segments are ["example", "person", "name"].
-// The function resolves each segment through type hints and returns the fields
-// available at the end of the chain.
+// The function resolves each segment through type hints and returns the fields available at the end of the chain.
 //
 // The first segment can be:
 //   - An import alias → load the imported module
@@ -110,26 +99,22 @@ func (ls *zirricLangserver) resolveDotChain(
 	first := segments[0]
 	rest := segments[1:]
 
-	// Try import alias.
 	if imp, ok := findImportDecl(currentSF, first); ok {
 		if importedMod, _, ok := ls.loadImportedModule(imp); ok {
 			return ls.resolveDotChainInModule(importedMod, module, rest)
 		}
 	}
 
-	// Try current module's mod declaration.
 	if isModuleDecl(module, first) {
 		return ls.resolveDotChainInModule(module, module, rest)
 	}
 
-	// Try local/global symbol with a type hint.
 	return ls.resolveDotChainFromSymbol(module, currentSF, path, cursorOffset, first, rest)
 }
 
 // resolveDotChainInModule resolves remaining segments starting from a module scope.
 // If rest is empty, returns the module scope (isModuleScope=true).
-// Otherwise, resolves the first element in rest as a module member, then follows
-// the type chain for remaining segments.
+// Otherwise, resolves the first element in rest as a module member, then follows the type chain for remaining segments.
 func (ls *zirricLangserver) resolveDotChainInModule(
 	targetMod *ast.ContextModule,
 	localMod *ast.ContextModule,
@@ -165,10 +150,8 @@ func (ls *zirricLangserver) resolveDotChainFromSymbol(
 ) *resolvedChain {
 	sourceURI := string(registry.JoinModuleURI("", path))
 
-	// Check local scope first.
 	decl := findLocalDecl(module, sourceURI, cursorOffset, symbolName)
 	if decl == nil {
-		// Try module-level.
 		if sym, ok := module.Decls.Resolve(symbolName); ok && sym.Decl != nil {
 			decl = sym.Decl
 		}
@@ -183,8 +166,7 @@ func (ls *zirricLangserver) resolveDotChainFromSymbol(
 	return resolveChainThroughType(decl, module, rest)
 }
 
-// resolvedChainForDecl creates a resolvedChain from a single declaration,
-// resolving its TypeHint to determine available fields.
+// resolvedChainForDecl creates a resolvedChain from a single declaration, resolving its TypeHint to determine available fields.
 func resolvedChainForDecl(decl ast.Decl, module *ast.ContextModule) *resolvedChain {
 	typeHint := typeHintFromDecl(decl)
 	if typeHint == nil {
@@ -222,7 +204,6 @@ func resolveChainThroughType(decl ast.Decl, module *ast.ContextModule, rest []st
 		}
 		currentDecl = *field
 	}
-	// Resolve the final declaration's type for available fields.
 	return resolvedChainForDecl(currentDecl, module)
 }
 

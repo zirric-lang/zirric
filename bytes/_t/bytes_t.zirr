@@ -7,7 +7,7 @@ import fmt { sprint }
 import bytes
 
 @Test()
-fn testFromString() {
+fn testFromString() -> Result {
 	assert.all([
 		assert.equal("", sprint(bytes.fromString(""))),
 		assert.equal("68656c6c6f", sprint(bytes.fromString("hello"))),
@@ -15,7 +15,7 @@ fn testFromString() {
 }
 
 @Test()
-fn testFromChar() {
+fn testFromChar() -> Result {
 	assert.all([
 		// 'a' is a single-byte UTF-8 char.
 		assert.equal("61", sprint(bytes.fromChar('a'))),
@@ -25,7 +25,7 @@ fn testFromChar() {
 }
 
 @Test()
-fn testFrom() {
+fn testFrom() -> Result {
 	assert.all([
 		// from(Byte) wraps a single byte.
 		assert.equal(bytes.fromString("a"), bytes.from("a"[0])),
@@ -35,7 +35,7 @@ fn testFrom() {
 }
 
 @Test()
-fn testBinaryEquality() {
+fn testBinaryEquality() -> Result {
 	assert.all([
 		assert.equal(true, bytes.fromString("hello") == bytes.fromString("hello")),
 		assert.equal(true, bytes.fromString("") == bytes.fromString("")),
@@ -47,7 +47,7 @@ fn testBinaryEquality() {
 }
 
 @Test()
-fn testToString() {
+fn testToString() -> Result {
 	assert.all([
 		assert.equal("", bytes.toString(bytes.fromString(""))),
 		assert.equal("hello", bytes.toString(bytes.fromString("hello"))),
@@ -57,7 +57,7 @@ fn testToString() {
 }
 
 @Test()
-fn testToHex() {
+fn testToHex() -> Result {
 	assert.all([
 		assert.equal("", bytes.toHex(bytes.fromString(""))),
 		assert.equal("68656c6c6f", bytes.toHex(bytes.fromString("hello"))),
@@ -66,7 +66,7 @@ fn testToHex() {
 }
 
 @Test()
-fn testFromHex() {
+fn testFromHex() -> Result {
 	assert.all([
 		assert.equal(bytes.fromString(""), bytes.fromHex("")),
 		assert.equal(bytes.fromString("hello"), bytes.fromHex("68656c6c6f")),
@@ -76,7 +76,7 @@ fn testFromHex() {
 }
 
 @Test()
-fn testSlice() {
+fn testSlice() -> Result {
 	assert.all([
 		assert.equal(bytes.fromString("ell"), bytes.slice(bytes.fromString("hello"), 1, 4)),
 		assert.equal(bytes.fromString(""), bytes.slice(bytes.fromString("hello"), 2, 2)),
@@ -85,7 +85,7 @@ fn testSlice() {
 }
 
 @Test()
-fn testRange() {
+fn testRange() -> Result {
 	assert.all([
 		assert.equal(bytes.fromString("ell"), bytes.range(bytes.fromString("hello"), Range(1, 4))),
 		assert.equal(bytes.fromString("ell"), bytes.range(bytes.fromString("hello"), ClosedRange(1, 3))),
@@ -94,7 +94,7 @@ fn testRange() {
 }
 
 @Test()
-fn testConcat() {
+fn testConcat() -> Result {
 	assert.all([
 		assert.equal(bytes.fromString(""), bytes.concat([])),
 		assert.equal(bytes.fromString("abc"), bytes.concat([
@@ -106,7 +106,7 @@ fn testConcat() {
 }
 
 @Test()
-fn testHasPrefix() {
+fn testHasPrefix() -> Result {
 	assert.all([
 		assert.equal(true, bytes.hasPrefix(bytes.fromString("hello"), bytes.fromString("he"))),
 		assert.equal(true, bytes.hasPrefix(bytes.fromString("hello"), bytes.fromString(""))),
@@ -117,7 +117,7 @@ fn testHasPrefix() {
 }
 
 @Test()
-fn testHasSuffix() {
+fn testHasSuffix() -> Result {
 	assert.all([
 		assert.equal(true, bytes.hasSuffix(bytes.fromString("hello"), bytes.fromString("lo"))),
 		assert.equal(true, bytes.hasSuffix(bytes.fromString("hello"), bytes.fromString(""))),
@@ -127,7 +127,7 @@ fn testHasSuffix() {
 }
 
 @Test()
-fn testContains() {
+fn testContains() -> Result {
 	assert.all([
 		assert.equal(true, bytes.contains(bytes.fromString("hello"), bytes.fromString("ell"))),
 		assert.equal(true, bytes.contains(bytes.fromString("hello"), bytes.fromString(""))),
@@ -136,7 +136,7 @@ fn testContains() {
 }
 
 @Test()
-fn testFirstIndexOf() {
+fn testFirstIndexOf() -> Result {
 	assert.all([
 		assert.equal(2, bytes.firstIndexOf(bytes.fromString("hello"), bytes.fromString("l")).value),
 		assert.equal(true, bytes.firstIndexOf(bytes.fromString("hello"), bytes.fromString("xyz")) is None),
@@ -144,7 +144,7 @@ fn testFirstIndexOf() {
 }
 
 @Test()
-fn testLastIndexOf() {
+fn testLastIndexOf() -> Result {
 	assert.all([
 		assert.equal(3, bytes.lastIndexOf(bytes.fromString("hello"), bytes.fromString("l")).value),
 		assert.equal(true, bytes.lastIndexOf(bytes.fromString("hello"), bytes.fromString("xyz")) is None),
@@ -152,7 +152,7 @@ fn testLastIndexOf() {
 }
 
 @Test()
-fn testRepeat() {
+fn testRepeat() -> Result {
 	assert.all([
 		assert.equal(bytes.fromString(""), bytes.repeat(bytes.fromString("ab"), 0)),
 		assert.equal(bytes.fromString("ababab"), bytes.repeat(bytes.fromString("ab"), 3)),

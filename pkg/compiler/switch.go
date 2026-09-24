@@ -15,11 +15,9 @@ func (c *Compiler) compileExprIs(node ast.ExprIs) error {
 	return c.compileTypeExprCheck(node.TypeRef)
 }
 
-// compileTypeExprCheck emits code to check the value on top of the stack
-// against a type expression. Pushes Bool result.
+// compileTypeExprCheck emits code to check the value on top of the stack against a type expression. Pushes Bool result.
 // For multi-attribute expressions, uses a temp local for short-circuit AND.
 func (c *Compiler) compileTypeExprCheck(typeExpr ast.TypeExpr) error {
-	// Multi-attribute type expression: @A @B @C → short-circuit AND
 	if attrs, ok := typeExpr.(ast.TypeExprAttrs); ok {
 		return c.compileMultiAttrCheck(attrs)
 	}
@@ -46,7 +44,6 @@ func (c *Compiler) compileMultiAttrCheck(attrs ast.TypeExprAttrs) error {
 		return nil
 	}
 
-	// Store value in temp local for multi-check
 	tempLocal := c.allocateTempLocal()
 	c.emit(op.SetLocal, tempLocal)
 
@@ -78,7 +75,6 @@ func (c *Compiler) compileMultiAttrCheck(attrs ast.TypeExprAttrs) error {
 // Returns the JumpFalse addresses that need patching to the next case.
 // A type that does not resolve is reported rather than skipped: emitting no check at all would leave the case matching everything, so a misspelled type would silently become the branch that always runs.
 func (c *Compiler) compileSwitchIsTypeCheck(tempLocal int, typeExpr ast.TypeExpr) ([]int, error) {
-	// Multi-attribute type expression: need per-attr checks
 	if attrs, ok := typeExpr.(ast.TypeExprAttrs); ok {
 		var jumpNexts []int
 		for _, attr := range attrs.Attrs {
@@ -93,7 +89,6 @@ func (c *Compiler) compileSwitchIsTypeCheck(tempLocal int, typeExpr ast.TypeExpr
 		return jumpNexts, nil
 	}
 
-	// Single type expression
 	c.emit(op.GetLocal, tempLocal)
 	typeConstId, err := c.resolveTypeConstantId(typeExpr)
 	if err != nil {

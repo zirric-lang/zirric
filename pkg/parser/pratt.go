@@ -368,8 +368,7 @@ func (p *Parser) parsePrattExprFor() ast.Expr {
 	return ast.MakeExprFor(forTok, cond, nil, nil, block)
 }
 
-// parsePrattExprFnClosure parses the new closure syntax: fn(params) { body }
-// or fn(params) -> ReturnType { body }.
+// parsePrattExprFnClosure parses the new closure syntax: fn(params) { body } or fn(params) -> ReturnType { body }.
 func (p *Parser) parsePrattExprFnClosure() ast.Expr {
 	fnTok, _ := p.expect(token.FUNCTION)
 	p.expect(token.LPAREN)
@@ -460,12 +459,7 @@ func (p *Parser) parsePrattExprString() ast.Expr {
 	return ast.MakeExprString(tok, str)
 }
 
-// parseStringLiteral decodes the escapes in a string literal's raw source. It
-// shares strconv.UnquoteChar with parseCharLiteral, so a string accepts the
-// escapes a char does — \n, \t, \\ and also \a, \b, \f, \r, \v, \xNN, \uNNNN,
-// \UNNNNNNNN and a three-digit octal — differing only in the delimiter each
-// escapes, \" here and \' there. Everything that is not an escape is copied
-// verbatim, leaving multi-byte characters and raw newlines untouched.
+// parseStringLiteral decodes the escapes in a string literal's raw source. It shares strconv.UnquoteChar with parseCharLiteral, so a string accepts the escapes a char does — \n, \t, \\ and also \a, \b, \f, \r, \v, \xNN, \uNNNN, \UNNNNNNNN and a three-digit octal — differing only in the delimiter each escapes, \" here and \' there. Everything that is not an escape is copied verbatim, leaving multi-byte characters and raw newlines untouched.
 func parseStringLiteral(literal string) (string, error) {
 	if !strings.Contains(literal, "\\") {
 		return literal, nil
@@ -566,9 +560,7 @@ func (p *Parser) parseExprListOrDict() ast.Expr {
 }
 
 func (p *Parser) parsePrattExprArrayElements() []ast.Expr {
-	// Non-nil so a solitary trailing comma (e.g. `[a,]`, no further
-	// elements) isn't mistaken by the caller for a parse error — nil is
-	// reserved for actual failures below.
+	// Non-nil so a solitary trailing comma (e.g. `[a,]`, no further elements) isn't mistaken by the caller for a parse error — nil is reserved for actual failures below.
 	elements := []ast.Expr{}
 	for p.curIs(token.COMMA) {
 		p.nextToken()
@@ -586,8 +578,7 @@ func (p *Parser) parsePrattExprArrayElements() []ast.Expr {
 }
 
 func (p *Parser) parsePrattExprDictEntries() []ast.ExprDictEntry {
-	// Non-nil for the same reason as parsePrattExprArrayElements: a
-	// solitary trailing comma must not look like a parse error to the caller.
+	// Non-nil for the same reason as parsePrattExprArrayElements: a solitary trailing comma must not look like a parse error to the caller.
 	elements := []ast.ExprDictEntry{}
 	for p.curIs(token.COMMA) {
 		p.nextToken()

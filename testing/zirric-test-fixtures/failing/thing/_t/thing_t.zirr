@@ -4,6 +4,6 @@ import tests
 import tests.assert
 
 @tests.Test()
-fn testAdd() {
+fn testAdd() -> Result {
 	assert.equal(3, 4)
 }

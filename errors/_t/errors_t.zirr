@@ -6,12 +6,12 @@ import tests.assert
 import errors
 
 @Test()
-fn testDebug() {
+fn testDebug() -> Result {
 	assert.equal("boom", errors.debug(Err("boom")))
 }
 
 @Test()
-fn testWrap() {
+fn testWrap() -> Result {
 	assert.all([
 		assert.equal("reading config: boom", errors.debug(errors.wrap(Err("boom"), "reading config"))),
 		assert.equal("outer: inner: boom", errors.debug(errors.wrap(errors.wrap(Err("boom"), "inner"), "outer"))),
@@ -19,7 +19,7 @@ fn testWrap() {
 }
 
 @Test()
-fn testUnwrap() {
+fn testUnwrap() -> Result {
 	const inner = Err("boom")
 	assert.all([
 		assert.equal("boom", errors.debug(errors.unwrap(errors.wrap(inner, "context")))),
@@ -28,7 +28,7 @@ fn testUnwrap() {
 }
 
 @Test()
-fn testJoin() {
+fn testJoin() -> Result {
 	assert.all([
 		assert.equal(true, errors.join([]) is None),
 		assert.equal("boom", errors.debug(errors.join([Err("boom")]).value)),

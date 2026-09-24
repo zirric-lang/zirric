@@ -7,7 +7,7 @@ import json
 import results
 
 @Test()
-fn testParsePrimitives() {
+fn testParsePrimitives() -> Result {
 	assert.all([
 		assert.equal(true, json.parse("true").value),
 		assert.equal(false, json.parse("false").value),
@@ -17,7 +17,7 @@ fn testParsePrimitives() {
 }
 
 @Test()
-fn testNumbersKeepTheirWrittenForm() {
+fn testNumbersKeepTheirWrittenForm() -> Result {
 	// An integer literal stays an Int; anything else becomes a Float, so 1 and 1.0 remain distinguishable.
 	assert.all([
 		assert.equal(1, json.parse("1").value),
@@ -30,12 +30,12 @@ fn testNumbersKeepTheirWrittenForm() {
 }
 
 @Test()
-fn testParseArray() {
+fn testParseArray() -> Result {
 	assert.equal([1, 2, 3], json.parse("[1, 2, 3]").value)
 }
 
 @Test()
-fn testParseNestedStructure() {
+fn testParseNestedStructure() -> Result {
 	const parsed = json.parse("{\"name\": \"zirric\", \"tags\": [\"a\", \"b\"], \"meta\": {\"ok\": true}}").value
 	assert.all([
 		assert.equal("zirric", parsed["name"]),
@@ -45,7 +45,7 @@ fn testParseNestedStructure() {
 }
 
 @Test()
-fn testParseRejectsNonsense() {
+fn testParseRejectsNonsense() -> Result {
 	assert.all([
 		assert.equal(true, results.isErr(json.parse("{"))),
 		assert.equal(true, results.isErr(json.parse(""))),
@@ -56,7 +56,7 @@ fn testParseRejectsNonsense() {
 }
 
 @Test()
-fn testFormatPrimitives() {
+fn testFormatPrimitives() -> Result {
 	assert.all([
 		assert.equal("true", json.format(true).value),
 		assert.equal("null", json.format(void).value),
@@ -67,7 +67,7 @@ fn testFormatPrimitives() {
 }
 
 @Test()
-fn testFormatCollections() {
+fn testFormatCollections() -> Result {
 	assert.all([
 		assert.equal("[1,2,3]", json.format([1, 2, 3]).value),
 		assert.equal("{\"a\":1,\"b\":2}", json.format(["a": 1, "b": 2]).value),
@@ -77,18 +77,18 @@ fn testFormatCollections() {
 }
 
 @Test()
-fn testFormatDoesNotEscapeText() {
+fn testFormatDoesNotEscapeText() -> Result {
 	// These are text, not HTML, so escaping them would only corrupt the value.
 	assert.equal("\"a < b & c\"", json.format("a < b & c").value)
 }
 
 @Test()
-fn testFormatIndented() {
+fn testFormatIndented() -> Result {
 	assert.equal("[\n  1,\n  2\n]", json.formatIndented([1, 2], "  ").value)
 }
 
 @Test()
-fn testFormatRefusesWhatJSONCannotHold() {
+fn testFormatRefusesWhatJSONCannotHold() -> Result {
 	assert.all([
 		assert.equal(true, results.isErr(json.format('c'))),
 		assert.equal(true, results.isErr(json.format(fn(x) { x }))),
@@ -98,7 +98,7 @@ fn testFormatRefusesWhatJSONCannotHold() {
 }
 
 @Test()
-fn testRoundTrip() {
+fn testRoundTrip() -> Result {
 	const original = ["name": "zirric", "count": 3, "ratio": 0.5, "tags": ["a", "b"], "nested": ["ok": true], "missing": void]
 	assert.equal(original, json.parse(json.format(original).value).value)
 }

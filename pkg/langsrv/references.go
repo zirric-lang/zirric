@@ -390,8 +390,7 @@ func symbolAtOffset(sf *ast.SourceFile, offset int) *ast.Symbol {
 }
 
 // walkASTNode visits node and all its descendants.
-// EnumerateChildNodes already performs a full deep traversal (calling action on
-// every descendant, not just direct children), so we only need to call it once.
+// EnumerateChildNodes already performs a full deep traversal (calling action on every descendant, not just direct children), so we only need to call it once.
 func walkASTNode(node ast.Node, visit func(ast.Node)) {
 	if node == nil {
 		return

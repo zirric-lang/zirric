@@ -20,10 +20,10 @@ func (l *Lexer) parseLeadingDecorations() []token.DecorativeToken {
 func (l *Lexer) parseDecorativeToken() *token.DecorativeToken {
 	var tok token.DecorativeToken
 	switch {
-	case l.ch == '#': // COMMENT
+	case l.ch == '#':
 		tok.Type = token.DECO_COMMENT
 		tok.Literal = l.parseInlineComment()
-	case l.ch == '/': // eventually COMMENT
+	case l.ch == '/':
 		if l.peekChar() == '/' {
 			tok.Type = token.DECO_COMMENT
 			tok.Literal = l.parseInlineComment()

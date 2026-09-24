@@ -5,10 +5,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 )
 
-// findLocalDecl searches for a local declaration (parameter, local var/const,
-// for-binding) matching the given name at the cursor position. It walks the
-// AST to find the enclosing function scope, mirroring the approach used by
-// completion's collectLocalsBeforeCursor. Returns nil if no local is found.
+// findLocalDecl searches for a local declaration (parameter, local var/const, for-binding) matching the given name at the cursor position. It walks the AST to find the enclosing function scope, mirroring the approach used by completion's collectLocalsBeforeCursor. Returns nil if no local is found.
 func findLocalDecl(module *ast.ContextModule, sourceURI string, cursorOffset int, name string) ast.Decl {
 	locals := collectLocalsBeforeCursor(module, sourceURI, cursorOffset)
 	// Walk in reverse so the innermost (most recently declared) match wins.
@@ -20,9 +17,7 @@ func findLocalDecl(module *ast.ContextModule, sourceURI string, cursorOffset int
 	return nil
 }
 
-// resolveWordDecl resolves a word at a cursor position to a declaration,
-// checking local scope first (parameters, local vars/consts, for-bindings),
-// then module and file scope (walks parent chain for prelude).
+// resolveWordDecl resolves a word at a cursor position to a declaration, checking local scope first (parameters, local vars/consts, for-bindings), then module and file scope (walks parent chain for prelude).
 func (ls *zirricLangserver) resolveWordDecl(
 	module *ast.ContextModule,
 	currentSF *ast.SourceFile,

@@ -7,16 +7,11 @@ attr Error {
 }
 
 // Marks a union as a result type, and says how to read one as a `Result`.
-// Types annotated with `@AnyResult` are expected to be unions that follow the
-// Ok/Err pattern, or to convert themselves into one. This is what `!.` and
-// `!!` read a value through when it is not already an `Ok` or an `Err`.
+// Types annotated with `@AnyResult` are expected to be unions that follow the Ok/Err pattern, or to convert themselves into one. This is what `!.` and `!!` read a value through when it is not already an `Ok` or an `Err`.
 //
-// Write it on each member type as well as on the union, the way this module
-// annotates `Ok` and `Err` individually: a union's attributes are not read off
-// a value of one of its members.
+// Write it on each member type as well as on the union, the way this module annotates `Ok` and `Err` individually: a union's attributes are not read off a value of one of its members.
 attr AnyResult {
-	// Returns this value as a `Result`, which for a union already shaped
-	// like one is the value itself.
+	// Returns this value as a `Result`, which for a union already shaped like one is the value itself.
 	toResult(self: @AnyResult) -> Result
 }
 

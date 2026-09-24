@@ -480,10 +480,7 @@ func TestParseFileUsesPreludeAttribute(t *testing.T) {
 	}
 }
 
-// TestRunFileNoDeclaredDependencies verifies that a project with no explicit
-// dependencies (only stdlib injected automatically) can still resolve and run
-// its own modules. This guards against a coupling bug where the project package
-// itself was only installed when declared dependencies were missing.
+// TestRunFileNoDeclaredDependencies verifies that a project with no explicit dependencies (only stdlib injected automatically) can still resolve and run its own modules. This guards against a coupling bug where the project package itself was only installed when declared dependencies were missing.
 func TestRunFileNoDeclaredDependencies(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\nconst answer = \"42\"\n")
@@ -496,10 +493,7 @@ func TestRunFileNoDeclaredDependencies(t *testing.T) {
 	}
 }
 
-// TestRunFileWithCrossModuleImport verifies that a file importing another module
-// within the same project is resolved correctly. This exercises the cavereg
-// filesystem path: the resolver must discover project sub-modules from
-// ProjectFS (not RegistryFS) via findResolvedModule.
+// TestRunFileWithCrossModuleImport verifies that a file importing another module within the same project is resolved correctly. This exercises the cavereg filesystem path: the resolver must discover project sub-modules from ProjectFS (not RegistryFS) via findResolvedModule.
 func TestRunFileWithCrossModuleImport(t *testing.T) {
 	projectFS := memfs.New()
 	// utils/ subdirectory → URI "project.utils" (directory name is the URI segment)
@@ -557,9 +551,7 @@ func newTestOrchestra(t *testing.T, projectFS billy.Filesystem, name string) *or
 	return orch
 }
 
-// TestMainModuleIsRegisteredAfterParse verifies that after ParseFile the
-// resolver's MainModule returns the same pointer, which is required for the
-// compiler's pointer-equality checks to work correctly.
+// TestMainModuleIsRegisteredAfterParse verifies that after ParseFile the resolver's MainModule returns the same pointer, which is required for the compiler's pointer-equality checks to work correctly.
 func TestMainModuleIsRegisteredAfterParse(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\nconst x = 42\n")
@@ -583,8 +575,7 @@ func TestMainModuleIsRegisteredAfterParse(t *testing.T) {
 	}
 }
 
-// TestRunFileWithConstBinding verifies that a file with a const binding compiles
-// and runs correctly — exercising full main-module symbol compilation.
+// TestRunFileWithConstBinding verifies that a file with a const binding compiles and runs correctly — exercising full main-module symbol compilation.
 func TestRunFileWithLetBinding(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\nconst greeting = \"hello\"\n")
@@ -595,8 +586,7 @@ func TestRunFileWithLetBinding(t *testing.T) {
 	}
 }
 
-// TestREPLLoop verifies the REPL's parse→compile pattern: a single resolver
-// is reused across multiple ParseFile+Compile calls, as the REPL does.
+// TestREPLLoop verifies the REPL's parse→compile pattern: a single resolver is reused across multiple ParseFile+Compile calls, as the REPL does.
 func TestREPLLoop(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "repl.zirr", "mod repl\n")
@@ -650,9 +640,7 @@ func writeFile(t *testing.T, fs billy.Filesystem, path string, contents string) 
 	}
 }
 
-// TestRunFileImportPrelude verifies that explicitly importing the prelude
-// (which contains extern const declarations like void) compiles and runs
-// without "unknown declaration *ast.DeclExternValue" errors.
+// TestRunFileImportPrelude verifies that explicitly importing the prelude (which contains extern const declarations like void) compiles and runs without "unknown declaration *ast.DeclExternValue" errors.
 func TestRunFileImportPrelude(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\nimport prelude = prelude\n")
@@ -663,8 +651,7 @@ func TestRunFileImportPrelude(t *testing.T) {
 	}
 }
 
-// TestAutoImportPrelude verifies that the prelude module is automatically
-// imported so that `prelude.X` references work without an explicit import.
+// TestAutoImportPrelude verifies that the prelude module is automatically imported so that `prelude.X` references work without an explicit import.
 func TestAutoImportPrelude(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\n")
@@ -692,8 +679,7 @@ func TestAutoImportPrelude(t *testing.T) {
 	}
 }
 
-// TestAutoImportPreludeSkipsPrelude verifies that the prelude module itself
-// does not get a synthetic prelude import (avoiding circularity).
+// TestAutoImportPreludeSkipsPrelude verifies that the prelude module itself does not get a synthetic prelude import (avoiding circularity).
 func TestAutoImportPreludeSkipsPrelude(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\n")
@@ -712,8 +698,7 @@ func TestAutoImportPreludeSkipsPrelude(t *testing.T) {
 	}
 }
 
-// TestShortModulePath verifies that short module names like "prelude"
-// resolve to the full stdlib URI automatically.
+// TestShortModulePath verifies that short module names like "prelude" resolve to the full stdlib URI automatically.
 func TestShortModulePath(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\nimport p = prelude\n")
@@ -724,8 +709,7 @@ func TestShortModulePath(t *testing.T) {
 	}
 }
 
-// TestShortModulePathFuture verifies that "future" resolves
-// to the full stdlib path.
+// TestShortModulePathFuture verifies that "future" resolves to the full stdlib path.
 func TestShortModulePathFuture(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\n")
@@ -744,9 +728,7 @@ func TestShortModulePathFuture(t *testing.T) {
 	}
 }
 
-// TestShortModulePathNotFoundUsesOriginalName verifies that when a short
-// module name can't be found even with the stdlib prefix, the error
-// message uses the original short name.
+// TestShortModulePathNotFoundUsesOriginalName verifies that when a short module name can't be found even with the stdlib prefix, the error message uses the original short name.
 func TestShortModulePathNotFoundUsesOriginalName(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\n")
@@ -769,8 +751,7 @@ func TestShortModulePathNotFoundUsesOriginalName(t *testing.T) {
 	}
 }
 
-// TestBarePreludeSymbol verifies that prelude symbols like `String` are
-// directly accessible without the `prelude.` prefix.
+// TestBarePreludeSymbol verifies that prelude symbols like `String` are directly accessible without the `prelude.` prefix.
 func TestBarePreludeSymbol(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\nconst x = String\n")
@@ -781,8 +762,7 @@ func TestBarePreludeSymbol(t *testing.T) {
 	}
 }
 
-// TestBarePreludeSymbolInAttribute verifies that prelude types used inside
-// attribute arguments (e.g. @Deprecated("reason")) compile correctly.
+// TestBarePreludeSymbolInAttribute verifies that prelude types used inside attribute arguments (e.g. @Deprecated("reason")) compile correctly.
 func TestBarePreludeSymbolInAttribute(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\n@Deprecated(\"use NewExample\")\ndata Example { name }\n")
@@ -793,8 +773,7 @@ func TestBarePreludeSymbolInAttribute(t *testing.T) {
 	}
 }
 
-// TestBarePreludeSymbolShadowed verifies that a user declaration can shadow
-// a prelude symbol.
+// TestBarePreludeSymbolShadowed verifies that a user declaration can shadow a prelude symbol.
 func TestBarePreludeSymbolShadowed(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\nconst String = 42\n")
@@ -805,8 +784,7 @@ func TestBarePreludeSymbolShadowed(t *testing.T) {
 	}
 }
 
-// TestBarePreludeAndQualified verifies that both `String` and `prelude.String`
-// work in the same file.
+// TestBarePreludeAndQualified verifies that both `String` and `prelude.String` work in the same file.
 func TestBarePreludeAndQualified(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\nconst x = String\nconst y = prelude.String\n")
@@ -817,11 +795,8 @@ func TestBarePreludeAndQualified(t *testing.T) {
 	}
 }
 
-// TestCavefileExample verifies that the example Cavefile from
-// examples/project/Cavefile compiles and runs without errors.
-// The Cavefile uses cross-module attribute references like @cave.Package
-// and @tasks.Name which require file-local imports to be visible during
-// attribute resolution of promoted declarations.
+// TestCavefileExample verifies that the example Cavefile from examples/project/Cavefile compiles and runs without errors.
+// The Cavefile uses cross-module attribute references like @cave.Package and @tasks.Name which require file-local imports to be visible during attribute resolution of promoted declarations.
 func TestCavefileExample(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "Cavefile", cavefileContent)
@@ -832,8 +807,7 @@ func TestCavefileExample(t *testing.T) {
 	}
 }
 
-// TestParseModuleWithErrors verifies that ParseModule returns a non-nil module
-// alongside a parser.ParseErrors error when the source has syntax errors.
+// TestParseModuleWithErrors verifies that ParseModule returns a non-nil module alongside a parser.ParseErrors error when the source has syntax errors.
 func TestParseModuleWithErrors(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\nconst = \n")
@@ -862,8 +836,7 @@ func TestParseModuleWithErrors(t *testing.T) {
 	}
 }
 
-// TestInvalidateModules verifies that InvalidateModules clears cached modules
-// but preserves the prelude.
+// TestInvalidateModules verifies that InvalidateModules clears cached modules but preserves the prelude.
 func TestInvalidateModules(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\nconst x = 1\n")
@@ -887,7 +860,6 @@ func TestInvalidateModules(t *testing.T) {
 		t.Fatal("expected MainModule to be nil after invalidation")
 	}
 
-	// Re-parse should work
 	_, err = orch.ParseFile(context.Background(), "main.zirr", resolver)
 	if err != nil {
 		t.Fatalf("re-parse after invalidation: %v", err)
@@ -940,8 +912,7 @@ data Dependencies {
 	}
 }
 
-// TestReadOnlyResolver verifies that a read-only resolver can parse modules
-// using only locally-available packages.
+// TestReadOnlyResolver verifies that a read-only resolver can parse modules using only locally-available packages.
 func TestReadOnlyResolver(t *testing.T) {
 	projectFS := memfs.New()
 	writeFile(t, projectFS, "main.zirr", "mod main\nconst x = 1\n")

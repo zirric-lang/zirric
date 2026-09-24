@@ -6,7 +6,7 @@ import tests.assert
 import results
 
 @Test()
-fn testFrom() {
+fn testFrom() -> Result {
 	assert.all([
 		assert.equal(true, results.from(Ok(1)) is Ok),
 		assert.equal(true, results.from(Err("boom")) is Err),
@@ -15,7 +15,7 @@ fn testFrom() {
 }
 
 @Test()
-fn testIsOkIsErr() {
+fn testIsOkIsErr() -> Result {
 	assert.all([
 		assert.equal(true, results.isOk(Ok(1))),
 		assert.equal(false, results.isErr(Ok(1))),
@@ -25,7 +25,7 @@ fn testIsOkIsErr() {
 }
 
 @Test()
-fn testMap() {
+fn testMap() -> Result {
 	assert.all([
 		assert.equal(20, results.map(Ok(2), fn(v) { v * 10 }).value),
 		assert.equal("boom", results.map(Err("boom"), fn(v) { v * 10 }).reason),
@@ -33,7 +33,7 @@ fn testMap() {
 }
 
 @Test()
-fn testMapErr() {
+fn testMapErr() -> Result {
 	assert.all([
 		assert.equal(2, results.mapErr(Ok(2), fn(e) { e + "!" }).value),
 		assert.equal("boom!", results.mapErr(Err("boom"), fn(e) { e + "!" }).reason),
@@ -41,7 +41,7 @@ fn testMapErr() {
 }
 
 @Test()
-fn testFlatMap() {
+fn testFlatMap() -> Result {
 	assert.all([
 		assert.equal(20, results.flatMap(Ok(2), fn(v) { Ok(v * 10) }).value),
 		assert.equal("bad", results.flatMap(Ok(2), fn(v) { Err("bad") }).reason),
@@ -50,7 +50,7 @@ fn testFlatMap() {
 }
 
 @Test()
-fn testFlatMapErr() {
+fn testFlatMapErr() -> Result {
 	assert.all([
 		assert.equal(2, results.flatMapErr(Ok(2), fn(e) { Ok(0) }).value),
 		assert.equal(0, results.flatMapErr(Err("boom"), fn(e) { Ok(0) }).value),
@@ -59,7 +59,7 @@ fn testFlatMapErr() {
 }
 
 @Test()
-fn testCatch() {
+fn testCatch() -> Result {
 	assert.all([
 		assert.equal(2, results.catch(Ok(2), fn(e) { 0 }).value),
 		assert.equal("recovered boom", results.catch(Err("boom"), fn(e) { "recovered " + e }).value),
@@ -67,7 +67,7 @@ fn testCatch() {
 }
 
 @Test()
-fn testCatchTo() {
+fn testCatchTo() -> Result {
 	assert.all([
 		assert.equal(2, results.catchTo(Ok(2), 99).value),
 		assert.equal(99, results.catchTo(Err("boom"), 99).value),
@@ -75,7 +75,7 @@ fn testCatchTo() {
 }
 
 @Test()
-fn testAll() {
+fn testAll() -> Result {
 	assert.all([
 		assert.equal([1, 2], results.all([Ok(1), Ok(2)]).value),
 		assert.equal(["boom"], results.all([Ok(1), Err("boom")]).reason),

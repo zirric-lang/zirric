@@ -232,13 +232,9 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "1 + 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
-				// 1
 				code.Make(code.Const, 0),
-				// 2
 				code.Make(code.Const, 1),
-				// +
 				code.Make(code.Add),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -246,13 +242,10 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "1 - 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
-				// 1
 				code.Make(code.Const, 0),
-				// 2
 				code.Make(code.Const, 1),
 				// -
 				code.Make(code.Sub),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -260,13 +253,10 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "1 * 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
-				// 1
 				code.Make(code.Const, 0),
-				// 2
 				code.Make(code.Const, 1),
 				// *
 				code.Make(code.Mul),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -274,13 +264,9 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "1 / 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
-				// 1
 				code.Make(code.Const, 0),
-				// 2
 				code.Make(code.Const, 1),
-				// /
 				code.Make(code.Div),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -288,13 +274,9 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "1 == 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
-				// 1
 				code.Make(code.Const, 0),
-				// 2
 				code.Make(code.Const, 1),
-				// ==
 				code.Make(code.Equal),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -302,13 +284,9 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "1 != 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
-				// 1
 				code.Make(code.Const, 0),
-				// 2
 				code.Make(code.Const, 1),
-				// !=
 				code.Make(code.NotEqual),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -316,13 +294,9 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "1 > 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
-				// 1
 				code.Make(code.Const, 0),
-				// 2
 				code.Make(code.Const, 1),
-				// >
 				code.Make(code.GreaterThan),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -330,13 +304,9 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "1 < 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
-				// 1
 				code.Make(code.Const, 0),
-				// 2
 				code.Make(code.Const, 1),
-				// <
 				code.Make(code.LessThan),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -344,13 +314,9 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "1 >= 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
-				// 1
 				code.Make(code.Const, 0),
-				// 2
 				code.Make(code.Const, 1),
-				// >=
 				code.Make(code.GreaterThanOrEqual),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -358,13 +324,9 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "1 <= 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
-				// 1
 				code.Make(code.Const, 0),
-				// 2
 				code.Make(code.Const, 1),
-				// <=
 				code.Make(code.LessThanOrEqual),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -372,13 +334,9 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "1 % 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
-				// 1
 				code.Make(code.Const, 0),
-				// 2
 				code.Make(code.Const, 1),
-				// %
 				code.Make(code.Mod),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -386,18 +344,15 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "true && false",
 			expectedConstants: []interface{}{},
 			expectedInstructions: []code.Instructions{
-				// left
 				code.Make(code.ConstTrue),
-				// when false do not exectue right
+				// when false do not execute right
 				code.Make(code.JumpFalse, 11),
-				// right
 				code.Make(code.ConstFalse),
 				code.Make(code.AssertType, int(runtime.Bool(true).TypeConstantId())),
 				// result is right
 				code.Make(code.Jump, 12),
 				// put false back up
 				code.Make(code.ConstFalse),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -405,18 +360,15 @@ func TestBinaryOperators(t *testing.T) {
 			input:             "true || false",
 			expectedConstants: []interface{}{},
 			expectedInstructions: []code.Instructions{
-				// left
 				code.Make(code.ConstTrue),
-				// when true do not exectue right
+				// when true do not execute right
 				code.Make(code.JumpTrue, 11),
-				// right
 				code.Make(code.ConstFalse),
 				code.Make(code.AssertType, int(runtime.Bool(true).TypeConstantId())),
 				// result is right
 				code.Make(code.Jump, 12),
 				// put true back up
 				code.Make(code.ConstTrue),
-				// drop expr
 				code.Make(code.Pop),
 			},
 		},
@@ -1703,8 +1655,7 @@ func TestExternAttributes(t *testing.T) {
 }
 
 func TestExternValueCompilation(t *testing.T) {
-	// A module containing extern const must compile without
-	// "unknown declaration *ast.DeclExternValue" errors.
+	// A module containing extern const must compile without "unknown declaration *ast.DeclExternValue" errors.
 	module := prepareContextModuleParsing(t, "module.test", `
 		extern type Void {}
 		extern const void
@@ -1721,20 +1672,17 @@ func TestExternValueCompilation(t *testing.T) {
 		t.Fatalf("analysis errors: %v", errs)
 	}
 
-	// Verify that DeclExternValue received a ConstantId.
 	voidSym := module.Symbols.Symbols["void"]
 	if voidSym == nil || voidSym.ConstantId == nil {
 		t.Fatal("expected symbol 'void' with a ConstantId in module symbols")
 	}
 
-	// Verify the module can be fully compiled (including extern const).
 	comp := compiler.NewWithAnalyzer(resolver, analysis)
 	comp.RegisterPlugin(&testExternPlugin{})
 	if err := comp.Compile(module); err != nil {
 		t.Fatalf("compile: %s", err)
 	}
 
-	// Verify the constant is a Void value.
 	bytecode := comp.Bytecode()
 	found := false
 	for _, constant := range bytecode.Constants {
@@ -2404,18 +2352,15 @@ func (r testModuleResolver) ResolveModule(ctx context.Context, name registry.Log
 }
 
 func TestResolveModuleSymbol(t *testing.T) {
-	// Set up a "types" module with a data type "Wrapper".
 	typesModule := prepareContextModuleParsing(t, "test.types", `
 		mod types
 		data Wrapper { value }
 	`)
-	// Set up a "mylib" module that imports Wrapper from types and has an extern fn.
 	mylibModule := prepareContextModuleParsing(t, "test.mylib", `
 		mod mylib
 		import types = test.types { Wrapper }
 		extern fn wrap(x) -> Wrapper
 	`)
-	// Main module imports mylib.
 	mainModule, program := prepareSourceFileParsing(t, `
 		import mylib = test.mylib
 		mylib.wrap(42)
@@ -2427,7 +2372,6 @@ func TestResolveModuleSymbol(t *testing.T) {
 	}
 	resolver := newTestModuleResolver(mainModule, modules)
 
-	// Create a plugin that uses ResolveModuleSymbol to look up Wrapper.
 	testPlugin := &resolverTestPlugin{}
 
 	comp := compiler.New(resolver)

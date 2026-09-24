@@ -36,8 +36,7 @@ func (sf *SourceFile) Add(globalStmt Statement) {
 		if sym, ok := sf.Decls.resolve(decl.DeclName().Value); !ok || sym.Decl == nil {
 			sf.Decls.Insert(decl)
 		}
-		// Also register import members as individual declarations so they
-		// are visible in the file's symbol table (e.g. for attribute resolution).
+		// Also register import members as individual declarations so they are visible in the file's symbol table (e.g. for attribute resolution).
 		if importDecl, ok := decl.(*DeclImport); ok {
 			for _, member := range importDecl.Members {
 				if _, exists := sf.Decls.resolve(member.DeclName().Value); !exists {

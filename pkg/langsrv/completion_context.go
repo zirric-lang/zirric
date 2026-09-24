@@ -7,8 +7,7 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-// completionScope describes the syntactic context at the cursor position,
-// driving which completions are appropriate.
+// completionScope describes the syntactic context at the cursor position, driving which completions are appropriate.
 type completionScope struct {
 	inFunc        bool            // cursor is inside a function body
 	inFor         bool            // cursor is inside a for loop
@@ -31,30 +30,22 @@ func detectCompletionScope(
 ) completionScope {
 	scope := completionScope{}
 
-	// Determine if cursor is inside a function or for loop by walking the AST.
 	scope.inFunc, scope.inFor = detectEnclosingScope(text, module, sourceURI, cursorOffset)
 	scope.isTopLevel = !scope.inFunc
 
-	// Detect type expression context by scanning backward.
 	scope.isTypeExpr = isTypeExprContext(text, pos)
 
-	// Detect import block context.
 	scope.isImportBlock = isImportBlockContext(text, cursorOffset)
 
-	// Detect first statement position (no declarations before cursor).
 	scope.isFirstStmt = isFirstStatementPosition(module, sourceURI, cursorOffset)
 
-	// Collect attrs already used in the current @-chain before cursor.
 	scope.usedAttrs = collectUsedAttrs(text, pos)
 
 	return scope
 }
 
-// detectEnclosingScope walks the AST to determine if the cursor is inside
-// a function body and/or a for loop. Uses brace-matching in the source text
-// to accurately determine body boundaries.
+// detectEnclosingScope walks the AST to determine if the cursor is inside a function body and/or a for loop. Uses brace-matching in the source text to accurately determine body boundaries.
 func detectEnclosingScope(text string, module *ast.ContextModule, sourceURI string, cursorOffset int) (inFunc, inFor bool) {
-	// Check function declarations.
 	for _, sym := range module.Decls.Symbols {
 		if sym == nil || sym.Decl == nil {
 			continue
@@ -87,7 +78,6 @@ func detectEnclosingScope(text string, module *ast.ContextModule, sourceURI stri
 		}
 	}
 
-	// Check top-level statements (global for-loops, if-blocks, etc.).
 	for _, sf := range module.Files {
 		if sf.Path != sourceURI {
 			continue
@@ -138,8 +128,7 @@ func detectEnclosingScope(text string, module *ast.ContextModule, sourceURI stri
 	return false, false
 }
 
-// topLevelBlockContainsForWithBraces checks if the cursor is inside a for loop
-// within the given block at the top level (no enclosing function).
+// topLevelBlockContainsForWithBraces checks if the cursor is inside a for loop within the given block at the top level (no enclosing function).
 func topLevelBlockContainsForWithBraces(text string, block ast.Block, cursorOffset int) bool {
 	for _, stmt := range block {
 		if nodeOffset(stmt) >= cursorOffset {
@@ -169,10 +158,8 @@ func topLevelBlockContainsForWithBraces(text string, block ast.Block, cursorOffs
 	return false
 }
 
-// cursorInsideBraces scans forward from startOffset in text to find the first '{',
-// then matches braces. Returns true if cursorOffset falls within the matched braces.
+// cursorInsideBraces scans forward from startOffset in text to find the first '{', then matches braces. Returns true if cursorOffset falls within the matched braces.
 func cursorInsideBraces(text string, startOffset, cursorOffset int) bool {
-	// Find the first '{' after startOffset.
 	openIdx := -1
 	for i := startOffset; i < len(text); i++ {
 		if text[i] == '{' {
@@ -184,7 +171,6 @@ func cursorInsideBraces(text string, startOffset, cursorOffset int) bool {
 		return false
 	}
 
-	// Match braces to find the closing '}'.
 	depth := 1
 	for i := openIdx + 1; i < len(text); i++ {
 		switch text[i] {
@@ -201,8 +187,7 @@ func cursorInsideBraces(text string, startOffset, cursorOffset int) bool {
 	return cursorOffset > openIdx
 }
 
-// blockContainsForWithBraces checks if the cursor is inside a for loop body
-// within the given block, using brace-matching for accurate boundary detection.
+// blockContainsForWithBraces checks if the cursor is inside a for loop body within the given block, using brace-matching for accurate boundary detection.
 func blockContainsForWithBraces(text string, block ast.Block, cursorOffset int) bool {
 	for _, stmt := range block {
 		if nodeOffset(stmt) >= cursorOffset {
@@ -246,8 +231,7 @@ func blockContainsForWithBraces(text string, block ast.Block, cursorOffset int) 
 	return false
 }
 
-// isTypeExprContext scans backward from the cursor to detect if we're in a
-// type annotation position. Recognizes:
+// isTypeExprContext scans backward from the cursor to detect if we're in a type annotation position. Recognizes:
 //   - `: Type`, `-> Type` (parameter/return type hints)
 //   - `[Type]`, `[Key: Value]` (array/dict type elements)
 //   - `fn(Type, Type) -> Type` (function type expressions)
@@ -264,15 +248,12 @@ func isTypeExprContext(text string, pos protocol.Position) bool {
 	// Skip backward through tokens that can appear in type expressions.
 	// This handles chains like `@Attr1 @Attr2` and nested brackets.
 	for {
-		// Skip current identifier.
 		for i >= 0 && isSimpleIdentByte(line[i]) {
 			i--
 		}
-		// Skip '@' prefix.
 		if i >= 0 && line[i] == '@' {
 			i--
 		}
-		// Skip whitespace.
 		for i >= 0 && (line[i] == ' ' || line[i] == '\t') {
 			i--
 		}
@@ -296,23 +277,19 @@ func isTypeExprContext(text string, pos protocol.Position) bool {
 			return true
 		}
 
-		// '.' in a qualified name (e.g. @alias.Attr) — skip backward past the dot
-		// and the alias identifier before it, then continue scanning.
+		// '.' in a qualified name (e.g. @alias.Attr) — skip backward past the dot and the alias identifier before it, then continue scanning.
 		if line[i] == '.' {
 			i--
-			// Skip the alias identifier before the dot.
 			for i >= 0 && isSimpleIdentByte(line[i]) {
 				i--
 			}
-			// Skip '@' prefix before the alias.
 			if i >= 0 && line[i] == '@' {
 				i--
 			}
 			continue
 		}
 
-		// If the preceding token ends with an identifier (another @Attr in a chain),
-		// continue scanning backward.
+		// If the preceding token ends with an identifier (another @Attr in a chain), continue scanning backward.
 		if i >= 0 && isSimpleIdentByte(line[i]) {
 			continue
 		}
@@ -351,12 +328,8 @@ func isTypeExprContext(text string, pos protocol.Position) bool {
 	}
 }
 
-// collectUsedAttrs scans backward from the cursor through the full text to collect
-// all @AttrName tokens that are part of the current attribute chain. This handles
-// both type-expression chains on a single line (`: @Tag @Validated @`) and
-// declaration-level attrs spread across multiple lines.
+// collectUsedAttrs scans backward from the cursor through the full text to collect all @AttrName tokens that are part of the current attribute chain. This handles both type-expression chains on a single line (`: @Tag @Validated @`) and declaration-level attrs spread across multiple lines.
 func collectUsedAttrs(text string, pos protocol.Position) map[string]bool {
-	// Compute byte offset for the cursor position.
 	offset := 0
 	line := int(pos.Line)
 	for i := 0; i < line && offset < len(text); offset++ {
@@ -383,7 +356,6 @@ func collectUsedAttrs(text string, pos protocol.Position) map[string]bool {
 
 	// Now scan backward collecting @Name and @Name(...) pairs.
 	for {
-		// Skip whitespace including newlines.
 		for i >= 0 && (text[i] == ' ' || text[i] == '\t' || text[i] == '\n' || text[i] == '\r') {
 			i--
 		}
@@ -404,14 +376,12 @@ func collectUsedAttrs(text string, pos protocol.Position) map[string]bool {
 				}
 				i--
 			}
-			// i now points to the char before '('
-			// Skip whitespace between name and '(' (shouldn't normally be any, but be safe).
+			// i now points to the char before '(' Skip whitespace between name and '(' (shouldn't normally be any, but be safe).
 			for i >= 0 && (text[i] == ' ' || text[i] == '\t') {
 				i--
 			}
 		}
 
-		// Try to read an identifier ending at position i.
 		nameEnd := i + 1
 		for i >= 0 && isSimpleIdentByte(text[i]) {
 			i--
@@ -427,15 +397,14 @@ func collectUsedAttrs(text string, pos protocol.Position) map[string]bool {
 		}
 		name := text[nameStart:nameEnd]
 		used[name] = true
-		i-- // skip the '@'
+		i--
 	}
 
 	return used
 }
 
 // isImportBlockContext detects if the cursor is inside an import { ... } block.
-// Scans backward from cursor to find an unmatched '{', then checks if it's
-// preceded by an import statement.
+// Scans backward from cursor to find an unmatched '{', then checks if it's preceded by an import statement.
 func isImportBlockContext(text string, cursorOffset int) bool {
 	depth := 0
 	for i := cursorOffset - 1; i >= 0; i-- {
@@ -455,10 +424,8 @@ func isImportBlockContext(text string, cursorOffset int) bool {
 	return false
 }
 
-// importPrecedesBrace checks if text (ending just before '{') contains
-// an import statement pattern like "import foo.bar".
+// importPrecedesBrace checks if text (ending just before '{') contains an import statement pattern like "import foo.bar".
 func importPrecedesBrace(text string) bool {
-	// Find the last newline and check if the line starts with 'import'.
 	lastNL := strings.LastIndexByte(text, '\n')
 	var lastLine string
 	if lastNL < 0 {
@@ -470,10 +437,8 @@ func importPrecedesBrace(text string) bool {
 	return strings.HasPrefix(trimmed, "import ")
 }
 
-// isFirstStatementPosition returns true when no module-level declarations
-// or statements exist before the cursor in the current file.
+// isFirstStatementPosition returns true when no module-level declarations or statements exist before the cursor in the current file.
 func isFirstStatementPosition(module *ast.ContextModule, sourceURI string, cursorOffset int) bool {
-	// Check module-level declarations that belong to this file.
 	for _, sym := range module.Decls.Symbols {
 		if sym == nil || sym.Decl == nil {
 			continue
@@ -483,7 +448,6 @@ func isFirstStatementPosition(module *ast.ContextModule, sourceURI string, curso
 			return false
 		}
 	}
-	// Check statements in this source file.
 	for _, sf := range module.Files {
 		if sf.Path != sourceURI {
 			continue

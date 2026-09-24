@@ -435,7 +435,6 @@ func (p *Parser) parseExternDecl(pos StatementPosition, annos ast.AttributeChain
 	}
 	externTok, _ := p.expect(token.EXTERN)
 
-	// Expect one of: type, fn, const
 	if p.curIs(token.TYPE) {
 		return p.parseExternTypeDecl(externTok, annos)
 	} else if p.curIs(token.FUNCTION) {
@@ -452,7 +451,6 @@ func (p *Parser) parseExternDecl(pos StatementPosition, annos ast.AttributeChain
 	}
 }
 
-// parseExternTypeDecl parses extern type declarations
 func (p *Parser) parseExternTypeDecl(externTok token.Token, annos ast.AttributeChain) *ast.DeclExternType {
 	p.expect(token.TYPE)
 	nameTok, _ := p.expect(token.IDENT)
@@ -478,7 +476,6 @@ func (p *Parser) parseExternTypeDecl(externTok token.Token, annos ast.AttributeC
 	return extern
 }
 
-// parseExternFuncDecl parses extern fn declarations
 func (p *Parser) parseExternFuncDecl(externTok token.Token, annos ast.AttributeChain) *ast.DeclExternFunc {
 	p.expect(token.FUNCTION)
 	nameTok, _ := p.expect(token.IDENT)
@@ -506,7 +503,6 @@ func (p *Parser) parseExternFuncDecl(externTok token.Token, annos ast.AttributeC
 	return extern
 }
 
-// parseExternValueDecl parses extern const declarations
 func (p *Parser) parseExternValueDecl(externTok token.Token, annos ast.AttributeChain) *ast.DeclExternValue {
 	p.expect(token.CONST)
 	nameTok, _ := p.expect(token.IDENT, token.TRUE, token.FALSE, token.VOID)
@@ -738,22 +734,18 @@ func (p *Parser) parseTypeHintExpr() ast.TypeExpr {
 }
 
 func (p *Parser) parseTypeHintPrimary() ast.TypeExpr {
-	// Attribute constraints: @Attr or @A @B @C
 	if p.curIs(token.AT) {
 		return p.parseTypeHintAttrs()
 	}
 
-	// Array type [T] or Dict type [K: V] — disambiguated after first type expr
 	if p.curIs(token.LBRACKET) {
 		return p.parseTypeHintArrayOrDict()
 	}
 
-	// Function type: fn(params) -> ReturnType
 	if p.curIs(token.FUNCTION) {
 		return p.parseTypeHintFunc()
 	}
 
-	// Named type: Ident or Ident.Ident.Ident...
 	ref := p.parseStaticIdentifierReference()
 	return ast.MakeTypeExprRef(ref)
 }
@@ -793,13 +785,11 @@ func (p *Parser) parseTypeHintArrayOrDict() ast.TypeExpr {
 	lbracketTok, _ := p.expect(token.LBRACKET)
 	first := p.parseTypeHintExpr()
 	if p.curIs(token.COLON) {
-		// Dict type: [K: V]
 		p.expect(token.COLON)
 		value := p.parseTypeHintExpr()
 		p.expect(token.RBRACKET)
 		return ast.MakeTypeExprDict(lbracketTok, first, value)
 	}
-	// Array type: [T]
 	p.expect(token.RBRACKET)
 	return ast.MakeTypeExprArray(lbracketTok, first)
 }

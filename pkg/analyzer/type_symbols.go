@@ -2,8 +2,7 @@ package analyzer
 
 import "code.knabel.dev/zirric-lang/zirric/pkg/ast"
 
-// assignTypeSymbols sets TypeSymbol on each module-level symbol so that
-// runtime values can report their type via TypeConstantId().
+// assignTypeSymbols sets TypeSymbol on each module-level symbol so that runtime values can report their type via TypeConstantId().
 //
 // Rules:
 //   - DeclData, DeclUnion, DeclExternType, DeclAttr → TypeSymbol = self

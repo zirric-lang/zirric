@@ -26,9 +26,7 @@ fn range(v: [Any], r: ranges.Like) -> [Any] {
 	}
 }
 
-// Concatenates every array in parts into a single array, in order. Unlike
-// append(), which adds each argument as one new element, this flattens one
-// level — concat([[1, 2], [3]]) is [1, 2, 3], not [[1, 2], [3]].
+// Concatenates every array in parts into a single array, in order. Unlike append(), which adds each argument as one new element, this flattens one level — concat([[1, 2], [3]]) is [1, 2, 3], not [[1, 2], [3]].
 fn concat(parts: [[Any]]) -> [Any] {
 	var result = []
 	for part <- parts {
@@ -133,8 +131,7 @@ fn flatMap(v: [Any], transform: fn(Any) -> [Any]) -> [Any] {
 	return result
 }
 
-// Returns a new array containing only the elements of v for which predicate
-// returns true, in order.
+// Returns a new array containing only the elements of v for which predicate returns true, in order.
 fn filter(v: [Any], predicate: fn(Any) -> Bool) -> [Any] {
 	var result = []
 	for x <- v {
@@ -145,8 +142,7 @@ fn filter(v: [Any], predicate: fn(Any) -> Bool) -> [Any] {
 	return result
 }
 
-// Combines v's elements into a single value, starting from initial and
-// applying combine(accumulator, element) left to right.
+// Combines v's elements into a single value, starting from initial and applying combine(accumulator, element) left to right.
 fn reduce(v: [Any], initial: Any, combine: fn(Any, Any) -> Any) -> Any {
 	var acc = initial
 	for x <- v {

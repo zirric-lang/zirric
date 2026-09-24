@@ -69,7 +69,6 @@ func TestParseIsWithStaticRef(t *testing.T) {
 				t.Fatalf("expected ExprIs, got %T", stmt.Expr)
 				return
 			}
-			// TypeRef should be a TypeExprRef, not TypeExprAttrs
 			if _, isAttrs := isExpr.TypeRef.(ast.TypeExprAttrs); isAttrs {
 				t.Fatal("expected type check, not attribute check")
 			}
@@ -246,7 +245,6 @@ func TestParseAttributeInstanceRequiresParens(t *testing.T) {
 }
 
 func TestParseAttributeInstanceWithEmptyParens(t *testing.T) {
-	// @Marker() with empty parens should parse successfully
 	input := `
 	attr Marker
 	@Marker()

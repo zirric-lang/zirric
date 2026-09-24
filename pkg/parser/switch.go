@@ -116,8 +116,7 @@ func (p *Parser) parseSwitchCasePattern(kind *ast.SwitchCaseKind, typeRef *ast.T
 	}
 }
 
-// parseSwitchCaseBlock parses a block of statements that terminates at the
-// next `case` keyword or closing `}`.
+// parseSwitchCaseBlock parses a block of statements that terminates at the next `case` keyword or closing `}`.
 func (p *Parser) parseSwitchCaseBlock(pos StatementPosition) ast.Block {
 	block := make([]ast.Statement, 0)
 

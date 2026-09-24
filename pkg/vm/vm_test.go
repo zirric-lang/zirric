@@ -287,8 +287,7 @@ func TestExternAttributes(t *testing.T) {
 }
 
 func TestExternValueImport(t *testing.T) {
-	// Verify that importing a module containing extern const declarations
-	// compiles and runs without the "unknown declaration *ast.DeclExternValue" error.
+	// Verify that importing a module containing extern const declarations compiles and runs without the "unknown declaration *ast.DeclExternValue" error.
 	moduleA := prepareContextModuleParsing(t, "foo.a", `
 		mod a
 		extern type Void {}
@@ -480,7 +479,6 @@ add()`,
 
 func TestAssignment(t *testing.T) {
 	tests := []vmTestCase{
-		// Local var rebind
 		{
 			label: "local var rebind",
 			input: `
@@ -505,7 +503,6 @@ f()`,
 			expected: 3,
 		},
 
-		// Global var rebind
 		{
 			label: "global var rebind",
 			input: `
@@ -527,7 +524,6 @@ counter`,
 			expected: 2,
 		},
 
-		// Const rebind errors
 		{
 			label: "const local rebind is a compile error",
 			input: `
@@ -553,7 +549,6 @@ fn f(x) {
 			err: `testing:///test/test.zirr:3:2: cannot assign to a parameter: x`,
 		},
 
-		// Compound assignment operators
 		{
 			label: "local var += operator",
 			input: `
@@ -610,7 +605,6 @@ f()`,
 			expected: 1,
 		},
 
-		// Member (field) assignment
 		{
 			label: "member assignment on var data instance",
 			input: `
@@ -659,7 +653,6 @@ c.val`,
 			expected: 15,
 		},
 
-		// Index assignment
 		{
 			label: "array index assignment",
 			input: `
@@ -713,7 +706,6 @@ f()`,
 
 func TestAssignmentAdditional(t *testing.T) {
 	tests := []vmTestCase{
-		// Global compound assignment
 		{
 			label: "global var compound +=",
 			input: `
@@ -735,7 +727,6 @@ score`,
 			expected: 80,
 		},
 
-		// Index compound with all operators
 		{
 			label: "array index compound -=",
 			input: `
@@ -781,7 +772,6 @@ f()`,
 			expected: 2,
 		},
 
-		// Dict compound assignment
 		{
 			label: "dict index compound +=",
 			input: `
@@ -794,7 +784,6 @@ f()`,
 			expected: 11,
 		},
 
-		// Member compound with remaining operators
 		{
 			label: "member compound -=",
 			input: `
@@ -870,9 +859,7 @@ f()`,
 			expected: 1,
 		},
 		{
-			// Regression: compound member assignment must evaluate the object
-			// expression exactly once, not twice. A counter incremented by a
-			// helper fn is used to detect double evaluation.
+			// Regression: compound member assignment must evaluate the object expression exactly once, not twice. A counter incremented by a helper fn is used to detect double evaluation.
 			label: "compound member assignment evaluates object exactly once",
 			input: `
 data Box { val }
@@ -1902,7 +1889,6 @@ func TestReplRollbackAndReuse(t *testing.T) {
 
 func TestClosures(t *testing.T) {
 	tests := []vmTestCase{
-		// Basic lambda invocation
 		{
 			label: "lambda identity",
 			input: `
@@ -1911,7 +1897,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 42,
 		},
-		// Const capture (by value)
 		{
 			label: "const capture by value",
 			input: `
@@ -1924,7 +1909,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 10,
 		},
-		// Parameter capture (by value)
 		{
 			label: "parameter capture",
 			input: `
@@ -1936,7 +1920,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 8,
 		},
-		// Var capture (shared mutable cell)
 		{
 			label: "var capture read",
 			input: `
@@ -1963,7 +1946,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 2,
 		},
-		// Multiple closures sharing the same var cell
 		{
 			label: "shared var cell",
 			input: `
@@ -1980,7 +1962,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 3,
 		},
-		// Nested closures (transitive capture)
 		{
 			label: "nested closure const capture",
 			input: `
@@ -1996,7 +1977,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 99,
 		},
-		// Named function with captures
 		{
 			label: "named fn with param capture",
 			input: `
@@ -2008,7 +1988,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 15,
 		},
-		// Lambda with no captures (plain function)
 		{
 			label: "lambda no captures",
 			input: `
@@ -2027,7 +2006,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 100,
 		},
-		// Var capture with compound assignment
 		{
 			label: "var capture compound assign",
 			input: `
@@ -2042,7 +2020,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 6,
 		},
-		// Closure returned and called later
 		{
 			label: "returned closure",
 			input: `
@@ -2060,7 +2037,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 3,
 		},
-		// Multiple captures in a single closure (const + var)
 		{
 			label: "multiple captures const and var",
 			input: `
@@ -2075,7 +2051,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 30,
 		},
-		// Lambda with parameters and captures
 		{
 			label: "lambda with params and captures",
 			input: `
@@ -2087,7 +2062,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 21,
 		},
-		// Two independent returned closures
 		{
 			label: "independent returned closures",
 			input: `
@@ -2125,7 +2099,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 2,
 		},
-		// Closure capturing a named function
 		{
 			label: "capture named function",
 			input: `
@@ -2154,7 +2127,6 @@ func TestClosures(t *testing.T) {
 			`,
 			expected: 42,
 		},
-		// Closure in a conditional branch
 		{
 			label: "closure in conditional",
 			input: `
@@ -2177,8 +2149,7 @@ func TestClosures(t *testing.T) {
 }
 
 func TestIsTypeOpcode(t *testing.T) {
-	// These tests construct bytecode manually since no Zirric syntax
-	// emits IsType yet (it will be used by switch/case @Type).
+	// These tests construct bytecode manually since no Zirric syntax emits IsType yet (it will be used by switch/case @Type).
 
 	makeSymbol := func(name string, constId, typeConstId int) *ast.Symbol {
 		cid := constId
@@ -2200,10 +2171,7 @@ func TestIsTypeOpcode(t *testing.T) {
 		// Constants:
 		//   0 = DataType "A" (slot 0 in this manual bytecode; TypeId=11 via TypeSymbol)
 		//   1 = DataValue with TypeId=11 (matching the DataType's TypeConstantId)
-		// typeConstId=11 simulates a user-defined type that received an ID above the
-		// builtin range (0-10), as assignModuleIDs now guarantees. The slot index (0)
-		// intentionally differs from the TypeId (11) to verify that IsType uses
-		// tv.TypeConstantId() rather than the raw slot index.
+		// typeConstId=11 simulates a user-defined type that received an ID above the builtin range (0-10), as assignModuleIDs now guarantees. The slot index (0) intentionally differs from the TypeId (11) to verify that IsType uses tv.TypeConstantId() rather than the raw slot index.
 		symA := makeSymbol("A", 0, 11)
 		dtA := &runtime.DataType{
 			Symbol:       symA,
@@ -2491,8 +2459,7 @@ func TestDataAttributeLookup(t *testing.T) {
 }
 
 func TestCrossModuleExternFnWithDataTypes(t *testing.T) {
-	// The io module defines data types; the "mylib" module imports them
-	// and uses extern fn to return instances constructed in Go.
+	// The io module defines data types; the "mylib" module imports them and uses extern fn to return instances constructed in Go.
 	ioModule := prepareContextModuleParsing(t, "test.io", `
 		mod io
 		data Wrapper { value }

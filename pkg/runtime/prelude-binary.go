@@ -9,9 +9,7 @@ var _ RuntimeValue = Binary([]byte{})
 type Binary []byte
 
 // Inspect implements runtime.RuntimeValue.
-// Binary is raw bytes, not text, so it's rendered as hex (two digits per
-// byte, e.g. "deadbeef") rather than reinterpreted as a (possibly invalid)
-// UTF-8 string.
+// Binary is raw bytes, not text, so it's rendered as hex (two digits per byte, e.g. "deadbeef") rather than reinterpreted as a (possibly invalid) UTF-8 string.
 func (i Binary) Inspect() string {
 	return hex.EncodeToString(i)
 }

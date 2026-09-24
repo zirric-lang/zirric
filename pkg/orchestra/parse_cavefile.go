@@ -15,10 +15,8 @@ import (
 )
 
 // ParseCavefile reads and parses the Cavefile at cavefilePath within projectFS.
-// It creates a bootstrap resolver with only the standard library so that
-// attribute declarations in cave can be resolved for type checking.
-// The analyzer is run on both cave and the Cavefile module so that
-// identifier references and attribute types are fully resolved.
+// It creates a bootstrap resolver with only the standard library so that attribute declarations in cave can be resolved for type checking.
+// The analyzer is run on both cave and the Cavefile module so that identifier references and attribute types are fully resolved.
 func ParseCavefile(ctx context.Context, projectFS billy.Filesystem, registryFS billy.Filesystem, cavefilePath string) (cavefile.Cavefile, error) {
 	bootstrapCave := ensureStandardLibraryDependency(cavefile.Cavefile{
 		Package: cavefile.Package{
@@ -73,8 +71,7 @@ func ParseCavefile(ctx context.Context, projectFS billy.Filesystem, registryFS b
 		return cavefile.Cavefile{}, err
 	}
 
-	// Run the analyzer on all three modules; errors are tolerated (Cavefile may not
-	// be fully type-correct at parse time, but attribute references are resolved)
+	// Run the analyzer on all three modules; errors are tolerated (Cavefile may not be fully type-correct at parse time, but attribute references are resolved)
 	analysis := analyzer.New(resolver)
 	analysis.Analyze(caveMod, false)
 	analysis.Analyze(tasksMod, false)

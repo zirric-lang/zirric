@@ -285,8 +285,7 @@ func (*StringsPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.S
 			if err != nil {
 				return nil, err
 			}
-			// Only the two literal forms Zirric itself has. Go's backquoted raw
-			// strings are not one of them, so strconv.Unquote never sees them.
+			// Only the two literal forms Zirric itself has. Go's backquoted raw strings are not one of them, so strconv.Unquote never sees them.
 			if len(s) < 2 || (s[0] != '"' && s[0] != '\'') || s[len(s)-1] != s[0] {
 				return ResultErr(caller, String(fmt.Sprintf("not a quoted literal: %s", strconv.Quote(s))))
 			}

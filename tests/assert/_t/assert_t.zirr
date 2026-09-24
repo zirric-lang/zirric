@@ -16,7 +16,7 @@ data _failure {
 }
 
 @Test()
-fn testEqualAcceptsEqualValues() {
+fn testEqualAcceptsEqualValues() -> Result {
 	assert.all([
 		assert.equal(true, assert.equal(1, 1) is Ok),
 		assert.equal(true, assert.equal("a", "a") is Ok),
@@ -26,7 +26,7 @@ fn testEqualAcceptsEqualValues() {
 }
 
 @Test()
-fn testEqualNamesBothValuesWhenTheyDiffer() {
+fn testEqualNamesBothValuesWhenTheyDiffer() -> Result {
 	const failed = assert.equal(1, 2)
 	assert.all([
 		assert.equal(true, failed is Err),
@@ -37,16 +37,12 @@ fn testEqualNamesBothValuesWhenTheyDiffer() {
 
 // A bug, kept here as the shape of the fix rather than as a record of the behaviour.
 //
-// `equal` builds its message with `fmt.sprint`, which renders a String as the text it holds rather than as a quoted
-// literal. A String and the value it spells are therefore indistinguishable in a failure: `equal("1", 1)` reports
-// `expected 1, got 1`, naming two values that look identical and leaving nothing to tell them apart. The values are
-// what a failure exists to report, so the message has to quote a String — and, for the same reason, distinguish a
-// Float from the Int it equals in print.
+// `equal` builds its message with `fmt.sprint`, which renders a String as the text it holds rather than as a quoted literal. A String and the value it spells are therefore indistinguishable in a failure: `equal("1", 1)` reports `expected 1, got 1`, naming two values that look identical and leaving nothing to tell them apart. The values are what a failure exists to report, so the message has to quote a String — and, for the same reason, distinguish a Float from the Int it equals in print.
 //
 // Marked @Todo so the suite stays green while the message is what it is; the assertions below are what it should be.
 @Test()
 @Todo()
-fn testEqualTellsAStringFromTheValueItSpells() {
+fn testEqualTellsAStringFromTheValueItSpells() -> Result {
 	assert.all([
 		assert.equal(true, assert.equal("1", 1) is Err),
 		assert.equal("expected \"1\", got 1", assert.equal("1", 1).reason),
@@ -55,7 +51,7 @@ fn testEqualTellsAStringFromTheValueItSpells() {
 }
 
 @Test()
-fn testIsTrueAndIsFalse() {
+fn testIsTrueAndIsFalse() -> Result {
 	assert.all([
 		assert.equal(true, assert.isTrue(true) is Ok),
 		assert.equal(true, assert.isTrue(false) is Err),
@@ -67,7 +63,7 @@ fn testIsTrueAndIsFalse() {
 }
 
 @Test()
-fn testAllPassesOnlyWhenEveryAssertionDoes() {
+fn testAllPassesOnlyWhenEveryAssertionDoes() -> Result {
 	assert.all([
 		assert.equal(true, assert.all([]) is Ok),
 		assert.equal(true, assert.all([assert.equal(1, 1), assert.equal(2, 2)]) is Ok),
@@ -76,7 +72,7 @@ fn testAllPassesOnlyWhenEveryAssertionDoes() {
 }
 
 @Test()
-fn testAllReportsEveryFailureRatherThanTheFirst() {
+fn testAllReportsEveryFailureRatherThanTheFirst() -> Result {
 	const failed = assert.all([assert.equal(1, 2), assert.equal(3, 3), assert.equal(4, 5)])
 	assert.all([
 		assert.equal(true, failed is Err),
@@ -87,7 +83,7 @@ fn testAllReportsEveryFailureRatherThanTheFirst() {
 }
 
 @Test()
-fn testFailIsAlwaysAnErrCarryingItsReason() {
+fn testFailIsAlwaysAnErrCarryingItsReason() -> Result {
 	const failed = assert.fail("no reason at all")
 	assert.all([
 		assert.equal(true, failed is Err),
@@ -96,7 +92,7 @@ fn testFailIsAlwaysAnErrCarryingItsReason() {
 }
 
 @Test()
-fn testIsOkRejectsWhatIsNotOk() {
+fn testIsOkRejectsWhatIsNotOk() -> Result {
 	assert.all([
 		assert.equal(true, assert.isOk(Err("boom")) is Err),
 		assert.equal("expected an ok value, got Err(\"boom\")", assert.isOk(Err("boom")).reason),
@@ -107,7 +103,7 @@ fn testIsOkRejectsWhatIsNotOk() {
 }
 
 @Test()
-fn testIsErrRejectsWhatIsNotErr() {
+fn testIsErrRejectsWhatIsNotErr() -> Result {
 	assert.all([
 		assert.equal(true, assert.isErr(Ok(1)) is Err),
 		assert.equal("expected an err result, got Ok(1)", assert.isErr(Ok(1)).reason),
@@ -117,7 +113,7 @@ fn testIsErrRejectsWhatIsNotErr() {
 }
 
 @Test()
-fn testIsErrorRejectsWhatCarriesNoError() {
+fn testIsErrorRejectsWhatCarriesNoError() -> Result {
 	assert.all([
 		assert.equal(true, assert.isError(42) is Err),
 		assert.equal("expected an error, got 42", assert.isError(42).reason),
@@ -126,7 +122,7 @@ fn testIsErrorRejectsWhatCarriesNoError() {
 }
 
 @Test()
-fn testIsOkAcceptsAnOkAndAnythingReadableAsOne() {
+fn testIsOkAcceptsAnOkAndAnythingReadableAsOne() -> Result {
 	assert.all([
 		assert.isOk(Ok(1)),
 		assert.isOk(Ok("anything")),
@@ -135,7 +131,7 @@ fn testIsOkAcceptsAnOkAndAnythingReadableAsOne() {
 }
 
 @Test()
-fn testIsErrAcceptsAnErrAndAnythingReadableAsOne() {
+fn testIsErrAcceptsAnErrAndAnythingReadableAsOne() -> Result {
 	assert.all([
 		assert.isErr(Err("boom")),
 		assert.isErr(_wrapped(Err("boom"))),
@@ -143,7 +139,7 @@ fn testIsErrAcceptsAnErrAndAnythingReadableAsOne() {
 }
 
 @Test()
-fn testIsErrorAcceptsWhatCarriesError() {
+fn testIsErrorAcceptsWhatCarriesError() -> Result {
 	assert.all([
 		assert.isError(Err("boom")),
 		assert.isError(_failure("boom")),
@@ -153,7 +149,7 @@ fn testIsErrorAcceptsWhatCarriesError() {
 // A passing isOk, isErr or isError used to answer with `void` rather than a Result, which `all` could not read: combining one stopped the run outright.
 // Passing them through `all` is therefore the check that matters, not merely that each returns an Ok.
 @Test()
-fn testAPassingCheckCanBeCombinedWithAll() {
+fn testAPassingCheckCanBeCombinedWithAll() -> Result {
 	const combined = assert.all([
 		assert.isOk(Ok(1)),
 		assert.isErr(Err("boom")),

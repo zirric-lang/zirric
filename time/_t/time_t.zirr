@@ -7,7 +7,7 @@ import time
 import results
 
 @Test()
-fn testDurationArithmeticUsesOperators() {
+fn testDurationArithmeticUsesOperators() -> Result {
 	const a = time.seconds(2)
 	const b = time.milliseconds(500)
 	assert.all([
@@ -20,7 +20,7 @@ fn testDurationArithmeticUsesOperators() {
 }
 
 @Test()
-fn testDurationsCompare() {
+fn testDurationsCompare() -> Result {
 	const a = time.seconds(1)
 	const b = time.seconds(2)
 	assert.all([
@@ -33,7 +33,7 @@ fn testDurationsCompare() {
 }
 
 @Test()
-fn testDurationUnits() {
+fn testDurationUnits() -> Result {
 	assert.all([
 		assert.equal(time.seconds(60), time.minutes(1)),
 		assert.equal(time.minutes(60), time.hours(1)),
@@ -44,7 +44,7 @@ fn testDurationUnits() {
 }
 
 @Test()
-fn testDurationAccessors() {
+fn testDurationAccessors() -> Result {
 	const d = time.milliseconds(1500)
 	assert.all([
 		assert.equal(1500000000, time.asNanoseconds(d)),
@@ -55,7 +55,7 @@ fn testDurationAccessors() {
 }
 
 @Test()
-fn testAbsolute() {
+fn testAbsolute() -> Result {
 	assert.all([
 		assert.equal(time.seconds(2), time.absolute(time.zero() - time.seconds(2))),
 		assert.equal(time.seconds(2), time.absolute(time.seconds(2))),
@@ -63,7 +63,7 @@ fn testAbsolute() {
 }
 
 @Test()
-fn testDurationPrintsReadably() {
+fn testDurationPrintsReadably() -> Result {
 	assert.all([
 		assert.equal("1.5s", time.formatDuration(time.milliseconds(1500))),
 		assert.equal("250ms", time.formatDuration(time.milliseconds(250))),
@@ -75,7 +75,7 @@ fn testDurationPrintsReadably() {
 }
 
 @Test()
-fn testTimestampEpochRoundTrip() {
+fn testTimestampEpochRoundTrip() -> Result {
 	const t = time.fromEpoch(1709649000000000000)
 	assert.all([
 		assert.equal(1709649000000000000, time.toEpoch(t)),
@@ -86,7 +86,7 @@ fn testTimestampEpochRoundTrip() {
 }
 
 @Test()
-fn testTimestampArithmetic() {
+fn testTimestampArithmetic() -> Result {
 	const t = time.fromEpoch(0)
 	const later = t + time.hours(1)
 	assert.all([
@@ -98,7 +98,7 @@ fn testTimestampArithmetic() {
 }
 
 @Test()
-fn testFormatAndParse() {
+fn testFormatAndParse() -> Result {
 	const parsed = time.parse("2024-03-05T14:30:00Z")
 	assert.all([
 		assert.equal(true, results.isOk(parsed)),
@@ -110,7 +110,7 @@ fn testFormatAndParse() {
 }
 
 @Test()
-fn testParseRejectsNonsense() {
+fn testParseRejectsNonsense() -> Result {
 	assert.all([
 		assert.equal(true, results.isErr(time.parse("not a timestamp"))),
 		assert.equal(true, time.parse("nope") is Err),
@@ -118,7 +118,7 @@ fn testParseRejectsNonsense() {
 }
 
 @Test()
-fn testParseDuration() {
+fn testParseDuration() -> Result {
 	assert.all([
 		assert.equal(time.milliseconds(1500), time.parseDuration("1.5s").value),
 		assert.equal(time.milliseconds(250), time.parseDuration("250ms").value),
@@ -130,7 +130,7 @@ fn testParseDuration() {
 }
 
 @Test()
-fn testParseDurationRejectsNonsense() {
+fn testParseDurationRejectsNonsense() -> Result {
 	assert.all([
 		assert.equal(true, results.isErr(time.parseDuration("tomorrow"))),
 		assert.equal(true, results.isErr(time.parseDuration("5"))),
@@ -139,7 +139,7 @@ fn testParseDurationRejectsNonsense() {
 }
 
 @Test()
-fn testFormatAndParseDurationRoundTrip() {
+fn testFormatAndParseDurationRoundTrip() -> Result {
 	// Formatting is for people, but it must never lose precision: whatever it prints has to read back as the same span.
 	const spans = [
 		time.nanoseconds(1),

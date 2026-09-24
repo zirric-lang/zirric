@@ -6,19 +6,13 @@ import (
 	"strconv"
 )
 
-// VMCaller lets extern function implementations call back into VM-managed
-// behavior that only exists once real values are available at runtime (not
-// at plugin bind time, which runs during compilation, before any VM exists).
+// VMCaller lets extern function implementations call back into VM-managed behavior that only exists once real values are available at runtime (not at plugin bind time, which runs during compilation, before any VM exists).
 type VMCaller interface {
-	// CallFunction invokes a compiled function or closure value with args
-	// and returns its result.
+	// CallFunction invokes a compiled function or closure value with args and returns its result.
 	CallFunction(fn RuntimeValue, args ...RuntimeValue) (RuntimeValue, error)
-	// AttributesOf returns the attribute map that applies to v — its own
-	// instance-level attributes if it carries them directly (e.g. a
-	// function's own @Attr), otherwise its declared type's attributes.
+	// AttributesOf returns the attribute map that applies to v — its own instance-level attributes if it carries them directly (e.g. a function's own @Attr), otherwise its declared type's attributes.
 	AttributesOf(v RuntimeValue) map[TypeId]int
-	// ResolveGlobal forces evaluation of the global at index id, e.g. to
-	// read an attribute's payload value found via AttributesOf.
+	// ResolveGlobal forces evaluation of the global at index id, e.g. to read an attribute's payload value found via AttributesOf.
 	ResolveGlobal(id int) (RuntimeValue, error)
 	// ResolveModuleMember returns a public member of a compiled module, named as it is written in source (e.g. "prelude", "Ok").
 	// It is how a plugin reaches a declared type in order to construct values of it: MakeDataValue copies the DataType's attributes, which a hand-built DataValue would otherwise lack.
@@ -34,10 +28,7 @@ type VMCaller interface {
 	Fork() VMCaller
 }
 
-// TrivialString converts v to a display string for the handful of builtin
-// types with an unambiguous textual form. Used by both string concatenation
-// (`+`) and as fmt.sprint's fallback for values with no @Printable
-// attribute. Byte renders as two hex digits.
+// TrivialString converts v to a display string for the handful of builtin types with an unambiguous textual form. Used by both string concatenation (`+`) and as fmt.sprint's fallback for values with no @Printable attribute. Byte renders as two hex digits.
 func TrivialString(v RuntimeValue) (string, bool) {
 	switch v := v.(type) {
 	case Duration:

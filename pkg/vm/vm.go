@@ -103,9 +103,7 @@ func New(bytecode *compiler.Bytecode) *VM {
 	}
 	vm.standAside = vm.yieldToRoutines
 
-	// Build a lookup table for builtin types whose TypeConstantId differs
-	// from their position in the constants array (e.g. String at index 31
-	// but with hardcoded typeIdString=8).
+	// Build a lookup table for builtin types whose TypeConstantId differs from their position in the constants array (e.g. String at index 31 but with hardcoded typeIdString=8).
 	for i, c := range bytecode.Constants {
 		// Only a type value belongs in this table. A CompiledFunction is Attributable too and reports Func as its own type, so without this the last function compiled ends up registered as the Func type itself, and asking what type a function is answers with some unrelated function.
 		switch c.(type) {

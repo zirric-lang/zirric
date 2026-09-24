@@ -14,10 +14,8 @@ type Cavefile struct {
 	// Docs is the comment written above the Cavefile's own `mod` declaration.
 	Docs string
 
-	// The dependencies of the Cavefile
 	Dependencies []Dependency
 
-	// The tasks declared in the Cavefile
 	Tasks []Task
 
 	// Path patterns from @cave.FormattingExcludes, relative to the package root.
@@ -33,7 +31,6 @@ type Dependency struct {
 	// Module is the specific module this dependency binds to; set only for @cave.Stdlib.
 	Module registry.LogicalURI
 
-	// The version predicate of the dependency
 	Predicates []version.Predicate
 }
 

@@ -6,6 +6,6 @@ import tests.assert
 import rootmodule
 
 @tests.Test()
-fn testGreet() {
+fn testGreet() -> Result {
 	assert.equal("Hello, Zirric", rootmodule.greet("Zirric"))
 }

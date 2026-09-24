@@ -19,7 +19,7 @@ fn _fixture() -> fs.FileSystem {
 }
 
 @Test()
-fn testWriteAndReadFile() {
+fn testWriteAndReadFile() -> Result {
 	const disk = fs.memory()
 	const written = disk.writeFile("a.bin", bytes.fromString("abc"))
 	assert.all([
@@ -30,14 +30,14 @@ fn testWriteAndReadFile() {
 }
 
 @Test()
-fn testReadStringAndWriteString() {
+fn testReadStringAndWriteString() -> Result {
 	const disk = fs.memory()
 	fs.writeString(disk, "x.txt", "café")
 	assert.equal("café", fs.readString(disk, "x.txt").value)
 }
 
 @Test()
-fn testReadingAMissingFileFails() {
+fn testReadingAMissingFileFails() -> Result {
 	const disk = fs.memory()
 	const outcome = disk.readFile("nope.txt")
 	assert.all([
@@ -47,7 +47,7 @@ fn testReadingAMissingFileFails() {
 }
 
 @Test()
-fn testExists() {
+fn testExists() -> Result {
 	const disk = _fixture()
 	assert.all([
 		assert.equal(true, disk.exists("greeting.txt")),
@@ -56,7 +56,7 @@ fn testExists() {
 }
 
 @Test()
-fn testRemove() {
+fn testRemove() -> Result {
 	const disk = _fixture()
 	const removed = disk.remove("greeting.txt")
 	assert.all([
@@ -66,7 +66,7 @@ fn testRemove() {
 }
 
 @Test()
-fn testMove() {
+fn testMove() -> Result {
 	const disk = _fixture()
 	const moved = disk.move("greeting.txt", "moved.txt")
 	assert.all([
@@ -77,7 +77,7 @@ fn testMove() {
 }
 
 @Test()
-fn testList() {
+fn testList() -> Result {
 	const disk = _fixture()
 	const entries = disk.list(".")
 	var names = []
@@ -96,7 +96,7 @@ fn testList() {
 }
 
 @Test()
-fn testEntryCarriesSize() {
+fn testEntryCarriesSize() -> Result {
 	const disk = fs.memory()
 	fs.writeString(disk, "five.txt", "12345")
 	const entries = disk.list(".")
@@ -104,7 +104,7 @@ fn testEntryCarriesSize() {
 }
 
 @Test()
-fn testMkdirAllAndCd() {
+fn testMkdirAllAndCd() -> Result {
 	const disk = fs.memory()
 	disk.mkdirAll("a/b/c")
 	fs.writeString(disk, "a/b/c/deep.txt", "found")
@@ -118,13 +118,13 @@ fn testMkdirAllAndCd() {
 }
 
 @Test()
-fn testRoot() {
+fn testRoot() -> Result {
 	const disk = fs.memory()
 	assert.equal(true, disk.root() is String)
 }
 
 @Test()
-fn testCreateReadWriteClose() {
+fn testCreateReadWriteClose() -> Result {
 	const disk = fs.memory()
 	const created = disk.create("streamed.txt")
 	assert.equal(true, results.isOk(created))
@@ -140,7 +140,7 @@ fn testCreateReadWriteClose() {
 }
 
 @Test()
-fn testWithFileClosesAfterwards() {
+fn testWithFileClosesAfterwards() -> Result {
 	const disk = _fixture()
 	const outcome = fs.withFile(disk.open("greeting.txt"), fn(file) {
 		bytes.toString(file.readFrom(5))
@@ -152,14 +152,14 @@ fn testWithFileClosesAfterwards() {
 }
 
 @Test()
-fn testWithFilePropagatesAFailedOpen() {
+fn testWithFilePropagatesAFailedOpen() -> Result {
 	const disk = fs.memory()
 	const outcome = fs.withFile(disk.open("missing.txt"), fn(file) { "unreachable" })
 	assert.equal(true, results.isErr(outcome))
 }
 
 @Test()
-fn testAFileIsAWriter() {
+fn testAFileIsAWriter() -> Result {
 	// fmt.fprint takes any @io.Writer, which a File carries — the point of making streams an attribute.
 	const disk = fs.memory()
 	const created = disk.create("printed.txt")
@@ -169,7 +169,7 @@ fn testAFileIsAWriter() {
 }
 
 @Test()
-fn testWalk() {
+fn testWalk() -> Result {
 	const disk = _fixture()
 	const walked = fs.walk(disk, ".")
 	assert.all([
@@ -179,7 +179,7 @@ fn testWalk() {
 }
 
 @Test()
-fn testGlob() {
+fn testGlob() -> Result {
 	const disk = _fixture()
 	assert.all([
 		assert.equal(1, len(fs.glob(disk, ".", "*.md").value)),
@@ -189,7 +189,7 @@ fn testGlob() {
 }
 
 @Test()
-fn testCopyBetweenFilesystems() {
+fn testCopyBetweenFilesystems() -> Result {
 	const source = _fixture()
 	const target = fs.memory()
 	const copied = fs.copy(source, "greeting.txt", target, "copied.txt")
@@ -201,7 +201,7 @@ fn testCopyBetweenFilesystems() {
 }
 
 @Test()
-fn testTheHostFilesystemAnswersLikeAnyOther() {
+fn testTheHostFilesystemAnswersLikeAnyOther() -> Result {
 	// Only reads, so the test leaves the host untouched.
 	assert.all([
 		assert.equal(true, fs.exists(os.fs(), "/")),
@@ -210,7 +210,7 @@ fn testTheHostFilesystemAnswersLikeAnyOther() {
 }
 
 @Test()
-fn testModuleFunctionsMatchTheFields() {
+fn testModuleFunctionsMatchTheFields() -> Result {
 	// Every FileSystem field has a module function taking the filesystem first; both must reach the same thing.
 	const disk = fs.memory()
 
@@ -236,7 +236,7 @@ fn testModuleFunctionsMatchTheFields() {
 }
 
 @Test()
-fn testOpenAndCreateViaModuleFunctions() {
+fn testOpenAndCreateViaModuleFunctions() -> Result {
 	const disk = fs.memory()
 	const written = fs.withFile(fs.create(disk, "streamed.txt"), fn(file) {
 		file.writeTo(bytes.fromString("through create"))

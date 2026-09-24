@@ -38,7 +38,7 @@ There is no `print` here on purpose: writing needs somewhere to write to. Pass a
 
 ### `fprint` {#fprint}
 
-<small>`fmt/print.zirr:12`</small>
+<small>`fmt/print.zirr:10`</small>
 
 ```zirric
 fn fprint(value: @Printable, writer: @io.Writer) -> Int
@@ -50,7 +50,7 @@ Writes the string representation of a printable value to a writer.
 
 ### `fprintln` {#fprintln}
 
-<small>`fmt/print.zirr:18`</small>
+<small>`fmt/print.zirr:16`</small>
 
 ```zirric
 fn fprintln(value: @Printable, writer: @io.Writer) -> Int
@@ -62,12 +62,10 @@ Writes the string representation of a printable value followed by a newline to a
 
 ### `sprint` {#sprint}
 
-<small>`fmt/print.zirr:9`</small>
+<small>`fmt/print.zirr:7`</small>
 
 ```zirric
 extern fn sprint(value: Any) -> String
 ```
 
-Converts any value to its string representation. Prefers the value's
-@Printable attribute when it has one, otherwise falls back to a trivial
-conversion for builtin types (Int, Float, Char, Byte as hex, ...).
+Converts any value to its string representation. Prefers the value's @Printable attribute when it has one, otherwise falls back to a trivial conversion for builtin types (Int, Float, Char, Byte as hex, ...).

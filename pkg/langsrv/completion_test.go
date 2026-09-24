@@ -152,7 +152,6 @@ func TestAttributeContextCompletion(t *testing.T) {
 	// Position after '@' on a new line: simulate "@N" at col 2
 	pos := protocol.Position{Line: 6, Character: 2}
 	// Append the attribute line to the source so the position exists.
-	// We use a separate source string that has an @-prefixed line at line 6.
 	src2 := src + "\n@N"
 	base2 := memfs.New()
 	writeFile(t, base2, "main.zirr", src2)
@@ -173,7 +172,6 @@ func TestAttributeContextCompletion(t *testing.T) {
 		labelSet[item.Label] = item
 	}
 
-	// Attribute should be present with '@' label and TextEdit snippet that includes '@'.
 	attr, ok := labelSet["@Numeric"]
 	if !ok {
 		t.Fatalf("expected @Numeric attribute in completion, got: %v", labelKeys(labelSet))
@@ -237,7 +235,6 @@ func TestAttributeNonContextCompletion(t *testing.T) {
 		labelSet[item.Label] = item
 	}
 
-	// Attribute should appear with '@' prefix and snippet insertText.
 	attr, ok := labelSet["@Numeric"]
 	if !ok {
 		t.Fatalf("expected @Numeric in non-attribute completion, got: %v", labelKeys(labelSet))
@@ -816,8 +813,7 @@ func TestQualifiedModuleCompletion(t *testing.T) {
 	}
 }
 
-// TestPreludeSymbolCompletion verifies that prelude symbols like String, Int, Bool
-// appear in completions when Orchestra is available.
+// TestPreludeSymbolCompletion verifies that prelude symbols like String, Int, Bool appear in completions when Orchestra is available.
 func TestPreludeSymbolCompletion(t *testing.T) {
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", "const x = 1\n")
@@ -856,8 +852,7 @@ func TestPreludeSymbolCompletion(t *testing.T) {
 	}
 }
 
-// TestPreludeSymbolsNotDuplicated verifies that prelude symbols don't appear
-// twice when the user has an explicit prelude import.
+// TestPreludeSymbolsNotDuplicated verifies that prelude symbols don't appear twice when the user has an explicit prelude import.
 func TestPreludeSymbolsNotDuplicated(t *testing.T) {
 	base := memfs.New()
 	writeFile(t, base, "main.zirr", "const x = String\n")
@@ -874,7 +869,6 @@ func TestPreludeSymbolsNotDuplicated(t *testing.T) {
 		t.Fatalf("completionItemsForFile: %v", err)
 	}
 
-	// Count occurrences of String
 	count := 0
 	for _, item := range items {
 		if item.Label == "String" {
@@ -968,10 +962,8 @@ func TestExternKeywordSnippets(t *testing.T) {
 func TestImportBlockCompletions(t *testing.T) {
 	// Completions inside import { } should only show members of the imported module.
 	base := memfs.New()
-	// Create a module with an exported function and data type.
 	writeFile(t, base, "mymod/greet.zirr", "mod mymod\nfn greet() {}\ndata Person { name }")
 
-	// Main file imports mymod but only imports greet.
 	writeFile(t, base, "main.zirr", "import mymod {\n  greet\n  \n}")
 
 	ls := zirricLangserver{
@@ -1464,7 +1456,6 @@ func TestAtSignCompletesQualifiedAttrsFromImports(t *testing.T) {
 		t.Error("@mylib.NotAnAttr should NOT appear — it's a data type, not an attr")
 	}
 
-	// Verify they have parens (declaration context).
 	for _, item := range items {
 		if item.Label == "@mylib.SomeAttr" {
 			te, ok := item.TextEdit.(protocol.TextEdit)

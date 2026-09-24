@@ -54,28 +54,21 @@ const (
 	// Will not be compiled for non debugging sessions.
 	Debug
 
-	// Closure-related opcodes
-
-	// MakeClosure creates a *Closure from the CompiledFunction at
-	// constants[const_id]. It pops free_count values from the stack
-	// (pushed in declaration order) and stores them in the Closure.Free slice.
+	// MakeClosure creates a *Closure from the CompiledFunction at constants[const_id]. It pops free_count values from the stack (pushed in declaration order) and stores them in the Closure.Free slice.
 	MakeClosure
 	// GetFree pushes closure.Free[index] onto the stack without unwrapping.
-	// Used to forward captured values when building nested closures, or to
-	// read const captures directly.
+	// Used to forward captured values when building nested closures, or to read const captures directly.
 	GetFree
 	// GetFreeCell pushes closure.Free[index].(*UpvalueCell).Value.
 	// Used to read a captured var binding inside a closure.
 	GetFreeCell
-	// SetFreeCell pops a value and stores it into
-	// closure.Free[index].(*UpvalueCell).Value.
+	// SetFreeCell pops a value and stores it into closure.Free[index].(*UpvalueCell).Value.
 	// Used to write a captured var binding inside a closure.
 	SetFreeCell
 	// GetLocalCell pushes locals[index].(*UpvalueCell).Value.
 	// Used in the enclosing scope to read a var that is captured by a closure.
 	GetLocalCell
-	// SetLocalCell pops a value and stores it into
-	// locals[index].(*UpvalueCell).Value.
+	// SetLocalCell pops a value and stores it into locals[index].(*UpvalueCell).Value.
 	// Used in the enclosing scope to write a var that is captured by a closure.
 	SetLocalCell
 	// WrapLocal wraps locals[index] in an *UpvalueCell in place:
@@ -84,8 +77,7 @@ const (
 	WrapLocal
 
 	// IsType checks whether the value on top of the stack is of a given type.
-	// If the constant is a UnionType, checks membership. Otherwise compares
-	// TypeConstantId directly. Pops the value and pushes a Bool result.
+	// If the constant is a UnionType, checks membership. Otherwise compares TypeConstantId directly. Pops the value and pushes a Bool result.
 	IsType
 
 	// AsOption replaces the value on top of the stack with the Option standing for it: a Some or a None is already one, and anything else is asked for one through the toOption of its @AnyOption.

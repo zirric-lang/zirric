@@ -142,8 +142,7 @@ func replEvalLine(state *replState, line string) (runtime.RuntimeValue, error) {
 		return nil, err
 	}
 
-	// Snapshot symbol map keys before parsing; the parser may insert declarations
-	// into module.Decls even when it ultimately returns an error.
+	// Snapshot symbol map keys before parsing; the parser may insert declarations into module.Decls even when it ultimately returns an error.
 	declsBefore := snapshotMapKeys(state.module.Decls.Symbols)
 
 	prs := parser.NewSourceParser(lex, state.module.Decls, string(lineURI))
@@ -155,8 +154,7 @@ func replEvalLine(state *replState, line string) (runtime.RuntimeValue, error) {
 
 	state.module.AddSourceFile(file)
 
-	// Snapshot module.Symbols keys and analyzer ID counters before analysis so that
-	// any IDs allocated during a failed attempt can be reclaimed on rollback.
+	// Snapshot module.Symbols keys and analyzer ID counters before analysis so that any IDs allocated during a failed attempt can be reclaimed on rollback.
 	symbolsBefore := snapshotMapKeys(state.module.Symbols.Symbols)
 	analyzerSnap := state.analysis.Snapshot()
 

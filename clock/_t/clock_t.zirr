@@ -8,7 +8,7 @@ import time
 import os
 
 @Test()
-fn testFixedClockNeverMoves() {
+fn testFixedClockNeverMoves() -> Result {
 	const at = time.fromEpoch(1709649000000000000)
 	const c = clock.fixed(at)
 	assert.all([
@@ -19,7 +19,7 @@ fn testFixedClockNeverMoves() {
 }
 
 @Test()
-fn testSteppingClockAdvancesPredictably() {
+fn testSteppingClockAdvancesPredictably() -> Result {
 	const start = time.fromEpoch(0)
 	const c = clock.stepping(start, time.seconds(10))
 	assert.all([
@@ -30,7 +30,7 @@ fn testSteppingClockAdvancesPredictably() {
 }
 
 @Test()
-fn testSteppingMonotonicMeasuresElapsed() {
+fn testSteppingMonotonicMeasuresElapsed() -> Result {
 	// This is how code under a timeout is tested: time passes exactly as much as the test says, with no waiting.
 	const c = clock.steppingMonotonic(time.milliseconds(250))
 	const first = clock.instant(c)
@@ -43,14 +43,14 @@ fn testSteppingMonotonicMeasuresElapsed() {
 }
 
 @Test()
-fn testAFrozenMonotonicClockReportsNoElapsedTime() {
+fn testAFrozenMonotonicClockReportsNoElapsedTime() -> Result {
 	const c = clock.steppingMonotonic(time.zero())
 	const start = clock.instant(c)
 	assert.equal(time.zero(), clock.instant(c) - start)
 }
 
 @Test()
-fn testHostClocksProduceValues() {
+fn testHostClocksProduceValues() -> Result {
 	const system = os.systemClock()
 	const monotonic = os.monotonicClock()
 
@@ -92,7 +92,7 @@ fn _onlySystemOf(self: SystemOnlyEnvironment) -> clock.SystemClock {
 }
 
 @Test()
-fn testClockCapabilitiesAreSeparate() {
+fn testClockCapabilitiesAreSeparate() -> Result {
 	const at = time.fromEpoch(0)
 	const env = Environment(clock.fixed(at), clock.steppingMonotonic(time.seconds(1)))
 	const limited = SystemOnlyEnvironment(clock.fixed(at))
