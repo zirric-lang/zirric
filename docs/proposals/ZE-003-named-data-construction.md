@@ -7,6 +7,9 @@ description: "Proposal for named argument syntax in data type construction and f
 
 ::: callout danger Rejected
 This proposal has been rejected and will not be implemented.
+
+Data types with lots of fields should be guarded by custom `new` function anyway as there are usually multiple use cases. This heavy lifting should come from the library author not from its users.
+Order changes of fields is considered a breaking change and latest improvements since [ZE-022](/proposals/ZE-022-static-checks) prevent most of these issues effectively.
 :::
 
 ## Introduction

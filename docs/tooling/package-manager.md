@@ -52,13 +52,11 @@ my-package/
 The registry layer resolves packages from local caches and remote sources. The expected folder structure in increasing priority is:
 
 ```
-$ZIRRIC_STDLIB/
-└── git/<package>/<version>/
-    ├── Cavefile
-    └── <submodule>/
-$ZIRRIC_PACKAGES/
-└── git/<package>/<version>/
-    ├── Cavefile
+$ZIRRIC_REGISTRY/
+├── git/<package>/<version>/
+│   ├── Cavefile
+│   └── <submodule>/
+└── stdlib/<package>/<version>/
     └── <submodule>/
 <package>
 ├── Cavefile
@@ -69,3 +67,7 @@ $ZIRRIC_PACKAGES/
 ```
 
 Registries enumerate packages already cached locally, then consult remote sources when a version is missing. The current implementation focuses on Git and local paths.
+
+`stdlib/` is the exception: it is written, never read. The standard library is embedded in the `zirric` binary and always resolved from there, so each run mirrors those sources next to the `git/` clones purely so they can be opened and read on disk. The version in the path is the version of the binary that wrote them, which keeps several installed toolchains from overwriting each other.
+
+The mirrored files are read-only, so an editor opening one refuses to save over it. Editing a copy would change nothing anyway: the next run restores it from the binary.

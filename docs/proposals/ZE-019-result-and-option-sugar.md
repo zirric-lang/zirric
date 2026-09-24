@@ -37,7 +37,7 @@ default:
 
 ```zirric
 // With sugar — clear and flat
-const city = findUser(42)?.value.address?.value.city ?? "Unknown"
+const city = findUser(42)?.address?.value.city ?? "Unknown"
 ```
 
 Ergonomic operators reduce boilerplate for common patterns — unwrapping a success value, providing a fallback, or chaining through optional fields — without sacrificing the explicit error model.
@@ -66,16 +66,15 @@ Six new syntactic forms, grouped into three symmetric pairs:
 
 ```zirric
 // Result unwrapping — propagates Err to the caller
-fn processFile(path: String) -> Result {
-    const content = readFile(path)!.value
-    return Ok(parse(content))
+fn loadAuthor(path: String) -> Result {
+    return parse(path)!.author
 }
 
 // Result fallback
 const text = readFile("config.txt") !! "default config"
 
 // Optional chaining — propagates None
-const city = findUser(42)?.value.address?.value.city
+const city = findUser(42)?.value.address?.city
 
 // Option fallback
 const name = findUser(42)?.value.name ?? "Unknown"
@@ -95,14 +94,14 @@ The `!.` operator unwraps a value marked with `@AnyResult`. It inspects whether 
 - **Error**: propagates the error as the return value of the enclosing function.
 
 ```zirric
-const content = readFile(path)!.value
+const content = readFile(path)!.content
 
 // equivalent to:
 const _tmp = readFile(path)
 switch _tmp {
 case Err(e): return Err(e)
 }
-const content = _tmp.value
+const content = _tmp.value.content
 ```
 
 The VM detects errors by checking for the `@Error` attribute on the value's type. Non-error values are treated as success and accessed directly. If the value is not already wrapped in `Ok`, it is used as-is.
@@ -130,7 +129,7 @@ The `?.` operator accesses a field on a value marked with `@AnyOption`. It check
 - **Absent**: short-circuits and returns `None`.
 
 ```zirric
-const city = user?.value.address?.value.city
+const city = user?.value.address?.city
 
 // equivalent to:
 const city = switch user {
@@ -187,11 +186,11 @@ From highest to lowest:
 `?.` and `!.` bind tighter than `??` and `!!`, allowing natural chaining:
 
 ```zirric
-// Parsed as: ((findUser(42))?.value.name) ?? "Unknown"
-const name = findUser(42)?.value.name ?? "Unknown"
+// Parsed as: ((findUser(42))?.name) ?? "Unknown"
+const name = findUser(42)?.name ?? "Unknown"
 
-// Parsed as: ((readFile(path))!.value) !! "default"
-const text = readFile(path)!.value !! "default"
+// Parsed as: ((loadAuthor(path))!.name) !! "default"
+const text = loadAuthor(path)!.name !! "default"
 ```
 
 ### VM Implementation Notes

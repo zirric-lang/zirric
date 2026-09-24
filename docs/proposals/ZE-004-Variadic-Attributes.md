@@ -7,6 +7,8 @@ description: Introduce variadic attributes to allow attributes to accept a varia
 
 ::: callout danger Rejected
 This proposal has been rejected and will not be implemented.
+
+This proposal stems from a time without [ZE-017](/proposals/ZE-017-type-hints). Now attributes no longer need to cover types of declarations. Attributes like `@Requires`, `@HasAll` and `@ArgType` no longer exist and are replaced by type expressions like `@Iterable @Countable` or a simple `Person`.
 :::
 
 ## Introduction

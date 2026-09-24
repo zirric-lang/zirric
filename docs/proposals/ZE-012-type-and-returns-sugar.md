@@ -7,6 +7,8 @@ description: Add typed parameter and return signatures as sugar for @Type and @R
 
 ::: callout danger Rejected
 This proposal has been rejected and will not be implemented.
+
+This proposal was replaced by [ZE-017](/proposals/ZE-017-type-hints) that completely replaced the idea that attributes need cover types of declarations. Attributes like `@Returns`, `@Type` and `@ArgType` no longer exist and are replaced by type expressions.
 :::
 
 > **Note:** This proposal has been superseded by [ZE-017 Type Hints and Type Matching](/proposals/ZE-017-type-hints), which promotes type hints from syntactic sugar to a first-class language feature and removes the underlying `@Type` and `@Returns` attributes entirely.

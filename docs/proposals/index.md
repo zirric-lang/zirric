@@ -14,32 +14,32 @@ This directory contains Zirric Evolution Proposals. Each proposal documents a ch
 
 ## Proposals
 
-| Proposal                                                       | Title                               | Status      | Info                        |
-| -------------------------------------------------------------- | ----------------------------------- | ----------- | --------------------------- |
-| [ZE-001](/proposals/ZE-001-base-language)                      | Base Language                       | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-002](/proposals/ZE-002-the-cavefile)                       | The Cavefile                        | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-003](/proposals/ZE-003-named-data-construction)            | Named Data Construction             | Rejected    |                             |
-| [ZE-004](/proposals/ZE-004-Variadic-Attributes)                | Variadic Attributes                 | Rejected    |                             |
-| [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)            | Mixin Type Declarations             | Draft       | Outdated                    |
-| [ZE-006](/proposals/ZE-006-Attribute-Based-Parsing-System)     | Attribute-Based Parsing System      | Rejected    | Superseded by ZE-021        |
-| [ZE-007](/proposals/ZE-007-attribute-binding)                  | Attribute Binding                   | Draft       |                             |
-| [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                      | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                       | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-010](/proposals/ZE-010-iterable)                           | Iterable                            | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                          | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-012](/proposals/ZE-012-type-and-returns-sugar)             | Type and Returns Sugar              | Rejected    |                             |
-| [ZE-013](/proposals/ZE-013-mutability-and-constants)           | Mutability and Constants            | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-014](/proposals/ZE-014-attribute-and-declaration-keywords) | Attribute and Declaration Keywords  | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-015](/proposals/ZE-015-extern-type-constructors)           | Extern Type Constructors            | Draft       |                             |
-| [ZE-016](/proposals/ZE-016-closure-syntax)                     | Unified Function and Closure Syntax | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-017](/proposals/ZE-017-type-hints)                         | Type Hints and Type Matching        | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-018](/proposals/ZE-018-io-fmt-os)                          | I/O, Formatting, and OS             | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-019](/proposals/ZE-019-result-and-option-sugar)            | Result and Option Sugar             | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-020](/proposals/ZE-020-standard-library)                   | Standard Library                    | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-021](/proposals/ZE-021-encoding-and-decoding)              | Encoding and Decoding               | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-022](/proposals/ZE-022-static-checks)                      | Static Checks                       | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-023](/proposals/ZE-023-code-formatting)                    | Code Formatting                     | Implemented | [v0.1.0](/changelog/v0.1.0) |
-| [ZE-024](/proposals/ZE-024-qualified-module-names)             | Qualified Module Names              | Implemented | [v0.1.0](/changelog/v0.1.0) |
+| Proposal                                                       | Title                               | Status      | Info                                                             |
+| -------------------------------------------------------------- | ----------------------------------- | ----------- | ---------------------------------------------------------------- |
+| [ZE-001](/proposals/ZE-001-base-language)                      | Base Language                       | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-002](/proposals/ZE-002-the-cavefile)                       | The Cavefile                        | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-003](/proposals/ZE-003-named-data-construction)            | Named Data Construction             | Rejected    | Superseeded by [ZE-022](/proposals/ZE-022-static-checks)         |
+| [ZE-004](/proposals/ZE-004-Variadic-Attributes)                | Variadic Attributes                 | Rejected    | Superseeded by [ZE-017](/proposals/ZE-017-type-hints)            |
+| [ZE-005](/proposals/ZE-005-Mixin-Type-Declarations)            | Mixin Type Declarations             | Draft       | Outdated                                                         |
+| [ZE-006](/proposals/ZE-006-Attribute-Based-Parsing-System)     | Attribute-Based Parsing System      | Rejected    | Superseeded by [ZE-021](/proposals/ZE-021-encoding-and-decoding) |
+| [ZE-007](/proposals/ZE-007-attribute-binding)                  | Attribute Binding                   | Draft       |                                                                  |
+| [ZE-008](/proposals/ZE-008-error-handling)                     | Error Handling                      | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-009](/proposals/ZE-009-option-values)                      | Option Values                       | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-010](/proposals/ZE-010-iterable)                           | Iterable                            | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-011](/proposals/ZE-011-zirric-cli)                         | Zirric CLI                          | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-012](/proposals/ZE-012-type-and-returns-sugar)             | Type and Returns Sugar              | Rejected    | Replaced by [ZE-017](/proposals/ZE-017-type-hints)               |
+| [ZE-013](/proposals/ZE-013-mutability-and-constants)           | Mutability and Constants            | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-014](/proposals/ZE-014-attribute-and-declaration-keywords) | Attribute and Declaration Keywords  | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-015](/proposals/ZE-015-extern-type-constructors)           | Extern Type Constructors            | Draft       |                                                                  |
+| [ZE-016](/proposals/ZE-016-closure-syntax)                     | Unified Function and Closure Syntax | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-017](/proposals/ZE-017-type-hints)                         | Type Hints and Type Matching        | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-018](/proposals/ZE-018-io-fmt-os)                          | I/O, Formatting, and OS             | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-019](/proposals/ZE-019-result-and-option-sugar)            | Result and Option Sugar             | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-020](/proposals/ZE-020-standard-library)                   | Standard Library                    | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-021](/proposals/ZE-021-encoding-and-decoding)              | Encoding and Decoding               | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-022](/proposals/ZE-022-static-checks)                      | Static Checks                       | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-023](/proposals/ZE-023-code-formatting)                    | Code Formatting                     | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-024](/proposals/ZE-024-qualified-module-names)             | Qualified Module Names              | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
 
 ## Submitting Proposals
 
