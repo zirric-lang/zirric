@@ -27,6 +27,8 @@ The runner finds tests through [`reflect`](../../reflect/index.md): it walks the
 - [`os`](../../os/index.md)
   - [`clock`](../../clock/index.md)
     - [`time`](../../time/index.md)
+  - [`co`](../../co/index.md)
+    - [`time`](../../time/index.md)
   - [`fs`](../../fs/index.md)
     - [`bytes`](../../bytes/index.md)
       - [`ranges`](../../ranges/index.md)

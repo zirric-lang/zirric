@@ -1,0 +1,25 @@
+mod co_cancel_keeps_input
+
+import bytes
+import co
+import fmt
+import io
+import os
+import time
+
+const stdin = os.stdin()
+const out = os.stdout()
+
+// The reader is cancelled while it is waiting for a key. The key that arrives afterwards must still be there for whoever reads next.
+co.scope(fn(s) {
+	co.spawn(s, fn() {
+		io.read(stdin, 1)
+		fmt.fprintln("the cancelled reader kept going", out)
+		return Ok(void)
+	})
+	co.sleep(os.timer(), time.milliseconds(20))
+	co.cancel(s)
+	return void
+})
+fmt.fprintln("scope returned", out)
+fmt.fprintln("main read: " + bytes.toString(io.read(stdin, 1)), out)

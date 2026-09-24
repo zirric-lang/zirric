@@ -6,5 +6,7 @@
 //
 // `ReadStream` and `WriteStream` are simply the ones the host hands out; `os.stdout()` returns a `WriteStream`, and an open `fs.File` carries both attributes at once.
 //
+// `read` and `write` are how bytes actually move: `io.read(stdin, 1)` rather than `io.Reader(stdin).read(stdin, 1)`, the way `len` stands in for `@Countable`. They are also the switch points routines give way at ([ZE-025](https://zirric.knabel.dev/proposals/ZE-025-routines-and-channels/)), and that holds whatever reader or writer they are handed — so a fake that answers instantly interleaves exactly where the host's own stream would, and cannot starve the other routines. Calling the attribute directly still works and is plain Zirric code, switching only where its own body does.
+//
 // The `Has…` attributes are the other half: a program declares that its environment provides a writer, and a test passes one that collects into memory instead of reaching for standard output.
 mod code.knabel.dev.zirric_lang.zirric.io

@@ -5,6 +5,7 @@ import (
 	"io"
 	mathrand "math/rand"
 	"os"
+	"sync"
 	gotime "time"
 
 	"github.com/go-git/go-billy/v5/osfs"
@@ -33,7 +34,7 @@ func (*OSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 		})
 	case "stdin":
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
-			return MakeReadStream(caller, os.Stdin)
+			return makeReadStreamOf(caller, sharedStdin())
 		})
 	case "stderr":
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
@@ -76,6 +77,10 @@ func (*OSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 		return MakeExternFunc(decl, func(caller VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
 			return makeSource(caller, cryptoRandom{})
 		})
+	case "timer":
+		return MakeExternFunc(decl, func(caller VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
+			return makeHostTimer(caller)
+		})
 	case "_nowTimestamp":
 		return MakeExternFunc(decl, func(_ VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
 			return Timestamp(gotime.Now().UnixNano()), nil
@@ -99,7 +104,7 @@ func (*OSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 // MakeWriteStream wraps a Go writer as an io.WriteStream.
 // The type is resolved through the caller rather than assembled by hand, because a hand-built DataValue carries no attributes and would therefore not satisfy @Writer.
 func MakeWriteStream(caller VMCaller, w io.Writer) (RuntimeValue, error) {
-	writeFn := MakeNativeFunc("writeTo", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+	writeFn := MakeHostFunc("writeTo", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 		buf, ok := args[0].(Binary)
 		if !ok {
 			return nil, fmt.Errorf("write expects Binary, got %s", TypeName(args[0]))
@@ -114,21 +119,29 @@ func MakeWriteStream(caller VMCaller, w io.Writer) (RuntimeValue, error) {
 }
 
 // MakeReadStream wraps a Go reader as an io.ReadStream, yielding an empty Binary at the end of the stream.
+// A hostReader owns the reads, so a routine cancelled while waiting strands no bytes.
 func MakeReadStream(caller VMCaller, r io.Reader) (RuntimeValue, error) {
-	readFn := MakeNativeFunc("readFrom", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+	return makeReadStreamOf(caller, newHostReader(r))
+}
+
+// Shared, so two os.stdin() calls read from one queue of bytes rather than two.
+var (
+	stdinOnce   sync.Once
+	stdinShared *hostReader
+)
+
+func sharedStdin() *hostReader {
+	stdinOnce.Do(func() { stdinShared = newHostReader(os.Stdin) })
+	return stdinShared
+}
+
+func makeReadStreamOf(caller VMCaller, hr *hostReader) (RuntimeValue, error) {
+	readFn := MakeSwitchingFunc("readFrom", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 		length, ok := args[0].(Int)
 		if !ok {
 			return nil, fmt.Errorf("read expects Int, got %s", TypeName(args[0]))
 		}
-		buf := make([]byte, int(length))
-		n, err := r.Read(buf)
-		if err == io.EOF {
-			return Binary(buf[:n]), nil
-		}
-		if err != nil {
-			return nil, fmt.Errorf("read: %w", err)
-		}
-		return Binary(buf[:n]), nil
+		return hr.read(c, int(length))
 	})
 	return makeStreamValue(caller, "ReadStream", readFn)
 }
@@ -146,4 +159,28 @@ func makeStreamValue(caller VMCaller, typeName string, fn RuntimeValue) (Runtime
 		return nil, fmt.Errorf("io.%s is %s, not a data type", typeName, TypeName(member))
 	}
 	return MakeDataValue(dataType, []RuntimeValue{fn}), nil
+}
+
+// makeHostTimer builds the co.Timer that really waits.
+// Each armed timer is registered, so routines waiting for one are not mistaken for a deadlock.
+func makeHostTimer(caller VMCaller) (RuntimeValue, error) {
+	if caller == nil {
+		return nil, fmt.Errorf("os.timer can only be built while a VM is running")
+	}
+	after := MakeNativeFunc("after", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		span, ok := args[0].(Duration)
+		if !ok {
+			return nil, fmt.Errorf("after expects a Duration, got %s", TypeName(args[0]))
+		}
+		sched := c.Routines()
+		ch := sched.NewChannel(1)
+		sched.ArmExternal()
+		gotime.AfterFunc(gotime.Duration(span), func() {
+			ch.Deliver(Void{})
+			_ = ch.Close()
+			sched.DisarmExternal()
+		})
+		return ch, nil
+	})
+	return MakeDataValueNamed(caller, "co", "Timer", map[string]RuntimeValue{"after": after})
 }

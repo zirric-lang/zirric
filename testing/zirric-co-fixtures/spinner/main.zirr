@@ -1,0 +1,48 @@
+mod co_spinner
+
+import co
+import fmt
+import io
+import os
+import time
+
+fn readKeys(stdin: @io.Reader, keys: co.Channel) {
+	for {
+		const key = io.read(stdin, 1)
+		if len(key) == 0 {
+			break
+		}
+		co.send(keys, key)
+	}
+	return void
+}
+
+// Standard input stays open and never delivers, so three ticks are only possible while the reader waits.
+// The program stops itself at the third, so nothing here depends on how fast it started.
+fn run(stdin: @io.Reader, out: @io.Writer, timer: co.Timer) {
+	return co.scope(fn(s) {
+		const keys = co.produce(s, fn(ch) { readKeys(stdin, ch) })
+		var ticks = 0
+		var tick = co.after(timer, time.milliseconds(5))
+		for {
+			const selected = co.select([keys, tick])
+			if selected is co.Closed {
+				fmt.fprintln("input ended after " + fmt.sprint(ticks) + " ticks", out)
+				return void
+			}
+			if selected.channel == tick {
+				ticks = ticks + 1
+				if ticks >= 3 {
+					fmt.fprintln("ticked " + fmt.sprint(ticks) + " times while the reader waited", out)
+					co.cancel(s)
+					return void
+				}
+				tick = co.after(timer, time.milliseconds(5))
+			} else {
+				fmt.fprintln("key", out)
+			}
+		}
+	})
+}
+
+run(os.stdin(), os.stdout(), os.timer())

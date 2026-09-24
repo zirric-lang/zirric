@@ -1,0 +1,140 @@
+mod code.knabel.dev.zirric_lang.zirric.co._t
+
+import tests { Test }
+import tests.assert
+
+import bytes
+import co
+import fmt
+import fs
+import io
+import strings
+
+@Test()
+fn testEveryClosureInAForCapturesItsOwnElement() {
+	// all, map and merge rest on this: the loop body's closures must not share one binding.
+	const shared = 100
+	const bodies = for n <- [1, 2, 3] {
+		fn() { Ok(shared + n) }
+	}
+	assert.equal([Ok(101), Ok(102), Ok(103)], co.all(bodies))
+}
+
+@Test()
+fn testAnInMemoryFilesystemIsStillASwitchPoint() {
+	// Nothing really waits here, yet the routine still goes to the back of the queue.
+	const disk = fs.memory()
+	var order = []
+	co.scope(fn(s) {
+		co.spawn(s, fn() {
+			order = append(order, "routine")
+			return Ok(void)
+		})
+		fs.writeString(disk, "note.txt", "hello")
+		order = append(order, "after the write")
+		return void
+	})
+	assert.equal(["routine", "after the write"], order)
+}
+
+@Test()
+fn testAWholeFileIsReadWhileAnotherRoutineRuns() {
+	const disk = fs.memory()
+	fs.writeString(disk, "note.txt", "hello")
+	assert.equal([Ok("hello"), "routine ran"], co.scope(fn(s) {
+		var mark = "routine did not run"
+		co.spawn(s, fn() {
+			mark = "routine ran"
+			return Ok(void)
+		})
+		const read = fs.readString(disk, "note.txt")
+		return [read, mark]
+	}))
+}
+
+// A writer a test supplies: a plain data type carrying @io.Writer, with no host stream behind it.
+@io.Writer(_collectInto)
+data Buffer {
+	collect: fn(Binary) -> Int
+}
+
+fn _collectInto(self: Buffer, buf: Binary) -> Int {
+	self.collect(buf)
+}
+
+@Test()
+fn testPrintingToAWriterATestSuppliesIsStillASwitchPoint() {
+	// Writing reaches the outside world whichever writer it goes to, so a redraw loop under a fake must still give way.
+	var written = []
+	const sink = Buffer(fn(buf) {
+		written = append(written, "printed")
+		return len(buf)
+	})
+	assert.equal(["routine", "printed"], co.scope(fn(s) {
+		co.spawn(s, fn() {
+			written = append(written, "routine")
+			return Ok(void)
+		})
+		fmt.fprintln("hello", sink)
+		return written
+	}))
+}
+
+// A reader a test supplies: the keys are in an array, and reading one never waits.
+@io.Reader(_readFromKeys)
+data Keys {
+	next: fn(Int) -> Binary
+}
+
+fn _readFromKeys(self: Keys, length: Int) -> Binary {
+	self.next(length)
+}
+
+fn keysOf(text: String) -> Keys {
+	var left = text
+	return Keys(fn(length) {
+		if len(left) == 0 {
+			return bytes.fromString("")
+		}
+		const head = strings.slice(left, 0, 1)
+		left = strings.slice(left, 1, len(left))
+		return bytes.fromString(head)
+	})
+}
+
+@Test()
+fn testReadingFromAReaderATestSuppliesIsStillASwitchPoint() {
+	var order = []
+	assert.equal(["routine", "read"], co.scope(fn(s) {
+		co.spawn(s, fn() {
+			order = append(order, "routine")
+			return Ok(void)
+		})
+		io.read(keysOf("ab"), 1)
+		order = append(order, "read")
+		return order
+	}))
+}
+
+@Test()
+fn testAReaderThatNeverWaitsDoesNotStarveTheOthers() {
+	// A fake that answers instantly must not run the whole loop while the others never start.
+	var ticks = 0
+	const keys = keysOf("abcdefgh")
+	assert.equal(true, co.scope(fn(s) {
+		co.spawn(s, fn() {
+			// Runs only if the reading loop gives way.
+			ticks = ticks + 1
+			return Ok(void)
+		})
+		var read = 0
+		for {
+			const key = io.read(keys, 1)
+			if len(key) == 0 {
+				break
+			}
+			read = read + 1
+		}
+		return read == 8 && ticks == 1
+	}))
+}

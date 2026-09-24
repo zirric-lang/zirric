@@ -20,12 +20,15 @@ import io
 
 [`ReadStream`](#readstream) and [`WriteStream`](#writestream) are simply the ones the host hands out; `os.stdout()` returns a [`WriteStream`](#writestream), and an open [`fs.File`](../fs/index.md#file) carries both attributes at once.
 
+[`read`](#read) and [`write`](#write) are how bytes actually move: `io.read(stdin, 1)` rather than `io.Reader(stdin).read(stdin, 1)`, the way `len` stands in for `@Countable`. They are also the switch points routines give way at ([ZE-025](https://zirric.knabel.dev/proposals/ZE-025-routines-and-channels/)), and that holds whatever reader or writer they are handed — so a fake that answers instantly interleaves exactly where the host's own stream would, and cannot starve the other routines. Calling the attribute directly still works and is plain Zirric code, switching only where its own body does.
+
 The `Has…` attributes are the other half: a program declares that its environment provides a writer, and a test passes one that collects into memory instead of reaching for standard output.
 
 ## Contents
 
 - **Data** — [`ReadStream`](#readstream), [`WriteStream`](#writestream)
 - **Attributes** — [`HasErrorWriter`](#haserrorwriter), [`HasStandardReader`](#hasstandardreader), [`HasStandardWriter`](#hasstandardwriter), [`Reader`](#reader), [`Writer`](#writer)
+- **Functions** — [`read`](#read), [`write`](#write)
 
 ---
 
@@ -33,7 +36,7 @@ The `Has…` attributes are the other half: a program declares that its environm
 
 ### `ReadStream` {#readstream}
 
-<small>`io/reader-writer.zirr:18`</small>
+<small>`io/reader-writer.zirr:35`</small>
 
 ```zirric
 data ReadStream {
@@ -54,7 +57,7 @@ Any type can be a reader by carrying @Reader; this is simply the one the host ha
 
 ### `WriteStream` {#writestream}
 
-<small>`io/reader-writer.zirr:24`</small>
+<small>`io/reader-writer.zirr:41`</small>
 
 ```zirric
 data WriteStream {
@@ -174,3 +177,31 @@ Marks a type as a writable stream of bytes.
 | Field   | Description                                                      |
 | ------- | ---------------------------------------------------------------- |
 | `write` | Writes the given buffer and returns the number of bytes written. |
+
+---
+
+## Functions
+
+### `read` {#read}
+
+<small>`io/reader-writer.zirr:20`</small>
+
+```zirric
+fn read(reader: @Reader, length: Int) -> Binary
+```
+
+Reads up to length bytes from any reader. An empty result means the stream is exhausted.
+This is the way to read: it gives the other routines a turn first, so a reader a test supplies interleaves exactly where the host's own would.
+
+---
+
+### `write` {#write}
+
+<small>`io/reader-writer.zirr:27`</small>
+
+```zirric
+fn write(writer: @Writer, buf: Binary) -> Int
+```
+
+Writes buf to any writer and returns the number of bytes written.
+This is the way to write, for the same reason [`read`](#read) is the way to read.

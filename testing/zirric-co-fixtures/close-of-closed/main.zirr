@@ -1,0 +1,7 @@
+mod co_close_of_closed
+
+import co
+
+const ch = co.channel(1)
+co.close(ch)
+co.close(ch)

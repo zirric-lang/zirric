@@ -1,0 +1,6 @@
+mod co_cancel_keeps_input
+
+import cave
+
+@cave.Package()
+data Deps {}

@@ -1,0 +1,12 @@
+mod co_deadlock
+
+import co
+
+co.scope(fn(s) {
+	const idle = co.channel(0)
+	co.spawn(s, fn() {
+		co.receive(idle)
+		return Ok(void)
+	})
+	return co.receive(idle)
+})

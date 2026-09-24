@@ -3,7 +3,9 @@ package vm
 import (
 	"fmt"
 	"math/rand"
+	goruntime "runtime"
 	"strings"
+	"sync"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/compiler"
 	"code.knabel.dev/zirric-lang/zirric/pkg/debuginfo"
@@ -54,20 +56,32 @@ func (f *Frame) Instructions() op.Instructions {
 	return f.ins
 }
 
-type VM struct {
+// program is what the routines of one program share: the code, the globals and the scheduler.
+// A routine's own VM holds only its stack and frames, so a value written in one routine is seen by every other.
+type program struct {
 	constants    []runtime.RuntimeValue
 	globals      []*Global
 	builtinTypes map[runtime.TypeId]runtime.Attributable
-	stack        []runtime.RuntimeValue
-	sp           int
-	frames       []*Frame
-	framesIdx    int
 	// moduleGlobals maps a module URI to the global slot holding its ModuleValue, so an extern function can reach a module's exports by name.
 	moduleGlobals map[registry.LogicalURI]int
-	// taskId identifies the running task, so that a global reached reentrantly from an extern function is recognized as recursive rather than waited on as another task's in-progress initialization.
-	taskId TaskId
 	// debug maps instructions back to source, consulted only when something has already failed.
 	debug *debuginfo.Table
+
+	// schedMu guards creating the scheduler, which happens the first time a program reaches for co.
+	schedMu sync.Mutex
+	sched   *runtime.Scheduler
+	// Bound once: a global is read often enough that a method value per call would show.
+	standAside func()
+}
+
+type VM struct {
+	*program
+	stack     []runtime.RuntimeValue
+	sp        int
+	frames    []*Frame
+	framesIdx int
+	// taskId identifies the running task, so that a global reached reentrantly from an extern function is recognized as recursive rather than waited on as another task's in-progress initialization.
+	taskId TaskId
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
@@ -75,16 +89,19 @@ func New(bytecode *compiler.Bytecode) *VM {
 	frames[0] = newGeneralFrame(bytecode.Instructions, 0, bytecode.MainLocals)
 
 	vm := &VM{
-		stack:         make([]runtime.RuntimeValue, stackSize),
-		sp:            0,
-		constants:     bytecode.Constants,
-		globals:       make([]*Global, len(bytecode.Globals)),
-		builtinTypes:  make(map[runtime.TypeId]runtime.Attributable),
-		frames:        frames,
-		framesIdx:     1,
-		moduleGlobals: bytecode.ModuleGlobals,
-		debug:         bytecode.Debug,
+		program: &program{
+			constants:     bytecode.Constants,
+			globals:       make([]*Global, len(bytecode.Globals)),
+			builtinTypes:  make(map[runtime.TypeId]runtime.Attributable),
+			moduleGlobals: bytecode.ModuleGlobals,
+			debug:         bytecode.Debug,
+		},
+		stack:     make([]runtime.RuntimeValue, stackSize),
+		sp:        0,
+		frames:    frames,
+		framesIdx: 1,
 	}
+	vm.standAside = vm.yieldToRoutines
 
 	// Build a lookup table for builtin types whose TypeConstantId differs
 	// from their position in the constants array (e.g. String at index 31
@@ -214,7 +231,7 @@ func (vm *VM) ResolveGlobal(id int) (runtime.RuntimeValue, error) {
 	if owner == 0 {
 		owner = TaskId(rand.Uint64())
 	}
-	return vm.globals[id].Get(owner)
+	return vm.getGlobal(id, owner)
 }
 
 // ResolveModuleMember implements runtime.VMCaller.
@@ -310,4 +327,54 @@ func (vm *VM) pushFrame(f *Frame) {
 func (vm *VM) popFrame() *Frame {
 	vm.framesIdx--
 	return vm.frames[vm.framesIdx]
+}
+
+// Routines implements runtime.VMCaller.
+// Built on first use, so a program that never mentions co never gets one.
+func (vm *VM) Routines() *runtime.Scheduler {
+	vm.schedMu.Lock()
+	defer vm.schedMu.Unlock()
+	if vm.sched == nil {
+		vm.sched = runtime.NewScheduler(vm)
+	}
+	return vm.sched
+}
+
+// getGlobal resolves a global, standing aside for the routine already initializing it.
+func (vm *VM) getGlobal(id int, owner TaskId) (runtime.RuntimeValue, error) {
+	return vm.globals[id].GetWith(owner, vm.standAside)
+}
+
+// yieldToRoutines is what a global's spin loop waits with once a program has routines.
+// Spinning with Gosched would hold the very lock it is waiting to get back.
+func (p *program) yieldToRoutines() {
+	if sched := p.scheduler(); sched != nil {
+		if current := sched.Current(); current != nil {
+			_ = sched.Yield(current)
+			return
+		}
+	}
+	goruntime.Gosched()
+}
+
+// scheduler returns the scheduler only if one exists, the cheap check the run loop makes per extern call.
+func (p *program) scheduler() *runtime.Scheduler {
+	p.schedMu.Lock()
+	defer p.schedMu.Unlock()
+	return p.sched
+}
+
+// Fork implements runtime.VMCaller.
+// The fork shares the program and owns only its stack and frames.
+func (vm *VM) Fork() runtime.VMCaller {
+	frames := make([]*Frame, maxFrames)
+	// A base frame, as New gives the program: the run loop reads the current frame before checking whether the stack unwound past its start.
+	frames[0] = newGeneralFrame(op.Instructions{}, 0, 0)
+	return &VM{
+		program:   vm.program,
+		stack:     make([]runtime.RuntimeValue, stackSize),
+		frames:    frames,
+		framesIdx: 1,
+		taskId:    TaskId(rand.Uint64()),
+	}
 }

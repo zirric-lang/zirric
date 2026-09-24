@@ -1,0 +1,6 @@
+mod co_empty_select
+
+import cave
+
+@cave.Package()
+data Deps {}

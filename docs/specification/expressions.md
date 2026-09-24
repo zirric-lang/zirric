@@ -190,6 +190,16 @@ counter() // 1
 counter() // 2
 ```
 
+A loop binding is a `const`, so a closure written inside a loop body captures that iteration's element rather than sharing one binding with the next:
+
+```zirric
+const fns = for n <- [1, 2, 3] {
+	fn() { n * 10 }
+}
+fns[0]() // 10
+fns[2]() // 30
+```
+
 ### Return type hints
 
 Closures may declare a return type hint with `->`:

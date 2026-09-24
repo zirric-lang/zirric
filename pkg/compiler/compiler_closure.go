@@ -122,13 +122,17 @@ func (c *Compiler) emitPushCapture(parentSym *ast.Symbol) error {
 			c.emit(op.GetLocal, *parentSym.LocalId)
 			return nil
 		}
-		// Transitive capture: forward the raw value/cell from our own Free array.
-		currentScope := c.scopes[c.scopeIdx]
-		freeIdx, ok := currentScope.freeMapping[parentSym.Index]
+		// Transitive capture: forward from our own Free array, or read it from this frame.
+		// The hops are walked as a read of the symbol walks them, because a `for` body has its own SymbolTable while running in this frame.
+		access, ok := c.resolveFreeAccess(parentSym)
 		if !ok {
 			return errInvariant(parentSym.Decl, "the captured %s is recorded as free variable %d, which this scope does not have a mapping for", parentSym.Name, parentSym.Index)
 		}
-		c.emit(op.GetFree, freeIdx)
+		if access.isFree {
+			c.emit(op.GetFree, access.index)
+		} else {
+			c.emit(op.GetLocal, access.index)
+		}
 		return nil
 	default:
 		return errUnimplemented(parentSym.Decl, "scope %s is not handled when capturing %s", parentSym.Scope, parentSym.Name)
@@ -207,7 +211,7 @@ type freeAccess struct {
 func (c *Compiler) resolveFreeAccess(symbol *ast.Symbol) (freeAccess, bool) {
 	currentScope := c.scopes[c.scopeIdx]
 	for s := symbol; s != nil; s = s.Parent {
-		if freeIdx, ok := currentScope.freeMapping[s.Index]; ok {
+		if freeIdx, ok := currentScope.freeMapping[s.Index]; ok && currentScope.ownsFree(s) {
 			return freeAccess{symbol: s, index: freeIdx, isFree: true}, true
 		}
 		if s.LocalId != nil {

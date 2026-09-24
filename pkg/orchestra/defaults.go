@@ -5,6 +5,7 @@ import (
 	bytesfs "code.knabel.dev/zirric-lang/zirric/bytes"
 	cavefs "code.knabel.dev/zirric-lang/zirric/cave"
 	clockfs "code.knabel.dev/zirric-lang/zirric/clock"
+	cofs "code.knabel.dev/zirric-lang/zirric/co"
 	codingfs "code.knabel.dev/zirric-lang/zirric/coding"
 	dictsfs "code.knabel.dev/zirric-lang/zirric/dicts"
 	errorsfs "code.knabel.dev/zirric-lang/zirric/errors"
@@ -81,6 +82,7 @@ func DefaultStdlibProvider() (*embedreg.EmbedRegistry, error) {
 		embedreg.FSConfig{Name: "random", FS: randomfs.FS},
 		embedreg.FSConfig{Name: "time", FS: timefs.FS},
 		embedreg.FSConfig{Name: "clock", FS: clockfs.FS},
+		embedreg.FSConfig{Name: "co", FS: cofs.FS},
 		embedreg.FSConfig{Name: "coding", FS: codingfs.FS},
 		embedreg.FSConfig{Name: "json", FS: jsonfs.FS},
 		embedreg.FSConfig{Name: "yaml", FS: yamlfs.FS},

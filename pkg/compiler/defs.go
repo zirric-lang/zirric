@@ -27,6 +27,8 @@ type CompilationScope struct {
 	// array. Globals and constants are excluded from the Free array and
 	// therefore have no entry.
 	freeMapping map[int]int
+	// freeTable is the SymbolTable freeMapping's indices belong to, kept because `symbols` is swapped for a `for` expression body.
+	freeTable *ast.SymbolTable
 
 	lastInstruction     emittedInstruction
 	previousInstruction emittedInstruction
@@ -34,6 +36,19 @@ type CompilationScope struct {
 
 func (s *CompilationScope) LocalsCount() int {
 	return len(s.locals)
+}
+
+// ownsFree reports whether sym is one of this scope's own captures rather than an inner table's free symbol numbered the same.
+// A `for` body's free symbols start at 0 just as this frame's captures do, so the index alone cannot tell them apart.
+func (s *CompilationScope) ownsFree(sym *ast.Symbol) bool {
+	if s.freeTable == nil {
+		return true
+	}
+	if sym.Index < 0 || sym.Index >= len(s.freeTable.FreeSymbols) {
+		return false
+	}
+	// FreeSymbols holds the captured symbol, while a lookup hands back the FreeScope symbol pointing at it, so identity is one hop up.
+	return s.freeTable.FreeSymbols[sym.Index] == sym.Parent
 }
 
 type Bytecode struct {
@@ -103,7 +118,7 @@ func NewWithAnalyzer(moduleResolver resolver.ModuleResolver, analysis *analyzer.
 		moduleGlobals:    map[registry.LogicalURI]int{},
 		compiledModules:  map[*ast.ContextModule]int{},
 		symbolAttributes: map[*ast.Symbol]map[runtime.TypeId]int{},
-		plugins:          runtime.NewExternPluginRegistry(&runtime.Prelude{}, &runtime.OSPlugin{}, &runtime.FmtPlugin{}, &runtime.BytesPlugin{}, &runtime.StringsPlugin{}, &runtime.ReflectPlugin{}, &runtime.ReflectPackagesPlugin{}, &runtime.MathPlugin{}, &runtime.PathsPlugin{}, &runtime.FSPlugin{}, &runtime.RandomPlugin{}, &runtime.TimePlugin{}, &runtime.JSONPlugin{}, &runtime.YAMLPlugin{}),
+		plugins:          runtime.NewExternPluginRegistry(&runtime.Prelude{}, &runtime.OSPlugin{}, &runtime.IOPlugin{}, &runtime.FmtPlugin{}, &runtime.BytesPlugin{}, &runtime.StringsPlugin{}, &runtime.ReflectPlugin{}, &runtime.ReflectPackagesPlugin{}, &runtime.MathPlugin{}, &runtime.PathsPlugin{}, &runtime.FSPlugin{}, &runtime.RandomPlugin{}, &runtime.TimePlugin{}, &runtime.CoPlugin{}, &runtime.JSONPlugin{}, &runtime.YAMLPlugin{}),
 		resolver:         moduleResolver,
 		analyzer:         analysis,
 		analyzed:         map[*ast.ContextModule]struct{}{},
@@ -273,6 +288,7 @@ func (c *Compiler) enterScope(syms *ast.SymbolTable) {
 	c.scopes = append(c.scopes, &CompilationScope{
 		Instructions: op.Instructions{},
 		symbols:      syms,
+		freeTable:    syms,
 		locals:       make([]*ast.Symbol, maxLocalId(syms)+1),
 	})
 	c.scopeIdx++

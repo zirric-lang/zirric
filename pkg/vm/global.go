@@ -34,6 +34,12 @@ func MakeGlobal(init func(TaskId) (runtime.RuntimeValue, error)) *Global {
 }
 
 func (s *Global) Get(owner TaskId) (runtime.RuntimeValue, error) {
+	return s.GetWith(owner, goruntime.Gosched)
+}
+
+// GetWith is Get with the caller's own way of standing aside while another task initializes the slot.
+// Spinning with Gosched would hold the run lock the other routine needs to finish (ZE-025).
+func (s *Global) GetWith(owner TaskId, yield func()) (runtime.RuntimeValue, error) {
 	var spin int
 
 	for {
@@ -65,7 +71,7 @@ func (s *Global) Get(owner TaskId) (runtime.RuntimeValue, error) {
 
 			// Yield to avoid busy-waiting too long
 			spin = 0
-			goruntime.Gosched()
+			yield()
 		}
 	}
 }

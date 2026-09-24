@@ -28,6 +28,10 @@ type VMCaller interface {
 	ResolveType(id TypeId) RuntimeValue
 	// IsType reports whether value is of typeValue, deciding it exactly as the `is` operator does.
 	IsType(value RuntimeValue, typeValue RuntimeValue) bool
+	// Routines returns the scheduler, built on first use so a program without co pays nothing for it.
+	Routines() *Scheduler
+	// Fork returns a caller with its own stack and frames. Everything else stays shared, so routines see each other's values without copying.
+	Fork() VMCaller
 }
 
 // TrivialString converts v to a display string for the handful of builtin

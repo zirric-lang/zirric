@@ -40,6 +40,7 @@ This directory contains Zirric Evolution Proposals. Each proposal documents a ch
 | [ZE-022](/proposals/ZE-022-static-checks)                      | Static Checks                       | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
 | [ZE-023](/proposals/ZE-023-code-formatting)                    | Code Formatting                     | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
 | [ZE-024](/proposals/ZE-024-qualified-module-names)             | Qualified Module Names              | Implemented | [v0.1.0](/changelog/v0.1.0)                                      |
+| [ZE-025](/proposals/ZE-025-routines-and-channels)              | Routines and Channels               | Implemented | [v0.2.0](/changelog/v0.2.0)                                      |
 
 ## Submitting Proposals
 

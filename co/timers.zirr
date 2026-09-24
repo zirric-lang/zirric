@@ -1,0 +1,47 @@
+mod code.knabel.dev.zirric_lang.zirric.co
+
+import time
+
+// Provides the capability to wait for time to pass, the way clock.HasMonotonicClock provides a clock.
+attr HasTimer {
+	timer(self: @HasTimer) -> Timer
+}
+
+// The capability to wait for time to pass.
+// It is a plain value holding a function, so a test hands over one that fires at once or one that never fires, and waits for nothing.
+data Timer {
+	after: fn(Duration) -> Channel
+}
+
+// A channel that receives one value after d has passed, and then closes.
+fn after(timer: Timer, d: Duration) -> Channel {
+	timer.after(d)
+}
+
+// Blocks the calling routine for d. The other routines keep running.
+fn sleep(timer: Timer, d: Duration) {
+	receive(after(timer, d))
+	return void
+}
+
+// A timer whose every `after` has already fired. This is how code under a timeout is tested without waiting for one.
+fn immediateTimer() -> Timer {
+	Timer(fn(d) {
+		const fired = channel(1)
+		send(fired, void)
+		close(fired)
+		return fired
+	})
+}
+
+// A timer that never fires, so the same code is tested as though its deadline were never reached.
+fn neverTimer() -> Timer {
+	Timer(fn(d) { channel(0) })
+}
+
+// `timeout` gave up before the body finished.
+@Error(fn(e) { "timed out after " + time.formatDuration(e.limit) })
+data TimedOut {
+	// The limit that was exceeded.
+	limit: Duration
+}

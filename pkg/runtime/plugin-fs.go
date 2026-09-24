@@ -23,16 +23,30 @@ func (*FSPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol
 	switch decl.Name {
 	case "memory":
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
-			return MakeFileSystem(caller, memfs.New())
+			return MakeMemoryFileSystem(caller, memfs.New())
 		})
 	}
 	return nil
 }
 
-// MakeFileSystem wraps a billy filesystem as an fs.FileSystem.
+// MakeFileSystem wraps a billy filesystem backed by the host as an fs.FileSystem.
+// Its operations release the run lock while they wait on the disk (ZE-025).
 func MakeFileSystem(caller VMCaller, bfs billy.Filesystem) (RuntimeValue, error) {
+	return makeFileSystem(caller, bfs, MakeHostFunc)
+}
+
+// MakeMemoryFileSystem wraps a filesystem that never touches the disk.
+// Its operations are still switch points, so a test interleaves where production does; only the wait is missing.
+func MakeMemoryFileSystem(caller VMCaller, bfs billy.Filesystem) (RuntimeValue, error) {
+	return makeFileSystem(caller, bfs, MakeSwitchingFunc)
+}
+
+// nativeFunc wraps a filesystem's operations as host calls, or as switch points that never really wait.
+type nativeFunc func(name string, arity int, impl ExternFuncImpl) *ExternFunc
+
+func makeFileSystem(caller VMCaller, bfs billy.Filesystem, wrap nativeFunc) (RuntimeValue, error) {
 	fields := map[string]RuntimeValue{
-		"readFile": MakeNativeFunc("readFile", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		"readFile": wrap("readFile", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			path, err := fsPath("readFile", args[0])
 			if err != nil {
 				return nil, err
@@ -43,7 +57,7 @@ func MakeFileSystem(caller VMCaller, bfs billy.Filesystem) (RuntimeValue, error)
 			}
 			return ResultOk(c, Binary(content))
 		}),
-		"writeFile": MakeNativeFunc("writeFile", 2, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		"writeFile": wrap("writeFile", 2, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			path, err := fsPath("writeFile", args[0])
 			if err != nil {
 				return nil, err
@@ -58,13 +72,13 @@ func MakeFileSystem(caller VMCaller, bfs billy.Filesystem) (RuntimeValue, error)
 			}
 			return ResultOk(c, Int(written))
 		}),
-		"open": MakeNativeFunc("open", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
-			return openAsFile(c, args[0], bfs.Open)
+		"open": wrap("open", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			return openAsFile(c, args[0], bfs.Open, wrap)
 		}),
-		"create": MakeNativeFunc("create", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
-			return openAsFile(c, args[0], bfs.Create)
+		"create": wrap("create", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+			return openAsFile(c, args[0], bfs.Create, wrap)
 		}),
-		"exists": MakeNativeFunc("exists", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		"exists": wrap("exists", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			path, err := fsPath("exists", args[0])
 			if err != nil {
 				return nil, err
@@ -72,7 +86,7 @@ func MakeFileSystem(caller VMCaller, bfs billy.Filesystem) (RuntimeValue, error)
 			_, statErr := bfs.Stat(path)
 			return Bool(statErr == nil), nil
 		}),
-		"remove": MakeNativeFunc("remove", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		"remove": wrap("remove", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			path, err := fsPath("remove", args[0])
 			if err != nil {
 				return nil, err
@@ -82,7 +96,7 @@ func MakeFileSystem(caller VMCaller, bfs billy.Filesystem) (RuntimeValue, error)
 			}
 			return ResultOk(c, Void{})
 		}),
-		"move": MakeNativeFunc("move", 2, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		"move": wrap("move", 2, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			from, err := fsPath("move", args[0])
 			if err != nil {
 				return nil, err
@@ -96,7 +110,7 @@ func MakeFileSystem(caller VMCaller, bfs billy.Filesystem) (RuntimeValue, error)
 			}
 			return ResultOk(c, Void{})
 		}),
-		"list": MakeNativeFunc("list", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		"list": wrap("list", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			path, err := fsPath("list", args[0])
 			if err != nil {
 				return nil, err
@@ -115,7 +129,7 @@ func MakeFileSystem(caller VMCaller, bfs billy.Filesystem) (RuntimeValue, error)
 			}
 			return ResultOk(c, entries)
 		}),
-		"mkdirAll": MakeNativeFunc("mkdirAll", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		"mkdirAll": wrap("mkdirAll", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			path, err := fsPath("mkdirAll", args[0])
 			if err != nil {
 				return nil, err
@@ -125,7 +139,7 @@ func MakeFileSystem(caller VMCaller, bfs billy.Filesystem) (RuntimeValue, error)
 			}
 			return ResultOk(c, Void{})
 		}),
-		"cd": MakeNativeFunc("cd", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		"cd": wrap("cd", 1, func(c VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			path, err := fsPath("cd", args[0])
 			if err != nil {
 				return nil, err
@@ -134,20 +148,20 @@ func MakeFileSystem(caller VMCaller, bfs billy.Filesystem) (RuntimeValue, error)
 			if chrootErr != nil {
 				return ResultErr(c, String(chrootErr.Error()))
 			}
-			nested, nestedErr := MakeFileSystem(c, rooted)
+			nested, nestedErr := makeFileSystem(c, rooted, wrap)
 			if nestedErr != nil {
 				return nil, nestedErr
 			}
 			return ResultOk(c, nested)
 		}),
-		"root": MakeNativeFunc("root", 0, func(_ VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
+		"root": wrap("root", 0, func(_ VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
 			return String(bfs.Root()), nil
 		}),
 	}
 	return MakeDataValueNamed(caller, "fs", "FileSystem", fields)
 }
 
-func openAsFile(caller VMCaller, pathArg RuntimeValue, opener func(string) (billy.File, error)) (RuntimeValue, error) {
+func openAsFile(caller VMCaller, pathArg RuntimeValue, opener func(string) (billy.File, error), wrap nativeFunc) (RuntimeValue, error) {
 	path, err := fsPath("open", pathArg)
 	if err != nil {
 		return nil, err
@@ -156,16 +170,16 @@ func openAsFile(caller VMCaller, pathArg RuntimeValue, opener func(string) (bill
 	if openErr != nil {
 		return ResultErr(caller, String(openErr.Error()))
 	}
-	file, fileErr := makeFile(caller, handle)
+	file, fileErr := makeFile(caller, handle, wrap)
 	if fileErr != nil {
 		return nil, fileErr
 	}
 	return ResultOk(caller, file)
 }
 
-func makeFile(caller VMCaller, handle billy.File) (RuntimeValue, error) {
+func makeFile(caller VMCaller, handle billy.File, wrap nativeFunc) (RuntimeValue, error) {
 	fields := map[string]RuntimeValue{
-		"readFrom": MakeNativeFunc("readFrom", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		"readFrom": wrap("readFrom", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			length, ok := args[0].(Int)
 			if !ok {
 				return nil, fmt.Errorf("read expects an Int length, got %s", TypeName(args[0]))
@@ -177,7 +191,7 @@ func makeFile(caller VMCaller, handle billy.File) (RuntimeValue, error) {
 			}
 			return Binary(buf[:n]), nil
 		}),
-		"writeTo": MakeNativeFunc("writeTo", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
+		"writeTo": wrap("writeTo", 1, func(_ VMCaller, args []RuntimeValue) (RuntimeValue, error) {
 			buf, ok := args[0].(Binary)
 			if !ok {
 				return nil, fmt.Errorf("write expects Binary, got %s", TypeName(args[0]))
@@ -188,7 +202,7 @@ func makeFile(caller VMCaller, handle billy.File) (RuntimeValue, error) {
 			}
 			return Int(n), nil
 		}),
-		"closeWith": MakeNativeFunc("closeWith", 0, func(c VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
+		"closeWith": wrap("closeWith", 0, func(c VMCaller, _ []RuntimeValue) (RuntimeValue, error) {
 			if err := handle.Close(); err != nil {
 				return ResultErr(c, String(err.Error()))
 			}

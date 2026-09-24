@@ -24,6 +24,8 @@ That is what makes the rest testable. A function that takes a [`fs.FileSystem`](
 
 - [`clock`](../clock/index.md)
   - [`time`](../time/index.md)
+- [`co`](../co/index.md)
+  - [`time`](../time/index.md)
 - [`fs`](../fs/index.md)
   - [`bytes`](../bytes/index.md)
     - [`ranges`](../ranges/index.md)
@@ -39,7 +41,7 @@ That is what makes the rest testable. A function that takes a [`fs.FileSystem`](
 
 ## Contents
 
-- **Functions** — [`args`](#args), [`cwd`](#cwd), [`env`](#env), [`exit`](#exit), [`fastRandom`](#fastrandom), [`fs`](#fs), [`monotonicClock`](#monotonicclock), [`stderr`](#stderr), [`stdin`](#stdin), [`stdout`](#stdout), [`strongRandom`](#strongrandom), [`systemClock`](#systemclock)
+- **Functions** — [`args`](#args), [`cwd`](#cwd), [`env`](#env), [`exit`](#exit), [`fastRandom`](#fastrandom), [`fs`](#fs), [`monotonicClock`](#monotonicclock), [`stderr`](#stderr), [`stdin`](#stdin), [`stdout`](#stdout), [`strongRandom`](#strongrandom), [`systemClock`](#systemclock), [`timer`](#timer)
 
 ---
 
@@ -47,7 +49,7 @@ That is what makes the rest testable. A function that takes a [`fs.FileSystem`](
 
 ### `args` {#args}
 
-<small>`os/shim.zirr:24`</small>
+<small>`os/shim.zirr:25`</small>
 
 ```zirric
 extern fn args() -> [String]
@@ -59,7 +61,7 @@ Returns the command line arguments as an array of strings.
 
 ### `cwd` {#cwd}
 
-<small>`os/shim.zirr:31`</small>
+<small>`os/shim.zirr:32`</small>
 
 ```zirric
 extern fn cwd() -> String
@@ -72,7 +74,7 @@ The filesystem os.fs returns is rooted at the host's own root, so this is what a
 
 ### `env` {#env}
 
-<small>`os/shim.zirr:21`</small>
+<small>`os/shim.zirr:22`</small>
 
 ```zirric
 extern fn env(key: String) -> String
@@ -84,7 +86,7 @@ Returns the value of the environment variable with the given key.
 
 ### `exit` {#exit}
 
-<small>`os/shim.zirr:18`</small>
+<small>`os/shim.zirr:19`</small>
 
 ```zirric
 extern fn exit(code: Int) -> Void
@@ -96,7 +98,7 @@ Terminates the process with the given exit code.
 
 ### `fastRandom` {#fastrandom}
 
-<small>`os/shim.zirr:34`</small>
+<small>`os/shim.zirr:35`</small>
 
 ```zirric
 extern fn fastRandom() -> random.Source
@@ -108,7 +110,7 @@ A fast generator seeded from the clock. Suitable for simulations and sampling, n
 
 ### `fs` {#fs}
 
-<small>`os/shim.zirr:27`</small>
+<small>`os/shim.zirr:28`</small>
 
 ```zirric
 extern fn fs() -> fs.FileSystem
@@ -120,7 +122,7 @@ Returns the host's own filesystem, rooted so that absolute paths resolve as writ
 
 ### `monotonicClock` {#monotonicclock}
 
-<small>`os/shim.zirr:48`</small>
+<small>`os/shim.zirr:52`</small>
 
 ```zirric
 fn monotonicClock() -> clock.MonotonicClock
@@ -132,7 +134,7 @@ The host's monotonic clock, which only moves forward and is the one to measure e
 
 ### `stderr` {#stderr}
 
-<small>`os/shim.zirr:15`</small>
+<small>`os/shim.zirr:16`</small>
 
 ```zirric
 extern fn stderr() -> @io.Writer
@@ -144,7 +146,7 @@ Returns a Writer for the standard error stream.
 
 ### `stdin` {#stdin}
 
-<small>`os/shim.zirr:12`</small>
+<small>`os/shim.zirr:13`</small>
 
 ```zirric
 extern fn stdin() -> @io.Reader
@@ -156,7 +158,7 @@ Returns a Reader for the standard input stream.
 
 ### `stdout` {#stdout}
 
-<small>`os/shim.zirr:9`</small>
+<small>`os/shim.zirr:10`</small>
 
 ```zirric
 extern fn stdout() -> @io.Writer
@@ -168,7 +170,7 @@ Returns a Writer for the standard output stream.
 
 ### `strongRandom` {#strongrandom}
 
-<small>`os/shim.zirr:37`</small>
+<small>`os/shim.zirr:38`</small>
 
 ```zirric
 extern fn strongRandom() -> random.Source
@@ -180,10 +182,22 @@ The host's cryptographic generator. Slower, and the only one to use for tokens, 
 
 ### `systemClock` {#systemclock}
 
-<small>`os/shim.zirr:43`</small>
+<small>`os/shim.zirr:47`</small>
 
 ```zirric
 fn systemClock() -> clock.SystemClock
 ```
 
 The host's wall clock, which reports civil time and can jump when the machine is corrected.
+
+---
+
+### `timer` {#timer}
+
+<small>`os/shim.zirr:41`</small>
+
+```zirric
+extern fn timer() -> co.Timer
+```
+
+The host's timer, the one that really waits. Tests hand over co.immediateTimer or co.neverTimer instead.

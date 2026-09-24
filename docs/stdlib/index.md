@@ -50,6 +50,10 @@ The types every program is built from, and the two unions the rest of the librar
 - [`random`](./random/index.md) — seeded randomness, and the operations every source shares.
 - [`scripts`](https://code.knabel.dev/zirric-lang/scripts) — the printing and file helpers, already wired to the host. A package of its own: depend on it to use it.
 
+## Concurrency
+
+- [`co`](./co/index.md) — routines that take turns, scopes that own them, and channels between them.
+
 ## Serialization
 
 - [`coding`](./coding/index.md) — between your own types and a native value tree.

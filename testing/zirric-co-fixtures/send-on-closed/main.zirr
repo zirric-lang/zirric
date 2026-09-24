@@ -1,0 +1,7 @@
+mod co_send_on_closed
+
+import co
+
+const ch = co.channel(1)
+co.close(ch)
+co.send(ch, "too late")

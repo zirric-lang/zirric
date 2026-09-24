@@ -1,0 +1,6 @@
+mod co_send_on_closed
+
+import cave
+
+@cave.Package()
+data Deps {}

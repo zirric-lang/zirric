@@ -1,0 +1,5 @@
+mod co_empty_select
+
+import co
+
+co.select([])

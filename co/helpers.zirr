@@ -1,0 +1,88 @@
+mod code.knabel.dev.zirric_lang.zirric.co
+
+// Runs every body at once and returns every result, in the order the bodies were given.
+fn all(bodies: [fn() -> Result]) -> [Result] {
+	return scope(fn(s) {
+		const routines = for body <- bodies { spawn(s, body) }
+		return for r <- routines { wait(r) }
+	})
+}
+
+// Applies transform to every item, at most limit at a time, and returns the results in order.
+fn map(items: @Iterable, limit: Int, transform: fn(Any) -> Result) -> [Result] {
+	if limit < 1 {
+		panic("co.map needs a limit of at least 1")
+	}
+	// A buffered channel used as a semaphore: a body may only start once it has taken one of the limit slots.
+	const slots = channel(limit)
+	return all(for item <- items {
+		fn() {
+			send(slots, void)
+			const outcome = transform(item)
+			receive(slots)
+			return outcome
+		}
+	})
+}
+
+// The result of whichever body finishes first. The rest are stopped.
+fn first(bodies: [fn() -> Result]) -> Result {
+	if len(bodies) == 0 {
+		panic("co.first needs at least one body")
+	}
+	return scope(fn(s) {
+		const results = channel(len(bodies))
+		for body <- bodies {
+			spawn(s, fn() {
+				send(results, body())
+				return Ok(void)
+			})
+		}
+		const winner = receive(results) ?? Err(Cancelled())
+		cancel(s)
+		return winner
+	})
+}
+
+// body's result, or Err(TimedOut(limit)) if it is still running when limit passes.
+fn timeout(timer: Timer, limit: Duration, body: fn() -> Result) -> Result {
+	return scope(fn(s) {
+		const done = channel(1)
+		spawn(s, fn() {
+			send(done, body())
+			return Ok(void)
+		})
+		const selected = select([done, after(timer, limit)])
+		if selected.channel == done {
+			return selected.value
+		}
+		cancel(s)
+		return Err(TimedOut(limit))
+	})
+}
+
+// A generator: body sends into the channel, which closes when body returns.
+// The channel is unbuffered, so the producer moves in lockstep with its consumer. A producer that should run ahead is written with `channel` and `spawn` directly.
+fn produce(s: Scope, body: fn(Channel) -> Any) -> Channel {
+	const ch = channel(0)
+	spawn(s, fn() {
+		body(ch)
+		close(ch)
+		return Ok(void)
+	})
+	return ch
+}
+
+// All values from all channels in one, which closes once the last of them has.
+fn merge(s: Scope, channels: [Channel]) -> Channel {
+	return produce(s, fn(out) {
+		all(for ch <- channels {
+			fn() {
+				for v <- ch {
+					send(out, v)
+				}
+				return Ok(void)
+			}
+		})
+	})
+}

@@ -1,0 +1,6 @@
+mod co_spawn_after_scope
+
+import cave
+
+@cave.Package()
+data Deps {}

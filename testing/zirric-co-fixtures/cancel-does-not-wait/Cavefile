@@ -1,0 +1,6 @@
+mod co_cancel_does_not_wait
+
+import cave
+
+@cave.Package()
+data Deps {}

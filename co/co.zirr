@@ -1,0 +1,81 @@
+mod code.knabel.dev.zirric_lang.zirric.co
+
+// Owns routines. Only `scope` creates one, so every `spawn` traces back to a visible `scope` call.
+extern type Scope {}
+
+// A running function, returned by `spawn`.
+extern type Routine {}
+
+// A queue between routines. It is @Iterable, so a `for` loop receives from it until it is closed and drained.
+@Iterable(_channelIterate)
+extern type Channel {}
+
+// Runs body with a fresh scope, waits for every routine spawned into it, and returns body's value.
+// Nothing outlives the block: a forgotten `wait` never loses work, and no routine is left running behind it.
+extern fn scope(body: fn(Scope) -> Any) -> Any
+
+// Starts body in a new routine owned by s and returns at once.
+// The new routine runs when the spawning one reaches a switch point, not before.
+extern fn spawn(s: Scope, body: fn() -> Result) -> Routine
+
+// Blocks until the routine ends, and returns what it ended with: its own Result, or Err(Cancelled()).
+// May be called more than once and from any routine, and answers the same each time.
+extern fn wait(routine: Routine) -> Result
+
+// Stops every routine spawned into s, each at the switch point it is parked on.
+// Neither the scope's body nor the calling routine is stopped, and buffered values are lost: cancelling closes nothing.
+extern fn cancel(s: Scope) -> Void
+
+// A channel holding up to capacity values. A capacity of 0 makes every send wait for a receiver.
+extern fn channel(capacity: Int) -> Channel
+
+// Blocks until there is room, then puts value in.
+// Sending on a closed channel is a bug in the caller, so it stops the program.
+extern fn send(ch: Channel, value: Any) -> Void
+
+// Blocks until a value arrives, and returns it as Some. Once the channel is closed and drained, None, forever.
+extern fn receive(ch: Channel) -> Option
+
+// Says no more values will be sent. The values already in the channel are still received.
+// Closing a closed channel is a bug in the caller, so it stops the program.
+extern fn close(ch: Channel) -> Void
+
+// Blocks until one of the channels can be received from, and takes from the first ready one in list order.
+// Order is priority: visible at the call site and the same in every run. The cost is that a channel that is always ready starves the ones after it.
+extern fn select(channels: [Channel]) -> Selected
+
+// What `select` found.
+union Selected {
+	// A value was taken from channel.
+	data Received {
+		// The channel the value came from.
+		channel: Channel
+		// The value.
+		value
+	}
+
+	// channel is closed and drained, so it will never carry anything again. Drop it from the list, or stop.
+	data Closed {
+		// The channel that ended.
+		channel: Channel
+	}
+}
+
+// The routine was stopped by `cancel`.
+@Error(fn(e) { "the routine was cancelled" })
+data Cancelled {}
+
+fn _channelIterate(ch: Channel, yield: fn(Any) -> Bool) {
+	for {
+		const next = receive(ch)
+		switch next {
+		case is None:
+			return
+		case _:
+		}
+		if !yield(next.value) {
+			// `break` and `return` stop the receiving, but leave the channel open for whoever else holds it.
+			break
+		}
+	}
+}

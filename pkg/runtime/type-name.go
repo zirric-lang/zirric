@@ -35,6 +35,12 @@ func TypeName(value RuntimeValue) string {
 		return "Instant"
 	case Timestamp:
 		return "Timestamp"
+	case *Channel:
+		return "Channel"
+	case *RoutineScope:
+		return "Scope"
+	case *Routine:
+		return "Routine"
 	case *DataValue:
 		return value.TypeName
 	case *ModuleValue:

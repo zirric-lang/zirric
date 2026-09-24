@@ -1029,6 +1029,37 @@ func TestForStatements(t *testing.T) {
 			`,
 			expected: []any{2, 4, 6},
 		},
+		// A `for` body runs in the enclosing frame but has its own SymbolTable, so an outer local is reached by an index belonging to no capture of that frame.
+		{
+			label: "for expression closure capturing an outer local",
+			input: iterablePreamble + `
+			fn build(items) {
+				const base = 100
+				const fns = for item <- items {
+					fn() { return base + item }
+				}
+				return fns[0]() + fns[1]() + fns[2]()
+			}
+			build([1, 2, 3])
+			`,
+			expected: 306,
+		},
+		// The same, one level out: the loop body's closure reaches what its enclosing closure captured.
+		{
+			label: "for expression closure capturing through an enclosing closure",
+			input: iterablePreamble + `
+			fn build(items) {
+				return fn() {
+					const fns = for item <- items {
+						fn() { return item * 2 }
+					}
+					return fns[0]() + fns[2]()
+				}
+			}
+			build([1, 2, 3])()
+			`,
+			expected: 8,
+		},
 		{
 			label: "array for expression continue",
 			input: iterablePreamble + `

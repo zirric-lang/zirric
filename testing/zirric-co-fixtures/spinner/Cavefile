@@ -1,0 +1,6 @@
+mod co_spinner
+
+import cave
+
+@cave.Package()
+data Deps {}

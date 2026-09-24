@@ -3,6 +3,7 @@ mod code.knabel.dev.zirric_lang.zirric.os
 import io
 import fs
 import clock
+import co
 import random
 
 // Returns a Writer for the standard output stream.
@@ -35,6 +36,9 @@ extern fn fastRandom() -> random.Source
 
 // The host's cryptographic generator. Slower, and the only one to use for tokens, keys or anything an adversary should not predict.
 extern fn strongRandom() -> random.Source
+
+// The host's timer, the one that really waits. Tests hand over co.immediateTimer or co.neverTimer instead.
+extern fn timer() -> co.Timer
 
 extern fn _nowTimestamp() -> Timestamp
 extern fn _nowInstant() -> Instant

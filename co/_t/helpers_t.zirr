@@ -1,0 +1,173 @@
+mod code.knabel.dev.zirric_lang.zirric.co._t
+
+import tests { Test }
+import tests.assert
+
+import co
+import fun
+
+@Test()
+fn testAllKeepsTheOrderOfItsBodies() {
+	assert.equal([Ok(1), Ok(2), Ok(3)], co.all([
+		fn() { Ok(1) },
+		fn() { Ok(2) },
+		fn() { Ok(3) },
+	]))
+}
+
+@Test()
+fn testAllRunsTheBodiesTogether() {
+	// Each body waits for the next one to start, which only finishes if all three really run at once.
+	const started = co.channel(3)
+	const go = co.channel(0)
+	co.all([
+		fn() {
+			co.send(started, 1)
+			return Ok(void)
+		},
+		fn() {
+			co.send(started, 2)
+			return Ok(void)
+		},
+		fn() {
+			co.send(started, 3)
+			return Ok(void)
+		},
+	])
+	co.close(started)
+	assert.equal([1, 2, 3], for v <- started { v })
+}
+
+@Test()
+fn testMapTransformsEveryItemInOrder() {
+	assert.equal([Ok(2), Ok(4), Ok(6)], co.map([1, 2, 3], 2, fn(n) { Ok(n * 2) }))
+}
+
+@Test()
+fn testMapNeverRunsMoreThanItsLimitAtOnce() {
+	// The pairs meet on an unbuffered channel, which only works if exactly two are inside transform at once.
+	const met = co.channel(0)
+	var running = 0
+	var peak = 0
+	const results = co.map([1, 2, 3, 4], 2, fn(n) {
+		running = running + 1
+		if running > peak {
+			peak = running
+		}
+		if n % 2 == 1 {
+			co.send(met, n)
+		} else {
+			co.receive(met)
+		}
+		running = running - 1
+		return Ok(n)
+	})
+	assert.all([
+		assert.equal([Ok(1), Ok(2), Ok(3), Ok(4)], results),
+		assert.equal(2, peak),
+	])
+}
+
+@Test()
+fn testMapWithALimitOfOneNeverOverlaps() {
+	var running = 0
+	var peak = 0
+	const gate = co.channel(1)
+	co.map([1, 2, 3], 1, fn(n) {
+		running = running + 1
+		if running > peak {
+			peak = running
+		}
+		co.send(gate, n)
+		co.receive(gate)
+		running = running - 1
+		return Ok(n)
+	})
+	assert.equal(1, peak)
+}
+
+@Test()
+fn testFirstTakesTheEarliestResultAndStopsTheRest() {
+	var slowFinished = false
+	const blocked = co.channel(0)
+	const outcome = co.first([
+		fn() {
+			co.receive(blocked)
+			slowFinished = true
+			return Ok("slow")
+		},
+		fn() { Ok("quick") },
+	])
+	assert.all([
+		assert.equal(Ok("quick"), outcome),
+		assert.equal(false, slowFinished),
+	])
+}
+
+@Test()
+fn testProduceClosesItsChannelWhenTheBodyReturns() {
+	assert.equal(["a", "b"], co.scope(fn(s) {
+		const lines = co.produce(s, fn(out) {
+			co.send(out, "a")
+			co.send(out, "b")
+			return void
+		})
+		return for line <- lines { line }
+	}))
+}
+
+@Test()
+fn testMergeCarriesEveryValueAndClosesAfterTheLast() {
+	const merged = co.scope(fn(s) {
+		const left = co.produce(s, fn(out) {
+			co.send(out, 1)
+			return void
+		})
+		const right = co.produce(s, fn(out) {
+			co.send(out, 2)
+			return void
+		})
+		const both = co.merge(s, [left, right])
+		return for v <- both { v }
+	})
+	assert.all([
+		assert.equal(2, len(merged)),
+		assert.equal(true, merged == [1, 2] || merged == [2, 1]),
+	])
+}
+
+@Test()
+fn testBreakingOutOfAChannelLoopLeavesItOpen() {
+	const ch = co.channel(3)
+	co.send(ch, 1)
+	co.send(ch, 2)
+	co.send(ch, 3)
+	var seen = []
+	for v <- ch {
+		seen = append(seen, v)
+		if v == 2 {
+			break
+		}
+	}
+	assert.all([
+		assert.equal([1, 2], seen),
+		assert.equal(Some(3), co.receive(ch)),
+	])
+}
+
+@Test()
+fn testALazyTakeStopsReceivingAfterItsCount() {
+	// `fun` needs nothing new for a channel: it stops the loop, which stops the receiving.
+	assert.equal([1, 2, 3], co.scope(fn(s) {
+		const counting = co.produce(s, fn(out) {
+			for n <- [1, 2, 3, 4, 5] {
+				co.send(out, n)
+			}
+			return void
+		})
+		const first = for v <- fun.take(counting, 3) { v }
+		// The producer is still blocked on its fourth send; the scope cancels it rather than waiting.
+		co.cancel(s)
+		return first
+	}))
+}

@@ -167,6 +167,8 @@ func (noModuleCaller) ResolveModuleMember(string, string) (RuntimeValue, error) 
 }
 func (noModuleCaller) ResolveType(TypeId) RuntimeValue        { return nil }
 func (noModuleCaller) IsType(RuntimeValue, RuntimeValue) bool { return false }
+func (c noModuleCaller) Routines() *Scheduler                 { return NewScheduler(c) }
+func (c noModuleCaller) Fork() VMCaller                       { return c }
 
 func TestMakeWriteStreamRequiresTheIOModule(t *testing.T) {
 	if _, err := MakeWriteStream(noModuleCaller{}, io.Discard); err == nil {

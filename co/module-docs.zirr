@@ -1,0 +1,14 @@
+// Routines that take turns, scopes that own them, and channels between them.
+//
+// > Concurrency without parallelism, and without new syntax.
+//
+// A blocking call blocks the whole program, which is fine until something has to wait on two things at once — a key and a timer, a slow job and a user who presses `q`. `co` adds routines for that, and nothing else: no `go` keyword, no send or receive operator, no `async`/`await`. Everything here is a function.
+//
+// Two rules govern it. **One routine runs at a time, and it only gives way at a switch point** — `send`, `receive`, `select`, `wait`, `sleep`, iterating a channel, the end of a `scope` body, and every stdlib call that waits on the outside world: `io.read`, `io.write`, `fmt.fprint*` and the functions of `fs`, whatever reader, writer or filesystem they are given. Between two switch points, code runs as if it were alone, so a shared `var` or array needs no lock. And **every routine belongs to a scope, and a scope does not end before its routines** — `scope` is the only way to get a `Scope`, so nothing runs in the background that the code does not show.
+//
+// A `Channel` is `@Iterable`, which is why a producer and a consumer need nothing new: `for line <- produce(s, ...)` receives until the producer closes. `select` takes from the first ready channel in list order, so priority is visible at the call site and the same in every run.
+//
+// `Timer` is a capability, passed in like `fs.FileSystem` is. `immediateTimer` fires before a spawned body ever runs and `neverTimer` never fires, so a timeout is tested in both directions without waiting for either.
+//
+// `cancel` stops a routine at the switch point it is parked on, and returns at once. What it cannot take back is a call already handed to the operating system: a write in flight reaches the file or the terminal, possibly after `scope` has returned. A read is different, because bytes cannot be asked for twice — a host stream owns its reads, so a routine cancelled while waiting for input leaves the bytes behind for whoever reads next rather than discarding them.
+mod code.knabel.dev.zirric_lang.zirric.co

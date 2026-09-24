@@ -1,0 +1,151 @@
+mod code.knabel.dev.zirric_lang.zirric.co._t
+
+import tests { Test }
+import tests.assert
+
+import co
+
+@Test()
+fn testScopeReturnsItsBodysValue() {
+	assert.equal(7, co.scope(fn(s) { 7 }))
+}
+
+@Test()
+fn testABufferedChannelKeepsWhatWasSent() {
+	const ch = co.channel(2)
+	co.send(ch, 1)
+	co.send(ch, 2)
+	co.close(ch)
+	assert.equal([1, 2], for v <- ch { v })
+}
+
+@Test()
+fn testReceiveAnswersNoneOnceDrained() {
+	const ch = co.channel(1)
+	co.send(ch, "only")
+	co.close(ch)
+	assert.all([
+		assert.equal(Some("only"), co.receive(ch)),
+		assert.equal(None(), co.receive(ch)),
+		assert.equal(None(), co.receive(ch)),
+	])
+}
+
+@Test()
+fn testSpawnDoesNotRunTheBodyBeforeASwitchPoint() {
+	var ran = false
+	const observed = co.scope(fn(s) {
+		co.spawn(s, fn() {
+			ran = true
+			return Ok(void)
+		})
+		// No switch point has been reached, so the routine has not started.
+		return ran
+	})
+	assert.all([
+		assert.equal(false, observed),
+		// The scope waited for it before returning.
+		assert.equal(true, ran),
+	])
+}
+
+@Test()
+fn testWaitReturnsTheRoutinesResult() {
+	assert.equal(Ok(42), co.scope(fn(s) {
+		const r = co.spawn(s, fn() { Ok(42) })
+		return co.wait(r)
+	}))
+}
+
+@Test()
+fn testWaitAnswersTheSameThingEveryTime() {
+	assert.equal([Ok(1), Ok(1)], co.scope(fn(s) {
+		const r = co.spawn(s, fn() { Ok(1) })
+		return [co.wait(r), co.wait(r)]
+	}))
+}
+
+@Test()
+fn testAScopeWaitsForRoutinesNobodyWaitedFor() {
+	var finished = 0
+	co.scope(fn(s) {
+		for i <- [1, 2, 3] {
+			co.spawn(s, fn() {
+				finished = finished + 1
+				return Ok(void)
+			})
+		}
+		return void
+	})
+	assert.equal(3, finished)
+}
+
+@Test()
+fn testAnUnbufferedSendWaitsForAReceiver() {
+	var order = []
+	co.scope(fn(s) {
+		const ch = co.channel(0)
+		co.spawn(s, fn() {
+			order = append(order, "before send")
+			co.send(ch, 1)
+			order = append(order, "after send")
+			co.close(ch)
+			return Ok(void)
+		})
+		order = append(order, "before receive")
+		const got = co.receive(ch)
+		order = append(order, "received")
+		return got
+	})
+	assert.equal(["before receive", "before send", "received", "after send"], order)
+}
+
+@Test()
+fn testACancelledRoutineReportsCancelled() {
+	assert.equal(Err(co.Cancelled()), co.scope(fn(s) {
+		const blocked = co.channel(0)
+		const r = co.spawn(s, fn() {
+			co.receive(blocked)
+			return Ok("never")
+		})
+		co.cancel(s)
+		return co.wait(r)
+	}))
+}
+
+@Test()
+fn testCancelLeavesTheCallerAndTheBodyRunning() {
+	var reached = false
+	const outcome = co.scope(fn(s) {
+		co.spawn(s, fn() {
+			co.receive(co.channel(0))
+			return Ok(void)
+		})
+		co.cancel(s)
+		reached = true
+		return "body finished"
+	})
+	assert.all([
+		assert.equal(true, reached),
+		assert.equal("body finished", outcome),
+	])
+}
+
+@Test()
+fn testCancelDoesNothingTwice() {
+	assert.equal("fine", co.scope(fn(s) {
+		co.cancel(s)
+		co.cancel(s)
+		return "fine"
+	}))
+}
+
+@Test()
+fn testChannelsCompareByIdentity() {
+	const a = co.channel(1)
+	const b = co.channel(1)
+	assert.all([
+		assert.equal(true, a == a),
+		assert.equal(false, a == b),
+	])
+}

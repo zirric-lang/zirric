@@ -17,6 +17,25 @@ type ExternFunc struct {
 	Impl            ExternFuncImpl
 	Attributes      map[TypeId]int
 	ParamAttributes []map[TypeId]int
+	// Switches gives the other routines a turn before the call, even when a test fake answers instantly (ZE-025).
+	Switches bool
+	// Blocks marks a Switches function whose wait is real, so the run lock is released for the call.
+	Blocks bool
+}
+
+// MakeHostFunc marks a native function whose wait is real, releasing the run lock so one routine waiting on the host does not stop the rest.
+func MakeHostFunc(name string, arity int, impl ExternFuncImpl) *ExternFunc {
+	fn := MakeNativeFunc(name, arity, impl)
+	fn.Switches = true
+	fn.Blocks = true
+	return fn
+}
+
+// MakeSwitchingFunc marks a switch point that never really waits, such as an in-memory filesystem, so a test interleaves where production does.
+func MakeSwitchingFunc(name string, arity int, impl ExternFuncImpl) *ExternFunc {
+	fn := MakeNativeFunc(name, arity, impl)
+	fn.Switches = true
+	return fn
 }
 
 func MakeExternFunc(symbol *ast.Symbol, impl ExternFuncImpl) *ExternFunc {

@@ -1,0 +1,103 @@
+mod code.knabel.dev.zirric_lang.zirric.co._t
+
+import tests { Test }
+import tests.assert
+
+import co
+import errors
+import time
+
+@Test()
+fn testSelectTakesTheFirstReadyChannelInListOrder() {
+	const early = co.channel(1)
+	const late = co.channel(1)
+	co.send(early, "early")
+	co.send(late, "late")
+	const selected = co.select([late, early])
+	assert.all([
+		assert.equal(true, selected is co.Received),
+		assert.equal(late, selected.channel),
+		assert.equal("late", selected.value),
+	])
+}
+
+@Test()
+fn testSelectReportsAClosedChannelAsClosed() {
+	const ended = co.channel(1)
+	co.close(ended)
+	const selected = co.select([ended])
+	assert.all([
+		assert.equal(true, selected is co.Closed),
+		assert.equal(ended, selected.channel),
+	])
+}
+
+@Test()
+fn testSelectWaitsUntilSomethingArrives() {
+	assert.equal("from the routine", co.scope(fn(s) {
+		const ch = co.channel(0)
+		co.spawn(s, fn() {
+			co.send(ch, "from the routine")
+			return Ok(void)
+		})
+		const selected = co.select([ch])
+		return selected.value
+	}))
+}
+
+@Test()
+fn testAnImmediateTimerHasAlreadyFired() {
+	const fired = co.after(co.immediateTimer(), time.hours(1))
+	assert.equal(Some(void), co.receive(fired))
+}
+
+@Test()
+fn testANeverTimerIsNeverReady() {
+	const waiting = co.after(co.neverTimer(), time.nanoseconds(1))
+	const ready = co.channel(1)
+	co.send(ready, "now")
+	assert.equal(ready, co.select([waiting, ready]).channel)
+}
+
+@Test()
+fn testTimeoutGivesUpUnderAnImmediateTimer() {
+	// The timer is ready before the spawned body ever runs, so the body's answer is never taken.
+	var bodyFinished = false
+	const outcome = co.timeout(co.immediateTimer(), time.seconds(10), fn() {
+		bodyFinished = true
+		return Ok("answered")
+	})
+	assert.all([
+		assert.equal(Err(co.TimedOut(time.seconds(10))), outcome),
+		assert.equal(false, bodyFinished),
+	])
+}
+
+@Test()
+fn testTimeoutReturnsTheBodysResultUnderANeverTimer() {
+	assert.equal(Ok("answered"), co.timeout(co.neverTimer(), time.seconds(10), fn() { Ok("answered") }))
+}
+
+@Test()
+fn testTimedOutDebugsWithItsLimit() {
+	assert.equal("timed out after 10s", errors.debug(co.TimedOut(time.seconds(10))))
+}
+
+@Test()
+fn testCancelledDebugsReadably() {
+	assert.equal("the routine was cancelled", errors.debug(co.Cancelled()))
+}
+
+@Test()
+fn testSleepLetsTheOtherRoutinesRun() {
+	var ran = false
+	co.scope(fn(s) {
+		co.spawn(s, fn() {
+			ran = true
+			return Ok(void)
+		})
+		co.sleep(co.immediateTimer(), time.hours(1))
+		return void
+	})
+	assert.equal(true, ran)
+}

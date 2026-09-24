@@ -1,0 +1,6 @@
+mod co_spawn_after_scope
+
+import co
+
+const escaped = co.scope(fn(s) { s })
+co.spawn(escaped, fn() { Ok(void) })

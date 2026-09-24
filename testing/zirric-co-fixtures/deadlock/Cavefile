@@ -1,0 +1,6 @@
+mod co_deadlock
+
+import cave
+
+@cave.Package()
+data Deps {}

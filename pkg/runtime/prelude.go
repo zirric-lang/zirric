@@ -27,6 +27,9 @@ const (
 	typeIdDuration
 	typeIdInstant
 	typeIdTimestamp
+	typeIdChannel
+	typeIdScope
+	typeIdRoutine
 )
 
 // allBuiltinTypeIds lists every hardcoded builtin TypeId in declaration order.
@@ -48,6 +51,9 @@ var allBuiltinTypeIds = []TypeId{
 	typeIdDuration,
 	typeIdInstant,
 	typeIdTimestamp,
+	typeIdChannel,
+	typeIdScope,
+	typeIdRoutine,
 }
 
 // NumBuiltinTypeIds is the number of reserved builtin TypeIds.
@@ -76,6 +82,11 @@ var BuiltinTypeIds = map[string]TypeId{
 	"Duration":  typeIdDuration,
 	"Instant":   typeIdInstant,
 	"Timestamp": typeIdTimestamp,
+
+	// Declared by the co module, and registered here for the same reason: the lookup is by bare type name.
+	"Channel": typeIdChannel,
+	"Scope":   typeIdScope,
+	"Routine": typeIdRoutine,
 }
 
 var _ ExternPlugin = &Prelude{}

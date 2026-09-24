@@ -12,6 +12,23 @@ attr Writer {
 	write(self: @Writer, buf: Binary) -> Int
 }
 
+// Gives the other routines a turn. Reading and writing reach the outside world, so the two functions below are switch points whatever reader or writer they are given.
+extern fn _yield() -> Void
+
+// Reads up to length bytes from any reader. An empty result means the stream is exhausted.
+// This is the way to read: it gives the other routines a turn first, so a reader a test supplies interleaves exactly where the host's own would.
+fn read(reader: @Reader, length: Int) -> Binary {
+	_yield()
+	return Reader(reader).read(reader, length)
+}
+
+// Writes buf to any writer and returns the number of bytes written.
+// This is the way to write, for the same reason `read` is the way to read.
+fn write(writer: @Writer, buf: Binary) -> Int {
+	_yield()
+	return Writer(writer).write(writer, buf)
+}
+
 // A readable stream backed by the host, such as standard input or an open file.
 // Any type can be a reader by carrying @Reader; this is simply the one the host hands out.
 @Reader(_readFromStream)

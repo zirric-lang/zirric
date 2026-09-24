@@ -1,0 +1,22 @@
+mod co_cancel_does_not_wait
+
+import co
+import fmt
+import io
+import os
+import time
+
+const stdin = os.stdin()
+const out = os.stdout()
+
+// Nothing here ever reads the key. Cancelling has to end the scope at once rather than wait for standard input.
+co.scope(fn(s) {
+	co.spawn(s, fn() {
+		io.read(stdin, 1)
+		return Ok(void)
+	})
+	co.sleep(os.timer(), time.milliseconds(20))
+	co.cancel(s)
+	return void
+})
+fmt.fprintln("done", out)

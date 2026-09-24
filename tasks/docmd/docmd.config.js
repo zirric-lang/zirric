@@ -285,6 +285,18 @@ module.exports = {
           ]
         },
         {
+          title: "Concurrency",
+          icon: "split",
+          collapsible: true,
+          children: [
+            {
+              title: "Co",
+              path: "/stdlib/co",
+              icon: "split"
+            }
+          ]
+        },
+        {
           title: "Serialization",
           icon: "arrow-right-left",
           collapsible: true,
@@ -435,6 +447,11 @@ module.exports = {
       collapsible: true,
       children: [
         {
+          title: "v0.2.0-next",
+          path: "/changelog/v0.2.0",
+          icon: "tag"
+        },
+        {
           title: "v0.1.0",
           path: "/changelog/v0.1.0",
           icon: "tag"
@@ -571,6 +588,11 @@ module.exports = {
           icon: "circle-check",
           title: "ZE-24 Module Names",
           path: "/proposals/ZE-024-qualified-module-names"
+        },
+        {
+          icon: "circle-check",
+          title: "ZE-25 Routines and Channels",
+          path: "/proposals/ZE-025-routines-and-channels"
         }
       ]
     },

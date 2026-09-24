@@ -1,0 +1,6 @@
+mod co_close_of_closed
+
+import cave
+
+@cave.Package()
+data Deps {}

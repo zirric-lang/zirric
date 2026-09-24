@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 
@@ -11,7 +12,14 @@ import (
 func (vm *VM) Run() error {
 	var taskId = TaskId(rand.Uint64())
 	vm.taskId = taskId
-	return vm.runTask(taskId)
+	err := vm.runTask(taskId)
+	if err != nil {
+		// A program that stopped early may leave routines parked; one that returned normally already waited for its own.
+		if sched := vm.scheduler(); sched != nil {
+			sched.Shutdown(err)
+		}
+	}
+	return err
 }
 
 // runTask runs the top-level, unbounded dispatch loop.
@@ -438,9 +446,7 @@ func (vm *VM) runLoop(taskId TaskId, stopIdx int, resumeDepth int, endIp int) er
 			idx := op.ReadUint16(ins[ip:])
 			fr.ip += 2
 
-			global := vm.globals[idx]
-
-			val, err := global.Get(taskId)
+			val, err := vm.getGlobal(int(idx), taskId)
 			if err != nil {
 				return err
 			}
@@ -562,7 +568,7 @@ func (vm *VM) runLoop(taskId TaskId, stopIdx int, resumeDepth int, endIp int) er
 						return err
 					}
 				} else {
-					annoVal, err := vm.globals[annoId].Get(taskId)
+					annoVal, err := vm.getGlobal(annoId, taskId)
 					if err != nil {
 						return err
 					}
@@ -581,8 +587,13 @@ func (vm *VM) runLoop(taskId TaskId, stopIdx int, resumeDepth int, endIp int) er
 					args[i] = vm.pop()
 				}
 
-				result, err := callee.Impl(vm, args)
+				result, err := vm.callExtern(callee, args)
 				if err != nil {
+					// Already traced to the line it happened on; repeating the wrapper per level only repeats that line.
+					var traced *RuntimeError
+					if errors.As(err, &traced) {
+						return err
+					}
 					return fmt.Errorf("error calling extern function: %w", err)
 				}
 
@@ -1019,6 +1030,13 @@ func valuesEqual(lhs, rhs runtime.RuntimeValue) bool {
 		return lhs == rhs
 	case *runtime.ExternFunc:
 		return lhs == rhs
+	// Each is one thing rather than a reproducible value, so two are equal only when they are the same one.
+	case *runtime.Channel:
+		return lhs == rhs
+	case *runtime.Routine:
+		return lhs == rhs
+	case *runtime.RoutineScope:
+		return lhs == rhs
 	// A type is a value too, now that reflection hands them out, and two of them are equal when they are the same declaration.
 	// Each type lives once in the constants table, so identity is that test; a SimpleType is a struct rather than a pointer, so it compares by the type it stands for.
 	case *runtime.DataType:
@@ -1167,7 +1185,7 @@ func (vm *VM) asWrapper(taskId TaskId, value runtime.RuntimeValue, unionId int, 
 	if !carries {
 		return nil, fmt.Errorf("%s require a value with %s, got %s %s", operators, attribute, typeNameOf(value), value.Inspect())
 	}
-	instance, err := vm.globals[attributeId].Get(taskId)
+	instance, err := vm.getGlobal(attributeId, taskId)
 	if err != nil {
 		return nil, err
 	}
@@ -1192,4 +1210,33 @@ func unionNameOf(typeValue runtime.RuntimeValue) string {
 		return union.Symbol.Name
 	}
 	return typeNameOf(typeValue)
+}
+
+// callExtern runs an extern function, giving the other routines a turn first when it waits on the outside world (ZE-025).
+// A program that never starts a routine pays one nil comparison.
+func (vm *VM) callExtern(callee *runtime.ExternFunc, args []runtime.RuntimeValue) (runtime.RuntimeValue, error) {
+	if !callee.Switches {
+		return callee.Impl(vm, args)
+	}
+	sched := vm.scheduler()
+	if sched == nil {
+		return callee.Impl(vm, args)
+	}
+	current := sched.Current()
+	if current == nil {
+		return callee.Impl(vm, args)
+	}
+	if err := sched.Yield(current); err != nil {
+		return nil, err
+	}
+	if !callee.Blocks {
+		return callee.Impl(vm, args)
+	}
+	// Handed on for the length of the call, so waiting on standard input does not stop the rest.
+	sched.BeginHostCall(current)
+	result, err := callee.Impl(vm, args)
+	if resumeErr := sched.EndHostCall(current); resumeErr != nil {
+		return nil, resumeErr
+	}
+	return result, err
 }
