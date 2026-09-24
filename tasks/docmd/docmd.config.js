@@ -593,6 +593,46 @@ module.exports = {
           icon: "circle-check",
           title: "ZE-25 Routines and Channels",
           path: "/proposals/ZE-025-routines-and-channels"
+        },
+        {
+          icon: "circle",
+          title: "ZE-26 Terminal User Interfaces",
+          path: "/proposals/ZE-026-terminal-user-interfaces"
+        },
+        {
+          icon: "circle",
+          title: "ZE-27 Processes",
+          path: "/proposals/ZE-027-processes"
+        },
+        {
+          icon: "circle",
+          title: "ZE-28 HTTP Client",
+          path: "/proposals/ZE-028-http-client"
+        },
+        {
+          icon: "circle",
+          title: "ZE-29 Documentation Structure",
+          path: "/proposals/ZE-029-documentation-structure"
+        },
+        {
+          icon: "circle",
+          title: "ZE-30 Attribute Constraints in Unions",
+          path: "/proposals/ZE-030-attribute-constraints-in-unions"
+        },
+        {
+          icon: "circle-x",
+          title: "ZE-31 Attributes Required on Members",
+          path: "/proposals/ZE-031-attributes-required-on-members"
+        },
+        {
+          icon: "circle",
+          title: "ZE-32 String Interpolation",
+          path: "/proposals/ZE-032-string-interpolation"
+        },
+        {
+          icon: "circle",
+          title: "ZE-33 Result and Option as Constraint Unions",
+          path: "/proposals/ZE-033-result-and-option-as-constraint-unions"
         }
       ]
     },
