@@ -153,6 +153,12 @@ module.exports = {
           path: "https://code.knabel.dev/zirric-lang/tree-sitter-zirric",
           icon: "dna",
           external: true
+        },
+        {
+          title: "Setup Action",
+          path: "https://code.knabel.dev/zirric-lang/setup-action",
+          icon: "play",
+          external: true
         }
       ]
     },

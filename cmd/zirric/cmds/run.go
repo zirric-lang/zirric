@@ -14,6 +14,7 @@ func init() {
 
 var runCmd = &cobra.Command{
 	Use:                "run <script> [args...]",
+	GroupID:            commandGroupCode,
 	Short:              "Run a Zirric program",
 	Args:               cobra.MinimumNArgs(1),
 	DisableFlagParsing: true,

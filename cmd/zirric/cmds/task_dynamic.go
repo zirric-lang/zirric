@@ -46,6 +46,7 @@ func registerTaskCommands() error {
 			return err
 		}
 		rootTaskCmd.Aliases = freeAliases(task.Aliases)
+		rootTaskCmd.GroupID = commandGroupTasks
 		rootCmd.AddCommand(rootTaskCmd)
 	}
 	return nil

@@ -23,10 +23,11 @@ func init() {
 }
 
 var lspCmd = &cobra.Command{
-	Use:   "lsp",
-	Short: "Language Server",
-	Long:  `Runs the language server for the use inside an editor.`,
-	Args:  cobra.NoArgs,
+	Use:     "lsp",
+	GroupID: commandGroupIntegrations,
+	Short:   "Language Server",
+	Long:    `Runs the language server for the use inside an editor.`,
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		lspStdioCmd.Run(lspStdioCmd, args)
 	},

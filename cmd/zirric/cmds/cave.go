@@ -8,6 +8,7 @@ func init() {
 
 var caveCmd = &cobra.Command{
 	Use:     "cave",
+	GroupID: commandGroupProject,
 	Aliases: []string{"cv"},
 	Short:   "Work with the project's Cavefile",
 }

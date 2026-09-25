@@ -21,6 +21,11 @@ The whole toolchain is one binary. The compiler, language server, formatter, and
 - [Package Manager](/tooling/package-manager) — Cavefile structure, module discovery, and registry layout.
 - [Compiler](/tooling/compiler) — bytecode and runtime architecture.
 
+## Continuous integration
+
+- [Continuous Integration](/tooling/zirric-cli#continuous-integration) — `zirric ci`, and the workflows it writes.
+- [Setup Action](https://code.knabel.dev/zirric-lang/setup-action) — installs Zirric on a Forgejo or GitHub Actions runner.
+
 ## Documentation pipeline
 
 The documentation site is generated with docmd, configured in `tasks/docmd/docmd.config.js`. Markdown sources live under `docs/` and output to `site/`.

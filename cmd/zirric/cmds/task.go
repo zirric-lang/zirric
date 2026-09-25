@@ -17,6 +17,7 @@ func init() {
 
 var taskCmd = &cobra.Command{
 	Use:     "task [name] [args...]",
+	GroupID: commandGroupProject,
 	Aliases: []string{"tasks"},
 	Short:   "List the declared tasks, or run one by name",
 	Args:    cobra.ArbitraryArgs,

@@ -17,8 +17,9 @@ runner.runT()
 `
 
 var testCmd = &cobra.Command{
-	Use:   "test [args...]",
-	Short: "Run the project's tests",
+	Use:     "test [args...]",
+	GroupID: commandGroupProject,
+	Short:   "Run the project's tests",
 	Long: "Run the project's tests.\n\n" +
 		"A project that declares a `test` task runs that instead, arguments and all.\n" +
 		"Otherwise every @tests.Test function in a module whose name ends in _t is run.",

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"charm.land/lipgloss/v2"
 	"code.knabel.dev/zirric-lang/zirric/pkg/orchestra"
 	"code.knabel.dev/zirric-lang/zirric/pkg/registry"
 	"code.knabel.dev/zirric-lang/zirric/pkg/toolchain"
@@ -148,7 +149,56 @@ func runCaveNew(projectFS billy.Filesystem, opts caveNewOptions, out io.Writer) 
 	if err := writeProjectFile(projectFS, orchestra.DefaultCavefileName, []byte(caveNewContents(opts))); err != nil {
 		return err
 	}
-	_, err := fmt.Fprintf(out, "created %s\n", orchestra.DefaultCavefileName)
+	return writeCaveNewWelcome(out)
+}
+
+// docsBaseURL is the documentation site the welcome points at.
+const docsBaseURL = "https://zirric.knabel.dev"
+
+// The welcome is a signpost rather than a tutorial, so every entry is one line and the prose lives behind the links.
+var (
+	caveNewNextSteps = []struct{ command, purpose string }{
+		{"zirric cave install", "install dependencies"},
+		{"zirric ci github", "add a GitHub Actions workflow"},
+		{"zirric ci forgejo", "add a Forgejo Actions workflow"},
+		{"zirric test", "run the tests"},
+	}
+	caveNewLinks = []struct{ label, url string }{
+		{"Getting started", docsBaseURL + "/guides/getting-started"},
+		{"CLI reference", docsBaseURL + "/tooling/zirric-cli"},
+	}
+)
+
+var (
+	welcomeHeadingStyle = lipgloss.NewStyle().Bold(true)
+	welcomeDimStyle     = lipgloss.NewStyle().Faint(true)
+)
+
+func writeCaveNewWelcome(out io.Writer) error {
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "%s\n", renderBannerFor(out))
+	fmt.Fprintf(&b, "created %s — welcome to Zirric.\n\n", orchestra.DefaultCavefileName)
+
+	fmt.Fprintf(&b, "%s\n", paint(out, welcomeHeadingStyle, "Next"))
+	width := 0
+	for _, step := range caveNewNextSteps {
+		width = max(width, len(step.command))
+	}
+	for _, step := range caveNewNextSteps {
+		fmt.Fprintf(&b, "  %-*s  %s\n", width, step.command, paint(out, welcomeDimStyle, step.purpose))
+	}
+
+	fmt.Fprintf(&b, "\n%s\n", paint(out, welcomeHeadingStyle, "Docs"))
+	width = 0
+	for _, link := range caveNewLinks {
+		width = max(width, len(link.label))
+	}
+	for _, link := range caveNewLinks {
+		fmt.Fprintf(&b, "  %-*s  %s\n", width, link.label, paint(out, welcomeDimStyle, link.url))
+	}
+
+	_, err := io.WriteString(out, b.String())
 	return err
 }
 

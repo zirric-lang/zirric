@@ -17,6 +17,8 @@ description: The zirric command — running code, managing a project, and drivin
 | `zirric cave new`      | Create a new `Cavefile`                         |
 | `zirric cave install`  | Install the dependencies a `Cavefile` declares  |
 | `zirric cave describe` | Print the parsed `Cavefile` as YAML or JSON     |
+| `zirric ci forgejo`    | Write a Forgejo Actions workflow                |
+| `zirric ci github`     | Write a GitHub Actions workflow                 |
 | `zirric task`          | List the tasks a `Cavefile` declares            |
 | `zirric task <name>`   | Run one of them                                 |
 | `zirric <name>`        | The same, when nothing built in claims the name |
@@ -92,7 +94,17 @@ A package has to be named, so `cave new` stops when neither `--mod` nor a Git re
 
 ```bash
 $ zirric cave new --mod myapp --version 1.0.0 --description "Widgets and layout"
-created Cavefile
+created Cavefile — welcome to Zirric.
+
+Next
+  zirric cave install  install dependencies
+  zirric ci github     add a GitHub Actions workflow
+  zirric ci forgejo    add a Forgejo Actions workflow
+  zirric test          run the tests
+
+Docs
+  Getting started  https://zirric.knabel.dev/guides/getting-started
+  CLI reference    https://zirric.knabel.dev/tooling/zirric-cli
 ```
 
 ```zirric
@@ -109,6 +121,58 @@ data Myapp {
 ```
 
 `zirric cave describe` is the one to reach for when a dependency or task does not behave as you expect: it prints the manifest as the tooling understands it, not as you wrote it.
+
+## Continuous integration
+
+`zirric ci` writes a workflow that checks formatting and runs the tests, so a project gets CI without anyone having to remember what the steps are.
+
+```bash
+zirric ci forgejo                # .forgejo/workflows/zirric.yaml
+zirric ci github                 # .github/workflows/zirric.yaml
+```
+
+The forge is named rather than detected, because a repository is often pushed to more than one. What actually differs is how an action hosted elsewhere is referenced: Forgejo resolves a fully qualified URL in `uses`, while GitHub accepts only `owner/repo`, so its workflow points at a mirror of the same action.
+
+The step that installs Zirric on the runner is [`setup-action`](https://code.knabel.dev/zirric-lang/setup-action), which downloads a release, verifies its checksum and puts `zirric` on the `PATH`. Its own `with:` inputs — `zirric-version`, `zirric-version-file`, `prerelease`, `verify-checksum`, `zirric-path` — are documented in that repository; `--action` swaps in a fork or a pinned tag.
+
+| Flag        | Writes                        | Default                              |
+| ----------- | ----------------------------- | ------------------------------------ |
+| `--action`  | the step that installs Zirric | the forge's `setup-action`           |
+| `--branch`  | both `branches:` lists        | `main`                               |
+| `--runs-on` | the runner label              | `ubuntu-latest`                      |
+| `--force`   | nothing                       | an existing workflow is not replaced |
+
+```bash
+$ zirric ci forgejo
+created .forgejo/workflows/zirric.yaml
+```
+
+```yaml
+name: Zirric
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Zirric
+        uses: https://code.knabel.dev/zirric-lang/setup-action@v1
+
+      - name: Check formatting
+        run: zirric fmt --check --diff
+
+      - name: Run tests
+        run: zirric test
+```
+
+`zirric ci` needs no `Cavefile`, so it can run before a project has one.
 
 ## Tasks
 

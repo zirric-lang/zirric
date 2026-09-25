@@ -182,3 +182,42 @@ func runGit(t *testing.T, dir string, args ...string) {
 		t.Fatalf("git %v: %v\n%s", args, err, out)
 	}
 }
+
+func TestRunCaveNew_WelcomeSignposts(t *testing.T) {
+	projectFS := memfs.New()
+	var buf strings.Builder
+	opts := caveNewOptions{modulePath: "code.knabel.dev.example.my_app"}
+	if err := runCaveNew(projectFS, opts, &buf); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	out := buf.String()
+	for _, want := range []string{
+		"███",
+		"created Cavefile",
+		"welcome to Zirric",
+		"zirric cave install",
+		"zirric ci github",
+		"zirric ci forgejo",
+		"https://zirric.knabel.dev/guides/getting-started",
+		"https://zirric.knabel.dev/tooling/zirric-cli",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected %q in the welcome, got\n%s", want, out)
+		}
+	}
+}
+
+// A strings.Builder is not a terminal, so nothing styled may reach it: a redirected `zirric cave new` must not collect escape sequences as text.
+func TestRunCaveNew_WelcomeIsPlainWhenNotATerminal(t *testing.T) {
+	projectFS := memfs.New()
+	var buf strings.Builder
+	opts := caveNewOptions{modulePath: "code.knabel.dev.example.my_app"}
+	if err := runCaveNew(projectFS, opts, &buf); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if strings.Contains(buf.String(), "\x1b[") {
+		t.Errorf("welcome carried escape sequences into a non-terminal writer:\n%q", buf.String())
+	}
+}

@@ -138,3 +138,20 @@ Pull the latest container image:
 ```bash
 docker pull code.knabel.dev/zirric-lang/zirric:latest
 ```
+
+### Continuous integration
+
+On a Forgejo or GitHub Actions runner, install Zirric with [`setup-action`](https://code.knabel.dev/zirric-lang/setup-action):
+
+```yaml
+- name: Setup Zirric
+  uses: https://code.knabel.dev/zirric-lang/setup-action@v1 # Forgejo
+  # uses: zirric-lang/setup-action@v1 # GitHub
+
+- name: Install a specific version
+  uses: https://code.knabel.dev/zirric-lang/setup-action@v1
+  with:
+    zirric-version: "0.1.0"
+```
+
+GitHub resolves only `owner/repo` in `uses`, so it needs the mirrored name; Forgejo takes the full URL. `zirric ci github` and `zirric ci forgejo` write a whole workflow using it — see [Continuous integration](/tooling/zirric-cli#continuous-integration).

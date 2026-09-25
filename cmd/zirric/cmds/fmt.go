@@ -47,8 +47,9 @@ type fmtFlags struct {
 var fmtOpts fmtFlags
 
 var fmtCmd = &cobra.Command{
-	Use:   "fmt [path...]",
-	Short: "Format code",
+	Use:     "fmt [path...]",
+	GroupID: commandGroupProject,
+	Short:   "Format code",
 	Long: "Format Zirric sources in place.\n\n" +
 		"Without flags, every .zirr file and Cavefile under the given paths (or the\n" +
 		"current directory) is rewritten. Formatting only ever changes whitespace.",

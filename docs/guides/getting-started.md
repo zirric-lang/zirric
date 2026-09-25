@@ -50,7 +50,17 @@ greeter/
 ```bash
 $ mkdir greeter && cd greeter
 $ zirric cave new --mod example.greeter --description "A greeter, as a worked example."
-created Cavefile
+created Cavefile — welcome to Zirric.
+
+Next
+  zirric cave install  install dependencies
+  zirric ci github     add a GitHub Actions workflow
+  zirric ci forgejo    add a Forgejo Actions workflow
+  zirric test          run the tests
+
+Docs
+  Getting started  https://zirric.knabel.dev/guides/getting-started
+  CLI reference    https://zirric.knabel.dev/tooling/zirric-cli
 ```
 
 In a directory that already has a Git remote, `zirric cave new` reads the remote and needs neither flag.
@@ -422,3 +432,4 @@ Zirric favors explicit declarations and attributes instead.
 - Explore the [Specification](/specification/syntax) for precise grammar and semantics.
 - Read the [Zirric Evolution Proposals](/proposals) for future design notes.
 - Follow the [Styleguide](/guides/styleguide) to keep code consistent.
+- Run the tests on every push with [`zirric ci`](/tooling/zirric-cli#continuous-integration).

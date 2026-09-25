@@ -37,8 +37,9 @@ type replState struct {
 }
 
 var replCmd = &cobra.Command{
-	Use:   "repl",
-	Short: "Start the Zirric REPL (Read-Eval-Print Loop)",
+	Use:     "repl",
+	GroupID: commandGroupCode,
+	Short:   "Start the Zirric REPL (Read-Eval-Print Loop)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tmpfs := memfs.New()
 		orch, err := newOrchestra(tmpfs, "repl")

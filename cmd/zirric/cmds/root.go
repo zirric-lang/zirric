@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -10,6 +11,7 @@ import (
 	"code.knabel.dev/zirric-lang/zirric/pkg/diag"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/spf13/cobra"
 )
 
@@ -24,6 +26,8 @@ func Execute() error {
 	}
 
 	cmdArgs = extractCavefileFlag(cmdArgs)
+	// Set here rather than on the literal: the banner has to know where help is headed before it decides to colour itself.
+	rootCmd.Long = renderBannerFor(rootCmd.OutOrStdout())
 	rootCmd.SilenceUsage = true
 	// Errors are printed here rather than by cobra, so that one carrying a position can be shown with the line it refers to.
 	rootCmd.SilenceErrors = true
@@ -76,11 +80,28 @@ const banner = `
  ███ █ █ █ █ █ █ ▀██
 `
 
-// bannerStyle paints the banner yellow. lipgloss reads the color profile from stdout, so a redirected `zirric --help`, a dumb terminal and NO_COLOR each get the plain drawing rather than the escape sequences around it.
+// bannerStyle paints the banner yellow.
 var bannerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 
-// renderBanner paints the drawing a line at a time. Rendering it as one block would pad every line out to the widest, padding the blank ones into runs of spaces, and the art is written to sit exactly as it is.
-func renderBanner() string {
+// supportsColor reports whether w can carry escape sequences. lipgloss v2 renders a style whatever it is written to, so every styled string has to be gated on this or a redirected run collects the escapes as text.
+// colorprofile answers for the whole matrix at once: a writer that is not a terminal, TERM=dumb, NO_COLOR, and the CLICOLOR_FORCE that overrides them.
+func supportsColor(w io.Writer) bool {
+	return colorprofile.Detect(w, os.Environ()) != colorprofile.NoTTY
+}
+
+// paint applies style only where the destination can show it.
+func paint(w io.Writer, style lipgloss.Style, text string) string {
+	if !supportsColor(w) {
+		return text
+	}
+	return style.Render(text)
+}
+
+// renderBannerFor paints the drawing a line at a time. Rendering it as one block would pad every line out to the widest, padding the blank ones into runs of spaces, and the art is written to sit exactly as it is.
+func renderBannerFor(w io.Writer) string {
+	if !supportsColor(w) {
+		return banner
+	}
 	lines := strings.Split(banner, "\n")
 	for i, line := range lines {
 		if line != "" {
@@ -91,16 +112,32 @@ func renderBanner() string {
 }
 
 var rootCmd = &cobra.Command{
-	Use:  "zirric",
-	Long: renderBanner(),
+	Use: "zirric",
 	// A first argument may name a file to run rather than a command, so completion offers those too.
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{strings.TrimPrefix(zirricFileExtension, ".")}, cobra.ShellCompDirectiveFilterFileExt
 	},
 }
 
+// Commands are sectioned in the help output rather than nested under a parent, so that grouping stays a presentation choice and never changes how a command is invoked.
+// A command left without a group lands under "Additional Commands:", which is where version, help and completion belong.
+const (
+	commandGroupCode         = "code"
+	commandGroupProject      = "project"
+	commandGroupIntegrations = "integrations"
+	commandGroupTasks        = "tasks"
+)
+
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cavefilePath, "cavefile", "", "path to the Cavefile, overriding autodetection (must precede the subcommand)")
+
+	// Cobra validates a GroupID against its parent only once Execute runs, so these need not precede the AddCommand calls in the other files' init functions.
+	rootCmd.AddGroup(
+		&cobra.Group{ID: commandGroupCode, Title: "Running code:"},
+		&cobra.Group{ID: commandGroupProject, Title: "Project:"},
+		&cobra.Group{ID: commandGroupIntegrations, Title: "Integrations:"},
+		&cobra.Group{ID: commandGroupTasks, Title: "Tasks:"},
+	)
 }
 
 // extractCavefileFlag pulls a leading --cavefile flag out of args into cavefilePath and returns the remainder. Some task commands disable Cobra's own flag parsing, so this must run before Cobra ever sees the args.
