@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/ast"
+	"code.knabel.dev/zirric-lang/zirric/pkg/lexer"
 	"code.knabel.dev/zirric-lang/zirric/pkg/token"
 )
 
@@ -452,11 +453,102 @@ func (p *Parser) parsePrattExprIndex(owner ast.Expr) ast.Expr {
 
 func (p *Parser) parsePrattExprString() ast.Expr {
 	tok := p.nextToken()
-	str, err := parseStringLiteral(tok.Literal)
-	if err != nil {
-		p.errUnderlyingErrorf(err, "invalid string literal %q", tok.Literal)
+	segments := lexer.SplitString(tok.Literal)
+	if !hasInterpolation(segments) {
+		str, err := parseStringLiteral(tok.Literal)
+		if err != nil {
+			p.errUnderlyingErrorf(err, "invalid string literal %q", tok.Literal)
+		}
+		return ast.MakeExprString(tok, str)
 	}
-	return ast.MakeExprString(tok, str)
+	return ast.MakeExprStringInterpolation(tok, p.parseStringParts(tok, segments))
+}
+
+func hasInterpolation(segments []lexer.StringSegment) bool {
+	for _, segment := range segments {
+		if segment.Interpolation {
+			return true
+		}
+	}
+	return false
+}
+
+// parseStringParts turns a literal's segments into the parts of an interpolated string, parsing each embedded expression where it stands in the file.
+// A segment that cannot be used contributes no part, so the rest of the literal is still parsed and every problem in it is reported at once.
+func (p *Parser) parseStringParts(tok token.Token, segments []lexer.StringSegment) []ast.StringPart {
+	parts := make([]ast.StringPart, 0, len(segments))
+	for _, segment := range segments {
+		if !segment.Interpolation {
+			text, err := parseStringLiteral(segment.Text)
+			if err != nil {
+				p.errUnderlyingErrorf(err, "invalid string literal %q", tok.Literal)
+				continue
+			}
+			parts = append(parts, ast.StringPart{Literal: text})
+			continue
+		}
+		if expr := p.parseInterpolation(tok, segment); expr != nil {
+			parts = append(parts, ast.StringPart{Expr: expr})
+		}
+	}
+	return parts
+}
+
+// parseInterpolation parses the expression of one `\( … )`, reporting what the form itself rules out before the expression is even read.
+func (p *Parser) parseInterpolation(tok token.Token, segment lexer.StringSegment) ast.Expr {
+	if tok.Source == nil {
+		return nil
+	}
+	source := interpolationSource(tok, segment)
+	at := token.Token{Type: token.STRING, Literal: segment.Expr, Source: source}
+
+	if segment.Unclosed {
+		p.detectError(ParseError{
+			Token:   at,
+			Summary: "unclosed interpolation",
+			Details: "expected ) closing \\( before the end of the line",
+		})
+		return nil
+	}
+	if strings.TrimSpace(segment.Expr) == "" {
+		p.detectError(ParseError{
+			Token:   at,
+			Summary: "empty interpolation",
+			Details: "\\( … ) must hold an expression",
+		})
+		return nil
+	}
+	return p.parseInRegion(source.Offset, source.Offset+len(segment.Expr))
+}
+
+// interpolationSource locates an interpolation's expression: the literal's own offset plus one for its opening quote is where its content starts, which is what a segment offset counts from.
+// The literal's raw newlines are counted along the way, so a string spanning lines still points at the right one.
+func interpolationSource(tok token.Token, segment lexer.StringSegment) *token.Source {
+	prefix := tok.Literal[:segment.Offset]
+	line := tok.Source.Line + strings.Count(prefix, "\n")
+	column := tok.Source.Column + 1 + segment.Offset
+	if at := strings.LastIndexByte(prefix, '\n'); at >= 0 {
+		column = segment.Offset - at
+	}
+	return token.MakeSource(tok.Source.File, tok.Source.Offset+1+segment.Offset, line, column)
+}
+
+// parseInRegion parses one expression out of the source between two offsets, on this same parser so that it is read in the scope that surrounds it.
+// The lexer and the two tokens of lookahead are put back afterwards, leaving the enclosing parse exactly where it was.
+func (p *Parser) parseInRegion(start, end int) ast.Expr {
+	lex, cur, peek := p.lex, p.curToken, p.peekToken
+	defer func() { p.lex, p.curToken, p.peekToken = lex, cur, peek }()
+
+	p.lex = lex.Region(start, end)
+	p.nextToken()
+	p.nextToken()
+
+	expr := p.parsePrattExpr(LOWEST)
+	if expr != nil && !p.curIs(token.EOF) {
+		p.errExpected("a single expression")
+		return nil
+	}
+	return expr
 }
 
 // parseStringLiteral decodes the escapes in a string literal's raw source. It shares strconv.UnquoteChar with parseCharLiteral, so a string accepts the escapes a char does — \n, \t, \\ and also \a, \b, \f, \r, \v, \xNN, \uNNNN, \UNNNNNNNN and a three-digit octal — differing only in the delimiter each escapes, \" here and \' there. Everything that is not an escape is copied verbatim, leaving multi-byte characters and raw newlines untouched.

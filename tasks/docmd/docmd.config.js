@@ -631,7 +631,7 @@ module.exports = {
           path: "/proposals/ZE-031-attributes-required-on-members"
         },
         {
-          icon: "circle",
+          icon: "circle-check",
           title: "ZE-032 String Interpolation",
           path: "/proposals/ZE-032-string-interpolation"
         },
@@ -641,7 +641,7 @@ module.exports = {
           path: "/proposals/ZE-033-result-and-option-as-constraint-unions"
         },
         {
-          icon: "circle-dot",
+          icon: "circle-check",
           title: "ZE-034 Writer-First Printing",
           path: "/proposals/ZE-034-writer-first-printing"
         }

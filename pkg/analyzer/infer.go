@@ -18,6 +18,8 @@ func (a *Analyzer) infer(expr ast.Expr, symbols *ast.SymbolTable) checked {
 		return a.builtinNamed("Float", symbols)
 	case *ast.ExprString, ast.ExprString:
 		return a.builtinNamed("String", symbols)
+	case *ast.ExprStringInterpolation, ast.ExprStringInterpolation:
+		return a.builtinNamed("String", symbols)
 	case *ast.ExprBool, ast.ExprBool:
 		return a.builtinNamed("Bool", symbols)
 	case *ast.ExprChar, ast.ExprChar:

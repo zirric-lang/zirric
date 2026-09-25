@@ -30,6 +30,37 @@ false // Bool
 
 See [Type System](/specification/typesystem) for details on each type.
 
+### String interpolation
+
+A string literal may embed an expression as `\(expression)`. The value is rendered exactly as [`fmt.sprint`](/stdlib/fmt#sprint) renders it and spliced into the string, so `"\(x)"` means `fmt.sprint(x)` and needs no import.
+
+```zirric
+const copied = 3
+const total = 7
+const line = "Copied \(copied) of \(total) files" // "Copied 3 of 7 files"
+```
+
+| Rule                                           | Consequence                                                                                                      |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| The embedded form is any expression.           | Calls, operators, `?.`, `!.`, `??`, `!!`, `if`, `switch`, `for` and closures all work inside `\( … )`.           |
+| A nested string literal may interpolate too.   | `"\(label("inner \(n)"))"` reads as written; the quote that ends a literal is the one outside every `\( … )`.    |
+| The expression must not be empty.              | `"\()"` is a syntax error.                                                                                       |
+| The expression must not contain a line break.  | An interpolation stays on one line, which also rules out a `//` or `#` comment inside it.                        |
+| Parts are evaluated left to right, each once.  | As for every other expression.                                                                                   |
+| Each value renders as `fmt.sprint` renders it. | A type carrying [`@Printable`](/stdlib/prelude#printable) decides how it looks; anything else gets the fallback. |
+| The result is a `String`.                      | Known to the checker with certainty, whatever the embedded expressions are.                                      |
+
+`\\(` is an escaped backslash followed by an ordinary `(`, so `"\\(literal)"` is the text `\(literal)`. A `Char` literal never interpolates: `'\('` is an error.
+
+There are no format specifiers and no interpolation handlers. Padding, precision and alignment are ordinary function calls:
+
+```zirric
+const bar = "[\(strings.repeat("#", done))\(strings.repeat(".", width - done))]"
+const list = "Missing: \(strings.join(missing, ", "))"
+```
+
+An `Option` or a `Result` renders as itself, which is rarely what a reader wants to see: write `"\(user?.name ?? "anonymous")"` rather than `"\(user?.name)"`.
+
 ## Operators
 
 Binary and unary operators follow the precedence table in [Syntax § Operator Precedence](/specification/syntax#operator-precedence).
@@ -37,6 +68,8 @@ Binary and unary operators follow the precedence table in [Syntax § Operator Pr
 ### Arithmetic
 
 `+`, `-`, `*`, `/`, `%` operate on `Int` and `Float` values. `+` also concatenates strings. Mixing `Int` and `Float` in arithmetic promotes the result to `Float`. Division of two `Int` values produces an `Int` (truncated).
+
+Where one side of `+` is a `String`, the other may also be a builtin with an unambiguous textual form — `Int`, `Float`, `Char`, `Byte`, `Bool`, `Void` or a `time` value — and is rendered as [`fmt.sprint`](/stdlib/fmt#sprint) renders it. It stops there: `+` never reaches a type's [`@Printable`](/stdlib/prelude#printable), so `"at " + version` is an error where `"at \(version)"` is not. [String interpolation](#string-interpolation) renders every value, and says so in the literal.
 
 ### Comparison
 
@@ -250,11 +283,11 @@ An `if` statement executes a branch for its side effects and produces no value. 
 
 ```zirric
 if answer == 42 {
-	fmt.fprintln("yes", out)
+	fmt.fprintln(out, "yes")
 } else if answer == 0 {
-	fmt.fprintln("zero", out)
+	fmt.fprintln(out, "zero")
 } else {
-	fmt.fprintln("no", out)
+	fmt.fprintln(out, "no")
 }
 ```
 
@@ -282,7 +315,7 @@ Iterates over a collection using `<-`. The binding variable receives each elemen
 
 ```zirric
 for item <- [1, 2, 3] {
-	fmt.fprintln(fmt.sprint(item), out)
+	fmt.fprintln(out, fmt.sprint(item))
 }
 ```
 
@@ -350,13 +383,13 @@ Each `case` matches against one of:
 ```zirric
 switch value {
 case 1:
-	fmt.fprintln("one", out)
+	fmt.fprintln(out, "one")
 case is String:
-	fmt.fprintln("a string", out)
+	fmt.fprintln(out, "a string")
 case is @Iterable:
-	fmt.fprintln("iterable", out)
+	fmt.fprintln(out, "iterable")
 case _:
-	fmt.fprintln("other", out)
+	fmt.fprintln(out, "other")
 }
 ```
 
@@ -426,4 +459,5 @@ Skips to the next iteration of the enclosing `for` loop. In a `for` expression, 
 - **Array elements** are evaluated left to right.
 - **Dict entries** are evaluated left to right (key, then value, for each entry).
 - **Binary operators** evaluate the left operand first, then the right (except short-circuit `&&` and `||`).
+- **Interpolated string parts** are evaluated left to right, each exactly once.
 - **Declarations** at the top level are processed in source order. Within a module, all top-level names are visible throughout the file regardless of declaration order (mutual recursion is supported).

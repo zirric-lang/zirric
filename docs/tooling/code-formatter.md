@@ -45,6 +45,7 @@ Zirric has one canonical style and no options to change it. The formatter's valu
 - At most **one consecutive blank line**. Blank lines directly after `{`, directly before `}`, and at the start of a file are removed.
 - Comments keep their marker and text exactly; trailing comments stay on their line.
 - The deprecated `=>` return arrow is rewritten to `->`.
+- Inside a [string interpolation](/specification/expressions#string-interpolation) the same spacing rules apply, on the one line it occupies: `"\( x+1 )"` becomes `"\(x + 1)"`. Every other byte of a literal is left exactly as written.
 
 ```zirric
 @AnyResult(fn(r) { r })

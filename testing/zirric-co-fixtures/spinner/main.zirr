@@ -27,19 +27,19 @@ fn run(stdin: @io.Reader, out: @io.Writer, timer: co.Timer) {
 		for {
 			const selected = co.select([keys, tick])
 			if selected is co.Closed {
-				fmt.fprintln("input ended after " + fmt.sprint(ticks) + " ticks", out)
+				fmt.fprintln(out, "input ended after " + fmt.sprint(ticks) + " ticks")
 				return void
 			}
 			if selected.channel == tick {
 				ticks = ticks + 1
 				if ticks >= 3 {
-					fmt.fprintln("ticked " + fmt.sprint(ticks) + " times while the reader waited", out)
+					fmt.fprintln(out, "ticked " + fmt.sprint(ticks) + " times while the reader waited")
 					co.cancel(s)
 					return void
 				}
 				tick = co.after(timer, time.milliseconds(5))
 			} else {
-				fmt.fprintln("key", out)
+				fmt.fprintln(out, "key")
 			}
 		}
 	})

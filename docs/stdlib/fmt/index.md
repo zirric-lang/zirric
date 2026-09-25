@@ -16,7 +16,9 @@ import fmt
 
 > The bridge between a value and its text.
 
-`fmt` is how a value becomes text. [`sprint`](#sprint) converts anything at all — it prefers the value's [`prelude.Printable`](../prelude/index.md#printable) attribute and falls back to a plain rendering for built-in types — while [`fprint`](#fprint) and [`fprintln`](#fprintln) send that text to a writer.
+`fmt` is how a value becomes text. [`sprint`](#sprint) converts anything at all — it prefers the value's [`prelude.Printable`](../prelude/index.md#printable) attribute and falls back to a plain rendering for built-in types — while [`fprint`](#fprint) and [`fprintln`](#fprintln) send that text to a writer, which each takes first as everything else acting on a capability does.
+
+String interpolation renders a value the same way with no import at all: `"n = \(n)"` is `"n = " + sprint(n)`. Reach for [`sprint`](#sprint) where the call itself is the point — passing it on, or building text a line at a time.
 
 There is no `print` here on purpose: writing needs somewhere to write to. Pass a writer from [`os`](../os/index.md), or use [`scripts`](https://code.knabel.dev/zirric-lang/scripts), a separate package pairing these functions with standard output for you.
 
@@ -38,10 +40,10 @@ There is no `print` here on purpose: writing needs somewhere to write to. Pass a
 
 ### `fprint` {#fprint}
 
-<small>`fmt/print.zirr:10`</small>
+<small>`fmt/print.zirr:12`</small>
 
 ```zirric
-fn fprint(value: @Printable, writer: @io.Writer) -> Int
+fn fprint(writer: @io.Writer, value: @Printable) -> Int
 ```
 
 Writes the string representation of a printable value to a writer.
@@ -50,10 +52,10 @@ Writes the string representation of a printable value to a writer.
 
 ### `fprintln` {#fprintln}
 
-<small>`fmt/print.zirr:16`</small>
+<small>`fmt/print.zirr:18`</small>
 
 ```zirric
-fn fprintln(value: @Printable, writer: @io.Writer) -> Int
+fn fprintln(writer: @io.Writer, value: @Printable) -> Int
 ```
 
 Writes the string representation of a printable value followed by a newline to a writer.
@@ -62,10 +64,12 @@ Writes the string representation of a printable value followed by a newline to a
 
 ### `sprint` {#sprint}
 
-<small>`fmt/print.zirr:7`</small>
+<small>`fmt/print.zirr:9`</small>
 
 ```zirric
 extern fn sprint(value: Any) -> String
 ```
 
 Converts any value to its string representation. Prefers the value's @Printable attribute when it has one, otherwise falls back to a trivial conversion for builtin types (Int, Float, Char, Byte as hex, ...).
+
+`sprint(value)` is the same as `"\(value)"`, which needs no import.

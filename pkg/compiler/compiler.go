@@ -183,6 +183,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		idx := c.addConstant(val)
 		c.emit(op.Const, idx)
 		return nil
+	case *ast.ExprStringInterpolation:
+		return c.compileExprStringInterpolation(node)
 	case *ast.ExprChar:
 		val := c.plugins.Prelude().Char(node.Literal)
 		idx := c.addConstant(val)
@@ -3100,4 +3102,33 @@ func (c *Compiler) isEntryModule(module *ast.ContextModule) bool {
 		}
 	}
 	return false
+}
+
+// compileExprStringInterpolation pushes every part of an interpolated literal and joins them with one instruction.
+//
+// A literal run is a constant like any other string, and an embedded expression is compiled where it stands, so `?.`, `!.` and a closure inside `\( … )` behave exactly as they do outside one. Only op.Interpolate knows they belong to the same literal.
+func (c *Compiler) compileExprStringInterpolation(node *ast.ExprStringInterpolation) error {
+	printableId, err := c.resolveBuiltinTypeConstantId(node, "Printable", c.currentSymbols())
+	if err != nil {
+		return err
+	}
+
+	parts := 0
+	for _, part := range node.Parts {
+		if part.Expr == nil {
+			if part.Literal == "" {
+				continue
+			}
+			c.emit(op.Const, c.addConstant(c.plugins.Prelude().String(part.Literal)))
+			parts++
+			continue
+		}
+		if err := c.Compile(part.Expr); err != nil {
+			return err
+		}
+		parts++
+	}
+
+	c.emit(op.Interpolate, parts, printableId)
+	return nil
 }

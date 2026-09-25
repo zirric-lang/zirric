@@ -2,7 +2,9 @@
 //
 // > The bridge between a value and its text.
 //
-// `fmt` is how a value becomes text. `sprint` converts anything at all — it prefers the value's `prelude.Printable` attribute and falls back to a plain rendering for built-in types — while `fprint` and `fprintln` send that text to a writer.
+// `fmt` is how a value becomes text. `sprint` converts anything at all — it prefers the value's `prelude.Printable` attribute and falls back to a plain rendering for built-in types — while `fprint` and `fprintln` send that text to a writer, which each takes first as everything else acting on a capability does.
+//
+// String interpolation renders a value the same way with no import at all: `"n = \(n)"` is `"n = " + sprint(n)`. Reach for `sprint` where the call itself is the point — passing it on, or building text a line at a time.
 //
 // There is no `print` here on purpose: writing needs somewhere to write to. Pass a writer from `os`, or use [`scripts`](https://code.knabel.dev/zirric-lang/scripts), a separate package pairing these functions with standard output for you.
 mod code.knabel.dev.zirric_lang.zirric.fmt

@@ -560,15 +560,15 @@ fn write(root: String, name: String, page: String) {
 	const dir = root + "/" + strings.replace(name, ".", "/")
 	const made = fs.mkdirAll(os.fs(), dir)
 	if made is Err {
-		fmt.fprintln("cannot create " + dir + ": " + fmt.sprint(made.reason), os.stderr())
+		fmt.fprintln(os.stderr(), "cannot create " + dir + ": " + fmt.sprint(made.reason))
 		os.exit(1)
 	}
 	const written = fs.writeString(os.fs(), dir + "/index.md", page)
 	if written is Err {
-		fmt.fprintln("cannot write " + dir + "/index.md: " + fmt.sprint(written.reason), os.stderr())
+		fmt.fprintln(os.stderr(), "cannot write " + dir + "/index.md: " + fmt.sprint(written.reason))
 		os.exit(1)
 	}
-	fmt.fprintln(dir + "/index.md", os.stdout())
+	fmt.fprintln(os.stdout(), dir + "/index.md")
 }
 
 // The value of a `--name value` or `--name=value` flag, or fallback when the task was run without it.

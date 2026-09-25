@@ -75,7 +75,7 @@ fn testPrintingToAWriterATestSuppliesIsStillASwitchPoint() {
 			written = append(written, "routine")
 			return Ok(void)
 		})
-		fmt.fprintln("hello", sink)
+		fmt.fprintln(sink, "hello")
 		return written
 	}))
 }

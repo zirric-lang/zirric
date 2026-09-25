@@ -17,9 +17,9 @@ func (*FmtPlugin) Module() string { return "fmt" }
 func (*FmtPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbol) RuntimeValue {
 	switch decl.Name {
 	case "sprint":
-		printableSym := ctx.ResolveModuleSymbol("prelude", "Printable")
+		printableAttrId := attributeIdOf(ctx.ResolveModuleSymbol("prelude", "Printable"))
 		return MakeExternFunc(decl, func(caller VMCaller, args []RuntimeValue) (RuntimeValue, error) {
-			str, err := sprintValue(caller, printableSym, args[0])
+			str, err := SprintValue(caller, printableAttrId, args[0])
 			if err != nil {
 				return nil, err
 			}
@@ -29,13 +29,23 @@ func (*FmtPlugin) Bind(ctx BindContext, module *ast.SymbolTable, decl *ast.Symbo
 	return nil
 }
 
-// sprintValue converts value to a displayable string.
-// It prefers the value's @Printable attribute when it has one (covering String itself, which declares @Printable in prelude/shim.zirr, and any user-defined @Printable type), then falls back to a fixed set of trivial conversions for builtin types that aren't @Printable-annotated (Int, Float, Char, Byte, Bool, Void), and finally to Inspect() as a last resort so sprint never errors out for a value with no other printable representation.
-func sprintValue(caller VMCaller, printableSym *ast.Symbol, value RuntimeValue) (string, error) {
-	if printableSym != nil && printableSym.ConstantId != nil && caller != nil {
-		printableAttrId := TypeId(*printableSym.ConstantId)
+// attributeIdOf is the TypeId an attribute declaration was compiled to, or nil when the declaration could not be resolved at all.
+func attributeIdOf(symbol *ast.Symbol) *TypeId {
+	if symbol == nil || symbol.ConstantId == nil {
+		return nil
+	}
+	id := TypeId(*symbol.ConstantId)
+	return &id
+}
+
+// SprintValue converts value to a displayable string, which is what fmt.sprint answers with and what a `\( … )` interpolation splices into its literal.
+// printableAttrId is the TypeId of prelude's @Printable, or nil where it could not be resolved, in which case only the fallbacks below apply.
+//
+// It prefers the value's @Printable attribute when it has one (covering String itself, which declares @Printable in prelude/shim.zirr, and any user-defined @Printable type), then falls back to a fixed set of trivial conversions for builtin types that aren't @Printable-annotated (Int, Float, Char, Byte, Bool, Void), and finally to Inspect() as a last resort so it never errors out for a value with no other printable representation.
+func SprintValue(caller VMCaller, printableAttrId *TypeId, value RuntimeValue) (string, error) {
+	if printableAttrId != nil && caller != nil {
 		if attrs := caller.AttributesOf(value); attrs != nil {
-			if globalId, ok := attrs[printableAttrId]; ok {
+			if globalId, ok := attrs[*printableAttrId]; ok {
 				attrValue, err := caller.ResolveGlobal(globalId)
 				if err != nil {
 					return "", err

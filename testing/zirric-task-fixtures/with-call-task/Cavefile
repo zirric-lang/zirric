@@ -8,7 +8,7 @@ import os
 @tasks.Alias(["b"])
 @tasks.Help("Builds the project")
 @tasks.Call(fn(opts: BuildTask) {
-	fmt.fprintln(opts.target, os.stdout())
+	fmt.fprintln(os.stdout(), opts.target)
 })
 data BuildTask {
 	@tasks.Flag()

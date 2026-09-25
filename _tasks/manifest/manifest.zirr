@@ -280,19 +280,19 @@ fn pageOf(manifest: pkgs.Cavefile) -> String {
 const declared = pkgs.mainPackage().cavefile
 switch declared {
 case is None:
-	fmt.fprintln("this project has no Cavefile to document", os.stderr())
+	fmt.fprintln(os.stderr(), "this project has no Cavefile to document")
 	os.exit(1)
 case is Some:
 	const target = outputPath()
 	const made = fs.mkdirAll(os.fs(), paths.dir(target))
 	if made is Err {
-		fmt.fprintln("cannot create " + paths.dir(target) + ": " + fmt.sprint(made.reason), os.stderr())
+		fmt.fprintln(os.stderr(), "cannot create " + paths.dir(target) + ": " + fmt.sprint(made.reason))
 		os.exit(1)
 	}
 	const written = fs.writeString(os.fs(), target, pageOf(declared.value))
 	if written is Err {
-		fmt.fprintln("cannot write " + target + ": " + fmt.sprint(written.reason), os.stderr())
+		fmt.fprintln(os.stderr(), "cannot write " + target + ": " + fmt.sprint(written.reason))
 		os.exit(1)
 	}
-	fmt.fprintln(target, os.stdout())
+	fmt.fprintln(os.stdout(), target)
 }

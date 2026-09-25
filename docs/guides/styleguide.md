@@ -167,10 +167,13 @@ A function that operates on a value takes it as the first parameter. The module 
 fs.readFile(fsys, "notes.txt")
 arrays.map(items, transform)
 random.int(source, 100)
+fmt.fprintln(out, "done")
 
 // bad
 fs.readFile("notes.txt", fsys)
 ```
+
+Where a function writes, the writer is the subject: it is the thing acted on, and the value is only read. That is why `fmt.fprintln` takes the writer first.
 
 Where a `data` type holds its behavior in fields, give each field a matching module function that takes the value first. Both spellings work, and the function form is the one that reads well in a chain.
 
@@ -215,7 +218,7 @@ attr FileSystem { // reads as metadata, not as a requirement
 ```zirric
 fn report(env: @HasStandardWriter, value: @Printable) {
 	const writer = HasStandardWriter(env).writer(env)
-	fmt.fprintln(value, writer)
+	fmt.fprintln(writer, value)
 }
 ```
 
@@ -232,7 +235,7 @@ const person = Person("John", 42)
 const err = http.Error("Not found")
 
 fn writePersonName(p, writer: @io.Writer) {
-	fmt.fprintln(p.name, writer)
+	fmt.fprintln(writer, p.name)
 }
 
 // bad
@@ -241,7 +244,7 @@ const p = Person("John", 42)
 const error = http.Error("Not found")
 
 fn writeName(n, w) {
-	fmt.fprintln(n.name, w)
+	fmt.fprintln(w, n.name)
 }
 ```
 

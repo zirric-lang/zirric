@@ -93,7 +93,7 @@ Extern types are built-in types provided by the runtime. They cannot be construc
 | `Int`           | Integer literals                                           | —                            |
 | `Float`         | Float literals                                             | —                            |
 | `Bool`          | `true`, `false`                                            | —                            |
-| `String`        | String literals                                            | `chars() -> [Char]`          |
+| `String`        | String literals, including interpolated ones               | `chars() -> [Char]`          |
 | `Char`          | Iterating a `String`, or `chars()`                         | —                            |
 | `Binary`        | Runtime operations, `bytes`                                | —                            |
 | `Byte`          | Indexing a `String` or a `Binary`, or iterating a `Binary` | —                            |

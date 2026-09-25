@@ -95,6 +95,10 @@ const (
 	// WrapOption wraps the value on top of the stack in Some unless it already is an Option, which is what makes the result of a `?.` chain an Option either way.
 	WrapOption
 
+	// Interpolate joins the parts of an interpolated string literal.
+	// It pops them all at once, rendering each the way fmt.sprint renders it, and pushes the one String they make.
+	Interpolate
+
 	// MakeIterYield builds the native `yield` callable for a generic `for <-` dispatch (ZE-010).
 	MakeIterYield
 	// CallIterate reentrantly calls the `iterate` function (top of stack) with 2 args, unlike Call.
@@ -167,6 +171,8 @@ var definitions = map[Opcode]*Definition{
 	JumpIsType:   {"jumpistype", []int{2, 2}}, // address, const id of type or union
 	ReturnIsType: {"returnistype", []int{2}},  // const id of type or union
 	WrapOption:   {"wrapoption", []int{2, 2}}, // const id of the Option union, const id of the Some data type
+
+	Interpolate: {"interpolate", []int{2, 2}}, // part count, const id of the Printable attribute
 
 	MakeIterYield: {"makeiteryield", []int{2, 2, 2}}, // binding local, body start ip, body end ip
 	CallIterate:   {"calliterate", []int{2}},         // arg count (always 2: value, yield)

@@ -4,5 +4,5 @@ import fmt
 import os
 
 for arg <- os.args() {
-	fmt.fprintln("task fmt saw " + arg, os.stdout())
+	fmt.fprintln(os.stdout(), "task fmt saw " + arg)
 }

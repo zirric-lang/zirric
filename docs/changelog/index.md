@@ -9,7 +9,7 @@ description: Release history of the Zirric programming language.
 
 == v0.2.0-next
 
-Routines, scopes and channels in the new `co` module, and `os.timer` to go with them. [Full release notes →](/changelog/v0.2.0)
+Routines, scopes and channels in the new `co` module, string interpolation in every literal, and `fmt` writing to its writer first. [Full release notes →](/changelog/v0.2.0)
 
 == v0.1.0
 

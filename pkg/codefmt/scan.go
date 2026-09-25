@@ -70,12 +70,72 @@ func scan(filename, src string) ([]item, error) {
 	return items, nil
 }
 
-// canonicalText is the spelling to emit: verbatim source, except the deprecated "=>" which becomes "->".
+// canonicalText is the spelling to emit: verbatim source, except the deprecated "=>" which becomes "->" and a string literal whose interpolations are respelled.
 func canonicalText(it item) string {
-	if it.tok.Type == token.RIGHT_ARROW {
+	switch it.tok.Type {
+	case token.RIGHT_ARROW:
 		return "->"
+	case token.STRING:
+		return canonicalString(it.text)
 	}
 	return it.text
+}
+
+// canonicalString respells the `\( … )` of a string literal, leaving every other byte of it exactly as written.
+// A literal the scan cannot account for whole — unterminated, or holding an interpolation with no `)` — is left alone: it is being typed, not formatted.
+func canonicalString(text string) string {
+	segments, ok := lexer.SplitLiteral(text)
+	if !ok {
+		return text
+	}
+	interpolated := false
+	for _, segment := range segments {
+		interpolated = interpolated || segment.Interpolation
+	}
+	if !interpolated {
+		return text
+	}
+
+	var out strings.Builder
+	out.WriteByte('"')
+	for _, segment := range segments {
+		if !segment.Interpolation {
+			out.WriteString(segment.Text)
+			continue
+		}
+		out.WriteString("\\(")
+		out.WriteString(canonicalExpr(segment.Expr))
+		out.WriteString(")")
+	}
+	out.WriteByte('"')
+	return out.String()
+}
+
+// canonicalExpr spells an interpolated expression with the same spacing rules as any other, on the one line it is allowed to occupy.
+func canonicalExpr(src string) string {
+	items, err := scan("", src)
+	if err != nil {
+		return src
+	}
+
+	var out strings.Builder
+	var prev token.Token
+	hasPrev, prevWasPrefix := false, false
+	for _, it := range items {
+		if it.tok.Type == token.EOF {
+			continue
+		}
+		text := canonicalText(it)
+		glued := len(it.leading) == 0
+		if hasPrev && (needSpace(prev, prevWasPrefix, it.tok, glued) || wouldGlue(out.String(), text)) {
+			out.WriteString(" ")
+		}
+		out.WriteString(text)
+		prevWasPrefix = isPrefixOperator(it.tok, prev, hasPrev, glued)
+		prev = it.tok
+		hasPrev = true
+	}
+	return out.String()
 }
 
 func reconstruct(items []item) string {

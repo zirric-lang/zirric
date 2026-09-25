@@ -19,7 +19,7 @@ After [installing Zirric](/guides/installation), put this in `main.zirr`:
 import fmt
 import os
 
-fmt.fprintln("Hello, Zirric!", os.stdout())
+fmt.fprintln(os.stdout(), "Hello, Zirric!")
 ```
 
 ```bash
@@ -106,7 +106,7 @@ import fmt
 import os
 import greeting // example.greeter.greeting
 
-fmt.fprintln(greeting.greet("Zirric"), os.stdout())
+fmt.fprintln(os.stdout(), greeting.greet("Zirric"))
 ```
 
 A module further down is reached by joining the segments: a `report/html/` directory is `import report.html`, and the alias is the last segment (`html`). The fully qualified path always works too, and either form can be renamed or narrowed:
@@ -282,6 +282,16 @@ true // Bool
 fn(a, b) { return a + b } // Function literal
 ```
 
+A string literal can embed an expression as `\(expression)`. The value is rendered exactly as `fmt.sprint` renders it, and no import is needed:
+
+```zirric
+const copied = 3
+const total = 7
+const line = "Copied \(copied) of \(total) files" // "Copied 3 of 7 files"
+```
+
+There are no format specifiers. Padding and precision are ordinary function calls inside the interpolation, as in `"\(strings.repeat("#", done))"`. See [Expressions § String interpolation](/specification/expressions#string-interpolation).
+
 ## Variables and functions
 
 Declare constants with `const`, variables with `var` and functions with `fn`.
@@ -359,13 +369,13 @@ const status = if answer == 42 {
 }
 
 if answer == 42 {
-	fmt.fprintln("yes", out)
+	fmt.fprintln(out, "yes")
 } else {
-	fmt.fprintln("no", out)
+	fmt.fprintln(out, "no")
 }
 
 for item <- [1, 2, 3] {
-	fmt.fprintln(item, out)
+	fmt.fprintln(out, item)
 }
 
 const oddNumbers = for item <- [1, 2, 3] {
@@ -410,13 +420,14 @@ Zirric code is organized into modules. Every file declares the module it belongs
 mod example.myapp.http
 
 import fmt
+import io
 
-fn statusLine(code) {
-	return "HTTP " + fmt.sprint(code)
+fn writeStatus(out: @io.Writer, code) {
+	fmt.fprintln(out, "HTTP \(code)")
 }
 ```
 
-`fmt.fprintln` writes to a writer such as `os.stdout()` and `fmt.sprint` turns any value into a string; `strings`, `math`, `arrays` and the rest are imported the same way. The [`scripts`](https://code.knabel.dev/zirric-lang/scripts) package, which lives outside the standard library, pairs those functions with standard output for you.
+`fmt.fprintln` writes to a writer such as `os.stdout()`, taking the writer first as every function acting on a capability does, and `fmt.sprint` turns any value into a string; `strings`, `math`, `arrays` and the rest are imported the same way. The [`scripts`](https://code.knabel.dev/zirric-lang/scripts) package, which lives outside the standard library, pairs those functions with standard output for you.
 
 ## What Zirric avoids
 

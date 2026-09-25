@@ -14,12 +14,12 @@ const out = os.stdout()
 co.scope(fn(s) {
 	co.spawn(s, fn() {
 		io.read(stdin, 1)
-		fmt.fprintln("the cancelled reader kept going", out)
+		fmt.fprintln(out, "the cancelled reader kept going")
 		return Ok(void)
 	})
 	co.sleep(os.timer(), time.milliseconds(20))
 	co.cancel(s)
 	return void
 })
-fmt.fprintln("scope returned", out)
-fmt.fprintln("main read: " + bytes.toString(io.read(stdin, 1)), out)
+fmt.fprintln(out, "scope returned")
+fmt.fprintln(out, "main read: " + bytes.toString(io.read(stdin, 1)))

@@ -9,51 +9,51 @@ fn reporter(writer: @io.Writer) -> fn(TestEvent) {
 	return fn(ev: TestEvent) {
 		switch ev {
 		case is tests.Discovered:
-			fmt.fprintln("TAP version 14", writer)
-			fmt.fprintln("1.." + len(ev.cases), writer)
+			fmt.fprintln(writer, "TAP version 14")
+			fmt.fprintln(writer, "1.." + len(ev.cases))
 		case is tests.Skipped:
 			i += 1
 
-			fmt.fprint("ok " + i + " " + ev.test.name, writer)
-			fmt.fprintln(_sprintDirective(ev.test), writer)
+			fmt.fprint(writer, "ok " + i + " " + ev.test.name)
+			fmt.fprintln(writer, _sprintDirective(ev.test))
 
 		case is tests.Finished:
 			i += 1
 
 			switch ev.outcome {
 			case is Ok:
-				fmt.fprint("ok " + i + " " + ev.test.name, writer)
-				fmt.fprintln(_sprintDirective(ev.test), writer)
+				fmt.fprint(writer, "ok " + i + " " + ev.test.name)
+				fmt.fprintln(writer, _sprintDirective(ev.test))
 			case is Err:
-				fmt.fprint("not ok " + i + " - " + ev.test.name, writer)
-				fmt.fprintln(_sprintDirective(ev.test), writer)
-				fmt.fprintln("# " + Error(ev.outcome).debug(ev.outcome), writer)
+				fmt.fprint(writer, "not ok " + i + " - " + ev.test.name)
+				fmt.fprintln(writer, _sprintDirective(ev.test))
+				fmt.fprintln(writer, "# " + Error(ev.outcome).debug(ev.outcome))
 			}
 		case is tests.Completed:
-			fmt.fprintln("", writer)
-			fmt.fprint("# PASS", writer)
-			fmt.fprint('\t', writer)
-			fmt.fprint("FAIL", writer)
-			fmt.fprint('\t', writer)
-			fmt.fprint("SKIP", writer)
-			fmt.fprint('\t', writer)
-			fmt.fprintln("TODO", writer)
+			fmt.fprintln(writer, "")
+			fmt.fprint(writer, "# PASS")
+			fmt.fprint(writer, '\t')
+			fmt.fprint(writer, "FAIL")
+			fmt.fprint(writer, '\t')
+			fmt.fprint(writer, "SKIP")
+			fmt.fprint(writer, '\t')
+			fmt.fprintln(writer, "TODO")
 
-			fmt.fprint("# ", writer)
-			fmt.fprint(len(ev.report.pass), writer)
-			fmt.fprint('\t', writer)
-			fmt.fprint(len(ev.report.fail), writer)
-			fmt.fprint('\t', writer)
-			fmt.fprint(len(ev.report.skip), writer)
-			fmt.fprint('\t', writer)
-			fmt.fprint(len(ev.report.todo), writer)
-			fmt.fprint("\t", writer)
-			fmt.fprintln("", writer)
-			fmt.fprintln("", writer)
+			fmt.fprint(writer, "# ")
+			fmt.fprint(writer, len(ev.report.pass))
+			fmt.fprint(writer, '\t')
+			fmt.fprint(writer, len(ev.report.fail))
+			fmt.fprint(writer, '\t')
+			fmt.fprint(writer, len(ev.report.skip))
+			fmt.fprint(writer, '\t')
+			fmt.fprint(writer, len(ev.report.todo))
+			fmt.fprint(writer, "\t")
+			fmt.fprintln(writer, "")
+			fmt.fprintln(writer, "")
 			if len(ev.report.fail) > 0 {
-				fmt.fprintln("# FAILED!", writer)
+				fmt.fprintln(writer, "# FAILED!")
 			} else {
-				fmt.fprintln("# PASSED!", writer)
+				fmt.fprintln(writer, "# PASSED!")
 			}
 		}
 	}

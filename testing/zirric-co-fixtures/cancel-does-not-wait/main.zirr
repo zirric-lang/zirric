@@ -19,4 +19,4 @@ co.scope(fn(s) {
 	co.cancel(s)
 	return void
 })
-fmt.fprintln("done", out)
+fmt.fprintln(out, "done")

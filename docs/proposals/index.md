@@ -47,9 +47,9 @@ This directory contains Zirric Evolution Proposals. Each proposal documents a ch
 | [ZE-029](/proposals/ZE-029-documentation-structure)                | Documentation Structure                | Draft       |                                                                                                                                                  |
 | [ZE-030](/proposals/ZE-030-attribute-constraints-in-unions)        | Attribute Constraints in Unions        | Draft       |                                                                                                                                                  |
 | [ZE-031](/proposals/ZE-031-attributes-required-on-members)         | Attributes Required on Members         | Rejected    | Superseded by [ZE-030](/proposals/ZE-030-attribute-constraints-in-unions) and [ZE-033](/proposals/ZE-033-result-and-option-as-constraint-unions) |
-| [ZE-032](/proposals/ZE-032-string-interpolation)                   | String Interpolation                   | Draft       |                                                                                                                                                  |
+| [ZE-032](/proposals/ZE-032-string-interpolation)                   | String Interpolation                   | Implemented | [v0.2.0](/changelog/v0.2.0)                                                                                                                      |
 | [ZE-033](/proposals/ZE-033-result-and-option-as-constraint-unions) | Result and Option as Constraint Unions | Draft       |                                                                                                                                                  |
-| [ZE-034](/proposals/ZE-034-writer-first-printing)                  | Writer-First Printing                  | In Progress |                                                                                                                                                  |
+| [ZE-034](/proposals/ZE-034-writer-first-printing)                  | Writer-First Printing                  | Implemented | [v0.2.0](/changelog/v0.2.0)                                                                                                                      |
 
 ## Submitting Proposals
 

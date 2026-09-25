@@ -4,16 +4,18 @@ import io
 import bytes
 
 // Converts any value to its string representation. Prefers the value's @Printable attribute when it has one, otherwise falls back to a trivial conversion for builtin types (Int, Float, Char, Byte as hex, ...).
+//
+// `sprint(value)` is the same as `"\(value)"`, which needs no import.
 extern fn sprint(value: Any) -> String
 
 // Writes the string representation of a printable value to a writer.
-fn fprint(value: @Printable, writer: @io.Writer) -> Int {
+fn fprint(writer: @io.Writer, value: @Printable) -> Int {
 	const str = sprint(value)
 	return io.write(writer, bytes.fromString(str))
 }
 
 // Writes the string representation of a printable value followed by a newline to a writer.
-fn fprintln(value: @Printable, writer: @io.Writer) -> Int {
+fn fprintln(writer: @io.Writer, value: @Printable) -> Int {
 	const str = sprint(value) + "\n"
 	return io.write(writer, bytes.fromString(str))
 }

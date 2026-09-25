@@ -43,6 +43,12 @@ All four begin with an `asoption` or `asresult` over the target. A value already
 
 `??` and `!!` are the same shape as each other: one `jumpistype` over the normalized left operand — `None` for `??`, `Err` for `!!` — and a `pop` in front of the right operand, which is only ever reached on the missing path.
 
+## String interpolation
+
+An interpolated literal pushes each of its parts — a literal run as an ordinary string constant, an embedded expression compiled where it stands — and joins them with one `interpolate`. The instruction pops them all at once and renders each the way `fmt.sprint` does, preferring the value's `@Printable` and falling back to the trivial conversion of a builtin type. A value that is already a `String` is taken as it is, since `String`'s own `@Printable` hands back the same string.
+
+Nothing about an embedded expression is special to the compiler: `?.`, `!.` and a closure inside `\( … )` emit exactly what they emit outside one. Only `interpolate` knows the parts belong to the same literal.
+
 ## Core opcodes
 
 | Mnemonic        | Widths | Description                                     | Comments                            |
@@ -84,6 +90,7 @@ All four begin with an `asoption` or `asresult` over the target. A value already
 | `gte`           | 0      | Compare greater-than-or-equal                   |                                     |
 | `lt`            | 0      | Compare less-than                               |                                     |
 | `lte`           | 0      | Compare less-than-or-equal                      |                                     |
+| `interpolate`   | 2,2    | Join the parts of an interpolated string        | part count, @Printable attribute    |
 | `makeattribute` | 2      | Create attribute instance                       |                                     |
 | `call`          | 0      | Call function or closure                        | arg count on stack                  |
 | `makeiteryield` | 2,2,2  | Build the yield closure of a `for <-` loop      | binding local, body start, body end |

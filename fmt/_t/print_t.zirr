@@ -40,7 +40,7 @@ fn testFprint() -> Result {
 		return len(chunk)
 	})
 
-	var num = fprint("42", w)
+	var num = fprint(w, "42")
 	return assert.all([
 		assert.equal(2, num),
 		assert.equal(bytes.fromString("42"), buf),
@@ -55,7 +55,7 @@ fn testFprintln() -> Result {
 		return len(chunk)
 	})
 
-	var num = fprintln("hello", w)
+	var num = fprintln(w, "hello")
 	return assert.all([
 		assert.equal(6, num),
 		assert.equal(bytes.fromString("hello\n"), buf),
@@ -76,10 +76,52 @@ fn _collectInto(self: Collector, buf: Binary) -> Int {
 @Test()
 fn testFprintAcceptsAnyWriter() -> Result {
 	const collector = Collector([])
-	const num = fprint("hi", collector)
+	const num = fprint(collector, "hi")
 	return assert.all([
 		assert.equal(2, num),
 		assert.equal(1, len(collector.chunks)),
 		assert.equal(bytes.fromString("hi"), collector.chunks[0]),
 	])
+}
+
+// An interpolation renders exactly as sprint does, which is the one rule there is to it.
+@Test()
+fn testInterpolationRendersAsSprintDoes() -> Result {
+	const values = [1, 2.1, true, "text", _customPrintable("example"), _notPrintable("nested"), [42], ["hello": 42]]
+	return assert.all(for value <- values {
+		assert.equal(sprint(value), "\(value)")
+	})
+}
+
+@Test()
+fn testInterpolationSplicesEveryPart() -> Result {
+	const a = 3
+	const b = 4
+	return assert.all([
+		assert.equal("n = 3", "n = \(a)"),
+		assert.equal("3 + 4 = 7", "\(a) + \(b) = \(a + b)"),
+		assert.equal("outer inner 3 end", "outer \("inner \(a)") end"),
+		assert.equal("custom: example", "\(_customPrintable("example"))"),
+		assert.equal("ok", "\(if a > 2 { "ok" } else { "failed" })"),
+	])
+}
+
+// Rendering a @Printable part calls back into the running program, which must not disturb the parts of the literal already on the stack.
+@Printable(fn(v) { return "[\(v.left) | \(v.right)]" })
+data _pair { left, right }
+
+@Test()
+fn testRenderingAPartRunsInsideTheLiteral() -> Result {
+	const a = _customPrintable("a")
+	const b = _customPrintable("b")
+	return assert.all([
+		assert.equal("1 custom: a 2 custom: b 3", "1 \(a) 2 \(b) 3"),
+		assert.equal("pair [custom: a | custom: b] end custom: a", "pair \(_pair(a, b)) end \(a)"),
+	])
+}
+
+// A backslash escaped as `\\` leaves an ordinary `(` behind, so the one form that could have changed meaning did not.
+@Test()
+fn testAnEscapedBackslashIsNoInterpolation() -> Result {
+	return assert.equal("\\" + "(literal)", "\\(literal)")
 }

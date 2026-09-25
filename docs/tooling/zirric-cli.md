@@ -45,7 +45,7 @@ import fmt
 import os
 
 for arg <- os.args() {
-	fmt.fprintln(arg, os.stdout())
+	fmt.fprintln(os.stdout(), arg)
 }
 ```
 

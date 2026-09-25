@@ -5,8 +5,8 @@ description: "Swapping the parameters of fmt.fprint and fmt.fprintln, so the wri
 
 # Writer-First Printing
 
-::: callout warning In Progress
-This proposal has been accepted in principle. It is currently under active development. Parts might be incomplete or missing in Zirric.
+::: callout tip Implemented
+This proposal has been accepted and implemented. You can use this feature since Zirric [v0.2.0](/changelog/v0.2.0).
 :::
 
 ## Introduction

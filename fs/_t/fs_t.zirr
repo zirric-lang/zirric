@@ -163,7 +163,7 @@ fn testAFileIsAWriter() -> Result {
 	// fmt.fprint takes any @io.Writer, which a File carries — the point of making streams an attribute.
 	const disk = fs.memory()
 	const created = disk.create("printed.txt")
-	fmt.fprintln("via fprintln", created.value)
+	fmt.fprintln(created.value, "via fprintln")
 	fs.close(created.value)
 	assert.equal("via fprintln\n", fs.readString(disk, "printed.txt").value)
 }

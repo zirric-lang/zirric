@@ -85,6 +85,13 @@ func TestTextDocumentDefinition(t *testing.T) {
 			wantChar: 8, // 'y' in 'const y'
 		},
 		{
+			name:     "definition of a name inside a string interpolation",
+			src:      "fn greet(name) {\n  \"hi \\(name)\"\n}",
+			pos:      protocol.Position{Line: 1, Character: 9},
+			wantLine: 0,
+			wantChar: 9, // 'n' in the 'name' parameter
+		},
+		{
 			name:     "definition of for-loop binding",
 			src:      "fn test() {\n  for item <- [1] {\n    item\n  }\n}",
 			pos:      protocol.Position{Line: 2, Character: 5},

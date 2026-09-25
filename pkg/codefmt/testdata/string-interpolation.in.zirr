@@ -1,0 +1,7 @@
+const sum = "\( a+b ) is the answer"
+const nested = "outer \( label( "inner \(n)" ) ) done"
+const escaped = "\\(not an interpolation)"
+const branch = "\(if ok{"yes"}else{"no"})"
+const unary = "\(-n)"
+const chained = "\(user?.name  ??  "stranger")"
+const empty = ""

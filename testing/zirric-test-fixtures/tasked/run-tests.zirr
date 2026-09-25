@@ -3,4 +3,4 @@ mod tasked
 import fmt
 import os
 
-fmt.fprintln("the task ran", os.stdout())
+fmt.fprintln(os.stdout(), "the task ran")

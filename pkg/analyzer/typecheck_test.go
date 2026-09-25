@@ -514,3 +514,15 @@ func TestBinaryOperatorResultsAreDescribed(t *testing.T) {
 		expectClean(t, shorthandPreamble+"const x: Option = Some(\"x\")\nconst y: Int = x ?? \"default\"")
 	})
 }
+
+// TestAnInterpolatedLiteralIsAString is the certainty an interpolation buys the checker: a chain of `+` over unknown values has an unknown type, while `"\( … )"` is a String whatever it embeds.
+func TestAnInterpolatedLiteralIsAString(t *testing.T) {
+	expectClean(t, "fn takesString(s: String) { s }\nfn main(x) { takesString(\"n = \\(x)\") }")
+	expectError(t, "fn takesInt(n: Int) { n }\nfn main(x) { takesInt(\"n = \\(x)\") }", "wrong argument type", "declared Int, got String")
+}
+
+// TestAnInterpolatedExpressionIsCheckedLikeAnyOther holds ZE-022's rule inside `\( … )`: the embedded expression is checked as usual, and nothing new is reported about the interpolation itself.
+func TestAnInterpolatedExpressionIsCheckedLikeAnyOther(t *testing.T) {
+	expectError(t, "fn two(a, b) { a }\nfn main() { \"\\(two(1))\" }", "wrong number of arguments", "two takes 2, got 1")
+	expectClean(t, "fn main(value) { \"\\(value)\" }")
+}

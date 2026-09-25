@@ -5,8 +5,8 @@ description: "A string literal may embed an expression as \\(expression), render
 
 # String Interpolation
 
-::: callout draft Draft
-This proposal is still a draft and is subject to change. Please do not cite or reference it as a finalized design. Features described here may not be implemented as described and cannot be used right now.
+::: callout tip Implemented
+This proposal has been accepted and implemented. You can use this feature since Zirric [v0.2.0](/changelog/v0.2.0).
 :::
 
 ## Introduction

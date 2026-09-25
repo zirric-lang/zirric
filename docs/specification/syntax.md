@@ -37,8 +37,10 @@ INT    = "0", {octal_digit}
 FLOAT  = digits, ".", digits, [("e" | "E"), ["-"], digits]
        | digits, ("e" | "E"), ["-"], digits;
 
-STRING = '"', {string_char}, '"';
+STRING = '"', {string_char | Interpolation}, '"';
 CHAR   = "'", char_char, "'";
+
+Interpolation = backslash, "(", Expression, ")";
 
 string_char = ? any character except '"' or backslash ? | escape | backslash, '"';
 char_char   = ? any character except "'" or backslash ? | escape | backslash, "'";
@@ -57,6 +59,8 @@ BOOL   = "true" | "false";
 An integer written with a leading `0` is octal — `0777` is 511. There is no `0o` prefix.
 
 String and char literals accept the same escapes, except that each escapes only its own delimiter: `\"` belongs to a string and `\'` to a char. `\u` and `\U` name a code point, which a `STRING` holds UTF-8 encoded, while `\x` and the three-digit octal form name a single byte. Any other escape is an error rather than literal text.
+
+A `STRING` may embed expressions as `\(expression)`. The `\(` opens one and the matching `)` closes it, counting parentheses and reading a nested string literal — which may interpolate in turn — as part of it. `\\(` is the escaped backslash followed by an ordinary `(`, not an interpolation. A `CHAR` never interpolates. See [Expressions § String Interpolation](/specification/expressions#string-interpolation).
 
 ### Operator and Punctuation Tokens
 
@@ -245,7 +249,7 @@ See [Expressions](/specification/expressions) for semantic details.
 ```ebnf
 IntLiteral    = INT;
 FloatLiteral  = FLOAT;
-StringLiteral = STRING;
+StringLiteral = STRING;   (* may embed expressions as \(expression) *)
 BoolLiteral   = "true" | "false";
 ArrayLiteral  = "[", [Expression, {",", Expression}], "]";
 DictLiteral   = "[", [DictEntry, {",", DictEntry}], "]";

@@ -37,4 +37,4 @@ fn greet(person: SomePerson) -> String {
 	return "Hello " + name
 }
 
-fmt.fprintln(greet(peter), os.stdout())
+fmt.fprintln(os.stdout(), greet(peter))

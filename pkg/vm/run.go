@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"code.knabel.dev/zirric-lang/zirric/pkg/op"
 	"code.knabel.dev/zirric-lang/zirric/pkg/runtime"
@@ -215,6 +216,18 @@ func (vm *VM) runLoop(taskId TaskId, stopIdx int, resumeDepth int, endIp int) er
 				return fmt.Errorf("wrapping a value in Some requires a data type constant (%T)", vm.constants[someId])
 			}
 			if err := vm.push(runtime.MakeDataValue(some, []runtime.RuntimeValue{value})); err != nil {
+				return err
+			}
+
+		case op.Interpolate:
+			count := int(op.ReadUint16(ins[ip:]))
+			attrId := int(op.ReadUint16(ins[ip+2:]))
+			fr.ip += 4
+			joined, err := vm.interpolate(count, attrId)
+			if err != nil {
+				return err
+			}
+			if err := vm.push(joined); err != nil {
 				return err
 			}
 
@@ -1239,4 +1252,31 @@ func (vm *VM) callExtern(callee *runtime.ExternFunc, args []runtime.RuntimeValue
 		return nil, resumeErr
 	}
 	return result, err
+}
+
+// interpolate joins the count parts of an interpolated literal sitting on top of the stack, rendering each the way fmt.sprint renders it.
+//
+// A String is taken as it is rather than sent through its @Printable, whose toString hands back the same string; skipping that call keeps the literal runs of a literal free.
+func (vm *VM) interpolate(count int, attrId int) (runtime.RuntimeValue, error) {
+	var printableAttrId *runtime.TypeId
+	if attrType, ok := vm.constants[attrId].(*runtime.AttributeType); ok {
+		id := attrType.TypeConstantId()
+		printableAttrId = &id
+	}
+
+	parts := vm.stack[vm.sp-count : vm.sp]
+	var out strings.Builder
+	for _, part := range parts {
+		if str, ok := part.(runtime.String); ok {
+			out.WriteString(string(str))
+			continue
+		}
+		str, err := runtime.SprintValue(vm, printableAttrId, part)
+		if err != nil {
+			return nil, err
+		}
+		out.WriteString(str)
+	}
+	vm.sp -= count
+	return runtime.String(out.String()), nil
 }

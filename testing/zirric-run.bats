@@ -50,7 +50,7 @@ teardown() {
 @test "a directory is run as a module by naming it" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-run-fixtures/script"
   mkdir -p sub
-  printf 'mod runscript.sub\n\nimport fmt\nimport os\n\nfmt.fprintln("the sub module ran", os.stdout())\n' > sub/m.zirr
+  printf 'mod runscript.sub\n\nimport fmt\nimport os\n\nfmt.fprintln(os.stdout(), "the sub module ran")\n' > sub/m.zirr
 
   run_zirric sub
   [ "$status" -eq 0 ]
@@ -60,7 +60,7 @@ teardown() {
 @test "a task wins over a directory of the same name" {
   setup_fixture "$BATS_TEST_DIRNAME/zirric-run-fixtures/script"
   mkdir -p sub
-  printf 'mod runscript.sub\n\nimport fmt\nimport os\n\nfmt.fprintln("the sub module ran", os.stdout())\n' > sub/m.zirr
+  printf 'mod runscript.sub\n\nimport fmt\nimport os\n\nfmt.fprintln(os.stdout(), "the sub module ran")\n' > sub/m.zirr
   cat >> Cavefile <<'ZF'
 
 import tasks

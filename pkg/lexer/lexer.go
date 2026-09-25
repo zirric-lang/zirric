@@ -206,29 +206,18 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
-// parseString scans a double-quoted string literal and returns its raw source, escapes included. Decoding happens in the parser, the same way char literals are handled, so both literal forms accept exactly one set of escapes.
+// parseString scans a double-quoted string literal and returns its raw source, escapes and interpolations included. Decoding happens in the parser, the same way char literals are handled, so both literal forms accept exactly one set of escapes.
 // An unterminated literal ends at EOF rather than being rejected, which keeps a half-typed line usable while it is being edited.
+//
+// Where the literal ends is decided by scanStringContent, the same walk the parser splits the literal with, so the two can never disagree about which quote closed it.
+// The cursor is then moved there one byte at a time rather than jumped, because every line the literal spans is counted on the way.
 func (l *Lexer) parseString() string {
 	position := l.currPos + 1
-	escaped := false
-	for {
+	_, end := scanStringContent(l.input, position)
+	for l.currPos < end {
 		l.advance()
-		if l.ch == 0 {
-			break
-		}
-		if escaped {
-			escaped = false
-			continue
-		}
-		if l.ch == '\\' {
-			escaped = true
-			continue
-		}
-		if l.ch == '"' {
-			break
-		}
 	}
-	return l.input[position:l.currPos]
+	return l.input[position:end]
 }
 
 func (l *Lexer) parseChar() (string, bool) {
@@ -379,4 +368,25 @@ func (l *Lexer) newToken(tokenType token.TokenType, ch byte) token.Token {
 func (l *Lexer) sourceHere() *token.Source {
 	line, column := l.position()
 	return token.MakeSource(string(l.src.URI()), l.currPos, line, column)
+}
+
+// Region returns a lexer over input[start:end], reading the same file and numbering its lines and columns as they sit in the whole of it.
+// It is how an interpolated expression is lexed where it stands, so a diagnostic inside `\( … )` points at the source and not at a detached fragment of it.
+func (l *Lexer) Region(start, end int) *Lexer {
+	line, lineStart := 1, 0
+	for i := 0; i < start && i < len(l.input); i++ {
+		if l.input[i] == '\n' {
+			line += 1
+			lineStart = i + 1
+		}
+	}
+	sub := &Lexer{
+		src:       l.src,
+		input:     l.input[:min(end, len(l.input))],
+		peekPos:   start,
+		line:      line,
+		lineStart: lineStart,
+	}
+	sub.advance()
+	return sub
 }
